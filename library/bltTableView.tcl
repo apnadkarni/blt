@@ -111,18 +111,24 @@ option add *BltTableView.ColumnCommand blt::TableView::SortColumn
 
 if { $tcl_platform(platform) == "windows" } {
     if { $tk_version >= 8.3 } {
-        set cursor "@[file join $blt_library tableview.cur]"
+        set columnCursor "@[file join $blt_library cursors tableview.cur]"
+        set rowCursor "@[file join $blt_library cursors tableview.cur]"
     } else {
-        set cursor "size_we"
+        set columnCursor "size_we"
+        set rowCursor "size_ns"
     }
-    option add *BltTableView.ResizeCursor [list $cursor] widgetDefault
-
 } else {
-    option add *BltTableView.ResizeCursor \
-        [list @$blt_library/tableview.xbm \
-             $blt_library/tableview_m.xbm \
-             black white] 
+    set columnCursor [list \
+                          @$blt_library/cursors/columnResize.xbm \
+                          $blt_library/cursors/columnResizeMask.xbm \
+                          black white]
+    set rowCursor [list \
+                       @$blt_library/cursors/rowResize.xbm \
+                       $blt_library/cursors/rowResizeMask.xbm \
+                       black white]
 }
+option add *BltTableView.columnResizeCursor $columnCursor widgetDefault
+option add *BltTableView.rowResizeCursor $rowCursor widgetDefault
 
 # Left (arrow key)
 #   Move left to the previous column. 
@@ -185,7 +191,7 @@ bind BltTableView <Control-KeyPress-d> {
 }
 
 bind BltTableView <KeyPress-space> {
-    if { [%W cget -selectmode] == "single" } {
+    if { [%W cget -selectmode] == "singlerow" } {
         if { [%W selection includes focus] } {
             %W selection clearall
         } else {
@@ -285,7 +291,7 @@ proc blt::TableView::Initialize { w } {
     #   For "multiple" mode only.
     #
     $w bind all <Shift-ButtonPress-1> { 
-        if { [%W cget -selectmode] == "multiple" } {
+        if { [%W cget -selectmode] == "multiplerows" } {
             if { [%W row index anchor] == -1 } {
                 %W selection anchor current
             }
@@ -314,11 +320,11 @@ proc blt::TableView::Initialize { w } {
     #
     $w bind all <Control-ButtonPress-1> { 
         switch -- [%W cget -selectmode] {
-            "multiple" {
+            "multiplerows" {
                 %W selection toggle current
                 %W selection anchor current
             } 
-            "single" {
+            "singlerow" {
                 blt::TableView::SetSelectionAnchor %W current
             }
         }
@@ -337,7 +343,7 @@ proc blt::TableView::Initialize { w } {
 
     $w bind all <Control-Shift-ButtonPress-1> { 
         switch [%W cget -selectmode] {
-            "multiple" {
+            "multiplerows" {
                 if { [%W selection present] } {
                     if { [%W index anchor] == "" } {
                         %W selection anchor current
@@ -458,11 +464,11 @@ proc blt::TableView::Initialize { w } {
     }
     $w row bind Resize <B1-Motion> {
         %W row resize mark %y
-        %W row configure active -height [%W row resize current]
-        %W row resize anchor %y
+        %W row resize set
     }
     $w row bind Resize <ButtonRelease-1> {
-        %W row configure active -height [%W row resize current]
+        %W row resize mark %y
+        %W row resize set
     }
     # TextBoxStyle
     $w bind TextBoxStyle <Enter> { 
@@ -492,7 +498,7 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(afterId) -1
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
-            %W selection mark @%x,%y
+            %W selection set @%x,%y
         } else {
             %W invoke active
         }
@@ -950,7 +956,7 @@ proc blt::TableView::AutoScroll { w } {
     } else {
         set neighbor $cell
     }
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         SetSelectionAnchor $w $neighbor
     } else {
         if { $cell != "" && [$w selection present] } {
@@ -981,12 +987,13 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
             $w focus $cell
             $w selection clearall
             $w selection anchor $cell
-        } "single" {
+            set _private(activeSelection) 1
+        } "singlerow" {
             $w row see $row
             $w focus $cell
             $w selection clearall
             $w selection set $cell 
-        } "multiple" {
+        } "multiplerows" {
             $w row see $row
             $w focus $cell
             $w selection clearall
@@ -1004,7 +1011,7 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
 #
 proc blt::TableView::MoveFocus { w cell } {
     catch {$w focus $cell}
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
         $w selection set focus
         $w selection anchor focus
@@ -1039,7 +1046,7 @@ proc blt::TableView::MovePage { w where } {
     $w entry highlight view.$where
     $w focus view.$where
     $w row see view.$where
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
         $w selection set focus
     }
@@ -1463,7 +1470,7 @@ proc blt::TableView::PostFilterMenu { w col } {
     # selected value when we get one. 
     set _private(posting) [$w column index $col]
     # Post the combo menu at the bottom of the filter button.
-    $w see [list view.top $col]
+    $w column see $col
     update
     $w filter post $col
 
@@ -2166,6 +2173,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
     set value [$f.entry get]
     DestroySearchDialog $top
 
+    set flags {}
     if { $_private(trim) } {
         append flags " -trim both"
     }
@@ -2176,7 +2184,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
         set col $_private(column)
         set index [$w column index $col]
         set value [list $value]
-        set expr "(\[info exists ${index}\]) ||
+        set expr "(\[info exists ${index}\]) &&
             (\[blt::utils::string begins \$${index} $value $flags])"
         #puts stderr expr=$expr
         $w column configure $col -filterdata $expr

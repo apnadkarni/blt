@@ -73,7 +73,7 @@
 #define REPEAT_MASK \
     (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
 #define ORIENT_MASK \
-    (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
+    (BLT_PAINTBRUSH_VERTICAL|BLT_PAINTBRUSH_HORIZONTAL)
 
 typedef struct {
     Blt_HashTable instTable;            /* Hash table of paintbrush
@@ -954,9 +954,9 @@ ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+        flag = BLT_PAINTBRUSH_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_HORIZONTAL;
+        flag = BLT_PAINTBRUSH_HORIZONTAL;
     } else {
         Tcl_AppendResult(interp, "unknown orient value \"", string,
                 "\": should be vertical or horizontal.", (char *)NULL);
@@ -988,9 +988,9 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj *objPtr;
     
     switch (*flagsPtr & ORIENT_MASK) {
-    case BLT_PAINTBRUSH_ORIENT_VERTICAL:
+    case BLT_PAINTBRUSH_VERTICAL:
         objPtr = Tcl_NewStringObj("vertical", 8);       break;
-    case BLT_PAINTBRUSH_ORIENT_HORIZONTAL:
+    case BLT_PAINTBRUSH_HORIZONTAL:
         objPtr = Tcl_NewStringObj("horizontal", 10);    break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
@@ -1465,9 +1465,9 @@ LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
     Blt_Pixel color;
     double t;
     
+    x -= brushPtr->xOrigin;
+    y -= brushPtr->yOrigin;
     if (brushPtr->calcProc != NULL) {
-        x -= brushPtr->xOrigin;
-        y -= brushPtr->yOrigin;
         if ((*brushPtr->calcProc)(brushPtr->clientData, x, y, &t) != TCL_OK) {
             return 0x0;
         }
@@ -1719,7 +1719,7 @@ StripesBrushColorProc(Blt_PaintBrush brush, int x, int y)
     x = (x - brushPtr->xOrigin);
     y = (y - brushPtr->yOrigin);
 
-    if (brushPtr->flags & BLT_PAINTBRUSH_ORIENT_VERTICAL) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_VERTICAL) {
         t = ((x / brushPtr->stride) & 0x1) ? 0.0 : 1.0;
     } else {
         t = ((y / brushPtr->stride) & 0x1) ? 0.0 : 1.0;
@@ -2265,7 +2265,7 @@ Blt_NewStripesBrush()
     brushPtr->classPtr = &stripesBrushClass;
     brushPtr->refCount = 1;
     brushPtr->alpha = 0xFF;
-    brushPtr->flags = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+    brushPtr->flags = BLT_PAINTBRUSH_VERTICAL;
     brushPtr->stride = 2;
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
@@ -3182,7 +3182,7 @@ Blt_IsHorizontalLinearBrush(Blt_PaintBrush brush)
     Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
 
     if ((brushPtr->classPtr->type == BLT_PAINTBRUSH_LINEAR) && 
-        (brushPtr->flags & BLT_PAINTBRUSH_VERTICAL)) {
+        (brushPtr->flags & BLT_PAINTBRUSH_HORIZONTAL)) {
         return 1;
     }
     return 0;

@@ -556,7 +556,7 @@ static Blt_ConfigSpec contourSpecs[] =
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
         DEF_ACTIVE_PEN, Blt_Offset(ContourElement, activePenPtr),
         BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(ContourElement, builtinPen.traceColor), NORMAL_PEN, 
         &colorOption},

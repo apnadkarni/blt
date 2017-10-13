@@ -17,9 +17,10 @@ blt::tk::scrollbar .ss.y
 blt::tableview $view \
     -table $table \
     -titles both \
-    -selectmode multiple \
+    -selectmode cells \
     -increasingicon "" \
     -decreasingicon "" \
+    -exportselection 1 \
     -columnfilters yes 
 
 blt::table . \

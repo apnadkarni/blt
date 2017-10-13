@@ -214,7 +214,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_RULE_WIDTH                  "0"
 #define DEF_SCROLL_INCREMENT            "20"
 #define DEF_SCROLL_MODE                 "hierbox"
-#define DEF_SELECT_MODE                 "single"
+#define DEF_SELECT_MODE                 "singlerow"
 #define DEF_SORT_COLUMN                 (char *)NULL
 #define DEF_SORT_COLUMNS                (char *)NULL
 #define DEF_SORT_COMMAND                (char *)NULL
@@ -240,74 +240,74 @@ enum SortTypeValues {
     SORT_REAL, SORT_COMMAND, SORT_NONE, SORT_AUTO
 };
 
-static Blt_OptionParseProc ObjToAutoCreateProc;
-static Blt_OptionPrintProc AutoCreateToObjProc;
+static Blt_OptionParseProc ObjToAutoCreate;
+static Blt_OptionPrintProc AutoCreateToObj;
 static Blt_CustomOption autoCreateOption = {
-    ObjToAutoCreateProc, AutoCreateToObjProc, NULL, (ClientData)0
+    ObjToAutoCreate, AutoCreateToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToColumnTitleProc;
-static Blt_OptionPrintProc ColumnTitleToObjProc;
+static Blt_OptionParseProc ObjToColumnTitle;
+static Blt_OptionPrintProc ColumnTitleToObj;
 static Blt_OptionFreeProc FreeColumnTitleProc;
 static Blt_CustomOption columnTitleOption = {
-    ObjToColumnTitleProc, ColumnTitleToObjProc, FreeColumnTitleProc, 
+    ObjToColumnTitle, ColumnTitleToObj, FreeColumnTitleProc, 
     (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToSortColumnProc;
-static Blt_OptionPrintProc SortColumnToObjProc;
+static Blt_OptionParseProc ObjToSortColumn;
+static Blt_OptionPrintProc SortColumnToObj;
 static Blt_CustomOption sortColumnOption = {
-    ObjToSortColumnProc, SortColumnToObjProc, NULL, (ClientData)0
+    ObjToSortColumn, SortColumnToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToSortOrderProc;
-static Blt_OptionPrintProc SortOrderToObjProc;
+static Blt_OptionParseProc ObjToSortOrder;
+static Blt_OptionPrintProc SortOrderToObj;
 static Blt_OptionFreeProc FreeSortOrderProc;
 static Blt_CustomOption sortOrderOption = {
-    ObjToSortOrderProc, SortOrderToObjProc, FreeSortOrderProc, (ClientData)0
+    ObjToSortOrder, SortOrderToObj, FreeSortOrderProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToEnumProc;
-static Blt_OptionPrintProc EnumToObjProc;
+static Blt_OptionParseProc ObjToEnum;
+static Blt_OptionPrintProc EnumToObj;
 static Blt_CustomOption typeOption = {
-    ObjToEnumProc, EnumToObjProc, NULL, (ClientData)sortTypeStrings
+    ObjToEnum, EnumToObj, NULL, (ClientData)sortTypeStrings
 };
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc FreeIconProc;
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, 
+    ObjToIcon, IconToObj, FreeIconProc, 
     (ClientData)0,                      /* Needs to point to the tableview
                                          * widget before calling
                                          * routines. */
 };
-static Blt_OptionParseProc ObjToRowTitleProc;
-static Blt_OptionPrintProc RowTitleToObjProc;
+static Blt_OptionParseProc ObjToRowTitle;
+static Blt_OptionPrintProc RowTitleToObj;
 static Blt_OptionFreeProc FreeRowTitleProc;
 static Blt_CustomOption rowTitleOption = {
-    ObjToRowTitleProc, RowTitleToObjProc, FreeRowTitleProc, (ClientData)0
+    ObjToRowTitle, RowTitleToObj, FreeRowTitleProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToScrollModeProc;
-static Blt_OptionPrintProc ScrollModeToObjProc;
+static Blt_OptionParseProc ObjToScrollMode;
+static Blt_OptionPrintProc ScrollModeToObj;
 static Blt_CustomOption scrollModeOption = {
-    ObjToScrollModeProc, ScrollModeToObjProc, NULL, NULL,
+    ObjToScrollMode, ScrollModeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToSelectModeProc;
-static Blt_OptionPrintProc SelectModeToObjProc;
+static Blt_OptionParseProc ObjToSelectMode;
+static Blt_OptionPrintProc SelectModeToObj;
 static Blt_CustomOption selectModeOption = {
-    ObjToSelectModeProc, SelectModeToObjProc, NULL, NULL,
+    ObjToSelectMode, SelectModeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToCellStateProc;
-static Blt_OptionPrintProc CellStateToObjProc;
+static Blt_OptionParseProc ObjToCellState;
+static Blt_OptionPrintProc CellStateToObj;
 static Blt_CustomOption cellStateOption = {
-    ObjToCellStateProc, CellStateToObjProc, NULL, (ClientData)0
+    ObjToCellState, CellStateToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToLimits;
@@ -317,34 +317,34 @@ static Blt_CustomOption limitsOption =
     ObjToLimits, LimitsToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_OptionFreeProc FreeStyleProc;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, FreeStyleProc, 
+    ObjToStyle, StyleToObj, FreeStyleProc, 
     (ClientData)0,                      /* Needs to point to the tableview
                                          * widget before calling
                                          * routines. */
 };
 
-static Blt_OptionParseProc ObjToTableProc;
-static Blt_OptionPrintProc TableToObjProc;
+static Blt_OptionParseProc ObjToTable;
+static Blt_OptionPrintProc TableToObj;
 static Blt_OptionFreeProc FreeTableProc;
 static Blt_CustomOption tableOption = {
-    ObjToTableProc, TableToObjProc, FreeTableProc, NULL,
+    ObjToTable, TableToObj, FreeTableProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToTitlesProc;
-static Blt_OptionPrintProc TitlesToObjProc;
+static Blt_OptionParseProc ObjToTitles;
+static Blt_OptionPrintProc TitlesToObj;
 static Blt_CustomOption titlesOption = {
-    ObjToTitlesProc, TitlesToObjProc, NULL, (ClientData)0
+    ObjToTitles, TitlesToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToCachedObjProc;
-static Blt_OptionPrintProc CachedObjToObjProc;
+static Blt_OptionParseProc ObjToCachedObj;
+static Blt_OptionPrintProc CachedObjToObj;
 static Blt_OptionFreeProc FreeCachedObjProc;
 static Blt_CustomOption cachedObjOption = {
-    ObjToCachedObjProc, CachedObjToObjProc, FreeCachedObjProc, NULL,
+    ObjToCachedObj, CachedObjToObj, FreeCachedObjProc, NULL,
 };
 
 static Blt_ConfigSpec tableSpecs[] =
@@ -369,10 +369,8 @@ static Blt_ConfigSpec tableSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
         DEF_BACKGROUND, Blt_Offset(TableView, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(TableView, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -415,8 +413,7 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
         "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(TableView, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(TableView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
@@ -499,8 +496,7 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_RELIEF, "-activetitlerelief", "activeTitleRelief", 
         "TitleRelief", DEF_COLUMN_ACTIVE_TITLE_RELIEF, 
         Blt_Offset(Column, activeTitleRelief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
         Blt_Offset(Column, bindTagsObjPtr), BLT_CONFIG_NULL_OK,
         &cachedObjOption},
@@ -583,8 +579,7 @@ static Blt_ConfigSpec rowSpecs[] =
     {BLT_CONFIG_RELIEF, "-activetitlerelief", "activeTitleRelief", 
         "TitleRelief", DEF_ROW_ACTIVE_TITLE_RELIEF, 
         Blt_Offset(Row, activeTitleRelief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
         Blt_Offset(Row, bindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
     {BLT_CONFIG_STRING, "-command", "command", "Command", DEF_ROW_COMMAND, 
@@ -658,10 +653,8 @@ static Blt_ConfigSpec filterSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
         DEF_FILTER_NORMAL_BG, Blt_Offset(TableView, filter.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth", 
         DEF_FILTER_BORDERWIDTH, Blt_Offset(TableView, filter.borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -674,8 +667,7 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
         "DisabledForeground", DEF_FILTER_DISABLED_FG, 
         Blt_Offset(TableView, filter.disabledFg), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FILTER_FONT, 
         Blt_Offset(TableView, filter.font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -1214,22 +1206,93 @@ EventuallyInvokeSelectCommand(TableView *viewPtr)
 static void
 ClearSelections(TableView *viewPtr)
 {
-    if (viewPtr->selectMode == SELECT_CELLS) {
-        viewPtr->selectCells.anchorPtr = viewPtr->selectCells.markPtr = NULL;
-    } else {
-        Row *rowPtr;
-
-        for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
-             rowPtr = rowPtr->nextPtr) {
-            rowPtr->flags &= ~SELECTED;
-            rowPtr->link = NULL;
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
+        Blt_InitHashTable(&viewPtr->selectCells.cellTable, BLT_ONE_WORD_KEYS);
+        break;
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
+        {
+            Row *rowPtr;
+            
+            for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
+                 rowPtr = rowPtr->nextPtr) {
+                rowPtr->flags &= ~SELECTED;
+                rowPtr->link = NULL;
+            }
+            Blt_Chain_Reset(viewPtr->selectRows.list);
         }
-        Blt_Chain_Reset(viewPtr->selectRows.list);
+        break;
     }
     EventuallyRedraw(viewPtr);
     if (viewPtr->selectCmdObjPtr != NULL) {
         EventuallyInvokeSelectCommand(viewPtr);
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetColumnXOffset --
+ *
+ *      Computes the closest X offset the the put the column in view.
+ *      If the column is already in view the old X offset is returned.
+ *
+ * Results:
+ *      Returns the X offset to view the column.
+ *
+ *---------------------------------------------------------------------------
+ */
+static long
+GetColumnXOffset(TableView *viewPtr, Column *colPtr)
+{
+    long xOffset;
+
+    xOffset = viewPtr->xOffset;
+    if (colPtr->worldX < viewPtr->xOffset) {
+        xOffset = colPtr->worldX;
+    }
+    if ((colPtr->worldX + colPtr->width) >= 
+        (viewPtr->xOffset + VPORTWIDTH(viewPtr))) {
+        xOffset = (colPtr->worldX + colPtr->width) - VPORTWIDTH(viewPtr);
+    } 
+    if (xOffset < 0) {
+        xOffset = 0;
+    }
+    return xOffset;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetRowYOffset --
+ *
+ *      Computes the closest Y offset the the put the row in view.
+ *      If the row is already in view the old Y offset is returned.
+ *
+ * Results:
+ *      Returns the Y offset to view the row.
+ *
+ *---------------------------------------------------------------------------
+ */
+static long
+GetRowYOffset(TableView *viewPtr, Row *rowPtr)
+{
+    long yOffset;
+
+    yOffset = viewPtr->yOffset;
+    if (rowPtr->worldY < viewPtr->yOffset) {
+        yOffset = rowPtr->worldY;
+    }
+    if ((rowPtr->worldY + rowPtr->height) >= 
+        (viewPtr->yOffset + VPORTHEIGHT(viewPtr))) {
+        yOffset = (rowPtr->worldY + rowPtr->height) - VPORTHEIGHT(viewPtr);
+    } 
+    if (yOffset < 0) {
+        yOffset = 0;
+    }
+    return yOffset;
 }
 
 static TableView *tableViewInstance;
@@ -1624,14 +1687,14 @@ DestroyIcons(TableView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToAutoCreateProc --
+ * ObjToAutoCreate --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToAutoCreate(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     char c;
     const char *string;
@@ -1661,7 +1724,7 @@ ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * AutoCreateToObjProc --
+ * AutoCreateToObj --
  *
  *      Returns the current -autocreate value as a string.
  *
@@ -1672,7 +1735,7 @@ ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-AutoCreateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+AutoCreateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                      char *widgRec, int offset, int flags)      
 {
     int mask = *(int *)(widgRec + offset);
@@ -1712,14 +1775,14 @@ FreeColumnTitleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColumnTitleProc --
+ * ObjToColumnTitle --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                     Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
+ObjToColumnTitle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     Column *colPtr = (Column *)widgRec;
     const char **stringPtr = (const char **)(widgRec + offset);
@@ -1744,7 +1807,7 @@ ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ColumnTitleToObjProc --
+ * ColumnTitleToObj --
  *
  *      Returns the current column title as a string.
  *
@@ -1755,7 +1818,7 @@ ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+ColumnTitleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                      char *widgRec, int offset, int flags)      
 {
     const char *string = *(char **)(widgRec + offset);
@@ -1766,7 +1829,7 @@ ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSortColumnProc --
+ * ObjToSortColumn --
  *
  *      Converts the string, reprsenting a column, to its numeric form.
  *
@@ -1779,8 +1842,8 @@ ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToSortColumn(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     TableView *viewPtr = (TableView *)widgRec;
     Column **colPtrPtr = (Column **)(widgRec + offset);
@@ -1796,7 +1859,7 @@ ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SortColumnToObjProc --
+ * SortColumnToObj --
  *
  * Results:
  *      The string representation of the column is returned.
@@ -1805,7 +1868,7 @@ ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortColumnToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+SortColumnToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                     char *widgRec, int offset, int flags)       
 {
     Column *colPtr = *(Column **)(widgRec + offset);
@@ -1833,7 +1896,7 @@ FreeSortOrderProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSortOrderProc --
+ * ObjToSortOrder --
  *
  *      Converts the string reprsenting a column, to its numeric form.
  *
@@ -1846,8 +1909,8 @@ FreeSortOrderProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
+ObjToSortOrder(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     TableView *viewPtr = (TableView *)widgRec;
     Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
@@ -1882,7 +1945,7 @@ ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SortOrderToObjProc --
+ * SortOrderToObj --
  *
  * Results:
  *      The string representation of the column is returned.
@@ -1891,7 +1954,7 @@ ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+SortOrderToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                    char *widgRec, int offset, int flags)        
 {
     Blt_Chain chain = *(Blt_Chain *)(widgRec + offset);
@@ -1914,7 +1977,7 @@ SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToEnumProc --
+ * ObjToEnum --
  *
  *      Converts the string into its enumerated type.
  *
@@ -1922,8 +1985,8 @@ SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToEnum(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *enumPtr = (int *)(widgRec + offset);
     char c;
@@ -1962,7 +2025,7 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * EnumToObjProc --
+ * EnumToObj --
  *
  *      Returns the string associated with the enumerated type.
  *
@@ -1970,7 +2033,7 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+EnumToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
               char *widgRec, int offset, int flags)     
 {
     int value = *(int *)(widgRec + offset);
@@ -2003,7 +2066,7 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert the names of an icon into a Tk image.
  *
@@ -2016,8 +2079,8 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     TableView *viewPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -2043,7 +2106,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -2054,7 +2117,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
           char *widgRec, int offset, int flags) 
 {
     Icon icon = *(Icon *)(widgRec + offset);
@@ -2084,14 +2147,14 @@ FreeRowTitleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToRowTitleProc --
+ * ObjToRowTitle --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
+ObjToRowTitle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
 {
     Row *rowPtr = (Row *)widgRec;
     const char **stringPtr = (const char **)(widgRec + offset);
@@ -2117,7 +2180,7 @@ ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * RowTitleToObjProc --
+ * RowTitleToObj --
  *
  *      Returns the current row title as a string.
  *
@@ -2128,7 +2191,7 @@ ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+RowTitleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 char *widgRec, int offset, int flags)   
 {
     const char *string = *(char **)(widgRec + offset);
@@ -2139,7 +2202,7 @@ RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToScrollModeProc --
+ * ObjToScrollMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
@@ -2152,8 +2215,8 @@ RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToScrollMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     char c;
     const char *string;
@@ -2179,7 +2242,7 @@ ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ScrollModeToObjProc --
+ * ScrollModeToObj --
  *
  * Results:
  *      The string representation of the scroll mode is returned.
@@ -2188,7 +2251,7 @@ ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+ScrollModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
                     char *widgRec, int offset, int flags)       
 {
     int mode = *(int *)(widgRec + offset);
@@ -2208,7 +2271,7 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSelectModeProc --
+ * ObjToSelectMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
@@ -2221,8 +2284,8 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
+ObjToSelectMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     const char *string;
     char c;
@@ -2231,15 +2294,15 @@ ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
-    if ((c == 's') && (strncmp(string, "single", length) == 0)) {
+    if ((c == 's') && (strncmp(string, "singlerow", length) == 0)) {
         *modePtr = SELECT_SINGLE_ROW;
-    } else if ((c == 'm') && (strncmp(string, "multiple", length) == 0)) {
+    } else if ((c == 'm') && (strncmp(string, "multiplerows", length) == 0)) {
         *modePtr = SELECT_MULTIPLE_ROWS;
     } else if ((c == 'c') && (strncmp(string, "cells", length) == 0)) {
         *modePtr = SELECT_CELLS;
     } else {
         Tcl_AppendResult(interp, "bad select mode \"", string,
-            "\": should be single, multiple, or cells.",(char *)NULL);
+            "\": should be singlerow, multiplerows, or cells.",(char *)NULL);
         return TCL_ERROR;
     }
     return TCL_OK;
@@ -2248,7 +2311,7 @@ ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SelectModeToObjProc --
+ * SelectModeToObj --
  *
  * Results:
  *      The string representation of the select mode is returned.
@@ -2257,16 +2320,16 @@ ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+SelectModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                     char *widgRec, int offset, int flags)       
 {
     int mode = *(int *)(widgRec + offset);
 
     switch (mode) {
     case SELECT_SINGLE_ROW:
-        return Tcl_NewStringObj("single", 6);
+        return Tcl_NewStringObj("singlerow", 9);
     case SELECT_MULTIPLE_ROWS:
-        return Tcl_NewStringObj("multiple", 8);
+        return Tcl_NewStringObj("multiplerows", 12);
     case SELECT_CELLS:
         return Tcl_NewStringObj("cells", 5);
     default:
@@ -2277,7 +2340,7 @@ SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Convert the name of a state into an integer.
  *
@@ -2290,8 +2353,8 @@ SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     int *flagsPtr = (int *)(widgRec + offset);
     const char *string;
@@ -2319,7 +2382,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Converts the state into its string representation.
  *
@@ -2330,7 +2393,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                char *widgRec, int offset, int flags)    
 {
     int state = *(int *)(widgRec + offset);
@@ -2348,7 +2411,7 @@ StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCellStateProc --
+ * ObjToCellState --
  *
  *      Converts the string representing a cell state into a bitflag.
  *
@@ -2360,15 +2423,8 @@ StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToCellStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report
-                                         * results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToCellState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     Cell *cellPtr = (Cell *)widgRec;
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -2408,7 +2464,7 @@ ObjToCellStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * CellStateToObjProc --
+ * CellStateToObj --
  *
  *      Return the name of the style.
  *
@@ -2419,7 +2475,7 @@ ObjToCellStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CellStateToObjProc(
+CellStateToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2463,7 +2519,7 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Convert the name of an icon into a tableview style.
  *
@@ -2476,8 +2532,8 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     CellStyle **stylePtrPtr = (CellStyle **)(widgRec + offset);
     CellStyle *stylePtr;
@@ -2509,7 +2565,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Converts the style into its string representation (its name).
  *
@@ -2520,7 +2576,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                char *widgRec, int offset, int flags)    
 {
     CellStyle *stylePtr = *(CellStyle **)(widgRec + offset);
@@ -2556,7 +2612,7 @@ FreeTableProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTableProc --
+ * ObjToTable --
  *
  *      Convert the string representing the name of a table object into a
  *      table token.
@@ -2570,8 +2626,8 @@ FreeTableProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToTable(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     TableView *viewPtr = (TableView *)widgRec;
     BLT_TABLE *tablePtr = (BLT_TABLE *)(widgRec + offset);
@@ -2593,7 +2649,7 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TableToObjProc --
+ * TableToObj --
  *
  * Results:
  *      The string representation of the table is returned.
@@ -2602,7 +2658,7 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+TableToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
                char *widgRec, int offset, int flags)    
 {
     BLT_TABLE table = *(BLT_TABLE *)(widgRec + offset);
@@ -2620,7 +2676,7 @@ TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTitlesProc --
+ * ObjToTitles --
  *
  *      Converts the string to a titles flag: ROW_TITLES or COLUMN_TITLES. 
  *
@@ -2628,8 +2684,8 @@ TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTitles(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     int *flagsPtr = (int *)(widgRec + offset);
     const char *string;
@@ -2660,7 +2716,7 @@ ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TitlesToObjProc --
+ * TitlesToObj --
  *
  *      Returns the titles flags as a string.
  *
@@ -2671,7 +2727,7 @@ ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+TitlesToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 char *widgRec, int offset, int flags)   
 {
     int titles = *(int *)(widgRec + offset);
@@ -2694,7 +2750,7 @@ TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCachedObjProc --
+ * ObjToCachedObj --
  *
  *      Converts the string to a cached Tcl_Obj. Cacheded Tcl_Obj's are
  *      hashed, reference counted strings.
@@ -2703,8 +2759,8 @@ TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
+ObjToCachedObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     TableView *viewPtr = clientData;
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -2716,7 +2772,7 @@ ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * CachedObjToObjProc --
+ * CachedObjToObj --
  *
  *      Returns the cached Tcl_Obj.
  *
@@ -2727,8 +2783,8 @@ ObjToCachedObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CachedObjToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             char *widgRec, int offset, int flags)      
+CachedObjToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)      
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -3455,7 +3511,6 @@ ComputeColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
         ah = MAX(IconHeight(viewPtr->sort.up), IconHeight(viewPtr->sort.down));
     } else {
         Blt_FontMetrics fm;
-        Blt_Font font;
 
         Blt_Font_GetMetrics(viewPtr->colTitleFont, &fm);
         ah = fm.linespace;
@@ -4313,20 +4368,20 @@ GetCellByIndex(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
         }
         return TCL_OK;
     } else if ((c == 'm') && (strncmp(string, "mark", length) == 0)) {
-        CellSelection *selectPtr = &viewPtr->selectCells;
+        CellSelection *selPtr = &viewPtr->selectCells;
 
-        if (selectPtr->markPtr != NULL) {
-            *cellPtrPtr = GetCell(viewPtr, selectPtr->markPtr->rowPtr,
-                selectPtr->markPtr->colPtr);
+        if (selPtr->markPtr != NULL) {
+            *cellPtrPtr = GetCell(viewPtr, selPtr->markPtr->rowPtr,
+                                  selPtr->markPtr->colPtr);
         }
         return TCL_OK;
     } else if ((c == 'a') && (length > 1) && 
                (strncmp(string, "anchor", length) == 0)) {
-        CellSelection *selectPtr = &viewPtr->selectCells;
+        CellSelection *selPtr = &viewPtr->selectCells;
 
-        if (selectPtr->markPtr != NULL) {
-            *cellPtrPtr = GetCell(viewPtr, selectPtr->anchorPtr->rowPtr,
-                selectPtr->anchorPtr->colPtr);
+        if (selPtr->anchorPtr != NULL) {
+            *cellPtrPtr = GetCell(viewPtr, selPtr->anchorPtr->rowPtr,
+                selPtr->anchorPtr->colPtr);
         }
         return TCL_OK;
     } 
@@ -4622,6 +4677,115 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
         }
     }
     return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectRange --
+ *
+ *      Sets the selection flag for a range of nodes.  The range is
+ *      determined by two pointers which designate the first/last nodes of
+ *      the range.
+ *
+ * Results:
+ *      Always returns TCL_OK.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+AddSelectionRange(TableView *viewPtr)
+{
+    CellSelection *selPtr;
+    Row *rowPtr, *firstRowPtr, *lastRowPtr;
+    Column *firstColPtr, *lastColPtr;
+
+    selPtr = &viewPtr->selectCells;
+    if (selPtr->anchorPtr->rowPtr->index > selPtr->markPtr->rowPtr->index) {
+        lastRowPtr = selPtr->anchorPtr->rowPtr;
+        firstRowPtr = selPtr->markPtr->rowPtr;
+    } else {
+        firstRowPtr = selPtr->anchorPtr->rowPtr;
+        lastRowPtr = selPtr->markPtr->rowPtr;
+    }        
+    if (selPtr->anchorPtr->colPtr->index > selPtr->markPtr->colPtr->index) {
+        lastColPtr = selPtr->anchorPtr->colPtr;
+        firstColPtr = selPtr->markPtr->colPtr;
+    } else {
+        firstColPtr = selPtr->anchorPtr->colPtr;
+        lastColPtr = selPtr->markPtr->colPtr;
+    }        
+    for (rowPtr = firstRowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+        Column *colPtr;
+
+        for (colPtr = firstColPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+            Cell *cellPtr;
+            Blt_HashEntry *hPtr;
+            int isNew;
+
+            cellPtr = GetCell(viewPtr, rowPtr, colPtr);
+            hPtr = Blt_CreateHashEntry(&selPtr->cellTable, cellPtr, &isNew);
+            if (colPtr == lastColPtr) {
+                break;
+            }
+        }
+        if (rowPtr == lastRowPtr) {
+            break;
+        }
+    }
+    selPtr->markPtr = selPtr->anchorPtr = NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetSelectedCells --
+ *
+ *      Sets the selection flag for a range of nodes.  The range is
+ *      determined by two pointers which designate the first/last nodes of
+ *      the range.
+ *
+ * Results:
+ *      Always returns TCL_OK.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+GetSelectedCells(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
+{
+    Row *minRowPtr, *maxRowPtr;
+    Column *minColPtr, *maxColPtr;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    CellSelection *selPtr;
+
+    selPtr = &viewPtr->selectCells;
+    minRowPtr = maxRowPtr = NULL;
+    minColPtr = maxColPtr = NULL;
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->selectCells.cellTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        Cell *cellPtr;
+        CellKey *keyPtr;
+
+        cellPtr = (Cell *)Blt_GetHashKey(&viewPtr->selectCells.cellTable, hPtr);
+        keyPtr = GetKey(cellPtr);
+        if ((minRowPtr == NULL) || (minRowPtr->index > keyPtr->rowPtr->index)){
+            minRowPtr = keyPtr->rowPtr;
+        } 
+        if ((maxRowPtr == NULL) || (maxRowPtr->index < keyPtr->rowPtr->index)){
+            maxRowPtr = keyPtr->rowPtr;
+        } 
+        if ((minColPtr == NULL) || (minColPtr->index > keyPtr->colPtr->index)){
+            minColPtr = keyPtr->colPtr;
+        } 
+        if ((maxColPtr == NULL) || (maxColPtr->index < keyPtr->colPtr->index)){
+            maxColPtr = keyPtr->colPtr;
+        } 
+    }        
+    anchorPtr->rowPtr = minRowPtr;
+    anchorPtr->colPtr = minColPtr;
+    markPtr->rowPtr = maxRowPtr;
+    markPtr->colPtr = maxColPtr;
 }
 
 static void
@@ -5094,6 +5258,7 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
      * icons.  The styles may be using icons. */
     DestroyStyles(viewPtr);
     DestroyIcons(viewPtr);
+    Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
     Blt_Chain_Destroy(viewPtr->selectRows.list);
     Blt_DeleteHashTable(&viewPtr->cellTable);
     Blt_DeleteHashTable(&viewPtr->rowTable);
@@ -5311,45 +5476,53 @@ SelectionProc(
      * Retrieve the names of the selected entries.
      */
     Tcl_DStringInit(&ds);
+    memset(&writer, 0, sizeof(CsvWriter));
     writer.dsPtr = &ds;
     writer.length = 0;
     writer.count = 0;
-    if (viewPtr->selectMode == SELECT_CELLS) {
-        Row *rowPtr;
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        {
+            Row *rowPtr;
+            CellKey anchor, mark;
 
-        for (rowPtr = viewPtr->selectCells.anchorPtr->rowPtr; rowPtr != NULL;
-             rowPtr = rowPtr->nextPtr) {
-            Column *colPtr;
+            GetSelectedCells(viewPtr, &anchor, &mark);
+            
+            for (rowPtr = anchor.rowPtr; rowPtr != NULL; 
+                 rowPtr = rowPtr->nextPtr) {
+                Column *colPtr;
 
-            CsvStartRecord(&writer);
-            for (colPtr = viewPtr->selectCells.anchorPtr->colPtr; 
-                 colPtr != NULL; colPtr = colPtr->nextPtr) {
-                CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
-                if (colPtr == viewPtr->selectCells.markPtr->colPtr) {
+                CsvStartRecord(&writer);
+                for (colPtr = anchor.colPtr; colPtr != NULL; 
+                     colPtr = colPtr->nextPtr) {
+                    CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
+                    if (colPtr == mark.colPtr) {
+                        break;
+                    }
+                }
+                CsvEndRecord(&writer);
+                if (rowPtr == mark.rowPtr) {
                     break;
                 }
-
-            }
-            CsvEndRecord(&writer);
-            if (rowPtr == viewPtr->selectCells.markPtr->rowPtr) {
-                break;
             }
         }
-    } else {
+        break;
+
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
         if (viewPtr->flags & SELECT_SORTED) {
             Blt_ChainLink link;
-
             
             for (link = Blt_Chain_FirstLink(viewPtr->selectRows.list); 
                  link != NULL; link = Blt_Chain_NextLink(link)) {
                 Row *rowPtr;
-
+                
                 rowPtr = Blt_Chain_GetValue(link);
                 CsvAppendRow(&writer, viewPtr, rowPtr);
             }
         } else {
             Row *rowPtr;
-
+            
             for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL; 
                  rowPtr = rowPtr->nextPtr) {
                 if (rowPtr->flags & SELECTED) {
@@ -5726,7 +5899,8 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
                              aw, ah, filterPtr->borderWidth, relief);
         aw -= 2 * filterPtr->borderWidth;
         ax += filterPtr->borderWidth;
-        if ((aw > 0) && (ah > 0)) {
+        if ((ax <= Tk_Width(viewPtr->tkwin)) &&
+             (ay <= Tk_Height(viewPtr->tkwin)) && (aw > 0) && (ah > 0)) {
             Blt_Picture picture;
 
             picture = GetFilterArrowPicture(filterPtr, aw, ah, fg);
@@ -7147,11 +7321,8 @@ CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cell *cellPtr;
     CellKey *keyPtr;
-    Column *colPtr;
-    Row *rowPtr;
     TableView *viewPtr = clientData;
-    long x, y;
-    int viewWidth, viewHeight;
+    long xOffset, yOffset;
 
     if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -7160,35 +7331,14 @@ CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    viewWidth = VPORTWIDTH(viewPtr);
-    viewHeight = VPORTHEIGHT(viewPtr);
-    y = viewPtr->yOffset;
-    x = viewPtr->xOffset;
-    if (rowPtr->worldY < y) {
-        y = rowPtr->worldY;
-    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
-        y = rowPtr->worldY + rowPtr->height - viewHeight;
-    }
-    if ((colPtr->worldX < x) ||
-        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
-        /* Column starts before the viewport or the column ends after
-         * the viewport. Move the start of the column into the viewport. */
-        x = colPtr->worldX;             
-    } 
-    if (x < 0) {
-        x = 0;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (x != viewPtr->xOffset) {
-        viewPtr->xOffset = x;
+    yOffset = GetRowYOffset(viewPtr, keyPtr->rowPtr);
+    xOffset = GetColumnXOffset(viewPtr, keyPtr->colPtr);
+    if (xOffset != viewPtr->xOffset) {
+        viewPtr->xOffset = xOffset;
         viewPtr->flags |= SCROLLX;
     }
-    if (y != viewPtr->yOffset) {
-        viewPtr->yOffset = y;
+    if (yOffset != viewPtr->yOffset) {
+        viewPtr->yOffset = yOffset;
         viewPtr->flags |= SCROLLY;
     }
     EventuallyRedraw(viewPtr);
@@ -7396,24 +7546,32 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (viewPtr->selectMode == SELECT_CELLS) {
-        Tcl_Obj *objPtr;
-        Row *rowPtr;
-        Column *colPtr;
-        
-        rowPtr = viewPtr->selectCells.anchorPtr->rowPtr;
-        objPtr = GetRowIndexObj(viewPtr, rowPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        colPtr = viewPtr->selectCells.anchorPtr->colPtr;
-        objPtr = GetColumnIndexObj(viewPtr, colPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        rowPtr = viewPtr->selectCells.markPtr->rowPtr;
-        objPtr = GetRowIndexObj(viewPtr, rowPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        colPtr = viewPtr->selectCells.markPtr->colPtr;
-        objPtr = GetColumnIndexObj(viewPtr, colPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    } else {
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch iter;
+            CellSelection *selPtr = &viewPtr->selectCells;
+
+            for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
+                 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+                Cell *cellPtr;
+                CellKey *keyPtr;
+                Tcl_Obj *objPtr, *subListObjPtr;
+                
+                cellPtr = Blt_GetHashValue(hPtr);
+                keyPtr = GetKey(cellPtr);
+                subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+                objPtr = GetRowIndexObj(viewPtr, keyPtr->rowPtr);
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+                objPtr = GetColumnIndexObj(viewPtr, keyPtr->colPtr);
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+                Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+            }
+        }
+        break;
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
         if (viewPtr->flags & SELECT_SORTED) {
             Blt_ChainLink link;
             
@@ -7449,7 +7607,7 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnActivateOp --
  *
- *      Selects the button to appear active.
+ *      Sets the button to appear active.
  *
  *      pathName column activate ?col?
  *
@@ -7638,7 +7796,7 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnDeactivateOp --
  *
- *      Selects the column to appear normally.
+ *      Sets the column to appear normally.
  *
  *      pathName column deactivate
  *
@@ -8289,9 +8447,7 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
 
-    if (objc == 4) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
-    } else {
+    if (objc == 5) { 
         int y;
 
         if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
@@ -8300,6 +8456,7 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         viewPtr->colResizeAnchor = y;
         UpdateColumnMark(viewPtr, y);
     }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
     return TCL_OK;
 }
 
@@ -8345,9 +8502,7 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
 
-    if (objc == 4) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
-    } else {
+    if (objc == 5) { 
         int y;
 
         if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
@@ -8355,6 +8510,7 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         } 
         UpdateColumnMark(viewPtr, y);
     }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
     return TCL_OK;
 }
 
@@ -8471,8 +8627,7 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Column *colPtr;
     TableView *viewPtr = clientData;
-    long x;
-    int viewWidth;
+    long xOffset;
 
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -8482,19 +8637,9 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_GetString(objv[3])); 
         return TCL_OK;
     }
-    x = viewPtr->xOffset;
-    viewWidth = VPORTWIDTH(viewPtr);
-    if ((colPtr->worldX < x) ||
-        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
-        /* Column starts before the viewport or the column ends after
-         * the viewport. Move the start of the column into the viewport. */
-        x = colPtr->worldX;             
-    } 
-    if (x < 0) {
-        x = 0;
-    }
-    if (x != viewPtr->xOffset) {
-        viewPtr->xOffset = x;
+    xOffset = GetColumnXOffset(viewPtr, colPtr);
+    if (xOffset != viewPtr->xOffset) {
+        viewPtr->xOffset = xOffset;
         viewPtr->flags |= SCROLLX;
         EventuallyRedraw(viewPtr);
     }
@@ -8749,7 +8894,7 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
  *
  * FilterActivateOp --
  *
- *      Selects the filter to appear active.
+ *      Sets the filter to appear active.
  *
  *      pathName filter activate ?col?
  *
@@ -8854,7 +8999,7 @@ FilterConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterDeactivateOp --
  *
- *      Selects the filter to appear normally.
+ *      Sets the filter to appear normally.
  *
  *      pathName filter deactivate
  *
@@ -9591,7 +9736,7 @@ IsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowActivateOp --
  *
- *      Selects the button to appear active.
+ *      Sets the button to appear active.
  *
  *      pathName row activate row
  *
@@ -10317,13 +10462,17 @@ RowResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
                   Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    int y;
 
-    if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
-        return TCL_ERROR;
-    } 
-    viewPtr->rowResizeAnchor = y;
-    UpdateRowMark(viewPtr, y);
+    if (objc == 5) { 
+        int y;
+
+        if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
+            return TCL_ERROR;
+        } 
+        viewPtr->rowResizeAnchor = y;
+        UpdateRowMark(viewPtr, y);
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->rowResizeAnchor);
     return TCL_OK;
 }
 
@@ -10370,36 +10519,46 @@ RowResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     int y;
 
-    if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
-        return TCL_ERROR;
-    } 
-    UpdateRowMark(viewPtr, y);
+    if (objc == 5) {
+        if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
+            return TCL_ERROR;
+        } 
+        UpdateRowMark(viewPtr, y);
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->rowResizeMark);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * RowResizeCurrentOp --
+ * RowResizeSetOp --
  *
- *      Returns the new width of the row including the resize delta.
+ *      Sets the nominal height of the column currently being resized.
+ *
+ *      pathName row resize set
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-RowResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                   Tcl_Obj *const *objv)
+RowResizeSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-
+    Row *rowPtr;
+    
     UpdateRowMark(viewPtr, viewPtr->rowResizeMark);
-    if (viewPtr->rowResizePtr != NULL) {
-        int height, delta;
+    rowPtr = viewPtr->rowResizePtr;
+    if (rowPtr != NULL) {
+        int dy;
 
-        delta = (viewPtr->rowResizeMark - viewPtr->rowResizeAnchor);
-        height = viewPtr->rowResizePtr->height + delta;
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), height);
+        dy = (viewPtr->rowResizeMark - viewPtr->rowResizeAnchor);
+        rowPtr->reqHeight.nom = rowPtr->height + dy;
+        rowPtr->reqHeight.flags |= LIMITS_SET_NOM;
+        viewPtr->rowResizeAnchor = viewPtr->rowResizeMark;
+        viewPtr->flags |= LAYOUT_PENDING;
+        EventuallyRedraw(viewPtr);
     }
     return TCL_OK;
 }
@@ -10407,10 +10566,10 @@ RowResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec rowResizeOps[] =
 { 
     {"activate",   2, RowResizeActivateOp,   5, 5, "row"},
-    {"anchor",     2, RowResizeAnchorOp,     5, 5, "x"},
-    {"current",    1, RowResizeCurrentOp,    4, 4, "",},
+    {"anchor",     2, RowResizeAnchorOp,     4, 5, "?y?"},
     {"deactivate", 1, RowResizeDeactivateOp, 4, 4, ""},
-    {"mark",       1, RowResizeMarkOp,       5, 5, "x"},
+    {"mark",       1, RowResizeMarkOp,       4, 5, "?y?"},
+    {"set",        1, RowResizeSetOp,        4, 4, "",},
 };
 
 static int numRowResizeOps = sizeof(rowResizeOps) / sizeof(Blt_OpSpec);
@@ -10454,7 +10613,7 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Row *rowPtr;
     TableView *viewPtr = clientData;
-    long y, viewHeight;
+    long yOffset;
 
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -10462,18 +10621,9 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (rowPtr == NULL) {
         return TCL_OK;
     }
-    viewHeight = VPORTHEIGHT(viewPtr);
-    y = viewPtr->yOffset;
-    if (rowPtr->worldY < y) {
-        y = rowPtr->worldY;
-    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
-        y = rowPtr->worldY + rowPtr->height - viewHeight;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (y != viewPtr->yOffset) {
-        viewPtr->yOffset = y;
+    yOffset = GetRowYOffset(viewPtr, rowPtr);
+    if (yOffset != viewPtr->yOffset) {
+        viewPtr->yOffset = yOffset;
         viewPtr->flags |= SCROLLY;
         EventuallyRedraw(viewPtr);
     }
@@ -10612,11 +10762,8 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     CellKey *keyPtr;
-    Column *colPtr;
-    Row *rowPtr;
     TableView *viewPtr = clientData;
-    long x, y;
-    int viewWidth, viewHeight;
+    long xOffset, yOffset;
 
     if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -10625,35 +10772,14 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return TCL_OK;
     }
     keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    viewWidth = VPORTWIDTH(viewPtr);
-    viewHeight = VPORTHEIGHT(viewPtr);
-    y = viewPtr->yOffset;
-    x = viewPtr->xOffset;
-    if (rowPtr->worldY < y) {
-        y = rowPtr->worldY;
-    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
-        y = rowPtr->worldY + rowPtr->height - viewHeight;
-    }
-    if ((colPtr->worldX < x) ||
-        ((colPtr->worldX + colPtr->width) >= (x + viewWidth))) {
-        /* Column starts before the viewport or the column ends after
-         * the viewport. Move the start of the column into the viewport. */
-        x = colPtr->worldX;             
-    } 
-    if (x < 0) {
-        x = 0;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (x != viewPtr->xOffset) {
-        viewPtr->xOffset = x;
+    yOffset = GetRowYOffset(viewPtr, keyPtr->rowPtr);
+    xOffset = GetColumnXOffset(viewPtr, keyPtr->colPtr);
+    if (xOffset != viewPtr->xOffset) {
+        viewPtr->xOffset = xOffset;
         viewPtr->flags |= SCROLLX;
     }
-    if (y != viewPtr->yOffset) {
-        viewPtr->yOffset = y;
+    if (yOffset != viewPtr->yOffset) {
+        viewPtr->yOffset = yOffset;
         viewPtr->flags |= SCROLLY;
     }
     EventuallyRedraw(viewPtr);
@@ -10697,12 +10823,12 @@ SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     keyPtr = GetKey(cellPtr);
     if (viewPtr->selectMode == SELECT_CELLS) {
-        CellSelection *selectPtr;
+        CellSelection *selPtr;
 
-        selectPtr = &viewPtr->selectCells;
+        selPtr = &viewPtr->selectCells;
         /* Set both the selection anchor and the mark. This indicates that a
          * single cell is selected. */
-        selectPtr->markPtr = selectPtr->anchorPtr = keyPtr;
+        selPtr->markPtr = selPtr->anchorPtr = keyPtr;
     } else {
         RowSelection *selectPtr;
 
@@ -10747,6 +10873,44 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * SelectionExportOp
+ *
+ *      Exports the current selection.  It is not an error if not selection
+ *      is present.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection is exported.
+ *
+ *      pathName selection export
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    int state;
+
+    if (viewPtr->selectMode == SELECT_CELLS) {
+        state = (viewPtr->selectCells.cellTable.numEntries > 0);
+    } else {
+        state = (Blt_Chain_GetLength(viewPtr->selectRows.list) > 0);
+    }
+    if (state) {
+        Tk_OwnSelection(viewPtr->tkwin, XA_PRIMARY, LostSelection, viewPtr);
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SelectionIncludesOp
  *
  *      Returns 1 if the element indicated by index is currently
@@ -10787,12 +10951,10 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     rowPtr = keyPtr->rowPtr;
     if (viewPtr->selectMode == SELECT_CELLS) {
         if (((rowPtr->flags|colPtr->flags) & (HIDDEN | DISABLED)) == 0) {
-            CellSelection *selectPtr = &viewPtr->selectCells;
-            
-            if ((selectPtr->anchorPtr->rowPtr->index <= rowPtr->index) &&
-                (selectPtr->anchorPtr->colPtr->index <= rowPtr->index) &&
-                (selectPtr->markPtr->rowPtr->index >= rowPtr->index) &&
-                (selectPtr->markPtr->colPtr->index >= rowPtr->index)) {
+            Blt_HashEntry *hPtr;
+
+            hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, cellPtr);
+            if (hPtr != NULL) {
                 state = TRUE;
             }
         }
@@ -10840,14 +11002,15 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     if (viewPtr->selectMode == SELECT_CELLS) {
-        CellSelection *selectPtr;
+        CellSelection *selPtr = &viewPtr->selectCells;
         
-        selectPtr = &viewPtr->selectCells;
-        if (selectPtr->anchorPtr == NULL) {
+        if (selPtr->anchorPtr == NULL) {
             fprintf(stderr, "cell selection anchor must be set first\n");
             return TCL_OK;
         }
-        selectPtr->markPtr = GetKey(cellPtr);
+        selPtr->markPtr = GetKey(cellPtr);
+        selPtr->flags &= ~SELECT_MASK;
+        selPtr->flags |= SELECT_SET;
     } else {
         RowSelection *selectPtr;
         Row *rowPtr;
@@ -10913,7 +11076,7 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int state;
 
     if (viewPtr->selectMode == SELECT_CELLS) {
-        state = (viewPtr->selectCells.anchorPtr != NULL);
+        state = (viewPtr->selectCells.cellTable.numEntries > 0);
     } else {
         state = (Blt_Chain_GetLength(viewPtr->selectRows.list) > 0);
     }
@@ -10989,15 +11152,21 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (viewPtr->selectMode == SELECT_CELLS) {
-        CellSelection *selectPtr = &viewPtr->selectCells;
+        CellSelection *selPtr = &viewPtr->selectCells;
         const char *string;
 
+        selPtr->flags &= ~SELECT_MASK;
         string = Tcl_GetString(objv[2]);
-        if (strcmp(string, "set") != 0) {
-            anchorPtr = markPtr = NULL;
+        switch (string[0]) {
+        case 's':
+            selPtr->flags |= SELECT_SET;     break;
+        case 'c':
+            selPtr->flags |= SELECT_CLEAR;   break;
+        case 't':
+            selPtr->flags |= SELECT_TOGGLE;   break;
         }
-        selectPtr->anchorPtr = anchorPtr;
-        selectPtr->markPtr = markPtr;
+        selPtr->markPtr = markPtr;
+        AddSelectionRange(viewPtr);
     } else {
         RowSelection *selectPtr = &viewPtr->selectRows;
         const char *string;
@@ -11048,14 +11217,15 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec selectionOps[] =
 {
-    {"anchor",   1, SelectionAnchorOp,   4, 4, "cell",},
-    {"clear",    5, SelectionSetOp,      4, 5, "cell ?cell?",},
+    {"anchor",   1, SelectionAnchorOp,   4, 4, "cellName",},
+    {"clear",    5, SelectionSetOp,      4, 5, "cellName ?cellName?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
-    {"includes", 1, SelectionIncludesOp, 4, 4, "cell",},
-    {"mark",     1, SelectionMarkOp,     4, 4, "cell",},
+    {"export",   1, SelectionExportOp,   3, 3, "",},
+    {"includes", 1, SelectionIncludesOp, 4, 4, "cellName",},
+    {"mark",     1, SelectionMarkOp,     4, 4, "cellName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
-    {"set",      1, SelectionSetOp,      4, 5, "cell ?cell?",},
-    {"toggle",   1, SelectionSetOp,      4, 5, "cell ?cell?",},
+    {"set",      1, SelectionSetOp,      4, 5, "cellName ?cellName?",},
+    {"toggle",   1, SelectionSetOp,      4, 5, "cellName ?cellName?",},
 };
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
@@ -13072,7 +13242,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->filter.activeRelief = TK_RELIEF_RAISED;
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
         TableViewPickProc, AppendTagsProc);
-    Blt_InitHashTableWithPool(&viewPtr->cellTable, sizeof(CellKey)/sizeof(int));
+    Blt_InitHashTableWithPool(&viewPtr->cellTable, sizeof(CellKey));
     Blt_InitHashTableWithPool(&viewPtr->rowTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->iconTable, BLT_STRING_KEYS);
@@ -13081,7 +13251,8 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&viewPtr->colBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cellBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
-
+    Blt_InitHashTableWithPool(&viewPtr->selectCells.cellTable, 
+                              BLT_ONE_WORD_KEYS);
     viewPtr->rowPool    = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->columnPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->cellPool   = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);

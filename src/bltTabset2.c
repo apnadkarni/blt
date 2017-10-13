@@ -1,6 +1,6 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- * bltTabset.c --
+ * bltTabset2.c --
  *
  * This module implements a tabnotebook widget for the BLT toolkit.
  *
@@ -69,7 +69,7 @@
 #include "bltInitCmd.h"
 #include "bltTags.h"
 
-#define DEBUG0                  1
+#define DEBUG0                  0
 #define DEBUG1                  0
 #define DEBUG2                  0
 
@@ -250,14 +250,16 @@ enum ShowTabs {
 #define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
 
-#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND        "red2"
-#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND        RGB_WHITE
-#define DEF_CLOSEBUTTON_ACTIVERELIEF            "raised"
-#define DEF_CLOSEBUTTON_BACKGROUND              RGB_GREY70
-#define DEF_CLOSEBUTTON_BORDERWIDTH             "0"
+#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND "#EE5F5F"
+#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND RGB_WHITE
+#define DEF_CLOSEBUTTON_ACTIVERELIEF    "raised"
+#define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
+#define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
 #define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND              RGB_GREY95
+#define DEF_CLOSEBUTTON_FOREGROUND      RGB_GREY50
 #define DEF_CLOSEBUTTON_RELIEF          "flat"
+#define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
+#define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -374,6 +376,10 @@ typedef struct _Button {
                                          * when the button is active. */
     XColor *activeBgColor;              /* Background color of the button
                                          * when the button is active. */
+    XColor *selFg;                      /* Foreground color of the button
+                                         * when the button is selected. */
+    XColor *selBgColor;                 /* Background color of the button
+                                         * when the button is selected. */
     Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the the
                                          * button is invoked. */
     Blt_Picture normal0;                /* Contains the image to be displayed
@@ -709,19 +715,19 @@ struct _Tabset {
 };
 
 
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc  FreeIconProc;
-static Blt_OptionParseProc ObjToChildProc;
-static Blt_OptionPrintProc ChildToObjProc;
-static Blt_OptionParseProc ObjToSlantProc;
-static Blt_OptionPrintProc SlantToObjProc;
-static Blt_OptionParseProc ObjToTabWidthProc;
-static Blt_OptionPrintProc TabWidthToObjProc;
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
-static Blt_OptionParseProc ObjToShowTabsProc;
-static Blt_OptionPrintProc ShowTabsToObjProc;
+static Blt_OptionParseProc ObjToChild;
+static Blt_OptionPrintProc ChildToObj;
+static Blt_OptionParseProc ObjToSlant;
+static Blt_OptionPrintProc SlantToObj;
+static Blt_OptionParseProc ObjToTabWidth;
+static Blt_OptionPrintProc TabWidthToObj;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
+static Blt_OptionParseProc ObjToShowTabs;
+static Blt_OptionPrintProc ShowTabsToObj;
 
 /*
  * Contains a pointer to the widget that's currently being configured.  This
@@ -729,49 +735,56 @@ static Blt_OptionPrintProc ShowTabsToObjProc;
  */
 
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, (ClientData)0,
+    ObjToIcon, IconToObj, FreeIconProc, (ClientData)0,
 };
 
 static Blt_CustomOption childOption = {
-    ObjToChildProc, ChildToObjProc, NULL, (ClientData)0,
+    ObjToChild, ChildToObj, NULL, (ClientData)0,
 };
 
 static Blt_CustomOption slantOption = {
-    ObjToSlantProc, SlantToObjProc, NULL, (ClientData)0,
+    ObjToSlant, SlantToObj, NULL, (ClientData)0,
 };
 
 static Blt_CustomOption tabWidthOption = {
-    ObjToTabWidthProc, TabWidthToObjProc, NULL, (ClientData)0,
+    ObjToTabWidth, TabWidthToObj, NULL, (ClientData)0,
 };
 
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
 static Blt_CustomOption showTabsOption = {
-    ObjToShowTabsProc, ShowTabsToObjProc, NULL, (ClientData)0
+    ObjToShowTabs, ShowTabsToObj, NULL, (ClientData)0
 };
 
 static Blt_ConfigSpec buttonSpecs[] =
 {
-    {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
+    {BLT_CONFIG_COLOR, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
         Blt_Offset(Button, activeBgColor), 0},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
         Blt_Offset(Button, activeFg), 0},
-    {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
+    {BLT_CONFIG_COLOR, "-background", "background", "Background", 
         DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
         DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
         DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_CLOSEBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
+    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackground", 
+        "SelectBackground", DEF_CLOSEBUTTON_SELECTBACKGROUND, 
+        Blt_Offset(Button, selBgColor), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
+        "SelectForeground", DEF_CLOSEBUTTON_SELECTFOREGROUND, 
+        Blt_Offset(Button, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -788,7 +801,7 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Tab, bg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
         DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_BUTTON},
@@ -801,13 +814,13 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
         DEF_TAB_DELETE_COMMAND, Blt_Offset(Tab, deleteCmdObjPtr),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_TAB_FILL, 
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
         Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", (char *)NULL, 
-        Blt_Offset(Tab, font), 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TAB_FONT, 
+        Blt_Offset(Tab, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_TAB_IMAGE, 
         Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
@@ -858,8 +871,8 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Tabset, defStyle.activeFg), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Tabset, defStyle.bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Tabset, defStyle.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -873,12 +886,11 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_DASHES, 
         Blt_Offset(Tabset, defStyle.dashes), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
-    {BLT_CONFIG_FONT, "-font", "font", "Font",
-        DEF_FONT, Blt_Offset(Tabset, defStyle.font), 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
+        Blt_Offset(Tabset, defStyle.font), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
         Blt_Offset(Tabset, gap), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
@@ -1283,7 +1295,7 @@ DestroyTearoff(Tab *tabPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Converts an image name into a Tk image token.
  *
@@ -1296,15 +1308,8 @@ DestroyTearoff(Tab *tabPtr)
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(
-    ClientData clientData,      /* Contains a pointer to the tabset containing
-                                 * this image. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Window associated with the tabset. */
-    Tcl_Obj *objPtr,            /* String representation */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Tabset *setPtr = clientData;
     Icon *iconPtr = (Icon *) (widgRec + offset);
@@ -1339,13 +1344,8 @@ ObjToIconProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(
-    ClientData clientData,      /* Pointer to tabset containing image. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Tabset *setPtr = clientData;
     Icon *iconPtr = (Icon *) (widgRec + offset);
@@ -1365,7 +1365,7 @@ IconToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSlantProc --
+ * ObjToSlant --
  *
  *      Converts the slant style string into its numeric representation.
  *
@@ -1380,15 +1380,8 @@ IconToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToSlantProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of
-                                         * attribute. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToSlant(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     const char *string;
     char c;
@@ -1420,7 +1413,7 @@ ObjToSlantProc(
 /*
  *---------------------------------------------------------------------------
  *
- * SlantToObjProc --
+ * SlantToObj --
  *
  *      Returns the slant style string based upon the slant flags.
  *
@@ -1431,13 +1424,8 @@ ObjToSlantProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SlantToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget structure record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+SlantToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     int slant = *(int *)(widgRec + offset);
     const char *string;
@@ -1455,7 +1443,7 @@ SlantToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToChildProc --
+ * ObjToChild --
  *
  *      Converts a window name into Tk window.
  *
@@ -1468,31 +1456,26 @@ SlantToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToChildProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window parent,                   /* Parent window */
-    Tcl_Obj *objPtr,                    /* String representation. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToChild(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Tab *tabPtr = (Tab *)widgRec;
-    Tk_Window *tkwinPtr = (Tk_Window *)(widgRec + offset);
-    Tk_Window old, tkwin;
+    Tk_Window *childPtr = (Tk_Window *)(widgRec + offset);
+    Tk_Window old, child, parent;
     Tabset *setPtr;
     const char *string;
 
-    old = *tkwinPtr;
-    tkwin = NULL;
+    parent = tkwin;
+    old = *childPtr;
+    child = NULL;
     setPtr = tabPtr->setPtr;
     string = Tcl_GetString(objPtr);
     if (string[0] != '\0') {
-        tkwin = Tk_NameToWindow(interp, string, parent);
-        if (tkwin == NULL) {
+        child = Tk_NameToWindow(interp, string, parent);
+        if (child == NULL) {
             return TCL_ERROR;
         }
-        if (tkwin == old) {
+        if (child == old) {
             return TCL_OK;
         }
         /*
@@ -1501,15 +1484,15 @@ ObjToChildProc(
          * based upon its parent; either it's the tabset window or it has
          * been torn off.
          */
-        parent = Tk_Parent(tkwin);
+        parent = Tk_Parent(child);
         if (parent != setPtr->tkwin) {
-            Tcl_AppendResult(interp, "can't manage \"", Tk_PathName(tkwin),
+            Tcl_AppendResult(interp, "can't manage \"", Tk_PathName(child),
                 "\" in tabset \"", Tk_PathName(setPtr->tkwin), "\"",
                 (char *)NULL);
             return TCL_ERROR;
         }
-        Tk_ManageGeometry(tkwin, &tabMgrInfo, tabPtr);
-        Tk_CreateEventHandler(tkwin, StructureNotifyMask, 
+        Tk_ManageGeometry(child, &tabMgrInfo, tabPtr);
+        Tk_CreateEventHandler(child, StructureNotifyMask, 
                 EmbeddedWidgetEventProc, tabPtr);
 
         /*
@@ -1518,7 +1501,7 @@ ObjToChildProc(
          * the container and the its new child (this window) gets tricky.
          * This should work for Tk 4.2.
          */
-        Tk_MakeWindowExist(tkwin);
+        Tk_MakeWindowExist(child);
     }
     if (old != NULL) {
         if (tabPtr->container != NULL) {
@@ -1529,14 +1512,14 @@ ObjToChildProc(
         Tk_ManageGeometry(old, (Tk_GeomMgr *) NULL, tabPtr);
         Tk_UnmapWindow(old);
     }
-    *tkwinPtr = tkwin;
+    *childPtr = child;
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ChildToObjProc --
+ * ChildToObj --
  *
  *      Converts the Tk window back to a Tcl_Obj (i.e. its name).
  *
@@ -1547,21 +1530,16 @@ ObjToChildProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ChildToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window parent,                   /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ChildToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
-    Tk_Window tkwin = *(Tk_Window *)(widgRec + offset);
+    Tk_Window child = *(Tk_Window *)(widgRec + offset);
     Tcl_Obj *objPtr;
 
-    if (tkwin == NULL) {
+    if (child == NULL) {
         objPtr = Tcl_NewStringObj("", -1);
     } else {
-        objPtr = Tcl_NewStringObj(Tk_PathName(tkwin), -1);
+        objPtr = Tcl_NewStringObj(Tk_PathName(child), -1);
     }
     return objPtr;
 }
@@ -1569,7 +1547,7 @@ ChildToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTabWidthProc --
+ * ObjToTabWidth --
  *
  *      Converts the tab width style string into its numeric representation.
  *
@@ -1583,15 +1561,8 @@ ChildToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTabWidthProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation of
-                                         * attribute. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTabWidth(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     const char *string;
     char c;
@@ -1614,7 +1585,7 @@ ObjToTabWidthProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TabWidthToObjProc --
+ * TabWidthToObj --
  *
  *      Returns the tabwidth string based upon the tabwidth.
  *
@@ -1625,13 +1596,8 @@ ObjToTabWidthProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TabWidthToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget structure record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TabWidthToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     int width = *(int *)(widgRec + offset);
 
@@ -1648,7 +1614,7 @@ TabWidthToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Convert the string representation of an tab state into a flag.
  *
@@ -1660,14 +1626,8 @@ TabWidthToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Tab *tabPtr = (Tab *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -1711,7 +1671,7 @@ ObjToStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -1722,13 +1682,8 @@ ObjToStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -1748,7 +1703,7 @@ StateToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToShowTabsProc --
+ * ObjToShowTabs --
  *
  *      Convert the string representation of a flag indicating whether or
  *      not to show tabs.
@@ -1761,14 +1716,8 @@ StateToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToShowTabsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToShowTabs(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *valuePtr = (unsigned int *)(widgRec + offset);
     const char *string;
@@ -1795,7 +1744,7 @@ ObjToShowTabsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ShowTabsToObjProc --
+ * ShowTabsToObj --
  *
  *      Return the name of the show tabs value.
  *
@@ -1806,13 +1755,8 @@ ObjToShowTabsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ShowTabsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ShowTabsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     unsigned int value = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;

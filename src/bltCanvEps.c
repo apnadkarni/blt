@@ -278,7 +278,7 @@ static Tk_ConfigSpec configSpecs[] =
     {TK_CONFIG_ANCHOR, (char *)"-anchor", (char *)NULL, (char *)NULL,
         DEF_ANCHOR, Blt_Offset(EpsItem, anchor),
         TK_CONFIG_DONT_SET_DEFAULT},
-    {TK_CONFIG_SYNONYM, (char *)"-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-bd", "borderWidth"},
     {TK_CONFIG_CUSTOM, (char *)"-borderwidth", "borderWidth", (char *)NULL,
         DEF_BORDERWIDTH, Blt_Offset(EpsItem, borderWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},

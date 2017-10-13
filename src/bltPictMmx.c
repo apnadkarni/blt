@@ -1281,7 +1281,7 @@ UnassociateColors(Pict *srcPtr)         /* (in/out) picture */
     mask.Alpha = 0xFF;
     asm volatile (
         /* Generate constants needed below. */
-        "pxor   %%mm6, %%mm6      # mm6 = 0\n\t"
+        "pxor %%mm6, %%mm6      # mm6 = 0\n\t"
         "pcmpeqw %%mm5, %%mm5   # mm5 = -1 \n\t"
         "psubw %%mm6, %%mm5     # mm5 = 1,1,1,1\n\t"
         "movd %0, %%mm4         # mm4 = mask\n\t" 
@@ -1419,7 +1419,7 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyPictures --
+ * CopyPictureBits --
  *
  *      Creates a copy of the given picture using SSE xmm registers.
  *      Pictures are guaranteed to be quadword aligned (16 bytes).  The
@@ -1435,7 +1435,7 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyPictures(Pict *destPtr, Pict *srcPtr)
+CopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
@@ -1448,7 +1448,7 @@ CopyPictures(Pict *destPtr, Pict *srcPtr)
         int x;
         Blt_Pixel *sp1, *sp2, *sp3, *sp4, *dp1, *dp2, *dp3, *dp4;
 
-        sp1 = destRowPtr;
+        sp1 = srcRowPtr;
         sp2 = sp1 + srcPtr->pixelsPerRow;
         sp3 = sp2 + srcPtr->pixelsPerRow;
         sp4 = sp3 + srcPtr->pixelsPerRow;
@@ -2712,11 +2712,9 @@ Blt_CpuFeatureFlags(Tcl_Interp *interp)
 #if (SIZEOF_LONG == 8) 
         if (flags & FEATURE_SSE41) {
             bltPictProcsPtr->premultiplyColorsProc = PremultiplyColors;
-#ifdef notdef
-            bltPictProcsPtr->copyPicturesProc = CopyPictures;
-#endif
-            bltPictProcsPtr->blankPictureProc = BlankPicture;
+            bltPictProcsPtr->copyPictureBitsProc = CopyPictureBits;
             bltPictProcsPtr->compositePicturesProc = CompositePictures;
+            bltPictProcsPtr->blankPictureProc = BlankPicture;
             bltPictProcsPtr->crossFadePicturesProc = CrossFadePictures;
             bltPictProcsPtr->zoomVerticallyProc2 = ZoomVertically4;
             bltPictProcsPtr->zoomHorizontallyProc2 = ZoomHorizontally4;

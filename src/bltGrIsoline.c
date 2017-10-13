@@ -111,10 +111,10 @@ typedef struct _IsolineIterator {
 } IsolineIterator;
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 
@@ -127,7 +127,7 @@ static Blt_ConfigSpec isolineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
          DEF_ACTIVE_PEN, Blt_Offset(Isoline, activePenPtr), 
          BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-element", "element", "Element", DEF_ELEMENT, 
          Blt_Offset(Isoline, elemPtr), BLT_CONFIG_NULL_OK,
          &bltContourElementOption},
@@ -238,7 +238,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -250,8 +250,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Isoline *isoPtr = (Isoline *)widgRec;
     int i;
@@ -278,7 +278,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the element.
  *
@@ -289,8 +289,8 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Isoline *isoPtr = (Isoline *)widgRec;
     Tcl_Obj *listObjPtr;

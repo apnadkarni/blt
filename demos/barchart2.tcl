@@ -41,7 +41,7 @@ blt::htext .header \
         } 
     .header append .header.stacked -width 1.0i -anchor w
     %%      Bars are stacked on top of each other. The overall height is the     
-                                   sum of the y-coordinates. 
+                                    sum of the y-coordinates. 
     %% 
     blt::tk::radiobutton .header.aligned -text aligned -variable barMode \
         -anchor w -value "aligned" -command {

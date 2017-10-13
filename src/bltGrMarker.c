@@ -114,27 +114,27 @@
 #define DEF_RECTANGLE_TAGS      "Rectangle all"
 #define DEF_LINE_TAGS           "Line all"
 
-static Blt_OptionParseProc ObjToCoordsProc;
-static Blt_OptionPrintProc CoordsToObjProc;
+static Blt_OptionParseProc ObjToCoords;
+static Blt_OptionPrintProc CoordsToObj;
 static Blt_OptionFreeProc CoordsFreeProc;
 static Blt_CustomOption coordsOption =
 {
-    ObjToCoordsProc, CoordsToObjProc, CoordsFreeProc, (ClientData)0
+    ObjToCoords, CoordsToObj, CoordsFreeProc, (ClientData)0
 };
+static Blt_OptionParseProc ObjToColorPair;
+static Blt_OptionPrintProc ColorPairToObj;
 static Blt_OptionFreeProc ColorPairFreeProc;
-static Blt_OptionParseProc ObjToColorPairProc;
-static Blt_OptionPrintProc ColorPairToObjProc;
 static Blt_CustomOption colorPairOption =
 {
-    ObjToColorPairProc, ColorPairToObjProc, ColorPairFreeProc, (ClientData)0
+    ObjToColorPair, ColorPairToObj, ColorPairFreeProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToPictImageProc;
-static Blt_OptionPrintProc PictImageToObjProc;
+static Blt_OptionParseProc ObjToPictImage;
+static Blt_OptionPrintProc PictImageToObj;
 static Blt_OptionFreeProc PictImageFreeProc;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToPictImageProc, PictImageToObjProc, PictImageFreeProc, (ClientData)0
+    ObjToPictImage, PictImageToObj, PictImageFreeProc, (ClientData)0
 };
 
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
@@ -142,10 +142,10 @@ BLT_EXTERN Blt_CustomOption bltYAxisOption;
 BLT_EXTERN Blt_CustomOption bltFilterOption;
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 typedef Marker *(MarkerCreateProc)(void);
@@ -325,8 +325,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-background", "background", "Background",
         DEF_MARKER_BACKGROUND, Blt_Offset(BitmapMarker, fillColor),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap", DEF_MARKER_BITMAP, 
         Blt_Offset(BitmapMarker, srcBitmap), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -334,9 +334,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
         Blt_Offset(BitmapMarker, elemName), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_MARKER_FOREGROUND, Blt_Offset(BitmapMarker, outlineColor),
         BLT_CONFIG_NULL_OK},
@@ -349,8 +348,7 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         Blt_Offset(BitmapMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
         Blt_Offset(BitmapMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_FLOAT, "-rotate", "rotate", "Rotate", DEF_MARKER_ANGLE, 
         Blt_Offset(BitmapMarker, reqAngle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
@@ -443,7 +441,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(ImageMarker, anchor), 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(ImageMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
@@ -555,7 +553,7 @@ typedef struct {
 
 static Blt_ConfigSpec lineConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(LineMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -705,7 +703,7 @@ typedef struct {
 
 static Blt_ConfigSpec polygonConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(PolygonMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -852,7 +850,7 @@ typedef struct {
 
 static Blt_ConfigSpec rectangleConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(RectangleMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -983,22 +981,21 @@ typedef struct {
 
 static Blt_ConfigSpec textConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(TextMarker, anchor), 0},
     {BLT_CONFIG_COLOR, "-background", "background", "MarkerBackground",
         (char *)NULL, Blt_Offset(TextMarker, fillColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", "Background", (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(TextMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element",
         DEF_MARKER_ELEMENT, Blt_Offset(TextMarker, elemName), 
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", "Foreground", (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_FONT, "-font", "font", "Font",  DEF_MARKER_FONT, 
         Blt_Offset(TextMarker, style.font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -1015,8 +1012,7 @@ static Blt_ConfigSpec textConfigSpecs[] =
         Blt_Offset(TextMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
         Blt_Offset(TextMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_MARKER_PAD, 
         Blt_Offset(TextMarker, style.padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_MARKER_PAD, 
@@ -1112,7 +1108,7 @@ static Blt_ConfigSpec windowConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(WindowMarker, anchor), 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(WindowMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
@@ -1628,7 +1624,7 @@ CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCoordsProc --
+ * ObjToCoords --
  *
  *      Given a TCL list of numeric expression representing the element
  *      values, convert into an array of floating point values. In
@@ -1644,8 +1640,8 @@ CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToCoords(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj **objv;
@@ -1663,7 +1659,7 @@ ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * CoordsToObjProc --
+ * CoordsToObj --
  *
  *      Convert the vector of floating point values into a TCL list.
  *
@@ -1674,8 +1670,8 @@ ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CoordsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                char *widgRec, int offset, int flags)
+CoordsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj *listObjPtr;
@@ -1766,7 +1762,7 @@ ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorPairProc --
+ * ObjToColorPair --
  *
  *      Convert the color names into pair of XColor pointers.
  *
@@ -1778,8 +1774,8 @@ ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToColorPairProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToColorPair(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
     Tcl_Obj **objv;
@@ -1841,7 +1837,7 @@ NameOfColor(XColor *colorPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ColorPairToObjProc --
+ * ColorPairToObj --
  *
  *      Convert the color pairs into color names.
  *
@@ -1852,8 +1848,8 @@ NameOfColor(XColor *colorPtr)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorPairToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   char *widgRec, int offset, int flags)
+ColorPairToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
     Tcl_Obj *listObjPtr, *objPtr;
@@ -1928,7 +1924,7 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPictImageProc --
+ * ObjToPictImage --
  *
  *      Given an image name, get the Tk image associated with it.
  *
@@ -1939,8 +1935,8 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
+ObjToPictImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     Blt_Picture *pictPtr = (Blt_Picture *)(widgRec + offset);
     Graph *graphPtr;
@@ -1974,7 +1970,7 @@ ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * PictImageToObjProc --
+ * PictImageToObj --
  *
  *      Convert the image name into a string Tcl_Obj.
  *
@@ -1985,8 +1981,8 @@ ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PictImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   char *widgRec, int offset, int flags)        
+PictImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)        
 {
     ImageMarker *imPtr = (ImageMarker *)(widgRec);
     
@@ -2083,7 +2079,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -2095,8 +2091,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Marker *markerPtr = (Marker *)widgRec;
@@ -2123,7 +2119,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the marker.
  *
@@ -2134,8 +2130,8 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Marker *markerPtr = (Marker *)widgRec;

@@ -703,7 +703,7 @@ ScaleToFit(LabelItem *labelPtr, double xScale, double yScale)
     double newFontSize;
     Blt_Font font;
 
-    newFontSize = (MIN(xScale, yScale) *
+    newFontSize = (int)(MIN(xScale, yScale) *
                         Blt_Font_PointSize(labelPtr->baseFont));
     labelPtr->flags |= DISPLAY_TEXT;
     /* Create a scaled font and replace the base font with it. */

@@ -432,9 +432,9 @@ static Blt_CustomOption tagsOption = {
 };
 
 static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToStateProc, StateToObj, NULL, (ClientData)0
 };
 
 static Blt_ConfigSpec drawerSpecs[] =
@@ -449,8 +449,7 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Drawer, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand", 
         DEF_DRAWER_CLOSE_COMMAND, Blt_Offset(Drawer, closeCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
@@ -529,8 +528,7 @@ static Blt_ConfigSpec drawersetSpecs[] =
         (Blt_CustomOption *)AUTORAISE },
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Drawerset, bg), 0 },
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-handleborderwidth", "handleBorderWidth", 
         "HandleBorderWidth", DEF_HANDLE_BORDERWIDTH, 
         Blt_Offset(Drawerset, handleBW), BLT_CONFIG_DONT_SET_DEFAULT },
@@ -1653,7 +1651,7 @@ ObjToMotionScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 MotionScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  char *widgRec, int offset, int flags) 
+                   char *widgRec, int offset, int flags) 
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -1710,7 +1708,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the state.
  *
@@ -1721,8 +1719,8 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;

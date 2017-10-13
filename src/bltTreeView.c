@@ -118,14 +118,14 @@
 
 #define NodeToObj(n)            Tcl_NewLongObj(Blt_Tree_NodeId(n))
 
-#define DEF_BUTTON_ACTIVE_BG    RGB_WHITE
+#define DEF_BUTTON_ACTIVE_BG            RGB_WHITE
 #define DEF_BUTTON_ACTIVE_BG_MONO       STD_ACTIVE_BG_MONO
 #define DEF_BUTTON_ACTIVE_FOREGROUND    STD_ACTIVE_FOREGROUND
 #define DEF_BUTTON_ACTIVE_FG_MONO       STD_ACTIVE_FG_MONO
 #define DEF_BUTTON_BORDERWIDTH          "1"
 #define DEF_BUTTON_CLOSE_RELIEF         "solid"
 #define DEF_BUTTON_OPEN_RELIEF          "solid"
-#define DEF_BUTTON_NORMAL_BG    RGB_WHITE
+#define DEF_BUTTON_NORMAL_BG            RGB_WHITE
 #define DEF_BUTTON_NORMAL_BG_MONO       STD_NORMAL_BG_MONO
 #define DEF_BUTTON_NORMAL_FOREGROUND    STD_NORMAL_FOREGROUND
 #define DEF_BUTTON_NORMAL_FG_MONO       STD_NORMAL_FG_MONO
@@ -166,7 +166,7 @@
 #define DEF_COLUMN_RELIEF               "flat"
 #define DEF_COLUMN_STATE                "normal"
 #define DEF_COLUMN_STYLE                "default"
-#define DEF_COLUMN_TITLE_BG     STD_NORMAL_BACKGROUND
+#define DEF_COLUMN_TITLE_BG             STD_NORMAL_BACKGROUND
 #define DEF_COLUMN_TITLE_BORDERWIDTH    STD_BORDERWIDTH
 #define DEF_COLUMN_TITLE_FONT           STD_FONT_NORMAL
 #define DEF_COLUMN_TITLE_FOREGROUND     STD_NORMAL_FOREGROUND
@@ -254,26 +254,26 @@ static TreeViewApplyProc ShowEntryApplyProc, HideEntryApplyProc,
 static Tk_LostSelProc LostSelection;
 static TreeViewApplyProc SelectEntryApplyProc;
 
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc FreeIconProc;
 
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, NULL,
+    ObjToIcon, IconToObj, FreeIconProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToTreeProc;
-static Blt_OptionPrintProc TreeToObjProc;
+static Blt_OptionParseProc ObjToTree;
+static Blt_OptionPrintProc TreeToObj;
 static Blt_OptionFreeProc FreeTreeProc;
 static Blt_CustomOption treeOption = {
-    ObjToTreeProc, TreeToObjProc, FreeTreeProc, NULL,
+    ObjToTree, TreeToObj, FreeTreeProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToIconsProc;
-static Blt_OptionPrintProc IconsToObjProc;
+static Blt_OptionParseProc ObjToIcons;
+static Blt_OptionPrintProc IconsToObj;
 static Blt_OptionFreeProc FreeIconsProc;
 static Blt_CustomOption iconsOption = {
-    ObjToIconsProc, IconsToObjProc, FreeIconsProc, NULL,
+    ObjToIcons, IconsToObj, FreeIconsProc, NULL,
 };
 
 static Blt_OptionParseProc ObjToButton;
@@ -282,23 +282,23 @@ static Blt_CustomOption buttonOption = {
     ObjToButton, ButtonToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToCachedObjProc;
-static Blt_OptionPrintProc CachedObjToObjProc;
+static Blt_OptionParseProc ObjToCachedObj;
+static Blt_OptionPrintProc CachedObjToObj;
 static Blt_OptionFreeProc FreeCachedObjProc;
 static Blt_CustomOption cachedObjOption = {
-    ObjToCachedObjProc, CachedObjToObjProc, FreeCachedObjProc, NULL,
+    ObjToCachedObj, CachedObjToObj, FreeCachedObjProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToScrollmode;
-static Blt_OptionPrintProc ScrollmodeToObj;
-static Blt_CustomOption scrollmodeOption = {
-    ObjToScrollmode, ScrollmodeToObj, NULL, NULL,
+static Blt_OptionParseProc ObjToScrollMode;
+static Blt_OptionPrintProc ScrollModeToObj;
+static Blt_CustomOption scrollModeOption = {
+    ObjToScrollMode, ScrollModeToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToSelectmode;
-static Blt_OptionPrintProc SelectmodeToObj;
-static Blt_CustomOption selectmodeOption = {
-    ObjToSelectmode, SelectmodeToObj, NULL, NULL,
+static Blt_OptionParseProc ObjToSelectMode;
+static Blt_OptionPrintProc SelectModeToObj;
+static Blt_CustomOption selectModeOption = {
+    ObjToSelectMode, SelectModeToObj, NULL, NULL,
 };
 
 static Blt_OptionParseProc ObjToSeparator;
@@ -315,10 +315,10 @@ static Blt_CustomOption labelOption = {
     ObjToLabel, LabelToObj, FreeLabel, NULL,
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 static Blt_OptionParseProc ObjToStyles;
 static Blt_OptionPrintProc StylesToObj;
@@ -328,66 +328,59 @@ static Blt_CustomOption stylesOption = {
 
 static Blt_OptionParseProc ObjToEnum;
 static Blt_OptionPrintProc EnumToObj;
-static Blt_CustomOption sortTypeOption =
-{
+static Blt_CustomOption sortTypeOption = {
     ObjToEnum, EnumToObj, NULL, (ClientData)sortTypeStrings
 };
 
-static Blt_OptionParseProc ObjToSortMarkProc;
-static Blt_OptionPrintProc SortMarkToObjProc;
-static Blt_CustomOption sortMarkOption =
-{
-    ObjToSortMarkProc, SortMarkToObjProc, (ClientData)0
+static Blt_OptionParseProc ObjToSortMark;
+static Blt_OptionPrintProc SortMarkToObj;
+static Blt_CustomOption sortMarkOption = {
+    ObjToSortMark, SortMarkToObj, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToSortColumnsProc;
-static Blt_OptionPrintProc SortColumnsToObjProc;
+static Blt_OptionParseProc ObjToSortColumns;
+static Blt_OptionPrintProc SortColumnsToObj;
 static Blt_OptionFreeProc FreeSortColumnsProc;
 static Blt_CustomOption sortColumnsOption = {
-    ObjToSortColumnsProc, SortColumnsToObjProc, FreeSortColumnsProc, 
+    ObjToSortColumns, SortColumnsToObj, FreeSortColumnsProc, 
     (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToData;
 static Blt_OptionPrintProc DataToObj;
-static Blt_CustomOption dataOption =
-{
+static Blt_CustomOption dataOption = {
     ObjToData, DataToObj, NULL, (ClientData)0,
 };
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_OptionFreeProc FreeStyleProc;
-static Blt_CustomOption styleOption =
-{
+static Blt_CustomOption styleOption = {
     /* Contains a pointer to the widget that's currently being configured.
      * This is used in the custom configuration parse proc for icons.  */
-    ObjToStyleProc, StyleToObjProc, FreeStyleProc, NULL,
+    ObjToStyle, StyleToObj, FreeStyleProc, NULL,
 };
 
-static Blt_ConfigSpec buttonSpecs[] =
-{
+static Blt_ConfigSpec buttonSpecs[] = {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "Background", DEF_BUTTON_ACTIVE_BG, 
         Blt_Offset(TreeView, button.activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "Foreground",
         DEF_BUTTON_ACTIVE_FOREGROUND, 
         Blt_Offset(TreeView, button.activeFgColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BUTTON_NORMAL_BG, Blt_Offset(TreeView, button.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BUTTON_BORDERWIDTH, Blt_Offset(TreeView, button.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-closerelief", "closeRelief", "Relief",
         DEF_BUTTON_CLOSE_RELIEF, Blt_Offset(TreeView, button.closeRelief),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_BUTTON_NORMAL_FOREGROUND, Blt_Offset(TreeView, button.normalFg), 0},
     {BLT_CONFIG_CUSTOM, "-images", "images", "Icons", (char *)NULL, 
@@ -400,8 +393,7 @@ static Blt_ConfigSpec buttonSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec cellSpecs[] =
-{
+static Blt_ConfigSpec cellSpecs[] = {
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_CELL_STATE, 
         Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         &stateOption},
@@ -410,8 +402,7 @@ static Blt_ConfigSpec cellSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec entrySpecs[] =
-{
+static Blt_ConfigSpec entrySpecs[] = {
     {BLT_CONFIG_CUSTOM, "-bindtags", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Entry, bindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
     {BLT_CONFIG_CUSTOM, "-button", (char *)NULL, (char *)NULL, DEF_BUTTON, 
@@ -422,7 +413,7 @@ static Blt_ConfigSpec entrySpecs[] =
         (char *)NULL, Blt_Offset(Entry, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-data", (char *)NULL, (char *)NULL, (char *)NULL, 0, 
         BLT_CONFIG_NULL_OK, &dataOption},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Entry, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", (char *)NULL, (char *)NULL,
@@ -447,18 +438,16 @@ static Blt_ConfigSpec entrySpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec viewSpecs[] =
-{
+static Blt_ConfigSpec viewSpecs[] = {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, Blt_Offset(TreeView, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "AlternateBackground", DEF_ALT_BG, Blt_Offset(TreeView, altBg), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BG, Blt_Offset(TreeView, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(TreeView, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -483,7 +472,7 @@ static Blt_ConfigSpec viewSpecs[] =
         "ExportSelection", DEF_EXPORT_SELECTION, 
         Blt_Offset(TreeView, sel.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)SELECT_EXPORT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_BITMASK, "-flat", "flat", "Flat", DEF_FLAT, 
         Blt_Offset(TreeView, flags), BLT_CONFIG_DONT_SET_DEFAULT,
        (Blt_CustomOption *)FLAT},
@@ -542,7 +531,7 @@ static Blt_ConfigSpec viewSpecs[] =
         DEF_RESIZE_CURSOR, Blt_Offset(TreeView, resizeCursor), 0},
     {BLT_CONFIG_CUSTOM, "-scrollmode", "scrollMode", "ScrollMode",
         DEF_SCROLL_MODE, Blt_Offset(TreeView, scrollMode),
-        BLT_CONFIG_DONT_SET_DEFAULT, &scrollmodeOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &scrollModeOption},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
         "Foreground", DEF_SELECT_BG, Blt_Offset(TreeView, selectedBg), 0},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
@@ -552,7 +541,7 @@ static Blt_ConfigSpec viewSpecs[] =
         DEF_SELECT_FOREGROUND, Blt_Offset(TreeView, selectedFg), 0},
     {BLT_CONFIG_CUSTOM, "-selectmode", "selectMode", "SelectMode",
         DEF_SELECT_MODE, Blt_Offset(TreeView, sel.mode), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &selectmodeOption},
+        BLT_CONFIG_DONT_SET_DEFAULT, &selectModeOption},
     {BLT_CONFIG_CUSTOM, "-separator", "separator", "Separator", (char *)NULL, 
         Blt_Offset(TreeView, pathSep), BLT_CONFIG_NULL_OK, &separatorOption},
     {BLT_CONFIG_BITMASK, "-newtags", "newTags", "newTags", DEF_NEW_TAGS, 
@@ -591,16 +580,14 @@ static Blt_ConfigSpec viewSpecs[] =
 };
 
 
-static Blt_ConfigSpec columnSpecs[] =
-{
+static Blt_ConfigSpec columnSpecs[] = {
     {BLT_CONFIG_BACKGROUND, "-activetitlebackground", "activeTitleBackground", 
         "Background", DEF_COLUMN_ACTIVE_TITLE_BG, 
         Blt_Offset(Column, activeTitleBg), 0},
     {BLT_CONFIG_COLOR, "-activetitleforeground", "activeTitleForeground", 
         "Foreground", DEF_COLUMN_ACTIVE_TITLE_FG, 
         Blt_Offset(Column, activeTitleFgColor), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags",
         DEF_COLUMN_BIND_TAGS, Blt_Offset(Column, bindTagsObjPtr),
         BLT_CONFIG_NULL_OK, &cachedObjOption},
@@ -671,8 +658,7 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_FONT, "-titlefont", "titleFont", "Font",
         DEF_COLUMN_TITLE_FONT, Blt_Offset(Column, titleFont), 0},
     {BLT_CONFIG_COLOR, "-titleforeground", "titleForeground", "TitleForeground",
-        DEF_COLUMN_TITLE_FOREGROUND, 
-        Blt_Offset(Column, titleFgColor), 0},
+        DEF_COLUMN_TITLE_FOREGROUND, Blt_Offset(Column, titleFgColor), 0},
     {BLT_CONFIG_JUSTIFY, "-titlejustify", "titleJustify", "TitleJustify", 
         DEF_COLUMN_JUSTIFY, Blt_Offset(Column, titleJustify), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -689,8 +675,7 @@ static Blt_ConfigSpec columnSpecs[] =
         (char *)NULL, 0, 0}
 };
 
-static Blt_ConfigSpec sortSpecs[] =
-{
+static Blt_ConfigSpec sortSpecs[] = {
     {BLT_CONFIG_CUSTOM, "-columns", "columns", "Columns",
         DEF_SORT_COLUMN, Blt_Offset(TreeView, sort.order),
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &sortColumnsOption},
@@ -738,8 +723,7 @@ typedef struct {
 
 #define CLOSE_RECURSE     (1<<0)
 
-static Blt_SwitchSpec closeSwitches[] = 
-{
+static Blt_SwitchSpec closeSwitches[] = {
     {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
         Blt_Offset(CloseSwitches, flags), 0, CLOSE_RECURSE},
     {BLT_SWITCH_END}
@@ -758,8 +742,7 @@ static Blt_SwitchCustom entrySwitch = {
     EntrySwitchProc, NULL, NULL, (ClientData)0,
 };
 
-static Blt_SwitchSpec indexSwitches[] = 
-{
+static Blt_SwitchSpec indexSwitches[] = {
     {BLT_SWITCH_BITS_NOARG, "-path", "", (char *)NULL,
         Blt_Offset(IndexSwitches, flags), 0, INDEX_USE_PATH},
     {BLT_SWITCH_CUSTOM, "-from", "entryName", (char *)NULL,
@@ -777,8 +760,7 @@ typedef struct {
 #define INSERT_PARENTS  (1<<0)
 #define INSERT_NODUPS   (1<<1)
 
-static Blt_SwitchSpec insertSwitches[] = 
-{
+static Blt_SwitchSpec insertSwitches[] = {
     {BLT_SWITCH_INT, "-at", "position", (char *)NULL,
         Blt_Offset(InsertSwitches, insertPos), 0},
     {BLT_SWITCH_BITS_NOARG, "-parents", "", (char *)NULL,
@@ -817,8 +799,7 @@ typedef struct {
 
 #define OPEN_RECURSE     (1<<0)
 
-static Blt_SwitchSpec openSwitches[] = 
-{
+static Blt_SwitchSpec openSwitches[] = {
     {BLT_SWITCH_BITS_NOARG, "-recurse", "", (char *)NULL,
         Blt_Offset(OpenSwitches, flags), 0, OPEN_RECURSE},
     {BLT_SWITCH_END}
@@ -867,8 +848,8 @@ static int GetEntryFromObj(Tcl_Interp *interp, TreeView *viewPtr,
 static void
 EventuallyRedraw(TreeView *viewPtr)
 {
-    if ((viewPtr->tkwin != NULL) && ((viewPtr->flags & REDRAW_PENDING) == 0) &&
-        ((viewPtr->flags & DONT_UPDATE) == 0)) {
+     if ((viewPtr->tkwin != NULL) && 
+        ((viewPtr->flags & (DONT_UPDATE|REDRAW_PENDING)) == 0)) {
         viewPtr->flags |= REDRAW_PENDING;
         Tcl_DoWhenIdle(DisplayProc, viewPtr);
     }
@@ -1433,9 +1414,20 @@ GetVerticalLineCoordinates(Entry *entryPtr, int *y1Ptr, int *y2Ptr)
     y1 = SCREENY(viewPtr, topPtr->worldY) + (topPtr->height / 2);
     y2 = SCREENY(viewPtr, botPtr->worldY) + (botPtr->height / 2);
 
+    /* Make sure the vertical line starts on an odd pixel. */
+    y1 |= 0x1;
+    /*
+     * Clip the line's Y-coordinates at the viewport's borders.
+     */
+    if (y1 < 0) {
+        y1 = -1;
+    }
+    if (y2 > Tk_Height(viewPtr->tkwin)) {
+        y2 = Tk_Height(viewPtr->tkwin);
+    }
     /* Make sure the vertical line starts and ends on odd pixels. */
-    *y1Ptr = y1 | 0x1;
-    *y2Ptr = y2 | 0x1;
+    *y1Ptr = y1;
+    *y2Ptr = y2;
 }
 
 
@@ -2217,7 +2209,7 @@ EntrySwitchProc(ClientData clientData, Tcl_Interp *interp,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTreeProc --
+ * ObjToTree --
  *
  *      Convert the string representing the name of a tree object into a
  *      tree token.
@@ -2231,18 +2223,8 @@ EntrySwitchProc(ClientData clientData, Tcl_Interp *interp,
  */
 /*ARGSUSED*/
 static int
-ObjToTreeProc(
-    ClientData clientData,                /* Not used. */
-    Tcl_Interp *interp,                   /* Interpreter to send results
-                                           * back to */
-    Tk_Window tkwin,                      /* Not used. */
-    Tcl_Obj *objPtr,                      /* Tcl_Obj representing the new
-                                           * value. */  
-    char *widgRec,
-    int offset,                           /* Offset to field in
-                                           * structure */
-    int flags)  
-{
+ObjToTree(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)                {
     Blt_Tree tree = *(Blt_Tree *)(widgRec + offset);
 
     if (Blt_Tree_Attach(interp, tree, Tcl_GetString(objPtr)) != TCL_OK) {
@@ -2263,13 +2245,8 @@ ObjToTreeProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TreeToObjProc(
-    ClientData clientData,                /* Not used. */
-    Tcl_Interp *interp,         
-    Tk_Window tkwin,                      /* Not used. */
-    char *widgRec,
-    int offset,                           /* Offset to field in structure */
-    int flags)  
+TreeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Blt_Tree tree = *(Blt_Tree *)(widgRec + offset);
 
@@ -2284,7 +2261,7 @@ TreeToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToScrollmode --
+ * ObjToScrollMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
@@ -2297,15 +2274,8 @@ TreeToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToScrollmode(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* New legend position string */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToScrollMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     const char *string;
     char c;
@@ -2331,7 +2301,7 @@ ObjToScrollmode(
 /*
  *---------------------------------------------------------------------------
  *
- * ScrollmodeToObj --
+ * ScrollModeToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -2340,13 +2310,8 @@ ObjToScrollmode(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ScrollmodeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ScrollModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)  
 {
     int mode = *(int *)(widgRec + offset);
 
@@ -2365,7 +2330,7 @@ ScrollmodeToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSelectmode --
+ * ObjToSelectMode --
  *
  *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
@@ -2378,16 +2343,8 @@ ScrollmodeToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToSelectmode(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToSelectMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     const char *string;
     char c;
@@ -2415,7 +2372,7 @@ ObjToSelectmode(
 /*
  *---------------------------------------------------------------------------
  *
- * SelectmodeToObj --
+ * SelectModeToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -2424,13 +2381,8 @@ ObjToSelectmode(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SelectmodeToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+SelectModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)  
 {
     int mode = *(int *)(widgRec + offset);
 
@@ -2465,16 +2417,8 @@ SelectmodeToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToButton(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToButton(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     const char *string;
     int *flagsPtr = (int *)(widgRec + offset);
@@ -2509,13 +2453,8 @@ ObjToButton(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ButtonToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ButtonToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)  
 {
     int bool;
     unsigned int buttonFlags = *(int *)(widgRec + offset);
@@ -2531,9 +2470,9 @@ ButtonToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToScrollmode --
+ * ObjToSeparator --
  *
- *      Convert the string reprsenting a scroll mode, to its numeric
+ *      Convert the string reprsenting a separator, to its numeric
  *      form.
  *
  * Results:
@@ -2545,16 +2484,8 @@ ButtonToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToSeparator(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToSeparator(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     const char **sepPtr = (const char **)(widgRec + offset);
     const char *string;
@@ -2582,13 +2513,8 @@ ObjToSeparator(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SeparatorToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+SeparatorToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
 {
     char *separator = *(char **)(widgRec + offset);
 
@@ -2642,16 +2568,8 @@ FreeSeparator(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToLabel(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToLabel(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Tcl_Obj **labelObjPtrPtr = (Tcl_Obj **)(widgRec + offset);
     const char *string;
@@ -2671,7 +2589,7 @@ ObjToLabel(
 /*
  *---------------------------------------------------------------------------
  *
- * TreeToObj --
+ * LabelToObj --
  *
  * Results:
  *      The string of the entry's label is returned.
@@ -2680,13 +2598,8 @@ ObjToLabel(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LabelToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,         
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+LabelToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -2805,16 +2718,8 @@ GetStyleForeground(Column *colPtr)
  */
 /*ARGSUSED*/
 static int
-ObjToStyles(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToStyles(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Entry *entryPtr = (Entry *)widgRec;
     TreeView *viewPtr;
@@ -2870,13 +2775,8 @@ ObjToStyles(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StylesToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,         
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StylesToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)  
 {
     Entry *entryPtr = (Entry *)widgRec;
     Cell *cellPtr;
@@ -2927,7 +2827,7 @@ FreeCachedObjProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCachedObjProc --
+ * ObjToCachedObj --
  *
  *      Converts to a cached Tcl_Obj. Cached Tcl_Obj's are hashed,
  *      and reference counted.
@@ -2936,16 +2836,8 @@ FreeCachedObjProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToCachedObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToCachedObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     TreeView *viewPtr = clientData;
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -2957,7 +2849,7 @@ ObjToCachedObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * CachedObjToObjProc --
+ * CachedObjToObj --
  *
  *      Returns the cachedObj as a string.
  *
@@ -2968,13 +2860,8 @@ ObjToCachedObjProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CachedObjToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+CachedObjToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)  
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -3102,7 +2989,7 @@ FreeIconsProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconsProc --
+ * ObjToIcons --
  *
  *      Convert a list of image names into Tk images.
  *
@@ -3115,16 +3002,8 @@ FreeIconsProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToIconsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToIcons(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Tcl_Obj **objv;
     TreeView *viewPtr = clientData;
@@ -3158,7 +3037,7 @@ ObjToIconsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * IconsToObjProc --
+ * IconsToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -3169,13 +3048,8 @@ ObjToIconsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+IconsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Icon *icons = *(Icon **)(widgRec + offset);
     Tcl_Obj *listObjPtr;
@@ -3214,7 +3088,7 @@ FreeIconProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert the name of an icon into a Tk image.
  *
@@ -3227,16 +3101,8 @@ FreeIconProc(
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(
-    ClientData clientData,              /* Pointer to the tree view
-                                         * widget. Must be initialized before
-                                         * calls to ConfigureWidget, etc.*/
-    Tcl_Interp *interp,                 /* Interpreter to report results */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     TreeView *viewPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -3262,7 +3128,7 @@ ObjToIconProc(
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -3273,13 +3139,8 @@ ObjToIconProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Icon icon = *(Icon *)(widgRec + offset);
 
@@ -3301,14 +3162,8 @@ IconToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToEnum(
-    ClientData clientData,      /* Vectors of valid strings. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,
-    char *widgRec,              /* Widget record. */
-    int offset,                 /* Offset of field in record */
-    int flags)                  
+ObjToEnum(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)                  
 {
     int *enumPtr = (int *)(widgRec + offset);
     char c;
@@ -3355,13 +3210,8 @@ ObjToEnum(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-EnumToObj(
-    ClientData clientData,              /* List of strings. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+EnumToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     int value = *(int *)(widgRec + offset);
     char **strings = (char **)clientData;
@@ -3381,7 +3231,7 @@ EnumToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSortMarkProc --
+ * ObjToSortMark --
  *
  *      Convert the string reprsenting a column, to its numeric form.
  *
@@ -3394,15 +3244,8 @@ EnumToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToSortMarkProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* New legend position string */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToSortMark(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags) 
 {
     TreeView *viewPtr = (TreeView *)widgRec;
     Column **colPtrPtr = (Column **)(widgRec + offset);
@@ -3422,7 +3265,7 @@ ObjToSortMarkProc(
 /*
  *---------------------------------------------------------------------------
  *
- * SortMarkToObjProc --
+ * SortMarkToObj --
  *
  * Results:
  *      The string representation of the column is returned.
@@ -3431,13 +3274,8 @@ ObjToSortMarkProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortMarkToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+SortMarkToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     Column *colPtr = *(Column **)(widgRec + offset);
 
@@ -3464,7 +3302,7 @@ FreeSortColumnsProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSortColumnsProc --
+ * ObjToSortColumns --
  *
  *      Convert the string reprsenting a column, to its numeric form.
  *
@@ -3477,8 +3315,8 @@ FreeSortColumnsProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToSortColumnsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
+ObjToSortColumns(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     TreeView *viewPtr = (TreeView *)widgRec;
     Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
@@ -3511,7 +3349,7 @@ ObjToSortColumnsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SortColumnsToObjProc --
+ * SortColumnsToObj --
  *
  * Results:
  *      The string representation of the column is returned.
@@ -3520,8 +3358,8 @@ ObjToSortColumnsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SortColumnsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                     char *widgRec, int offset, int flags)      
+SortColumnsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 char *widgRec, int offset, int flags)      
 {
     Blt_Chain chain = *(Blt_Chain *)(widgRec + offset);
     Blt_ChainLink link;
@@ -3557,16 +3395,8 @@ SortColumnsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToData(
-    ClientData clientData,              /* Node of entry. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing new
-                                         * data. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToData(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Tcl_Obj **objv;
     Entry *entryPtr = (Entry *)widgRec;
@@ -3627,13 +3457,8 @@ ObjToData(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-DataToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+DataToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Tcl_Obj *listObjPtr, *objPtr;
     Entry *entryPtr = (Entry *)widgRec;
@@ -3670,7 +3495,7 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Convert the name of an icon into a treeview style.
  *
@@ -3683,16 +3508,8 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
-                                         * value. */
-    char *widgRec,
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     TreeView *viewPtr = clientData;
     CellStyle **stylePtrPtr = (CellStyle **)(widgRec + offset);
@@ -3718,19 +3535,14 @@ ObjToStyleProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     CellStyle *stylePtr = *(CellStyle **)(widgRec + offset);
 
@@ -3745,7 +3557,7 @@ StyleToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -3757,15 +3569,8 @@ StyleToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report
-                                         * results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Cell *cellPtr = (Cell *)widgRec;
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -3800,7 +3605,7 @@ ObjToStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -3811,13 +3616,8 @@ ObjToStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -7833,12 +7633,6 @@ DrawLines(
             ax |= 0x1;
             GetVerticalLineCoordinates(entryPtr, &ay, &by);
 
-            /*
-             * Clip the line's Y-coordinates at the viewport's borders.
-             */
-            if (by > Tk_Height(viewPtr->tkwin)) {
-                by = Tk_Height(viewPtr->tkwin);
-            }
             if ((ay < Tk_Height(viewPtr->tkwin)) && (by > 0)) {
                 XDrawLine(viewPtr->display, drawable, gc, ax, ay, ax, by);
             }
@@ -7875,9 +7669,6 @@ DrawLines(
         }
         if ((IsOpen(entryPtr)) && (entryPtr->lastChildPtr != NULL)) {
             GetVerticalLineCoordinates(entryPtr, &y1, &y2);
-            if (y2 > Tk_Height(viewPtr->tkwin)) {
-                y2 = Tk_Height(viewPtr->tkwin); /* Clip line at window border.*/
-            }
             XDrawLine(viewPtr->display, drawable, gc, x2, y1, x2, y2);
         }
     }   
@@ -8154,7 +7945,7 @@ DrawEntryLabel(
 
         segments[3].x1 = segments[3].x2 = (x + width) | 0x1;
         segments[3].y1 = y | 0x1;
-        segments[3].y2 = (y + height + 1) | 0x1;
+        segments[3].y2 = (y + height) | 0x1;
 
         XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
         if (isSelected) {
@@ -13372,6 +13163,37 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * SelectionExportOp
+ *
+ *      Exports the current selection.  It is not an error if not selection
+ *      is present.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection is exported.
+ *
+ *      pathName selection export
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+
+    if (Blt_Chain_GetLength(viewPtr->sel.list) > 0) {
+        Tk_OwnSelection(viewPtr->tkwin, XA_PRIMARY, LostSelection, viewPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SelectionIncludesOp
  *
  *      Returns 1 if the element indicated by index is currently
@@ -13642,6 +13464,7 @@ static Blt_OpSpec selectionOps[] =
     {"anchor",   1, SelectionAnchorOp,   4, 4, "entryName",},
     {"clear",    5, SelectionSetOp,      4, 5, "firstEntry ?lastEntry?",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
+    {"export",   1, SelectionExportOp,   3, 3, "",},
     {"includes", 1, SelectionIncludesOp, 4, 4, "entryName",},
     {"mark",     1, SelectionMarkOp,     4, 4, "entryName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},

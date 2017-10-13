@@ -172,7 +172,8 @@ blt::tk::scrollbar .ss.ys
 blt::tableview $view \
     -width 6i \
     -height 4i \
-    -selectmode multiple \
+    -exportselection 1 \
+    -selectmode cells \
     -table $table \
     -columnfilters yes
 

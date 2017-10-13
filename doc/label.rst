@@ -18,12 +18,12 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-A **label** canvas displays a string of characters on the screen.  The text
-must be in a single font, but it can occupy multiple lines on the screen
-(if it contains newlines). The label may also optionally display a
+A **label** canvas item displays a string of characters on the screen.  The
+text must be in a single font, but it can occupy multiple lines on the
+screen (if it contains newlines). The label may also optionally display a
 rectangular filled background or outline. The item can be rotated and the
-font is scaled as the item is scaled.  If you can use canvas' **scale** 
-operation the label text will scale.  
+font is scaled as the item is scaled.  If you can use canvas' **scale**
+operation the label text will scale.
 
 SYNTAX
 ------
@@ -58,7 +58,7 @@ SYNTAX
     offset.  The default is "0".
 
   **-activefg** *colorName*
-    See **-activeoutline** option.
+    Same as **-activeoutline** option.
 
   **-activefill** *colorName*
     Specifies the background color of the label rectangle when the item is
@@ -67,7 +67,7 @@ SYNTAX
     name.
 
   **-activeforeground** *colorName*
-    See **-activeoutline** option.
+    Same as **-activeoutline** option.
 
   **-activelinewidth** *numPixels*
     Specifies the width of the rectangular outline.  If *numPixels* is 0,
@@ -99,10 +99,10 @@ SYNTAX
     item's state is normal (see the **-state** option).  The default is 0.
 
   **-disabledbackground** *colorName*
-    See **-disablefill** option.
+    Same as **-disablefill** option.
 
   **-disabledbg** *colorName*
-    See **-disabledfill** option.
+    Same as **-disabledfill** option.
 
   **-disableddashes** *numPixels*
     Specifies the interval of on/off dashes of the outline around the
@@ -115,7 +115,7 @@ SYNTAX
     item's state is disabled (see the **-state** option). The default is 0.
 
   **-disabledfg** *colorName*
-    See **-disabledoutline** option.
+    Same as **-disabledoutline** option.
 
   **-disabledfill** *colorName*
     Specifies the background color of the label rectangle when the item is
@@ -124,7 +124,7 @@ SYNTAX
     "".
 
   **-disabledforeground** *colorName*
-    See **-disabledoutline** option.
+    Same as **-disabledoutline** option.
 
   **-disabledlinewidth** *numPixels*
     Specifies the width of the rectangular outline drawn when the item's

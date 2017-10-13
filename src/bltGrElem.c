@@ -139,23 +139,23 @@ Blt_CustomOption bltBarStylesOption =
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 Blt_CustomOption bltElementTagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 
 static Blt_OptionFreeProc FreeElementProc;
-static Blt_OptionParseProc ObjToElementProc;
-static Blt_OptionPrintProc ElementToObjProc;
+static Blt_OptionParseProc ObjToElement;
+static Blt_OptionPrintProc ElementToObj;
 Blt_CustomOption bltElementOption =
 {
-    ObjToElementProc, ElementToObjProc, FreeElementProc, (ClientData)0
+    ObjToElement, ElementToObj, FreeElementProc, (ClientData)0
 };
 Blt_CustomOption bltContourElementOption =
 {
-    ObjToElementProc, ElementToObjProc, FreeElementProc,
+    ObjToElement, ElementToObj, FreeElementProc,
     (ClientData)CID_ELEM_CONTOUR
 };
 
@@ -739,14 +739,8 @@ FreeValues(
  */
 /*ARGSUSED*/
 static int
-ObjToValues(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* TCL list of expressions */
-    char *widgRec,              /* Element record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToValues(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ElemValues *valuesPtr = (ElemValues *)(widgRec + offset);
     Element *elemPtr = (Element *)widgRec;
@@ -890,14 +884,8 @@ FreeValuePairs(
  */
 /*ARGSUSED*/
 static int
-ObjToValuePairs(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* TCL list of numeric expressions */
-    char *widgRec,              /* Element record */
-    int offset,                 /* Not used. */
-    int flags)                  /* Not used. */
+ObjToValuePairs(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Element *elemPtr = (Element *)widgRec;
     double *values;
@@ -993,14 +981,8 @@ ValuePairsToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToAlong(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* String representation of value. */
-    char *widgRec,              /* Widget record. */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToAlong(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *searchPtr = (int *)(widgRec + offset);
     char *string;
@@ -1111,14 +1093,8 @@ FreeStyles(
  */
 /*ARGSUSED*/
 static int
-ObjToStyles(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* String representing style list */
-    char *widgRec,              /* Element information record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToStyles(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Chain styles = *(Blt_Chain *)(widgRec + offset);
     Blt_ChainLink link;
@@ -1275,7 +1251,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -1287,8 +1263,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Element *elemPtr = (Element *)widgRec;
@@ -1315,7 +1291,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the element.
  *
@@ -1326,7 +1302,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
               char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
@@ -1352,7 +1328,7 @@ FreeElementProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToElementProc --
+ * ObjToElement --
  *
  *      This procedure is like ObjToValues except that it interprets
  *      the list of numeric expressions as X Y coordinate pairs.  The
@@ -1367,8 +1343,8 @@ FreeElementProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToElementProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToElement(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Element **elemPtrPtr = (Element **)(widgRec + offset);
     Element *elemPtr;
@@ -1406,8 +1382,8 @@ ObjToElementProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ElementToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                 char *widgRec, int offset, int flags)
+ElementToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)
 {
     Element *elemPtr = *(Element **)(widgRec + offset);
     Tcl_Obj *objPtr;

@@ -419,33 +419,33 @@ struct _LineElement {
     Axis *zAxisPtr;
 };
 
-static Blt_OptionParseProc ObjToSmoothProc;
-static Blt_OptionPrintProc SmoothToObjProc;
+static Blt_OptionParseProc ObjToSmooth;
+static Blt_OptionPrintProc SmoothToObj;
 static Blt_CustomOption smoothOption =
 {
-    ObjToSmoothProc, SmoothToObjProc, NULL, (ClientData)0
+    ObjToSmooth, SmoothToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToPenDirProc;
-static Blt_OptionPrintProc PenDirToObjProc;
+static Blt_OptionParseProc ObjToPenDir;
+static Blt_OptionPrintProc PenDirToObj;
 static Blt_CustomOption penDirOption =
 {
-    ObjToPenDirProc, PenDirToObjProc, NULL, (ClientData)0
+    ObjToPenDir, PenDirToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToErrorBarsProc;
-static Blt_OptionPrintProc ErrorBarsToObjProc;
+static Blt_OptionParseProc ObjToErrorBars;
+static Blt_OptionPrintProc ErrorBarsToObj;
 static Blt_CustomOption errorbarsOption =
 {
-    ObjToErrorBarsProc, ErrorBarsToObjProc, NULL, (ClientData)0
+    ObjToErrorBars, ErrorBarsToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeSymbolProc;
-static Blt_OptionParseProc ObjToSymbolProc;
-static Blt_OptionPrintProc SymbolToObjProc;
+static Blt_OptionParseProc ObjToSymbol;
+static Blt_OptionPrintProc SymbolToObj;
 static Blt_CustomOption symbolOption =
 {
-    ObjToSymbolProc, SymbolToObjProc, FreeSymbolProc, (ClientData)0
+    ObjToSymbol, SymbolToObj, FreeSymbolProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeBackground;
@@ -525,7 +525,7 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
@@ -661,9 +661,9 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
-    {BLT_CONFIG_COLOR, "-color", "color", "Color",
-        DEF_PEN_COLOR, Blt_Offset(LineElement, builtinPen.traceColor), 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
+    {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR,
+        Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
         Blt_Offset(LineElement, builtinPen.traceDashes), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-data", "data", "Data", DEF_DATA, 0, 0, 
@@ -937,7 +937,7 @@ FreeSymbolProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSymbolProc --
+ * ObjToSymbol --
  *
  *      Convert the string representation of a line style or symbol name
  *      into its numeric form.
@@ -950,14 +950,8 @@ FreeSymbolProc(
  */
 /*ARGSUSED*/
 static int
-ObjToSymbolProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing symbol type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToSymbol(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
     const char *string;
@@ -1105,7 +1099,7 @@ BackgroundToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SymbolToObjProc --
+ * SymbolToObj --
  *
  *      Convert the symbol value into a string.
  *
@@ -1116,13 +1110,8 @@ BackgroundToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SymbolToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+SymbolToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
     SymbolTable *p;
@@ -1143,7 +1132,7 @@ SymbolToObjProc(
 }
 
 /*
- * ObjToErrorBarsProc --
+ * ObjToErrorBars --
  *
  *      Convert the string representation of a errorbar flags into its numeric
  *      form.
@@ -1154,14 +1143,8 @@ SymbolToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToErrorBarsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to return results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing smooth type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToErrorBars(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *flagsPtr = (int *)(widgRec + offset);
     unsigned int mask;
@@ -1205,7 +1188,7 @@ ObjToErrorBarsProc(
 }
 
 /*
- * ErrorBarsToObjProc --
+ * ErrorBarsToObj --
  *
  *      Convert the error flags value into a list of strings.
  *
@@ -1214,13 +1197,8 @@ ObjToErrorBarsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ErrorBarsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ErrorBarsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
 {
     int mask = *(int *)(widgRec + offset);
     Tcl_Obj *objPtr, *listObjPtr;
@@ -1283,7 +1261,7 @@ NameOfSmooth(unsigned int flags)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSmoothProc --
+ * ObjToSmooth --
  *
  *      Convert the string representation of a line style or smooth name
  *      into its numeric form.
@@ -1296,15 +1274,8 @@ NameOfSmooth(unsigned int flags)
  */
 /*ARGSUSED*/
 static int
-ObjToSmoothProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing smooth type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToSmooth(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     SmoothingTable *smoothPtr;
@@ -1327,7 +1298,7 @@ linear, step, natural, or quadratic", (char *)NULL);
 /*
  *---------------------------------------------------------------------------
  *
- * SmoothToObjProc --
+ * SmoothToObj --
  *
  *      Convert the smooth value into a string.
  *
@@ -1338,13 +1309,8 @@ linear, step, natural, or quadratic", (char *)NULL);
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SmoothToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+SmoothToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     int smooth = *(int *)(widgRec + offset);
 
@@ -1355,7 +1321,7 @@ SmoothToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPenDirProc --
+ * ObjToPenDir --
  *
  *      Convert the string representation of a line style or symbol name
  *      into its numeric form.
@@ -1368,15 +1334,8 @@ SmoothToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPenDirProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing pen direction */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToPenDir(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *penDirPtr = (int *)(widgRec + offset);
     int length;
@@ -1441,13 +1400,8 @@ NameOfPenDir(int penDir)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PenDirToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PenDirToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     int penDir = *(int *)(widgRec + offset);
 
@@ -4273,7 +4227,6 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
         Blt_Free(vertices);
         return;
     }
-    fprintf(stderr, "Alpha=%x\n", Blt_GetBrushAlpha(brush));
     Blt_PaintPolygon(picture, numPoints, vertices, brush);
     if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         Blt_FreeBrush(brush);

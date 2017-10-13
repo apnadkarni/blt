@@ -109,7 +109,7 @@ static Blt_SelectPixelsProc SelectPixels;
 static Blt_PremultiplyColorsProc PremultiplyColors;
 static Blt_UnmultiplyColorsProc UnassociateColors;
 static Blt_CopyRegionProc CopyRegion;
-static Blt_CopyPicturesProc CopyPictures;
+static Blt_CopyPictureBitsProc CopyPictureBits;
 static Blt_BlankPictureProc BlankPicture;
 
 static Blt_PictureProcs stdPictureProcs = {
@@ -127,7 +127,7 @@ static Blt_PictureProcs stdPictureProcs = {
     PremultiplyColors,
     UnassociateColors,
     CopyRegion,
-    CopyPictures,
+    CopyPictureBits,
     CrossFadePictures,
     BlankPicture
 };
@@ -260,9 +260,9 @@ Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
 }
 
 void 
-Blt_CopyPictures(Blt_Picture dest, Blt_Picture src)
+Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src)
 {
-    (*bltPictProcsPtr->copyPicturesProc)(dest, src);
+    (*bltPictProcsPtr->copyPictureBitsProc)(dest, src);
 }
 
 /* 
@@ -410,7 +410,7 @@ Blt_ClonePicture(Pict *srcPtr)
     Pict *destPtr;
 
     destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-    Blt_CopyPictures(destPtr, srcPtr);
+    Blt_CopyPictureBits(destPtr, srcPtr);
     destPtr->delay = srcPtr->delay;
     return destPtr;
 }
@@ -4402,7 +4402,7 @@ CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyPictures --
+ * CopyPictureBits --
  *
  *      Creates a copy of the given picture.  
  *
@@ -4412,7 +4412,7 @@ CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyPictures(Pict *destPtr, Pict *srcPtr)
+CopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
     CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
@@ -6229,7 +6229,7 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
     Blt_SubtractPictures(tmp, blur);
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);
-    Blt_CopyPictures(destPtr, tmp);
+    Blt_CopyPictureBits(destPtr, tmp);
     Blt_FreePicture(tmp);
 }
 
@@ -6865,23 +6865,12 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
             int r, g, b, t, beta;
 
             beta = sp->Alpha ^ 0xFF;    /* beta = 1 - alpha */
-            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-                fprintf(stderr, "alpha=%d, beta=%d\n", sp->Alpha, beta);
-                fprintf(stderr, "before: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-                        sp->Blue);
-                
-            }
             r = sp->Red   - imul8x8(beta, colorPtr->Red, t);
             g = sp->Green - imul8x8(beta, colorPtr->Green, t);
             b = sp->Blue  - imul8x8(beta, colorPtr->Blue, t);
             sp->Red   = UCLAMP(r);
             sp->Green = UCLAMP(g);
             sp->Blue  = UCLAMP(b);
-            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-                fprintf(stderr, "after: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-                        sp->Blue);
-                
-            }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }

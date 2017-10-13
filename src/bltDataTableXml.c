@@ -551,8 +551,8 @@ GetXmlExternalEntityRef(XML_Parser parser, const XML_Char *context,
         }
         argv[i] = NULL;
         Tcl_JoinPath(argc, argv, &ds);
-        Blt_Free(baseArr);
-        Blt_Free(sysIdArr);
+        Tcl_Free((char *)baseArr);
+        Tcl_Free((char *)sysIdArr);
         Blt_Free(argv);
     } else {
         Tcl_DStringAppend(&ds, systemId, -1);
@@ -604,7 +604,7 @@ ImportXmlFile(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *fileObjPtr,
         Tcl_SplitPath(fileName, &argc, &argv);
         Tcl_JoinPath(argc - 1, argv, &ds);
         XML_SetBase(parser, Tcl_DStringValue(&ds));
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
         Tcl_DStringFree(&ds);
     }
     XML_SetElementHandler(parser, StartXmlTag, EndXmlTag);

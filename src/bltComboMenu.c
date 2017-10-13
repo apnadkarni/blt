@@ -240,62 +240,62 @@ enum SortTypeValues {
     SORT_DICTIONARY, SORT_ASCII, SORT_INTEGER, SORT_REAL, SORT_COMMAND
 };
 
-static Blt_OptionParseProc ObjToEnumProc;
-static Blt_OptionPrintProc EnumToObjProc;
+static Blt_OptionParseProc ObjToEnum;
+static Blt_OptionPrintProc EnumToObj;
 static Blt_CustomOption sortTypeOption = {
-    ObjToEnumProc, EnumToObjProc, NULL, (ClientData)sortTypeStrings
+    ObjToEnum, EnumToObj, NULL, (ClientData)sortTypeStrings
 };
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, NULL, (ClientData)0
+    ObjToStyle, StyleToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToTypeProc;
-static Blt_OptionPrintProc TypeToObjProc;
+static Blt_OptionParseProc ObjToType;
+static Blt_OptionPrintProc TypeToObj;
 static Blt_CustomOption typeOption = {
-    ObjToTypeProc, TypeToObjProc, NULL, (ClientData)0
+    ObjToType, TypeToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTextProc;
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
+    ObjToText, TextToObj, FreeTextProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeIconProc;
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, (ClientData)0
+    ObjToIcon, IconToObj, FreeIconProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTraceVarProc;
-static Blt_OptionParseProc ObjToTraceVarProc;
-static Blt_OptionPrintProc TraceVarToObjProc;
+static Blt_OptionParseProc ObjToTraceVar;
+static Blt_OptionPrintProc TraceVarToObj;
 static Blt_CustomOption traceVarOption = {
-    ObjToTraceVarProc, TraceVarToObjProc, FreeTraceVarProc, (ClientData)0
+    ObjToTraceVar, TraceVarToObj, FreeTraceVarProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToRestrictProc;
-static Blt_OptionPrintProc RestrictToObjProc;
+static Blt_OptionParseProc ObjToRestrict;
+static Blt_OptionPrintProc RestrictToObj;
 static Blt_CustomOption restrictOption = {
-    ObjToRestrictProc, RestrictToObjProc, NULL, (ClientData)0
+    ObjToRestrict, RestrictToObj, NULL, (ClientData)0
 };
 
 extern Blt_CustomOption bltLimitsOption;
@@ -395,11 +395,11 @@ static Blt_ConfigSpec styleConfigSpecs[] =
     {BLT_CONFIG_RELIEF, "-activerelief", (char *)NULL, (char *)NULL, 
         DEF_STYLE_ACTIVE_RELIEF, Blt_Offset(Style, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-background", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_BACKGROUND, "-background", "background", (char *)NULL,
         DEF_STYLE_BG, Blt_Offset(Style, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", (char *)NULL,
         DEF_STYLE_BORDERWIDTH, Blt_Offset(Style, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-checkbuttonfillcolor", (char *)NULL, (char *)NULL, 
@@ -421,10 +421,10 @@ static Blt_ConfigSpec styleConfigSpecs[] =
         DEF_STYLE_DISABLED_BG, Blt_Offset(Style, disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", (char *)NULL, (char *)NULL, 
         DEF_STYLE_DISABLED_FG, Blt_Offset(Style, disabledTextFg), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
-        Blt_Offset(Style, textFont), 0},
-    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL,
+        DEF_STYLE_FONT, Blt_Offset(Style, textFont), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", (char *)NULL, DEF_STYLE_FG, 
         Blt_Offset(Style, normalTextFg), 0},
     {BLT_CONFIG_COLOR, "-radiobuttonfillcolor", (char *)NULL, (char *)NULL, 
         DEF_RADIOBUTTON_FILL_COLOR, Blt_Offset(Style, radioButtonFillColor), 
@@ -488,7 +488,7 @@ typedef struct  {
                                          * item is clicked. */
     Tcl_Obj *dataObjPtr;                /* User-data associated with this
                                          * item. */
-    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If
+    Tcl_Obj *varNameObjPtr;             /* Name of TCL variable.  If
                                          * non-NULL, this variable will be
                                          * set to the value string of the
                                          * selected item. */
@@ -548,7 +548,7 @@ static Blt_ConfigSpec itemConfigSpecs[] =
     {BLT_CONFIG_OBJ, "-value", (char *)NULL, (char *)NULL, DEF_ITEM_VALUE, 
          Blt_Offset(Item, valueObjPtr), 0},
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
-        DEF_ITEM_VARIABLE, Blt_Offset(Item, variableObjPtr), BLT_CONFIG_NULL_OK,
+        DEF_ITEM_VARIABLE, Blt_Offset(Item, varNameObjPtr), BLT_CONFIG_NULL_OK,
         &traceVarOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
@@ -703,6 +703,7 @@ struct _ComboMenu {
     GC copyGC;
     int nextStyleId;
     PostInfo post;
+    short int bgOffsetX, bgOffsetY;
 };
 
 static Blt_ConfigSpec comboConfigSpecs[] =
@@ -727,12 +728,12 @@ static Blt_ConfigSpec comboConfigSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_STYLE_BG, Blt_Offset(ComboMenu, defStyle.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ComboMenu, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-command", (char *)NULL, (char *)NULL, DEF_COMMAND, 
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_COMMAND, 
         Blt_Offset(ComboMenu, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor", DEF_CURSOR, 
         Blt_Offset(ComboMenu, cursor), BLT_CONFIG_NULL_OK},
@@ -746,7 +747,7 @@ static Blt_ConfigSpec comboConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
         "DisabledForeground", DEF_STYLE_DISABLED_FG, 
         Blt_Offset(ComboMenu, defStyle.disabledTextFg), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_STYLE_FG, Blt_Offset(ComboMenu, defStyle.normalTextFg), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_STYLE_FONT, 
@@ -1517,7 +1518,7 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
             return TCL_ERROR;
         }
     }
-    if (itemPtr->variableObjPtr != NULL) {
+    if (itemPtr->varNameObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
         objPtr = NULL;
@@ -1534,7 +1535,7 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
             Tcl_Obj *resultObjPtr;
             
             Tcl_IncrRefCount(objPtr);
-            resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->variableObjPtr, NULL,
+            resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->varNameObjPtr, NULL,
                         objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
             Tcl_DecrRefCount(objPtr);
             if (resultObjPtr == NULL) {
@@ -3371,7 +3372,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
      * Use the value of the variable to update the selected status of the
      * item.
      */
-    objPtr = Tcl_ObjGetVar2(interp, itemPtr->variableObjPtr, NULL, 
+    objPtr = Tcl_ObjGetVar2(interp, itemPtr->varNameObjPtr, NULL, 
                             TCL_GLOBAL_ONLY);
     if (objPtr == NULL) {
         return FALSE;                   /* Can't get value of variable. */
@@ -3450,7 +3451,7 @@ ConfigureItem(Tcl_Interp *interp, Item *itemPtr, int objc,
         objc, objv, (char *)itemPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (itemPtr->variableObjPtr != NULL) {
+    if (itemPtr->varNameObjPtr != NULL) {
         if (Blt_ConfigModified(itemConfigSpecs, "-variable", "-*value", 
                                (char *)NULL)) {
             CheckVariable(interp, itemPtr);
@@ -3833,7 +3834,7 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
 {
     Item *itemPtr = clientData;
 
-    assert(itemPtr->variableObjPtr != NULL);
+    assert(itemPtr->varNameObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
         return NULL;                    /* Interpreter is going away. */
 
@@ -3846,7 +3847,7 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
         if (flags & TCL_TRACE_DESTROYED) {
             char *varName;
 
-            varName = Tcl_GetString(itemPtr->variableObjPtr);
+            varName = Tcl_GetString(itemPtr->varNameObjPtr);
             Tcl_TraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, 
                 clientData);
         }
@@ -3871,23 +3872,23 @@ FreeTraceVarProc(ClientData clientData, Display *display, char *widgRec,
 {
     Item *itemPtr = (Item *)(widgRec);
 
-    if (itemPtr->variableObjPtr != NULL) {
+    if (itemPtr->varNameObjPtr != NULL) {
         const char *varName;
         ComboMenu *comboPtr;
 
         comboPtr = itemPtr->comboPtr;
-        varName = Tcl_GetString(itemPtr->variableObjPtr);
+        varName = Tcl_GetString(itemPtr->varNameObjPtr);
         Tcl_UntraceVar(comboPtr->interp, varName, VAR_FLAGS, ItemVarTraceProc, 
                 itemPtr);
-        Tcl_DecrRefCount(itemPtr->variableObjPtr);
-        itemPtr->variableObjPtr = NULL;
+        Tcl_DecrRefCount(itemPtr->varNameObjPtr);
+        itemPtr->varNameObjPtr = NULL;
     }
 }
 
 /*
  *---------------------------------------------------------------------------
 
- * ObjToTraceVarProc --
+ * ObjToTraceVar --
  *
  *      Convert the string representation of a color into a XColor pointer.
  *
@@ -3899,24 +3900,24 @@ FreeTraceVarProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToTraceVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTraceVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     const char *varName;
 
     /* Remove the current trace on the variable. */
-    if (itemPtr->variableObjPtr != NULL) {
-        varName = Tcl_GetString(itemPtr->variableObjPtr);
+    if (itemPtr->varNameObjPtr != NULL) {
+        varName = Tcl_GetString(itemPtr->varNameObjPtr);
         Tcl_UntraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, itemPtr);
-        Tcl_DecrRefCount(itemPtr->variableObjPtr);
-        itemPtr->variableObjPtr = NULL;
+        Tcl_DecrRefCount(itemPtr->varNameObjPtr);
+        itemPtr->varNameObjPtr = NULL;
     }
     varName = Tcl_GetString(objPtr);
     if ((varName[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
         return TCL_OK;
     }
-    itemPtr->variableObjPtr = objPtr;
+    itemPtr->varNameObjPtr = objPtr;
     Tcl_IncrRefCount(objPtr);
     Tcl_TraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, itemPtr);
     return TCL_OK;
@@ -3925,7 +3926,7 @@ ObjToTraceVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TraceVarToObjProc --
+ * TraceVarToObj --
  *
  *      Return the name of the style.
  *
@@ -3936,16 +3937,16 @@ ObjToTraceVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TraceVarToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  char *widgRec, int offset, int flags)  
+TraceVarToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     Tcl_Obj *objPtr;
 
-    if (itemPtr->variableObjPtr == NULL) {
+    if (itemPtr->varNameObjPtr == NULL) {
         objPtr = Tcl_NewStringObj("", -1);
     } else {
-        objPtr = itemPtr->variableObjPtr;
+        objPtr = itemPtr->varNameObjPtr;
     }
     return objPtr;
 }
@@ -3953,7 +3954,7 @@ TraceVarToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Convert the string representation of a color into a XColor pointer.
  *
@@ -3965,8 +3966,8 @@ TraceVarToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -3994,7 +3995,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Return the name of the style.
  *
@@ -4005,8 +4006,8 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -4022,7 +4023,7 @@ StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToRestrictProc --
+ * ObjToRestrict --
  *
  *      Convert the string representation of an item state into a flag.
  *
@@ -4034,8 +4035,8 @@ StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToRestrict(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
@@ -4063,7 +4064,7 @@ ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * RestrictToObjProc --
+ * RestrictToObj --
  *
  *      Return the string representation of the restrict flags.
  *
@@ -4074,8 +4075,8 @@ ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-RestrictToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  char *widgRec, int offset, int flags)  
+RestrictToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
 
@@ -4095,7 +4096,7 @@ RestrictToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Convert the string representation of an item state into a flag.
  *
@@ -4107,8 +4108,8 @@ RestrictToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -4140,7 +4141,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -4151,8 +4152,8 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -4184,7 +4185,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -4196,8 +4197,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -4224,7 +4225,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Return the name of the style.
  *
@@ -4235,8 +4236,8 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -4272,7 +4273,7 @@ IconChangedProc(ClientData clientData, int x, int y, int w, int h,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert a image into a hashed icon.
  *
@@ -4285,8 +4286,8 @@ IconChangedProc(ClientData clientData, int x, int y, int w, int h,
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboMenu *comboPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -4305,7 +4306,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -4316,8 +4317,8 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Icon icon = *(Icon *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -4358,7 +4359,7 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -4369,8 +4370,8 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     char *string;
@@ -4389,7 +4390,7 @@ ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Return the text of the item.
  *
@@ -4400,8 +4401,8 @@ ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+TextToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
 
@@ -4411,7 +4412,7 @@ TextToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTypeProc --
+ * ObjToType --
  *
  *      Convert the string representation of an item into a value.
  *
@@ -4423,8 +4424,8 @@ TextToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToTypeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToType(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *typePtr = (unsigned int *)(widgRec + offset);
     int flag;
@@ -4440,7 +4441,7 @@ ObjToTypeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TypeToObjProc --
+ * TypeToObj --
  *
  *      Return the name of the type.
  *
@@ -4451,8 +4452,8 @@ ObjToTypeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TypeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+TypeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     int type = *(int *)(widgRec + offset);
     
@@ -4463,7 +4464,7 @@ TypeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToEnumProc --
+ * ObjToEnum --
  *
  *      Converts the string into its enumerated type.
  *
@@ -4471,8 +4472,8 @@ TypeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToEnum(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *enumPtr = (int *)(widgRec + offset);
     char c;
@@ -4511,7 +4512,7 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * EnumToObjProc --
+ * EnumToObj --
  *
  *      Returns the string associated with the enumerated type.
  *
@@ -4519,8 +4520,8 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)     
+EnumToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)     
 {
     int value = *(int *)(widgRec + offset);
     char **strings = (char **)clientData;
@@ -6333,7 +6334,7 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     cmd = Tcl_GetString(objv[1]);
     Tcl_Preserve(itemPtr);
     comboPtr->selectPtr = itemPtr;
-    result = UpdateTextAndIconVars(interp, comboPtr, itemPtr, cmd[0] == 's');
+    result = SelectItem(interp, comboPtr, itemPtr, cmd[0] == 's');
     Tcl_Release(itemPtr);
     return result;
 }
@@ -7280,14 +7281,11 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
     }
     w = VPORTWIDTH(comboPtr);
     w = MAX(comboPtr->worldWidth, w);
-#ifdef notdef
-    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, 0, -y);
-#endif
+    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, -comboPtr->bgOffsetX,
+                     -comboPtr->bgOffsetY);
     Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x, y, w, 
         itemPtr->height, stylePtr->borderWidth, relief);
-#ifdef notdef
     Blt_Bg_SetOrigin(comboPtr->tkwin, bg, 0, 0);
-#endif
 }
 
 static void
@@ -7374,9 +7372,11 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
     } else {
         bg = stylePtr->normalBg;
     }       
+    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, -(comboPtr->bgOffsetX + x),
+                     -(comboPtr->bgOffsetY + y));
     state = (itemPtr->flags & ITEM_SELECTED);
     if (itemPtr->flags & ITEM_DISABLED) {
-        picture = Blt_PaintRadioButton(w, h, bg,
+        picture = Blt_PaintRadioButton2(w, h, bg,
                 Blt_Bg_BorderColor(stylePtr->disabledBg),
                 stylePtr->disabledTextFg,
                 FALSE);
@@ -7387,10 +7387,11 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
             ? stylePtr->radioButtonFillColor : comboPtr->radioButtonFillColor;
         circleColor = (stylePtr->radioButtonColor) 
             ? stylePtr->radioButtonColor : comboPtr->radioButtonColor;
-        picture = Blt_PaintRadioButton(w, h, bg, fillColor, circleColor, state);
+        picture = Blt_PaintRadioButton2(w, h, bg, fillColor, circleColor, state);
     }
     Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0, w, h, x, y, 0);
     Blt_FreePicture(picture);
+    Blt_Bg_SetOrigin(comboPtr->tkwin, bg, 0, 0);
 }
 
 
@@ -7613,6 +7614,7 @@ DrawComboMenu(ComboMenu *comboPtr, Drawable drawable)
             }
         }
     }
+
     /* Manage the geometry of the scrollbars. */
     if (comboPtr->yScrollbarWidth > 0) {
         int x, y;
@@ -7709,11 +7711,12 @@ DisplayItem(ClientData clientData)
     if (d > 0) {
         h -= d;
     }
+    comboPtr->bgOffsetX = SCREENX(comboPtr, itemPtr->worldX);
+    comboPtr->bgOffsetY = SCREENY(comboPtr, itemPtr->worldY);
     DrawItemBackground(itemPtr, drawable, -comboPtr->xOffset, 0);
     DrawItem(itemPtr, drawable, -comboPtr->xOffset, 0);
     XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
-        comboPtr->copyGC, 0, sy, w, h, 
-        comboPtr->borderWidth, y);
+        comboPtr->copyGC, 0, sy, w, h, comboPtr->borderWidth, y);
     Tk_FreePixmap(comboPtr->display, drawable);
 }
 

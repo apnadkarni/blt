@@ -78,11 +78,11 @@
 #define MM_INCH         25.4
 #define PICA_INCH       72.0
 
-static Blt_OptionParseProc ObjToPicaProc;
-static Blt_OptionPrintProc PicaToObjProc;
+static Blt_OptionParseProc ObjToPica;
+static Blt_OptionPrintProc PicaToObj;
 static Blt_CustomOption picaOption =
 {
-    ObjToPicaProc, PicaToObjProc, NULL, (ClientData)0,
+    ObjToPica, PicaToObj, NULL, (ClientData)0,
 };
 
 static Blt_OptionParseProc ObjToPad;
@@ -158,21 +158,14 @@ static Blt_ConfigSpec configSpecs[] =
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPicaProc --
+ * ObjToPica --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToPicaProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* New value. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToPica(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *picaPtr = (int *)(widgRec + offset);
 
@@ -188,13 +181,8 @@ ObjToPicaProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PicaToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* PostScript structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PicaToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)
 {
     int pica = *(int *)(widgRec + offset);
 
@@ -210,15 +198,8 @@ PicaToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPad(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* New value. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToPad(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+         Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Pad *padPtr = (Blt_Pad *) (widgRec + offset);
 
@@ -234,13 +215,8 @@ ObjToPad(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PadToObj(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,              /* PostScript structure record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+PadToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+         char *widgRec, int offset, int flags)
 {
     Blt_Pad *padPtr = (Blt_Pad *)(widgRec + offset);
     Tcl_Obj *objPtr, *listObjPtr;

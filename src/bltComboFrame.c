@@ -109,10 +109,10 @@ static const char emptyString[] = "";
 #define DEF_WIDTH         "0"
 #define DEF_WINDOW        ((char *)NULL)
 
-static Blt_OptionParseProc ObjToRestrictProc;
-static Blt_OptionPrintProc RestrictToObjProc;
+static Blt_OptionParseProc ObjToRestrict;
+static Blt_OptionPrintProc RestrictToObj;
 static Blt_CustomOption restrictOption = {
-    ObjToRestrictProc, RestrictToObjProc, NULL, (ClientData)0
+    ObjToRestrict, RestrictToObj, NULL, (ClientData)0
 };
 
 extern Blt_CustomOption bltLimitsOption;
@@ -788,14 +788,14 @@ ChildGeometryProc(ClientData clientData, Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToRestrictProc --
+ * ObjToRestrict --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToRestrict(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
@@ -823,7 +823,7 @@ ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * RestrictToObjProc --
+ * RestrictToObj --
  *
  *      Return the string representation of the restrict flags.
  *
@@ -834,8 +834,8 @@ ObjToRestrictProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-RestrictToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                  char *widgRec, int offset, int flags)  
+RestrictToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
 

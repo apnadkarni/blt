@@ -327,10 +327,10 @@ BLT_EXTERN void		Blt_FadePicture(Blt_Picture picture, int x, int y,
 BLT_EXTERN void		Blt_CopyRegion(Blt_Picture dest, Blt_Picture src,
 				int sx, int sy, int w, int h, int dx, int dy);
 #endif
-#ifndef Blt_CopyPictures_DECLARED
-#define Blt_CopyPictures_DECLARED
+#ifndef Blt_CopyPictureBits_DECLARED
+#define Blt_CopyPictureBits_DECLARED
 /* 55 */
-BLT_EXTERN void		Blt_CopyPictures(Blt_Picture dest, Blt_Picture src);
+BLT_EXTERN void		Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src);
 #endif
 #ifndef Blt_GammaCorrectPicture_DECLARED
 #define Blt_GammaCorrectPicture_DECLARED
@@ -643,7 +643,7 @@ typedef struct BltTkProcs {
     void (*blt_ColorBlendPictures) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 52 */
     void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, double factor); /* 53 */
     void (*blt_CopyRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 54 */
-    void (*blt_CopyPictures) (Blt_Picture dest, Blt_Picture src); /* 55 */
+    void (*blt_CopyPictureBits) (Blt_Picture dest, Blt_Picture src); /* 55 */
     void (*blt_GammaCorrectPicture) (Blt_Picture dest, Blt_Picture src, float gamma); /* 56 */
     void (*blt_SharpenPicture) (Blt_Picture dest, Blt_Picture src); /* 57 */
     void (*blt_ApplyColorToPicture) (Blt_Picture pict, Blt_Pixel *colorPtr); /* 58 */
@@ -917,9 +917,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_CopyRegion \
 	(bltTkProcsPtr->blt_CopyRegion) /* 54 */
 #endif
-#ifndef Blt_CopyPictures
-#define Blt_CopyPictures \
-	(bltTkProcsPtr->blt_CopyPictures) /* 55 */
+#ifndef Blt_CopyPictureBits
+#define Blt_CopyPictureBits \
+	(bltTkProcsPtr->blt_CopyPictureBits) /* 55 */
 #endif
 #ifndef Blt_GammaCorrectPicture
 #define Blt_GammaCorrectPicture \

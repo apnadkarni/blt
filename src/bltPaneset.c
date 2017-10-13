@@ -460,10 +460,10 @@ static Blt_CustomOption tagsOption = {
     ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
 static Blt_ConfigSpec paneSetSpecs[] =
@@ -476,8 +476,7 @@ static Blt_ConfigSpec paneSetSpecs[] =
         Blt_Offset(Paneset, activeRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_BACKGROUND, "-disabledsashcolor", "disabledSashColor", 
         "DisabledSashColor", DEF_DISABLED_SASH_COLOR,
         Blt_Offset(Paneset, disabledSashBg), 0},
@@ -515,7 +514,7 @@ static Blt_ConfigSpec paneSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Pane, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_OBJ, "-data", "data", "Data", DEF_PANE_DATA, 
         Blt_Offset(Pane, dataObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
@@ -1194,7 +1193,7 @@ TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -1206,8 +1205,8 @@ TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
@@ -1231,7 +1230,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the state.
  *
@@ -1242,8 +1241,8 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;

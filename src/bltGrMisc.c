@@ -77,11 +77,11 @@ Blt_CustomOption bltPointOption =
     ObjToPoint, PointToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToLimitsProc;
-static Blt_OptionPrintProc LimitsToObjProc;
+static Blt_OptionParseProc ObjToLimits;
+static Blt_OptionPrintProc LimitsToObj;
 Blt_CustomOption bltLimitsOption =
 {
-    ObjToLimitsProc, LimitsToObjProc, NULL, (ClientData)0
+    ObjToLimits, LimitsToObj, NULL, (ClientData)0
 };
 
 #define ARROW_IPAD 2
@@ -165,14 +165,8 @@ Blt_GetXY(Tcl_Interp *interp, Tk_Window tkwin, const char *string,
  */
 /*ARGSUSED*/
 static int
-ObjToPoint(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* New legend position string */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToPoint(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     XPoint *pointPtr = (XPoint *)(widgRec + offset);
     int x, y;
@@ -198,13 +192,8 @@ ObjToPoint(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PointToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PointToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)
 {
     XPoint *pointPtr = (XPoint *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -223,7 +212,7 @@ PointToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLimitsProc --
+ * ObjToLimits --
  *
  *      Converts the list of elements into zero or more pixel values which
  *      determine the range of pixel values possible.  An element can be in
@@ -250,15 +239,8 @@ PointToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToLimitsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Widget of paneset */
-    Tcl_Obj *objPtr,                    /* New width list */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToLimits(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Limits *limitsPtr = (Blt_Limits *)(widgRec + offset);
 
@@ -272,7 +254,7 @@ ObjToLimitsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * LimitsToObjProc --
+ * LimitsToObj --
  *
  *      Convert the limits of the pixel values allowed into a list.
  *
@@ -283,13 +265,8 @@ ObjToLimitsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LimitsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Row/column structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+LimitsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Blt_Limits *limitsPtr = (Blt_Limits *)(widgRec + offset);
     Tcl_Obj *listObjPtr;
