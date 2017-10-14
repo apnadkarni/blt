@@ -4701,6 +4701,9 @@ AddSelectionRange(TableView *viewPtr)
     Column *firstColPtr, *lastColPtr;
 
     selPtr = &viewPtr->selectCells;
+    if (selPtr->anchorPtr == NULL) {
+        return;
+    }
     if (selPtr->anchorPtr->rowPtr->index > selPtr->markPtr->rowPtr->index) {
         lastRowPtr = selPtr->anchorPtr->rowPtr;
         firstRowPtr = selPtr->markPtr->rowPtr;
