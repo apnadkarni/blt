@@ -11099,7 +11099,7 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      The selection changes.
  *
- *      pathName selection set cell ?cell?
+ *      pathName selection set cell cell
  *
  *---------------------------------------------------------------------------
  */
@@ -11109,10 +11109,8 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
                Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    Row *rowAnchorPtr, *rowMarkPtr;
-    Column *colAnchorPtr, *colMarkPtr;
-    Cell *cellPtr;
     CellKey *anchorPtr, *markPtr;
+    Cell *cellPtr;
 
     if (viewPtr->flags & (GEOMETRY | LAYOUT_PENDING)) {
         /*
@@ -11129,32 +11127,31 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (cellPtr == NULL) {
         return TCL_OK;
     }
-    markPtr = anchorPtr = GetKey(cellPtr);
-    colMarkPtr = colAnchorPtr = anchorPtr->colPtr;
-    rowMarkPtr = rowAnchorPtr = anchorPtr->rowPtr;
-    if ((rowAnchorPtr->flags|colAnchorPtr->flags) & HIDDEN) {
-        Tcl_AppendResult(interp, "can't select hidden anchor", (char *)NULL);
+    anchorPtr = GetKey(cellPtr);
+    if ((anchorPtr->rowPtr->flags|anchorPtr->colPtr->flags) & HIDDEN) {
+        Tcl_AppendResult(interp, "can't select hidden anchor",
+                         (char *)NULL);
         return TCL_ERROR;
     }
-    if (objc == 5) {
-        if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (cellPtr == NULL) {
-            return TCL_OK;
-        }
-        markPtr = GetKey(cellPtr);
-        colMarkPtr = markPtr->colPtr;
-        rowMarkPtr = markPtr->rowPtr;
-        if ((rowMarkPtr->flags|colMarkPtr->flags) & HIDDEN) {
-            Tcl_AppendResult(interp, "can't select hidden mark", (char *)NULL);
-            return TCL_ERROR;
-        }
+    if (GetCellFromObj(NULL, viewPtr, objv[4], &cellPtr) != TCL_OK) {
+        /* Silently ignore invalid cell selections. This is to prevent
+         * errors when the table is empty. */
+        return TCL_OK;
+    }
+    markPtr = GetKey(cellPtr);
+    if ((markPtr->rowPtr->flags|markPtr->colPtr->flags) & HIDDEN) {
+        Tcl_AppendResult(interp, "can't select hidden mark", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (markPtr == NULL) {
+        markPtr = anchorPtr;
     }
     if (viewPtr->selectMode == SELECT_CELLS) {
         CellSelection *selPtr = &viewPtr->selectCells;
         const char *string;
 
+        selPtr->anchorPtr = anchorPtr;
+        selPtr->markPtr = markPtr;
         selPtr->flags &= ~SELECT_MASK;
         string = Tcl_GetString(objv[2]);
         switch (string[0]) {
@@ -11165,8 +11162,9 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         case 't':
             selPtr->flags |= SELECT_TOGGLE;   break;
         }
-        selPtr->markPtr = markPtr;
-        AddSelectionRange(viewPtr);
+        if ((anchorPtr != NULL) && (markPtr != NULL)) {
+            AddSelectionRange(viewPtr);
+        }
     } else {
         RowSelection *selectPtr = &viewPtr->selectRows;
         const char *string;
@@ -11181,10 +11179,10 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         case 't':
             selectPtr->flags |= SELECT_TOGGLE;   break;
         }
-        SelectRows(viewPtr, rowAnchorPtr, rowMarkPtr);
+        SelectRows(viewPtr, anchorPtr->rowPtr, markPtr->rowPtr);
         selectPtr->flags &= ~SELECT_MASK;
-        selectPtr->anchorPtr = rowAnchorPtr;
-        selectPtr->markPtr = rowMarkPtr;
+        selectPtr->anchorPtr = anchorPtr->rowPtr;
+        selectPtr->markPtr = markPtr->rowPtr;
     }
     if (viewPtr->flags & SELECT_EXPORT) {
         Tk_OwnSelection(viewPtr->tkwin, XA_PRIMARY, LostSelection, viewPtr);
@@ -11218,14 +11216,14 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec selectionOps[] =
 {
     {"anchor",   1, SelectionAnchorOp,   4, 4, "cellName",},
-    {"clear",    5, SelectionSetOp,      4, 5, "cellName ?cellName?",},
+    {"clear",    5, SelectionSetOp,      5, 5, "anchorCell markCell",},
     {"clearall", 6, SelectionClearallOp, 3, 3, "",},
     {"export",   1, SelectionExportOp,   3, 3, "",},
     {"includes", 1, SelectionIncludesOp, 4, 4, "cellName",},
     {"mark",     1, SelectionMarkOp,     4, 4, "cellName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
-    {"set",      1, SelectionSetOp,      4, 5, "cellName ?cellName?",},
-    {"toggle",   1, SelectionSetOp,      4, 5, "cellName ?cellName?",},
+    {"set",      1, SelectionSetOp,      4, 5, "anchorCell markCell",},
+    {"toggle",   1, SelectionSetOp,      4, 5, "anchorCell markCell",},
 };
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
