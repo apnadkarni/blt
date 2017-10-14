@@ -11008,7 +11008,7 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         CellSelection *selPtr = &viewPtr->selectCells;
         
         if (selPtr->anchorPtr == NULL) {
-            fprintf(stderr, "cell selection anchor must be set first\n");
+            fprintf(stderr, "Attempting to set mark before anchor. Cell selection anchor must be set first\n");
             return TCL_OK;
         }
         selPtr->markPtr = GetKey(cellPtr);
