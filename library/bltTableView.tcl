@@ -349,7 +349,7 @@ proc blt::TableView::Initialize { w } {
                         %W selection anchor current
                     }
                     if { [%W selection includes anchor] } {
-                        %W selection set anchor current
+                        %W selection anchor current
                     } else {
                         %W selection clear anchor current
                         %W selection set current current
@@ -991,6 +991,7 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
         } "singlerow" {
             set row [lindex $index 0]
             $w row see $row
+            $w selection clearall
             $w selection set $cell $cell
         } "multiplerows" {
             set row [lindex $index 0]
