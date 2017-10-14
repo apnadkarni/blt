@@ -7376,7 +7376,7 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
                      -(comboPtr->bgOffsetY + y));
     state = (itemPtr->flags & ITEM_SELECTED);
     if (itemPtr->flags & ITEM_DISABLED) {
-        picture = Blt_PaintRadioButton2(w, h, bg,
+        picture = Blt_PaintRadioButton(w, h, bg,
                 Blt_Bg_BorderColor(stylePtr->disabledBg),
                 stylePtr->disabledTextFg,
                 FALSE);
@@ -7387,7 +7387,7 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
             ? stylePtr->radioButtonFillColor : comboPtr->radioButtonFillColor;
         circleColor = (stylePtr->radioButtonColor) 
             ? stylePtr->radioButtonColor : comboPtr->radioButtonColor;
-        picture = Blt_PaintRadioButton2(w, h, bg, fillColor, circleColor, state);
+        picture = Blt_PaintRadioButton(w, h, bg, fillColor, circleColor, state);
     }
     Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0, w, h, x, y, 0);
     Blt_FreePicture(picture);
