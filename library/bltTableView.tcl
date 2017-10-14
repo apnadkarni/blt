@@ -527,6 +527,7 @@ proc blt::TableView::Initialize { w } {
     }
     $w bind CheckBoxStyle <ButtonPress-1> { 
         if { [%W writable active] } {
+            set blt::TableView::_private(activeSelection) 0
             blt::TableView::ToggleValue %W active
         } else {
             blt::TableView::SetSelectionAnchor %W current
@@ -550,8 +551,8 @@ proc blt::TableView::Initialize { w } {
         }
     }
     $w bind ComboBoxStyle <ButtonPress-1> { 
-        set blt::TableView::_private(activeSelection) 0
         if { [%W cell identify current %X %Y] == "button" } {
+            set blt::TableView::_private(activeSelection) 0
             blt::TableView::PostComboBoxMenu %W current
         } else {
             blt::TableView::SetSelectionAnchor %W current
@@ -589,6 +590,7 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
+            %W selection set anchor mark
         }
     }
     # ImageBoxStyle
@@ -620,6 +622,7 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
+            %W selection set anchor mark
         } else {
             %W invoke active
         }
@@ -654,6 +657,7 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(scroll) 0
         if { 0 && $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
+            %W selection set anchor mark
         } else {
             set style [%W style get active]
             set var [%W style cget $style -variable]
