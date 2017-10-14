@@ -11222,8 +11222,8 @@ static Blt_OpSpec selectionOps[] =
     {"includes", 1, SelectionIncludesOp, 4, 4, "cellName",},
     {"mark",     1, SelectionMarkOp,     4, 4, "cellName",},
     {"present",  1, SelectionPresentOp,  3, 3, "",},
-    {"set",      1, SelectionSetOp,      4, 5, "anchorCell markCell",},
-    {"toggle",   1, SelectionSetOp,      4, 5, "anchorCell markCell",},
+    {"set",      1, SelectionSetOp,      5, 5, "anchorCell markCell",},
+    {"toggle",   1, SelectionSetOp,      5, 5, "anchorCell markCell",},
 };
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 

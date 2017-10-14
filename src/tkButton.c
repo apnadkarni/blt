@@ -1534,16 +1534,16 @@ DrawRadioButton(Tk_Window tkwin, Drawable drawable, Button *butPtr,
     picture = NULL;
 #ifndef notdef
     if (butPtr->state & STATE_DISABLED) {
-        picture = Blt_PaintRadioButton2(dim, dim, bg, 
+        picture = Blt_PaintRadioButton(dim, dim, bg, 
                 Blt_Bg_BorderColor(butPtr->normalBg), 
                 butPtr->disabledFg, on);
     } else if (butPtr->flags & SELECTED) {
-        picture = Blt_PaintRadioButton2(dim, dim, bg,
+        picture = Blt_PaintRadioButton(dim, dim, bg,
                         Blt_Bg_BorderColor(butPtr->selectBg), 
                         butPtr->selectFg,
                         TRUE);
     } else {
-        picture = Blt_PaintRadioButton2(dim, dim, bg,
+        picture = Blt_PaintRadioButton(dim, dim, bg,
                         Blt_Bg_BorderColor(butPtr->selectBg),
                         butPtr->selectFg,
                         FALSE);
