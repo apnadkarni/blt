@@ -123,6 +123,7 @@
 
 #define POSTED          (1<<11)         /* Cells can be posted. */
 #define STICKY          (1<<12)
+#define HAS_SELECTION   (1<<13)
 
 /* These are tableview only flags. */
 #define LAYOUT_PENDING  (1<<13)

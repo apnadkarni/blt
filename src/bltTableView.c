@@ -4789,6 +4789,76 @@ GetSelectedCells(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
 }
 
 static void
+GetSelectedRows(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
+{
+    Row *rowPtr;
+    Column *colPtr;
+    CellSelection *selPtr;
+
+    selPtr = &viewPtr->selectCells;
+    for (rowPtr = anchorPtr->rowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+        int selected;
+
+        selected = FALSE;
+        rowPtr->flags &= ~HAS_SELECTION;
+        for (colPtr = anchorPtr->colPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+            CellKey key;
+
+            key.colPtr = colPtr;
+            key.rowPtr = rowPtr;
+            if (Blt_FindHashEntry(&selPtr->cellTable, &key) != NULL) {
+                selected = TRUE;
+                break;
+            }
+            if (colPtr == markPtr->colPtr) {
+                break;
+            }
+        }
+        if (selected) {
+            rowPtr->flags |= HAS_SELECTION;
+        }
+        if (rowPtr == markPtr->rowPtr) {
+            break;
+        }
+    }
+}
+
+static void
+GetSelectedColumns(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
+{
+    Row *rowPtr;
+    Column *colPtr;
+    CellSelection *selPtr;
+
+    selPtr = &viewPtr->selectCells;
+    for (colPtr = anchorPtr->colPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+        int selected;
+
+        selected = FALSE;
+        colPtr->flags &= ~HAS_SELECTION;
+        for (rowPtr = anchorPtr->rowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+            CellKey key;
+
+            key.colPtr = colPtr;
+            key.rowPtr = rowPtr;
+            if (Blt_FindHashEntry(&selPtr->cellTable, &key) != NULL) {
+                selected = TRUE;
+                break;
+            }
+            if (rowPtr == markPtr->rowPtr) {
+                break;
+            }
+        }
+        if (selected) {
+            colPtr->flags |= HAS_SELECTION;
+        }
+        if (colPtr == markPtr->colPtr) {
+            break;
+        }
+    }
+}
+
+static void
 ComputeRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
 {
     unsigned int iw, ih, tw, th;
@@ -5487,14 +5557,22 @@ SelectionProc(
             CellKey anchor, mark;
 
             GetSelectedCells(viewPtr, &anchor, &mark);
-            
+            GetSelectedRows(viewPtr, &anchor, &mark);
+            GetSelectedColumns(viewPtr, &anchor, &mark);
             for (rowPtr = anchor.rowPtr; rowPtr != NULL; 
                  rowPtr = rowPtr->nextPtr) {
                 Column *colPtr;
 
+                if ((rowPtr->flags & HAS_SELECTION) == 0) {
+                    continue;
+                }
                 CsvStartRecord(&writer);
                 for (colPtr = anchor.colPtr; colPtr != NULL; 
                      colPtr = colPtr->nextPtr) {
+
+                    if ((colPtr->flags & HAS_SELECTION) == 0) {
+                        continue;
+                    }
                     CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
                     if (colPtr == mark.colPtr) {
                         break;

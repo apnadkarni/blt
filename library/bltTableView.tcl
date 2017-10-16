@@ -617,6 +617,7 @@ proc blt::TableView::Initialize { w } {
         after cancel $blt::TableView::_private(afterId)
         set blt::TableView::_private(afterId) -1
         set blt::TableView::_private(scroll) 0
+        # Is this button release for a selection or clicking on the image?
         if { $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
         } else {
