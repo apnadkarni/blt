@@ -196,7 +196,7 @@ bind BltTableView <KeyPress-space> {
             %W selection clearall
         } else {
             %W selection clearall
-            %W selection set focus
+            %W selection set focus focus
         }
     } else {
         %W selection toggle focus
@@ -296,7 +296,7 @@ proc blt::TableView::Initialize { w } {
                 %W selection anchor current
             }
             %W selection clearall
-            %W selection set current
+            %W selection set current current
         } else {
             blt::TableView::SetSelectionAnchor %W current
         }
@@ -352,7 +352,7 @@ proc blt::TableView::Initialize { w } {
                         %W selection set anchor current
                     } else {
                         %W selection clear anchor current
-                        %W selection set current
+                        %W selection set current current
                     }
                 }
             }
@@ -498,7 +498,8 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(afterId) -1
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
-            %W selection set @%x,%y
+            %W selection mark @%x,%y 
+            %W selection set anchor mark
         } else {
             %W invoke active
         }
@@ -980,25 +981,22 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
     if { $index == "" } {
         return
     }
-    foreach { row col } $index break
     set _private(activeSelection) 0
+    $w focus $cell
+    $w selection clearall
     switch -- [$w cget -selectmode] {
         "cells" {
             $w see $cell
-            $w focus $cell
-            $w selection clearall
             $w selection anchor $cell
             set _private(activeSelection) 1
         } "singlerow" {
+            set row [lindex $index 0]
             $w row see $row
-            $w focus $cell
-            $w selection clearall
-            $w selection set $cell 
+            $w selection set $cell $cell
         } "multiplerows" {
+            set row [lindex $index 0]
             $w row see $row
-            $w focus $cell
-            $w selection clearall
-            $w selection set $cell 
+            $w selection anchor $cell
             set _private(activeSelection) 1
         }
     }
@@ -1014,8 +1012,7 @@ proc blt::TableView::MoveFocus { w cell } {
     catch {$w focus $cell}
     if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
-        $w selection set focus
-        $w selection anchor focus
+        $w selection set focus focus
     }
     $w see focus
 }
@@ -1049,7 +1046,7 @@ proc blt::TableView::MovePage { w where } {
     $w row see view.$where
     if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
-        $w selection set focus
+        $w selection set focus focus
     }
 }
 

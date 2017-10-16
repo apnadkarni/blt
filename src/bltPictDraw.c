@@ -2501,7 +2501,7 @@ GetShadowColors(Blt_Bg bg, unsigned int *normalColorPtr,
 
 
 Blt_Picture
-Blt_PaintRadioButton(
+Blt_PaintRadioButton0(
      int w, int h, 
      Blt_Bg bg, 
      XColor *fillColorPtr, 
@@ -2550,7 +2550,7 @@ Blt_PaintRadioButton(
 }
 
 Blt_Picture
-Blt_PaintRadioButton2(
+Blt_PaintRadioButton(
      int w, int h, 
      Blt_Bg bg, 
      XColor *fillColorPtr, 
