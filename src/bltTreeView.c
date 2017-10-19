@@ -5321,7 +5321,7 @@ AppendTagsProc(
     } else if (flags & ITEM_ENTRY) {
         Entry *entryPtr = object;
 
-        Blt_Chain_Append(tags, entryPtr);
+        Blt_Chain_Append(tags, entryPtr); /* Append pointer to entry. */
         if (entryPtr->bindTagsObjPtr != NULL) {
             AddTags(viewPtr, tags, entryPtr->bindTagsObjPtr, EntryTag);
         } else {
@@ -5332,6 +5332,7 @@ AppendTagsProc(
         Cell *cellPtr = object;
         CellStyle *stylePtr;
 
+        Blt_Chain_Append(tags, cellPtr); /* Append pointer to cell. */
         stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
         Blt_Chain_Append(tags, EntryTag(viewPtr, stylePtr->name));
         Blt_Chain_Append(tags, EntryTag(viewPtr, cellPtr->colPtr->key));

@@ -188,6 +188,11 @@
 
 #define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
 
+typedef struct {
+    int type;
+    ClientData clientData;
+} BindTagKey;
+
 /*
  * Limits --
  *
@@ -432,7 +437,7 @@ struct _Row {
     long visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
-    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+    Tcl_Obj *titleBindTagsObjPtr;       /* List of binding tags for this
                                          * row. */
     BLT_TABLE_ROW row;                  /* Row in the datatable this
                                          * structure is associated with. */
@@ -491,7 +496,7 @@ struct _Column {
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */
-    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+    Tcl_Obj *titleBindTagsObjPtr;       /* List of binding tags for this
                                          * column. */
     BLT_TABLE_COLUMN column;            /* Column in the datatable this
                                          * structure is associated with. */
@@ -757,6 +762,8 @@ struct _TableView {
     Blt_HashTable cachedObjTable;       /* Table of strings. */
     Blt_HashTable iconTable;            /* Table of icons. */
     Blt_HashTable styleTable;           /* Table of cell styles. */
+    Blt_HashTable bindTagTable;         /* Table of row bindtags. */
+    Blt_HashTable uidTable;             /* Table of strings. */
     Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */
     Blt_HashTable colBindTagTable;      /* Table of column bindtags. */
     Blt_HashTable cellBindTagTable;     /* Table of cell bindtags. */
