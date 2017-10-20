@@ -3187,7 +3187,9 @@ ConfigureButton(
 #endif
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
     butPtr->width = butPtr->height = 9 * fm.linespace / 10 - (2 * butPtr->borderWidth);
+#if DEBUG1
 fprintf(stderr, "bw=%d bh=%d linespace=%d\n", butPtr->width, butPtr->height, fm.linespace);
+#endif
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
@@ -8157,8 +8159,10 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     /* Text */
     rPtr = &tabPtr->textRegion;
+#if DEBUG1
         fprintf(stderr, "setPtr->plusPtr=%x tabPtr=%x %s w=%d h=%d\n",
                 setPtr->plusPtr, tabPtr, tabPtr->text, rPtr->w, rPtr->h);
+#endif
     if ((tabPtr->text != NULL) && (rPtr->w > 0) && (rPtr->h > 0)) {
         TextStyle ts;
         XColor *fgColor;
@@ -8168,7 +8172,9 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 
         font = GETATTR(tabPtr, font);
     Blt_Font_GetMetrics(font, &fm);
+#if DEBUG1
 fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.linespace);
+#endif
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 
