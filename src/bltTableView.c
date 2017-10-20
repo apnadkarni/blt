@@ -139,7 +139,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_AUTO_CREATE                 "0"
 #define DEF_COLUMN_FILTERS              "0"
 #define DEF_BACKGROUND                  STD_NORMAL_BACKGROUND
-#define DEF_BIND_TAGS                   ""
+#define DEF_BIND_TAGS                   (char *)NULL
 #define DEF_BORDERWIDTH                 STD_BORDERWIDTH
 #define DEF_COLUMN_ACTIVE_TITLE_RELIEF  "raised"
 #define DEF_COLUMN_COMMAND              (char *)NULL
@@ -5056,8 +5056,9 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
     case ITEM_COLUMN_FILTER:
         Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
         break;
+
     case ITEM_COLUMN_RESIZE:
-        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, ITEM_COLUMN_RESIZE));
         break;
 
     case ITEM_COLUMN_TITLE:
@@ -5073,7 +5074,7 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
         break;
         
     case ITEM_ROW_RESIZE:
-        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, ITEM_ROW_RESIZE));
         break;
 
     case ITEM_ROW_TITLE:
@@ -5116,7 +5117,8 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
         break;
 
     default:
-        fprintf(stderr, "unknown item %lx\n", (unsigned long)item);
+        fprintf(stderr, "unknown item type (%d, %x) %lx\n", type, flags,
+                (unsigned long)item);
         break;
     }
     /* Append "all". */
@@ -5187,9 +5189,10 @@ TableViewPickProc(
             if (hintPtr != NULL) {
                 unsigned long flags;
                 
-                flags = ITEM_COLUMN_TITLE;
                 if (worldX >= (colPtr->worldX + colPtr->width - RESIZE_AREA)) {
                     flags |= ITEM_COLUMN_RESIZE;
+                } else {
+                    flags |= ITEM_COLUMN_TITLE;
                 }
                 *hintPtr = (ClientData)flags;
             }
@@ -5213,9 +5216,10 @@ TableViewPickProc(
         if (hintPtr != NULL) {
             unsigned long flags;
 
-            flags = ITEM_ROW_TITLE;
             if (worldY >= (rowPtr->worldY + rowPtr->height - RESIZE_AREA)) {
                 flags |= ITEM_ROW_RESIZE;
+            } else {
+                flags |= ITEM_ROW_TITLE;
             }
             *hintPtr = (ClientData)flags;
         }
