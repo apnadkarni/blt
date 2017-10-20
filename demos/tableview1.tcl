@@ -37,4 +37,4 @@ blt::tk::scrollbar $view.editor.ybar
 
 $view column configure x -style textbox 
 
-$view bind {0 0} <Enter> {puts #####################[%W index current]}
+$view column bind 0 cell <Enter> {puts #####################[%W index current]}
