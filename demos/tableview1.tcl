@@ -37,5 +37,4 @@ blt::tk::scrollbar $view.editor.ybar
 
 $view column configure x -style textbox 
 
-$view column configure 0 -bindtags zzz
-$view column bind 0 cell <ButtonPress-1> {puts [%W index current]}
+$view bind {0 0} <Enter> {puts #####################[%W index current]}

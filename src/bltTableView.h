@@ -171,7 +171,6 @@
                                          * the view when the sort
                                          * -decreasing flag is changed. */
 
-
 /* Item types used picking objects in widget. */
 #define ITEM_CELL            (1<<0)
 #define ITEM_COLUMN_FILTER   (1<<1)
@@ -182,8 +181,10 @@
 #define ITEM_ROW_MASK        (ITEM_ROW_RESIZE|ITEM_ROW_TITLE)
 #define ITEM_COLUMN_MASK \
     (ITEM_COLUMN_FILTER|ITEM_COLUMN_RESIZE|ITEM_COLUMN_TITLE)
+#define ITEM_MASK \
+    (ITEM_COLUMN_MASK|ITEM_COLUMN_MASK)
 #define ITEM_STYLE          (0x10004)
-
+    
 #define SHOW_VALUES       (1<<20)
 
 #define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
@@ -764,9 +765,6 @@ struct _TableView {
     Blt_HashTable styleTable;           /* Table of cell styles. */
     Blt_HashTable bindTagTable;         /* Table of row bindtags. */
     Blt_HashTable uidTable;             /* Table of strings. */
-    Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */
-    Blt_HashTable colBindTagTable;      /* Table of column bindtags. */
-    Blt_HashTable cellBindTagTable;     /* Table of cell bindtags. */
     Row *rowHeadPtr, *rowTailPtr;
     Column *colHeadPtr, *colTailPtr;
     Row **rowMap;                       /* Array of pointers to rows. This
