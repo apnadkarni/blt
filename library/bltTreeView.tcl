@@ -292,7 +292,8 @@ proc blt::TreeView::Initialize { w } {
     #   the entry.
     $w button bind all <ButtonRelease-1> {
         blt::TreeView::trace "ButtonRelease-1 for Button"
-	if { [%W button contains %x %y] == $blt::TreeView::_private(lastButton) } {
+	if { [%W button contains %x %y] ==
+             $blt::TreeView::_private(lastButton) } {
 	    %W toggle current
 	} else {
             blt::TreeView::trace "not over button"
@@ -490,50 +491,52 @@ proc blt::TreeView::Initialize { w } {
 	# Do nothing.
     }
 
-    $w column bind all <Enter> {
+    $w column bind all title <Enter> {
 	%W column activate current
     }
-    $w column bind all <Leave> {
+    $w column bind all title <Leave> {
 	%W column deactivate
     }
-    $w column bind Rule <Enter> {
+    $w column bind all resize <Enter> {
 	%W column activate current
 	%W column resize activate current
     }
-    $w column bind Rule <Leave> {
+    $w column bind all resize <Leave> {
 	%W column deactivate
 	%W column resize deactivate 
     }
-    $w column bind Rule <ButtonPress-1> {
+    $w column bind all resize <ButtonPress-1> {
 	%W column resize anchor %x
     }
-    $w column bind Rule <B1-Motion> {
+    $w column bind all resize <B1-Motion> {
 	%W column resize mark %x
     }
-    $w column bind Rule <ButtonRelease-1> {
+    $w column bind all resize <ButtonRelease-1> {
 	%W column configure active -width [%W column resize set]
     }
-    $w column bind all <ButtonPress-1> {
+    $w column bind all title <ButtonPress-1> {
 	set blt::TreeView::_private(column) active
 	%W column configure $blt::TreeView::_private(column) \
 	    -titlerelief sunken
     }
-    $w column bind all <ButtonRelease-1> {
+    $w column bind all title <ButtonRelease-1> {
 	%W column invoke active
 	%W column configure active -titlerelief raised
     }
 
     # TextBoxStyle
-    $w bind TextBoxStyle <Enter> { 
+    $w cell bind TextBoxStyle <Enter> { 
+        blt::TreeView::trace "Entry TextBox"
 	%W cell activate current 
     }
-    $w bind TextBoxStyle <Leave> { 
+    $w cell bind TextBoxStyle <Leave> { 
+        blt::TreeView::trace "Leave TextBox"
 	%W cell deactivate 
     }
-    $w bind TextBoxStyle <ButtonPress-1> { 
+    $w cell bind TextBoxStyle <ButtonPress-1> { 
         blt::TreeView::SetSelectionAnchorFromCell %W active
     }
-    $w bind TextBoxStyle <B1-Motion> { 
+    $w cell bind TextBoxStyle <B1-Motion> { 
         blt::TreeView::trace "B1-Motion TextBox"
         if { $blt::TreeView::_private(activeSelection) } {
             set blt::TreeView::_private(x) %x
@@ -550,32 +553,32 @@ proc blt::TreeView::Initialize { w } {
             }
         }
     }
-    $w bind TextBoxStyle <ButtonRelease-1> { 
+    $w cell bind TextBoxStyle <ButtonRelease-1> { 
         blt::TreeView::trace "ButtonRelease-1 TextBox"
         set blt::TreeView::_private(activeSelection) 0
     }
 
-    $w bind TextBoxStyle <ButtonPress-3> { 
+    $w cell bind TextBoxStyle <ButtonPress-3> { 
         blt::TreeView::PostEditor %W current
     }
-    $w bind TextBoxStyle <ButtonRelease-3> { 
+    $w cell bind TextBoxStyle <ButtonRelease-3> { 
         blt::TreeView::UnpostEditor %W active
     }
 
     # CheckBoxStyle
-    $w bind CheckBoxStyle <Enter> { 
+    $w cell bind CheckBoxStyle <Enter> { 
 	%W cell activate current 
     }
-    $w bind CheckBoxStyle <Leave> { 
+    $w cell bind CheckBoxStyle <Leave> { 
 	%W cell deactivate 
     }
-    $w bind CheckBoxStyle <ButtonPress-1> { 
+    $w cell bind CheckBoxStyle <ButtonPress-1> { 
         blt::TreeView::trace "ButtonPress-1 for CheckBox"
 	if { [%W cell identify active %X %Y] == "text" } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
-    $w bind CheckBoxStyle <ButtonRelease-1> { 
+    $w cell bind CheckBoxStyle <ButtonRelease-1> { 
         blt::TreeView::trace "ButtonRelease-1 for CheckBox"
         if { [%W cell writable active]  && 
              [%W cell identify active %X %Y] == "button" } {
@@ -585,7 +588,7 @@ proc blt::TreeView::Initialize { w } {
         }
         set blt::TreeView::_private(activeSelection) 0
     }
-    $w bind CheckBoxStyle <B1-Motion> { 
+    $w cell bind CheckBoxStyle <B1-Motion> { 
         blt::TreeView::trace "B1-Motion CheckBox activeSelection=$blt::TreeView::_private(activeSelection)"
         if { $blt::TreeView::_private(activeSelection) } {
             blt::TreeView::trace "B1 Motion for CheckBox activeSelection"
@@ -605,19 +608,19 @@ proc blt::TreeView::Initialize { w } {
     }
 
     # ComboBoxStyle
-    $w bind ComboBoxStyle <Enter> { 
+    $w cell bind ComboBoxStyle <Enter> { 
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
 	    %W cell activate current 
 	}
     }
-    $w bind ComboBoxStyle <Leave> { 
+    $w cell bind ComboBoxStyle <Leave> { 
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
 	    %W cell deactivate 
 	}
     }
-    $w bind ComboBoxStyle <ButtonPress-1> { 
+    $w cell bind ComboBoxStyle <ButtonPress-1> { 
         blt::TreeView::trace "ButtonPress-1 ComboBox"
 	set blt::TreeView::_private(activeSelection) 0
 	if { [%W cell identify current %X %Y] == "button" } {
@@ -626,14 +629,14 @@ proc blt::TreeView::Initialize { w } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
-    $w bind CheckBoxStyle <Motion> { 
+    $w cell bind CheckBoxStyle <Motion> { 
 	if { [%W cell identify current %X %Y] == "button" } {
 	    #%W cell activate current
 	} else {
 	    #%W cell deactivate 
 	}
     }
-    $w bind ComboBoxStyle <B1-Motion> { 
+    $w cell bind ComboBoxStyle <B1-Motion> { 
         blt::TreeView::trace "B1 Motion ComboBox"
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
@@ -661,7 +664,7 @@ proc blt::TreeView::Initialize { w } {
     #
     # Otherwise unpost the menu.  The user clicked either on the menu
     # (selected an item) or outside the menu (canceling the operation).
-    $w bind ComboBoxStyle <ButtonRelease-1> { 
+    $w cell bind ComboBoxStyle <ButtonRelease-1> { 
         blt::TreeView::trace "ButtonRelease-1 ComboBox"
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
@@ -672,26 +675,26 @@ proc blt::TreeView::Initialize { w } {
     }
 
     # ImageBoxStyle
-    $w bind ImageBoxStyle <Enter> { 
+    $w cell bind ImageBoxStyle <Enter> { 
 	%W cell activate current 
     }
-    $w bind ImageBoxStyle <Leave> { 
+    $w cell bind ImageBoxStyle <Leave> { 
 	%W cell deactivate 
     }
 
     # RadioButtonStyle
-    $w bind RadioButtonStyle <Enter> { 
+    $w cell bind RadioButtonStyle <Enter> { 
 	%W cell activate current 
     }
-    $w bind RadioButtonStyle <Leave> { 
+    $w cell bind RadioButtonStyle <Leave> { 
 	%W cell deactivate 
     }
-    $w bind RadioButtonStyle <ButtonPress-1> { 
+    $w cell bind RadioButtonStyle <ButtonPress-1> { 
 	if { [%W cell writable active] } {
 	    blt::TreeView::SetRadioValue %W active
 	}
     }
-    $w bind RadioButtonStyle <B1-Motion> { 
+    $w cell bind RadioButtonStyle <B1-Motion> { 
 	break
     }
 }
@@ -1148,6 +1151,7 @@ proc blt::TreeView::SortColumn { w col } {
 	set decreasing [$w sort cget -decreasing]
 	set decreasing [expr !$decreasing]
     }
+    $w selection clearall
     $w sort configure -decreasing $decreasing \
 	-columns [list $col treeView] \
 	-mark $col

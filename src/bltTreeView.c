@@ -122,6 +122,7 @@
 #define DEF_BUTTON_ACTIVE_BG_MONO       STD_ACTIVE_BG_MONO
 #define DEF_BUTTON_ACTIVE_FOREGROUND    STD_ACTIVE_FOREGROUND
 #define DEF_BUTTON_ACTIVE_FG_MONO       STD_ACTIVE_FG_MONO
+#define DEF_BUTTON_BINDTAGS            "all"
 #define DEF_BUTTON_BORDERWIDTH          "1"
 #define DEF_BUTTON_CLOSE_RELIEF         "solid"
 #define DEF_BUTTON_OPEN_RELIEF          "solid"
@@ -150,7 +151,7 @@
 #define DEF_COLUMN_ACTIVE_TITLE_FG      STD_ACTIVE_FOREGROUND
 #define DEF_COLUMN_ARROWWIDTH           "0"
 #define DEF_COLUMN_BG           (char *)NULL
-#define DEF_COLUMN_BIND_TAGS            "all"
+#define DEF_COLUMN_BINDTAGS            "all"
 #define DEF_COLUMN_BORDERWIDTH          STD_BORDERWIDTH
 #define DEF_COLUMN_COLOR                RGB_BLACK
 #define DEF_COLUMN_EDIT                 "yes"
@@ -175,6 +176,19 @@
 #define DEF_COLUMN_WIDTH                "0"
 #define DEF_COLUMN_RULE_DASHES          "dot"
 
+#define DEF_ENTRY_BINDTAGS      "Entry all"
+#define DEF_ENTRY_BUTTON        "auto"
+#define DEF_ENTRY_CLOSECOMMAND  (char *)NULL
+#define DEF_ENTRY_COMMAND       (char *)NULL
+#define DEF_ENTRY_DATA          (char *)NULL
+#define DEF_ENTRY_FOREGROUND    (char *)NULL
+#define DEF_ENTRY_HEIGHT        (char *)NULL
+#define DEF_ENTRY_ICONS         (char *)NULL
+#define DEF_ENTRY_LABEL         (char *)NULL
+#define DEF_ENTRY_OPENCOMMAND   (char *)NULL
+#define DEF_ENTRY_RULE_COLOR    STD_NORMAL_BACKGROUND
+#define DEF_ENTRY_RULE_HEIGHT   "0"
+#define DEF_ENTRY_STYLES        (char *)NULL
 
 #define DEF_SORT_COLUMN         (char *)NULL
 #define DEF_SORT_COMMAND        (char *)NULL
@@ -183,9 +197,6 @@
 
 /* RGB_LIGHTBLUE1 */
 
-#define DEF_ACTIVE_FOREGROUND   RBG_BLACK
-#define DEF_ACTIVE_RELIEF       "flat"
-#define DEF_ALLOW_DUPLICATES    "yes"
 #define DEF_BG                  RGB_WHITE
 #define DEF_ALT_BG              RGB_GREY97
 #define DEF_BORDERWIDTH         STD_BORDERWIDTH
@@ -193,11 +204,8 @@
 #define DEF_COLUMNCOMMAND       ((char *)NULL)
 #define DEF_DASHES              "dot"
 #define DEF_EXPORT_SELECTION    "no"
-#define DEF_FOREGROUND          STD_NORMAL_FOREGROUND
-#define DEF_FG_MONO             STD_NORMAL_FG_MONO
 #define DEF_FLAT                "no"
 #define DEF_FOCUS_DASHES        "dot"
-#define DEF_FOCUS_EDIT          "no"
 #define DEF_FOCUS_FOREGROUND    STD_ACTIVE_FOREGROUND
 #define DEF_FOCUS_FG_MONO       STD_ACTIVE_FG_MONO
 #define DEF_FONT                STD_FONT_NORMAL
@@ -207,16 +215,12 @@
 #define DEF_FOCUS_HIGHLIGHT_BG  STD_NORMAL_BACKGROUND
 #define DEF_FOCUS_HIGHLIGHT_COLOR       RGB_BLACK
 #define DEF_FOCUS_HIGHLIGHT_WIDTH       "2"
-#define DEF_ICONVARIABLE        ((char *)NULL)
 #define DEF_ICONS               ((char *)NULL)
 #define DEF_LINECOLOR           RGB_GREY30
 #define DEF_LINECOLOR_MONO      STD_NORMAL_FG_MONO
 #define DEF_LINESPACING         "0"
 #define DEF_LINEWIDTH           "1"
-#define DEF_MAKE_PATH           "no"
 #define DEF_NEW_TAGS            "no"
-#define DEF_NORMAL_BG           STD_NORMAL_BACKGROUND
-#define DEF_NORMAL_FG_MONO      STD_ACTIVE_FG_MONO
 #define DEF_RELIEF              "sunken"
 #define DEF_RESIZE_CURSOR       "arrow"
 #define DEF_RULE_HEIGHT         "0"
@@ -225,13 +229,9 @@
 #define DEF_SCROLL_INCREMENT    "20"
 #define DEF_SCROLL_MODE         "hierbox"
 #define DEF_SELECT_BG           STD_SELECT_BACKGROUND 
-#define DEF_SELECT_BG_MONO      STD_SELECT_BG_MONO
-#define DEF_SELECT_BORDERWIDTH  "1"
 #define DEF_SELECT_FOREGROUND   STD_SELECT_FOREGROUND
-#define DEF_SELECT_FG_MONO      STD_SELECT_FG_MONO
 #define DEF_SELECT_MODE         "single"
-#define DEF_SELECT_RELIEF       "flat"
-#define DEF_SHOW_ROOT           "yes"
+#define DEF_RELIEF              "sunken"
 #define DEF_SHOW_TITLES         "yes"
 #define DEF_SORT_SELECTION      "no"
 #define DEF_TAKE_FOCUS          "1"
@@ -363,7 +363,7 @@ static Blt_CustomOption styleOption = {
 
 static Blt_ConfigSpec buttonSpecs[] = {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-        "Background", DEF_BUTTON_ACTIVE_BG, 
+        "Background", DEF_BUTTON_ACTIVE_BG,
         Blt_Offset(TreeView, button.activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
@@ -374,6 +374,9 @@ static Blt_ConfigSpec buttonSpecs[] = {
         DEF_BUTTON_NORMAL_BG, Blt_Offset(TreeView, button.normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_OBJ, "-bindtags", "bindTags", "BindTags",
+        DEF_BUTTON_BINDTAGS, Blt_Offset(TreeView, button.bindTagsObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BUTTON_BORDERWIDTH, Blt_Offset(TreeView, button.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -403,38 +406,41 @@ static Blt_ConfigSpec cellSpecs[] = {
 };
 
 static Blt_ConfigSpec entrySpecs[] = {
-    {BLT_CONFIG_CUSTOM, "-bindtags", (char *)NULL, (char *)NULL, (char *)NULL, 
-        Blt_Offset(Entry, bindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
-    {BLT_CONFIG_CUSTOM, "-button", (char *)NULL, (char *)NULL, DEF_BUTTON, 
+    {BLT_CONFIG_OBJ, "-bindtags", (char *)NULL, (char *)NULL,
+        DEF_ENTRY_BINDTAGS, Blt_Offset(Entry, bindTagsObjPtr),
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-button", (char *)NULL, (char *)NULL, DEF_ENTRY_BUTTON,
         Blt_Offset(Entry, flags), BLT_CONFIG_DONT_SET_DEFAULT, &buttonOption},
     {BLT_CONFIG_OBJ, "-closecommand", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Entry, closeCmdObjPtr), BLT_CONFIG_NULL_OK},
+        DEF_ENTRY_CLOSECOMMAND, Blt_Offset(Entry, closeCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-command", (char *)NULL, (char *)NULL,
-        (char *)NULL, Blt_Offset(Entry, cmdObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-data", (char *)NULL, (char *)NULL, (char *)NULL, 0, 
+        DEF_ENTRY_COMMAND, Blt_Offset(Entry, cmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-data", (char *)NULL, (char *)NULL, DEF_ENTRY_DATA, 0, 
         BLT_CONFIG_NULL_OK, &dataOption},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, (char *)NULL, 
         Blt_Offset(Entry, font), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", (char *)NULL, (char *)NULL,
-         Blt_Offset(Entry, color), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", (char *)NULL,
+        DEF_ENTRY_FOREGROUND, Blt_Offset(Entry, color), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-height", (char *)NULL, (char *)NULL, 
-        (char *)NULL, Blt_Offset(Entry, reqHeight), 
+        DEF_ENTRY_HEIGHT, Blt_Offset(Entry, reqHeight), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-icons", (char *)NULL, (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-icons", (char *)NULL, (char *)NULL, DEF_ENTRY_ICONS, 
         Blt_Offset(Entry, icons), BLT_CONFIG_NULL_OK, &iconsOption},
-    {BLT_CONFIG_CUSTOM, "-label", (char *)NULL, (char *)NULL, (char *)NULL, 
+    {BLT_CONFIG_CUSTOM, "-label", (char *)NULL, (char *)NULL, DEF_ENTRY_LABEL, 
         Blt_Offset(Entry, labelObjPtr), 0, &labelOption},
     {BLT_CONFIG_OBJ, "-opencommand", (char *)NULL, (char *)NULL, 
-        (char *)NULL, Blt_Offset(Entry, openCmdObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor", DEF_RULE_COLOR,
-         Blt_Offset(Entry, ruleColor), BLT_CONFIG_NULL_OK},
+        DEF_ENTRY_OPENCOMMAND, Blt_Offset(Entry, openCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor",
+        DEF_ENTRY_RULE_COLOR,  Blt_Offset(Entry, ruleColor),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-ruleheight", "ruleHeight", "RuleHeight",
-        DEF_RULE_HEIGHT, Blt_Offset(Entry, ruleHeight), 
+        DEF_ENTRY_RULE_HEIGHT, Blt_Offset(Entry, ruleHeight), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-styles", (char *)NULL, (char *)NULL, 
-        (char *)NULL, 0, BLT_CONFIG_NULL_OK, 
-        &stylesOption},
+    {BLT_CONFIG_CUSTOM, "-styles", (char *)NULL, (char *)NULL, DEF_ENTRY_STYLES,
+        0, BLT_CONFIG_NULL_OK, &stylesOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -588,10 +594,10 @@ static Blt_ConfigSpec columnSpecs[] = {
         "Foreground", DEF_COLUMN_ACTIVE_TITLE_FG, 
         Blt_Offset(Column, activeTitleFgColor), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
-    {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags",
-        DEF_COLUMN_BIND_TAGS, Blt_Offset(Column, bindTagsObjPtr),
-        BLT_CONFIG_NULL_OK, &cachedObjOption},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+    {BLT_CONFIG_OBJ, "-bindtags", "bindTags", "BindTags",
+        DEF_COLUMN_BINDTAGS, Blt_Offset(Column, bindTagsObjPtr),
+        BLT_CONFIG_NULL_OK},
+     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_COLUMN_BORDERWIDTH, Blt_Offset(Column, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-command", "command", "Command",
@@ -1729,28 +1735,36 @@ SelectRange(TreeView *viewPtr, Entry *fromPtr, Entry *toPtr)
 static Column *
 GetCurrentColumn(TreeView *viewPtr)
 {
-    unsigned long flags;
     TreeViewObj *objPtr;
-
-    flags = (long)Blt_GetCurrentHint(viewPtr->bindTable);
+    ItemType type;
+    
+    type = (long)Blt_GetCurrentHint(viewPtr->bindTable);
     objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
     if ((objPtr == NULL) || (objPtr->flags & DELETED)) {
         return NULL;
     }
-    if (flags & ITEM_COLUMN) {
+    switch (type) {
+    case ITEM_COLUMN_TITLE:
+    case ITEM_COLUMN_RESIZE:
         return (Column *)objPtr;
-    }
-    if (flags & ITEM_CELL) {
-        Cell *cellPtr;
-
-        cellPtr = (Cell *)objPtr;
-        return cellPtr->colPtr;
+        break;
+        
+    case ITEM_CELL:
+        {
+            Cell *cellPtr;
+            
+            cellPtr = (Cell *)objPtr;
+            return cellPtr->colPtr;
+        }
+        break;
+    default:
+        break;
     }
     return NULL;
 }
 
 static Column *
-NearestColumn(TreeView *viewPtr, int x, int y, ClientData *contextPtr)
+NearestColumn(TreeView *viewPtr, int x, int y, ItemType *typePtr)
 {
     Blt_ChainLink link;
 
@@ -1758,8 +1772,8 @@ NearestColumn(TreeView *viewPtr, int x, int y, ClientData *contextPtr)
      * Determine if the pointer is over the rightmost portion of the
      * column.  This activates the rule.
      */
-    if (contextPtr != NULL) {
-        *contextPtr = 0;
+    if (typePtr != NULL) {
+        *typePtr = ITEM_NONE;
     }
     x = WORLDX(viewPtr, x);             /* Convert from screen to world
                                          * coordinates. */
@@ -1771,21 +1785,20 @@ NearestColumn(TreeView *viewPtr, int x, int y, ClientData *contextPtr)
         colPtr = Blt_Chain_GetValue(link);
         right = colPtr->worldX + colPtr->width;
         if ((x >= colPtr->worldX) && (x <= right)) {
-            unsigned long flags;
+            ItemType type;
 
-            flags = ITEM_NONE;
+            type = ITEM_NONE;
             /* We're inside of a column, now considering y. */
             if (viewPtr->flags & SHOW_COLUMN_TITLES) {
                 /* Check if we're inside of the column title. */
                 if ((y >= viewPtr->inset) && 
                     (y < (viewPtr->titleHeight + viewPtr->inset))) {
-                    flags = ITEM_COLUMN;
-                    flags |= (x >= (right - RULE_AREA)) 
-                        ? ITEM_COLUMN_RULE : ITEM_COLUMN_TITLE;
+                    type = (x >= (right - RULE_AREA)) 
+                        ? ITEM_COLUMN_RESIZE : ITEM_COLUMN_TITLE;
                 } 
             }
-            if (contextPtr != NULL) {
-                *contextPtr = (ClientData)flags;
+            if (typePtr != NULL) {
+                *typePtr = type;
             }
             return colPtr;
         }
@@ -1895,38 +1908,6 @@ GetCachedObj(TreeView *viewPtr, Tcl_Obj *objPtr)
     string = Tcl_GetString(objPtr);
     hPtr = Blt_CreateHashEntry(&viewPtr->cachedObjTable, string, &isNew);
     if (isNew) {
-        Blt_SetHashValue(hPtr, objPtr);
-    } else {
-        objPtr = Blt_GetHashValue(hPtr);
-    }
-    Tcl_IncrRefCount(objPtr);
-    return objPtr;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GetCachedString --
- *
- *      Gets or creates a unique string identifier.  Strings are reference
- *      counted.  The string is placed into a hashed table local to the
- *      tableview.
- *
- * Results:
- *      Returns the pointer to the hashed string.
- *
- *---------------------------------------------------------------------------
- */
-static Tcl_Obj *
-GetCachedString(TreeView *viewPtr, const char *string)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;
-    Tcl_Obj *objPtr;
-    
-    hPtr = Blt_CreateHashEntry(&viewPtr->cachedObjTable, string, &isNew);
-    if (isNew) {
-        objPtr = Tcl_NewStringObj(string, -1);
         Blt_SetHashValue(hPtr, objPtr);
     } else {
         objPtr = Blt_GetHashValue(hPtr);
@@ -4202,11 +4183,24 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
         UpdateView(viewPtr);
         objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
         if ((objPtr != NULL) && ((objPtr->flags & DELETED) == 0)) {
-            unsigned long flags;
+            ItemType type;
                 
-            flags = (long)Blt_GetCurrentHint(viewPtr->bindTable);
-            if (flags & ITEM_ENTRY) {
+            type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
+            switch (type) {
+            case ITEM_ENTRY:
+            case ITEM_BUTTON:
                 entryPtr = (Entry *)objPtr;
+                break;
+            case ITEM_CELL:
+                {
+                    Cell *cellPtr;
+                    
+                    cellPtr = (Cell *)objPtr;
+                    entryPtr = cellPtr->entryPtr;
+                }
+                break;
+            default:
+                break;
             }
         }
     } else if ((c == 'd') && (strncmp(string, "down", length) == 0)) {
@@ -4330,10 +4324,35 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
     return TCL_OK;
 }
 
+static BindTagKey *
+MakeBindTag(TreeView *viewPtr, ClientData clientData, ItemType type)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;                          /* Not used. */
+    BindTagKey key;
+
+    memset(&key, 0, sizeof(key));
+    key.type = type;
+    key.clientData = clientData;
+    hPtr = Blt_CreateHashEntry(&viewPtr->bindTagTable, &key, &isNew);
+    return Blt_GetHashKey(&viewPtr->bindTagTable, hPtr);
+}
+
+static BindTagKey *
+MakeStringBindTag(TreeView *viewPtr, const char *string, ItemType type)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;                          /* Not used. */
+    void *keyPtr;
+    
+    hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
+    keyPtr = Blt_GetHashKey(&viewPtr->uidTable, hPtr);
+    return MakeBindTag(viewPtr, (ClientData)keyPtr, type);
+}
+
 /*ARGSUSED*/
 static void
-AddEntryTags(Tcl_Interp *interp, TreeView *viewPtr, Entry *entryPtr, 
-             Blt_Chain tags)
+AddEntryTags(TreeView *viewPtr, Entry *entryPtr, Blt_Chain tags)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
@@ -4345,10 +4364,10 @@ AddEntryTags(Tcl_Interp *interp, TreeView *viewPtr, Entry *entryPtr,
         tPtr = Blt_GetHashValue(hPtr);
         hPtr = Blt_FindHashEntry(&tPtr->nodeTable, (char *)entryPtr->node);
         if (hPtr != NULL) {
-            Tcl_Obj *objPtr;
+            ClientData btag;
 
-            objPtr = GetCachedString(viewPtr, tPtr->tagName);
-            Blt_Chain_Append(tags, (ClientData)Tcl_GetString(objPtr));
+            btag = MakeStringBindTag(viewPtr, tPtr->tagName, ITEM_ENTRY);
+            Blt_Chain_Append(tags, btag);
         }
     }
 }
@@ -4590,13 +4609,11 @@ GetCellByIndex(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
 
         objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
         if ((objPtr != NULL) && ((objPtr->flags & DELETED) == 0)) {
-            unsigned long flags;
-            Cell *cellPtr;
+            ItemType type;
 
-            cellPtr = (Cell *)objPtr;
-            flags = (long)Blt_GetCurrentHint(viewPtr->bindTable);
-            if (flags & (long)ITEM_CELL) {
-                *cellPtrPtr = cellPtr;
+            type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
+            if (type == ITEM_CELL) {
+                *cellPtrPtr = (Cell *)objPtr;
             }
         }
         return TCL_OK;
@@ -5230,38 +5247,8 @@ ComputeCellsGeometry(Entry *entryPtr, int *widthPtr, int *heightPtr)
     *heightPtr = h;
 }
 
-static ClientData
-EntryTag(TreeView *viewPtr, const char *string)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;                          /* Not used. */
-
-    hPtr = Blt_CreateHashEntry(&viewPtr->entryTagTable, string, &isNew);
-    return Blt_GetHashKey(&viewPtr->entryTagTable, hPtr);
-}
-
-static ClientData
-ButtonTag(TreeView *viewPtr, const char *string)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;                          /* Not used. */
-
-    hPtr = Blt_CreateHashEntry(&viewPtr->buttonTagTable, string, &isNew);
-    return Blt_GetHashKey(&viewPtr->buttonTagTable, hPtr);
-}
-
-static ClientData
-ColumnTag(TreeView *viewPtr, const char *string)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;                          /* Not used. */
-
-    hPtr = Blt_CreateHashEntry(&viewPtr->columnTagTable, string, &isNew);
-    return Blt_GetHashKey(&viewPtr->columnTagTable, hPtr);
-}
-
 static void
-AddTags(TreeView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, TagProc *tagProc)
+AddTags(TreeView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, ItemType type)
 {
     int objc;
     Tcl_Obj **objv;
@@ -5273,7 +5260,7 @@ AddTags(TreeView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, TagProc *tagProc)
             const char *string;
 
             string = Tcl_GetString(objv[i]);
-            Blt_Chain_Append(tags, (*tagProc)(viewPtr, string));
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, string, type));
         }
     }
 }
@@ -5288,56 +5275,75 @@ AppendTagsProc(
 {
     TreeView *viewPtr;
     TreeViewObj *objPtr;
-    unsigned long flags;
+    ItemType type = (ItemType)hint;
 
     objPtr = object;
     if (objPtr->flags & DELETED) {
         return;
     }
-    flags = (long)hint;
     viewPtr = objPtr->viewPtr;
-    if (flags & ITEM_ENTRY_BUTTON) {
-        Entry *entryPtr = object;
-
-        Blt_Chain_Append(tags, ButtonTag(viewPtr, "Button"));
-        if (entryPtr->bindTagsObjPtr != NULL) {
-            AddTags(viewPtr, tags, entryPtr->bindTagsObjPtr, ButtonTag);
-        } else {
-            Blt_Chain_Append(tags, ButtonTag(viewPtr, "Entry"));
-            Blt_Chain_Append(tags, ButtonTag(viewPtr, "all"));
+    switch (type) {
+    case ITEM_BUTTON:
+        {
+            Entry *entryPtr = object;
+            
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, entryPtr, type));
+            if (viewPtr->button.bindTagsObjPtr != NULL) {
+                AddTags(viewPtr, tags, viewPtr->button.bindTagsObjPtr, type);
+            }
         }
-    } else if (flags & ITEM_COLUMN_TITLE) {
-        Column *colPtr = object;
-
-        Blt_Chain_Append(tags, ColumnTag(viewPtr, colPtr->key));
-        if (colPtr->bindTagsObjPtr != NULL) {
-            AddTags(viewPtr, tags, colPtr->bindTagsObjPtr, ColumnTag);
-        } else {
-            Blt_Chain_Append(tags, ColumnTag(viewPtr, "Column"));
-            Blt_Chain_Append(tags, ColumnTag(viewPtr, "all"));
+        break;
+    case ITEM_COLUMN_TITLE:
+        {
+            Column *colPtr = object;
+            
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, colPtr, type));
+            if (colPtr->bindTagsObjPtr != NULL) {
+                AddTags(viewPtr, tags, colPtr->bindTagsObjPtr, type);
+            }
         }
-    } else if (flags & ITEM_COLUMN_RULE) {
-        Blt_Chain_Append(tags, ColumnTag(viewPtr, "Rule"));
-    } else if (flags & ITEM_ENTRY) {
-        Entry *entryPtr = object;
+        break;
+    case ITEM_COLUMN_RESIZE:
+        {
+            Column *colPtr = object;
+            
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, colPtr, type));
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
+        }
+        break;
+        
+    case ITEM_ENTRY:
+        {
+            Entry *entryPtr = object;
+            
+            /* Append pointer to entry. */
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, entryPtr, type)); 
+            if (entryPtr->bindTagsObjPtr != NULL) {
+                AddTags(viewPtr, tags, entryPtr->bindTagsObjPtr, type);
+            } 
+        }
+        break;
 
-        Blt_Chain_Append(tags, entryPtr); /* Append pointer to entry. */
-        if (entryPtr->bindTagsObjPtr != NULL) {
-            AddTags(viewPtr, tags, entryPtr->bindTagsObjPtr, EntryTag);
-        } else {
-            Blt_Chain_Append(tags, EntryTag(viewPtr, "Entry"));
-            Blt_Chain_Append(tags, EntryTag(viewPtr, "all"));
-        } 
-    } else if (flags & ITEM_CELL) {
-        Cell *cellPtr = object;
-        CellStyle *stylePtr;
-
-        Blt_Chain_Append(tags, cellPtr); /* Append pointer to cell. */
-        stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
-        Blt_Chain_Append(tags, EntryTag(viewPtr, stylePtr->name));
-        Blt_Chain_Append(tags, EntryTag(viewPtr, cellPtr->colPtr->key));
-        Blt_Chain_Append(tags, EntryTag(viewPtr, 
-                stylePtr->classPtr->className));
+    case ITEM_CELL:
+        {
+            Cell *cellPtr = object;
+            CellStyle *stylePtr;
+            
+            /* Append pointer to cell. */
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, cellPtr, type));
+            stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, cellPtr->colPtr, type));
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr,cellPtr->entryPtr,type));
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, stylePtr->name,
+                                                     type));
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, 
+                     stylePtr->classPtr->className, type));
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
+        }
+        break;
+    default:
+        fprintf(stderr, "unknown item type %d\n", type);
+        break;
     }
 }
 
@@ -5351,13 +5357,13 @@ PickItem(
                                          * should be ITEM_ENTRY,
                                          * ITEM_ENTRY_BUTTON,
                                          * ITEM_COLUMN_TITLE,
-                                         * ITEM_COLUMN_RULE, or
+                                         * ITEM_COLUMN_RESIZE, or
                                          * ITEM_STYLE. */
 {
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
     Column *colPtr;
-    ClientData hint;
+    ItemType type;
 
     if (hintPtr != NULL) {
         *hintPtr = NULL;
@@ -5365,13 +5371,13 @@ PickItem(
     /* Can't trust the selected entry if nodes have been added or
      * deleted. So recompute the layout. */
     UpdateView(viewPtr);
-    colPtr = NearestColumn(viewPtr, x, y, &hint);
+    colPtr = NearestColumn(viewPtr, x, y, &type);
     if (colPtr == NULL) {
         return NULL;                     /* No nearest column. We're not
                                           * within the widget. */
     }
-    if (hint != ITEM_NONE) {
-        *hintPtr = hint;
+    if (type != ITEM_NONE) {
+        *hintPtr = (ClientData)type;
         return colPtr;
     }
     if (viewPtr->numVisibleEntries == 0) {
@@ -5384,12 +5390,7 @@ PickItem(
     x = WORLDX(viewPtr, x);
     y = WORLDY(viewPtr, y);
     if (colPtr == &viewPtr->treeColumn) {
-        unsigned long flags;
-
-#ifdef notdef
-        fprintf(stderr, "column is tree column\n");
-#endif
-        flags = ITEM_ENTRY;
+        type = ITEM_ENTRY;
         if (entryPtr->flags & ENTRY_BUTTON) {
             Button *butPtr = &viewPtr->button;
             int x1, x2, y1, y2;
@@ -5399,11 +5400,11 @@ PickItem(
             y1 = entryPtr->worldY + entryPtr->buttonY - BUTTON_PAD;
             y2 = y1 + butPtr->height + 2 * BUTTON_PAD;
             if ((x >= x1) && (x < x2) && (y >= y1) && (y < y2)) {
-                flags |= ITEM_ENTRY_BUTTON;
+                type = ITEM_BUTTON;
             }
         }
         if (hintPtr != NULL) {
-            *hintPtr = (ClientData)flags;
+            *hintPtr = (ClientData)type;
         }
         return entryPtr;
     }
@@ -6241,10 +6242,8 @@ NewView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
         PickItem, AppendTagsProc);
-    Blt_InitHashTable(&viewPtr->entryTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->columnTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->buttonTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->styleTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->bindTagTable, sizeof(BindTagKey)/sizeof(int));
+    Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
 
     viewPtr->entryPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->cellPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
@@ -6385,10 +6384,8 @@ DestroyTreeView(DestroyData dataPtr)    /* Pointer to the widget record. */
     DestroyColumns(viewPtr);
     Blt_DestroyBindingTable(viewPtr->bindTable);
     Blt_Chain_Destroy(viewPtr->sel.list);
-    Blt_DeleteHashTable(&viewPtr->entryTagTable);
-    Blt_DeleteHashTable(&viewPtr->columnTagTable);
-    Blt_DeleteHashTable(&viewPtr->buttonTagTable);
-    Blt_DeleteHashTable(&viewPtr->styleTagTable);
+    Blt_DeleteHashTable(&viewPtr->bindTagTable);
+    Blt_DeleteHashTable(&viewPtr->uidTable);
 
     /* Remove any user-specified style that might remain. */
     for (link = Blt_Chain_FirstLink(viewPtr->userStyles); link != NULL;
@@ -8994,7 +8991,7 @@ static int
 BindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
-    ClientData object;
+    BindTagKey *keyPtr;
     Entry *entryPtr;
     TreeView *viewPtr = clientData;
 
@@ -9006,15 +9003,11 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (entryPtr != NULL) {
             return TCL_OK;      /* Special id doesn't currently exist. */
         }
-        object = entryPtr;
+        keyPtr = MakeBindTag(viewPtr, entryPtr, ITEM_ENTRY);
     } else {
-        const char *string;
-
-        /* Assume that this is a binding tag. */
-        string = Tcl_GetString(objv[2]);
-        object = EntryTag(viewPtr, string);
+        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[2]), ITEM_ENTRY);
     } 
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
          objc - 3, objv + 3);
 }
 
@@ -9169,7 +9162,7 @@ ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ButtonBindOp --
  *
- *        pathName bind tag sequence command
+ *        pathName button bind tag sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -9178,14 +9171,20 @@ static int
 ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
-    ClientData object;
+    BindTagKey *keyPtr;
     TreeView *viewPtr = clientData;
-    const char *string;
-
-    string = Tcl_GetString(objv[3]);
+    Entry *entryPtr;
+    Blt_TreeNode node;
+    
+    if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
+        && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
+        (entryPtr != NULL)) {
+        keyPtr = MakeBindTag(viewPtr, entryPtr, ITEM_BUTTON);
+    } else {
+        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]),ITEM_BUTTON);
+    } 
     /* Assume that this is a binding tag. */
-    object = ButtonTag(viewPtr, string);
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
         objc - 4, objv + 4);
 }
 
@@ -9408,6 +9407,36 @@ CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellBindOp --
+ *
+ *        pathName cell bind cellName sequence command
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    BindTagKey *keyPtr;
+    Cell *cellPtr;
+    TreeView *viewPtr = clientData;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) == TCL_OK) {
+        if (cellPtr == NULL) {
+            fprintf(stderr, "can't find %s\n", Tcl_GetString(objv[3]));
+            return TCL_OK;
+        }
+        keyPtr = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
+    } else {
+        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), ITEM_CELL);
+    }
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
+         objc - 4, objv + 4);
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -9921,7 +9950,8 @@ CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec cellOps[] =
 {
     {"activate",   1, CellActivateOp,    3, 4, "?cellName?",},
-    {"bbox",       1, CellBboxOp,        4, 0, "cellName ?switches ...?",},
+    {"bbox",       2, CellBboxOp,        4, 0, "cellName ?switches ...?",},
+    {"bind",       2, CellBindOp,        4, 6, "tagName ?sequence command?",}, 
     {"cget",       2, CellCgetOp,        5, 5, "cellName option",},
     {"configure",  2, CellConfigureOp,   4, 0, "cellName ?option value ...?",},
     {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
@@ -10105,7 +10135,7 @@ ColumnActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnBindOp --
  *
- *        pathName bind tag sequence command
+ *        pathName bind tag type sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -10114,18 +10144,35 @@ static int
 ColumnBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
-    TreeView *viewPtr = clientData;
-    ClientData object;
+    BindTagKey *keyPtr;
     Column *colPtr;
-
+    ItemType type;
+    TreeView *viewPtr = clientData;
+    char c;
+    const char *string;
+    int length;
+    
+    string = Tcl_GetStringFromObj(objv[4], &length);
+    c = string[0];
+    if ((c == 'c') && (strncmp(string, "cell", length) == 0)) {
+        type = ITEM_CELL;
+    } else if ((c == 't') && (strncmp(string, "title", length) == 0)) {
+        type = ITEM_COLUMN_TITLE;
+    } else if ((c == 'r') && (strncmp(string, "resize", length) == 0)) {
+        type = ITEM_COLUMN_RESIZE;
+    } else {
+        Tcl_AppendResult(interp, "Bad column bind tag type \"", string, "\"",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
     if ((GetColumn(NULL, viewPtr, objv[3], &colPtr) == TCL_OK) && 
         (colPtr != NULL)) {
-        object = ColumnTag(viewPtr, colPtr->key);
+        keyPtr = MakeBindTag(viewPtr, colPtr, type);
     } else {
-        object = ColumnTag(viewPtr, Tcl_GetString(objv[3]));
+        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
     }
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object,
-        objc - 4, objv + 4);
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr,
+        objc - 5, objv + 5);
 }
 
 /*
@@ -10585,7 +10632,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeView *viewPtr = clientData;
     int x, y;                   /* Screen coordinates of the test point. */
     Column *colPtr;
-    ClientData hint;
+    ItemType type;
     NearestSwitches switches;
     
     if (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[3], &x) != TCL_OK) {
@@ -10609,8 +10656,8 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((switches.flags & NEAREST_TITLE) == 0) {
         x = 0;
     }
-    colPtr = NearestColumn(viewPtr, x, y, &hint);
-    if ((switches.flags & NEAREST_TITLE) && (hint == NULL)) {
+    colPtr = NearestColumn(viewPtr, x, y, &type);
+    if ((switches.flags & NEAREST_TITLE) && (type == ITEM_NONE)) {
         colPtr = NULL;
     }
     if (colPtr != NULL) {
@@ -10835,7 +10882,7 @@ ColumnResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec columnOps[] =
 {
     {"activate",   1, ColumnActivateOp,   4, 4, "field",},
-    {"bind",       1, ColumnBindOp,       4, 6, "tagName ?sequence command?",},
+    {"bind",       1, ColumnBindOp,       5, 7, "tagName type ?sequence command?",},
     {"cget",       2, ColumnCgetOp,       5, 5, "field option",},
     {"configure",  2, ColumnConfigureOp,  4, 0, "field ?option value?...",},
     {"current",    2, ColumnCurrentOp,    3, 3, "",},
@@ -14561,7 +14608,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 return TCL_ERROR;
             }
             tags = Blt_Chain_Create();
-            AddEntryTags(interp, viewPtr, entryPtr, tags);
+            AddEntryTags(viewPtr, entryPtr, tags);
             for (link = Blt_Chain_FirstLink(tags); link != NULL; 
                  link = Blt_Chain_NextLink(link)) {
                 objPtr = Tcl_NewStringObj(Blt_Chain_GetValue(link), -1);

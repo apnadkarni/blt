@@ -1339,7 +1339,6 @@ FreeCell(Cell *cellPtr)
 static int
 CellIsSelected(TableView *viewPtr, Cell *cellPtr) 
 {
-    Blt_ChainLink link;
     CellKey *keyPtr;
     Blt_HashEntry *hPtr;
     CellSelection *selPtr;
