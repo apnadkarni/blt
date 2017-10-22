@@ -283,14 +283,14 @@ proc blt::TreeView::Initialize { w } {
 
     # ButtonPress-1
     #   Save the index of the current entry (whose button was pressed).
-    $w button bind all <ButtonPress-1> {
+    $w entry bind all button <ButtonPress-1> {
         set blt::TreeView::_private(lastButton) [%W index current]
     }
 
     # ButtonRelease-1
     #   If over the same button where the button was pressed, open or close
     #   the entry.
-    $w button bind all <ButtonRelease-1> {
+    $w entry bind all button <ButtonRelease-1> {
         blt::TreeView::trace "ButtonRelease-1 for Button"
 	if { [%W button contains %x %y] ==
              $blt::TreeView::_private(lastButton) } {
@@ -299,12 +299,12 @@ proc blt::TreeView::Initialize { w } {
             blt::TreeView::trace "not over button"
         }            
     }
-    $w button bind all <Enter> {
+    $w entry bind all button <Enter> {
         blt::TreeView::trace "Enter Button"
 	%W button activate current
         set blt::TreeView::_private(lastButton) [%W index current]
     }
-    $w button bind all <Leave> {
+    $w entry bind all button <Leave> {
         blt::TreeView::trace "Leave Button"
         set blt::TreeView::_private(lastButton) -1
 	%W button activate ""
@@ -1038,9 +1038,7 @@ proc blt::TreeView::NextMatch { w key } {
     }
     set next $last
     while 1 {
-        puts current=$next
         set next [$w index next -from $next]
-        puts next=$next
         set label [$w entry cget $next -label]
         set char [string index $label 0]
         if { [string compare -nocase $char $key] == 0 } {

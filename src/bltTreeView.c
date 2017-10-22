@@ -10135,7 +10135,7 @@ ColumnActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnBindOp --
  *
- *        pathName bind tag type sequence command
+ *        pathName column bind tag type sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -11053,6 +11053,52 @@ EntryActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * EntryBindOp --
+ *
+ *        pathName entry bind entryName type sequence command
+ * types: cell, button (label, icon)
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    BindTagKey *keyPtr;
+    Entry *entryPtr;
+    ItemType type;
+    TreeView *viewPtr = clientData;
+    char c;
+    Blt_TreeNode node;
+    const char *string;
+    int length;
+    
+    string = Tcl_GetStringFromObj(objv[4], &length);
+    c = string[0];
+    if ((c == 'c') && (strncmp(string, "cell", length) == 0)) {
+        type = ITEM_CELL;
+    } else if ((c == 'b') && (strncmp(string, "button", length) == 0)) {
+        type = ITEM_BUTTON;
+    } else {
+        Tcl_AppendResult(interp, "Bad column bind tag type \"", string, "\"",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
+        && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
+        (entryPtr != NULL)) {
+        keyPtr = MakeBindTag(viewPtr, entryPtr, type);
+    } else {
+        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
+    } 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
+         objc - 5, objv + 5);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * EntryCgetOp --
  *
  *      pathName entry cget entryName option
@@ -11563,7 +11609,7 @@ static Blt_OpSpec entryOps[] =
 {
     {"activate",  1, EntryActivateOp,  4, 4, "entryName",},
     /*bbox*/
-    /*bind*/
+    {"bind",      1, EntryBindOp,     5, 7, "tagName type ?sequence command?",},
     {"cget",      2, EntryCgetOp,      5, 5, "entryName option",},
     {"children",  2, EntryChildrenOp,  4, 0, "entryName ?switches ...?",},
     /*close*/
