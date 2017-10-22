@@ -199,7 +199,7 @@ bind BltTableView <KeyPress-space> {
             %W selection set focus focus
         }
     } else {
-        %W selection toggle focus
+        %W selection toggle focus focus
     }
     set blt::TableView::_private(space) on
 }
@@ -321,7 +321,7 @@ proc blt::TableView::Initialize { w } {
     $w bind all <Control-ButtonPress-1> { 
         switch -- [%W cget -selectmode] {
             "multiplerows" {
-                %W selection toggle current
+                %W selection toggle current current
                 %W selection anchor current
             } 
             "singlerow" {

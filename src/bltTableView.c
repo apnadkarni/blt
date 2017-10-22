@@ -5010,22 +5010,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     return TCL_OK;
 }
 
-static ClientData
-MakeStringBindTag(TableView *viewPtr, const char *string, int type)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;                          /* Not used. */
-    BindTagKey key;
-
-    hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
-    memset(&key, 0, sizeof(key));
-    key.type = type;
-    key.clientData = Blt_GetHashKey(&viewPtr->uidTable, hPtr);
-    hPtr = Blt_CreateHashEntry(&viewPtr->bindTagTable, &key, &isNew);
-    return Blt_GetHashKey(&viewPtr->bindTagTable, hPtr);
-}
-
-static ClientData
+static BindTagKey *
 MakeBindTag(TableView *viewPtr, ClientData clientData, int type)
 {
     Blt_HashEntry *hPtr;
@@ -5039,6 +5024,17 @@ MakeBindTag(TableView *viewPtr, ClientData clientData, int type)
     return Blt_GetHashKey(&viewPtr->bindTagTable, hPtr);
 }
 
+static BindTagKey *
+MakeStringBindTag(TableView *viewPtr, const char *string, int type)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;                          /* Not used. */
+
+    hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
+    return MakeBindTag(viewPtr, Blt_GetHashKey(&viewPtr->uidTable, hPtr), type);
+}
+
+
 static void
 AddBindTags(TableView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, int type)
 {
@@ -5049,10 +5045,10 @@ AddBindTags(TableView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, int type)
         int i;
 
         for (i = 0; i < objc; i++) {
-            ClientData object;
+            BindTagKey *keyPtr;
 
-            object = MakeStringBindTag(viewPtr, Tcl_GetString(objv[i]), type);
-            Blt_Chain_Append(tags, object);
+            keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[i]), type);
+            Blt_Chain_Append(tags, keyPtr);
         }
     }
 }
@@ -5073,10 +5069,12 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
     switch(type) {
     case ITEM_COLUMN_FILTER:
         Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
         break;
 
     case ITEM_COLUMN_RESIZE:
         Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
         break;
 
     case ITEM_COLUMN_TITLE:
@@ -5093,6 +5091,7 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
         
     case ITEM_ROW_RESIZE:
         Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
         break;
 
     case ITEM_ROW_TITLE:
@@ -5113,24 +5112,25 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
             Cell *cellPtr = item;
             CellStyle *stylePtr;
             CellKey *keyPtr;
-            ClientData tag;
+            BindTagKey *tagPtr;
             
             keyPtr = GetKey(cellPtr);
-            tag = MakeBindTag(viewPtr, cellPtr, type);
-            Blt_Chain_Append(tags, tag);
+            tagPtr = MakeBindTag(viewPtr, cellPtr, type);
+            Blt_Chain_Append(tags, tagPtr);
             stylePtr = GetCurrentStyle(viewPtr, keyPtr->rowPtr, keyPtr->colPtr,
                                        cellPtr);
             Blt_Chain_Append(tags, MakeBindTag(viewPtr, keyPtr->rowPtr, type));
             Blt_Chain_Append(tags, MakeBindTag(viewPtr, keyPtr->colPtr, type));
             if (stylePtr->name != NULL) {
                 /* Append cell style name. */
-                Blt_Chain_Append(tags, 
-                                 MakeStringBindTag(viewPtr, stylePtr->name, type));
+                tagPtr = MakeStringBindTag(viewPtr, stylePtr->name, type);
+                Blt_Chain_Append(tags, tagPtr);
             }
             /* Append cell style class. */
-            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, 
-                                                     stylePtr->classPtr->className,
-                                                     type));
+            tagPtr = MakeStringBindTag(viewPtr, stylePtr->classPtr->className,
+                             type);
+            Blt_Chain_Append(tags, tagPtr);
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
         }
         break;
 
@@ -5139,8 +5139,6 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
                 (unsigned long)item);
         break;
     }
-    /* Append "all". */
-    Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
 }
 
 /*ARGSUSED*/
@@ -5294,8 +5292,10 @@ ResetTableView(TableView *viewPtr)
     Blt_DeleteHashTable(&viewPtr->rowTable);
     Blt_DeleteHashTable(&viewPtr->columnTable);
     Blt_DeleteHashTable(&viewPtr->cellTable);
+#ifdef notdef
     Blt_DeleteHashTable(&viewPtr->bindTagTable);
     Blt_InitHashTable(&viewPtr->bindTagTable, sizeof(BindTagKey)/sizeof(int));
+#endif
     Blt_InitHashTable(&viewPtr->cellTable, sizeof(CellKey)/sizeof(int));
     Blt_InitHashTable(&viewPtr->rowTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
@@ -6891,28 +6891,28 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * BindOp --
  *
  *      pathName bind tag sequence command
- *      pathName bindtags idOrTag idOrTag...
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    ClientData btag;
+    BindTagKey *keyPtr;
     Cell *cellPtr;
 
     /*
      * Cells are selected by id only.  All other strings are interpreted as
      * a binding tag.
      */
-    if ((GetCellFromObj(NULL, viewPtr, objv[2], &cellPtr) != TCL_OK) ||
-        (cellPtr == NULL)) {
-        /* Assume that this is a binding tag. */
-        btag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[2]), ITEM_CELL);
+    if ((GetCellFromObj(NULL, viewPtr, objv[2], &cellPtr) == TCL_OK) &&
+        (cellPtr != NULL)) {
+        keyPtr = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
     } else {
-        btag = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
+        /* Assume that this is a binding tag. */
+        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[2]), ITEM_CELL);
     } 
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, btag, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
          objc - 3, objv + 3);
 }
 

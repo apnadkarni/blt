@@ -186,7 +186,8 @@ set img [image create picture -data {
     nQkAOw==
 }]
 
-$view style create pushbutton button -variable button -justify center
+#$view style create pushbutton button -variable button -justify center
+$view style create imagebox button -justify center
 $view column configure button \
     -style button \
     -title "Picture" \

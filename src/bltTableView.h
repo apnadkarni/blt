@@ -173,13 +173,14 @@
 
 /* Item types used picking objects in widget. */
 typedef enum {
-    ITEM_CELL,
+    ITEM_NONE,
     ITEM_COLUMN_FILTER,
     ITEM_COLUMN_TITLE,
     ITEM_COLUMN_RESIZE,
     ITEM_ROW_FILTER,
     ITEM_ROW_TITLE,
-    ITEM_ROW_RESIZE
+    ITEM_ROW_RESIZE,
+    ITEM_CELL,
 } ItemType;
 
 #define ITEM_MASK            (0x7)
