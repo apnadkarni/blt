@@ -122,7 +122,6 @@
 #define DEF_BUTTON_ACTIVE_BG_MONO       STD_ACTIVE_BG_MONO
 #define DEF_BUTTON_ACTIVE_FOREGROUND    STD_ACTIVE_FOREGROUND
 #define DEF_BUTTON_ACTIVE_FG_MONO       STD_ACTIVE_FG_MONO
-#define DEF_BUTTON_BINDTAGS            "all"
 #define DEF_BUTTON_BORDERWIDTH          "1"
 #define DEF_BUTTON_CLOSE_RELIEF         "solid"
 #define DEF_BUTTON_OPEN_RELIEF          "solid"
@@ -150,7 +149,7 @@
 #endif
 #define DEF_COLUMN_ACTIVE_TITLE_FG      STD_ACTIVE_FOREGROUND
 #define DEF_COLUMN_ARROWWIDTH           "0"
-#define DEF_COLUMN_BG           (char *)NULL
+#define DEF_COLUMN_BG                   (char *)NULL
 #define DEF_COLUMN_BINDTAGS            "all"
 #define DEF_COLUMN_BORDERWIDTH          STD_BORDERWIDTH
 #define DEF_COLUMN_COLOR                RGB_BLACK
@@ -374,9 +373,6 @@ static Blt_ConfigSpec buttonSpecs[] = {
         DEF_BUTTON_NORMAL_BG, Blt_Offset(TreeView, button.normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
-    {BLT_CONFIG_OBJ, "-bindtags", "bindTags", "BindTags",
-        DEF_BUTTON_BINDTAGS, Blt_Offset(TreeView, button.bindTagsObjPtr),
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BUTTON_BORDERWIDTH, Blt_Offset(TreeView, button.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -4364,10 +4360,10 @@ AddEntryTags(TreeView *viewPtr, Entry *entryPtr, Blt_Chain tags)
         tPtr = Blt_GetHashValue(hPtr);
         hPtr = Blt_FindHashEntry(&tPtr->nodeTable, (char *)entryPtr->node);
         if (hPtr != NULL) {
-            ClientData btag;
+            BindTag tag;
 
-            btag = MakeStringBindTag(viewPtr, tPtr->tagName, ITEM_ENTRY);
-            Blt_Chain_Append(tags, btag);
+            tag = MakeStringBindTag(viewPtr, tPtr->tagName, ITEM_ENTRY);
+            Blt_Chain_Append(tags, tag);
         }
     }
 }
@@ -5283,26 +5279,7 @@ AppendTagsProc(
     }
     viewPtr = objPtr->viewPtr;
     switch (type) {
-    case ITEM_BUTTON:
-        {
-            Entry *entryPtr = object;
-            
-            Blt_Chain_Append(tags, MakeBindTag(viewPtr, entryPtr, type));
-            if (viewPtr->button.bindTagsObjPtr != NULL) {
-                AddTags(viewPtr, tags, viewPtr->button.bindTagsObjPtr, type);
-            }
-        }
-        break;
     case ITEM_COLUMN_TITLE:
-        {
-            Column *colPtr = object;
-            
-            Blt_Chain_Append(tags, MakeBindTag(viewPtr, colPtr, type));
-            if (colPtr->bindTagsObjPtr != NULL) {
-                AddTags(viewPtr, tags, colPtr->bindTagsObjPtr, type);
-            }
-        }
-        break;
     case ITEM_COLUMN_RESIZE:
         {
             Column *colPtr = object;
@@ -5314,6 +5291,7 @@ AppendTagsProc(
         }
         break;
         
+    case ITEM_BUTTON:
     case ITEM_ENTRY:
         {
             Entry *entryPtr = object;
@@ -14593,132 +14571,6 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * TagForgetOp --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    TreeView *viewPtr = clientData;
-    int i;
-
-    for (i = 3; i < objc; i++) {
-        Blt_Tree_ForgetTag(viewPtr->tree, Tcl_GetString(objv[i]));
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * TagNamesOp --
- *
- *---------------------------------------------------------------------------
- */
-static int
-TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
-{
-    TreeView *viewPtr = clientData;
-    Tcl_Obj *listObjPtr, *objPtr;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    objPtr = Tcl_NewStringObj("all", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (objc == 3) {
-        Blt_HashEntry *hPtr;
-        Blt_HashSearch cursor;
-        Blt_TreeTagEntry *tPtr;
-
-        objPtr = Tcl_NewStringObj("root", -1);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        for (hPtr = Blt_Tree_FirstTag(viewPtr->tree, &cursor); hPtr != NULL;
-             hPtr = Blt_NextHashEntry(&cursor)) {
-            tPtr = Blt_GetHashValue(hPtr);
-            objPtr = Tcl_NewStringObj(tPtr->tagName, -1);
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
-    } else {
-        int i;
-
-        for (i = 3; i < objc; i++) {
-            Blt_Chain tags;
-            Blt_ChainLink link;
-            Entry *entryPtr;
-
-            if (GetEntry(interp, viewPtr, objv[i], &entryPtr) != TCL_OK) {
-                return TCL_ERROR;
-            }
-            tags = Blt_Chain_Create();
-            AddEntryTags(viewPtr, entryPtr, tags);
-            for (link = Blt_Chain_FirstLink(tags); link != NULL; 
-                 link = Blt_Chain_NextLink(link)) {
-                objPtr = Tcl_NewStringObj(Blt_Chain_GetValue(link), -1);
-                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            }
-            Blt_Chain_Destroy(tags);
-        }
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * TagNodesOp --
- *
- *---------------------------------------------------------------------------
- */
-static int
-TagNodesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
-{
-    TreeView *viewPtr = clientData;
-    Blt_HashTable nodeTable;
-    int i;
-
-    Blt_InitHashTable(&nodeTable, BLT_ONE_WORD_KEYS);
-    for (i = 3; i < objc; i++) {
-        EntryIterator iter;
-        Entry *entryPtr;
-
-        if (GetEntryIterator(interp, viewPtr, objv[i], &iter) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
-             entryPtr = NextTaggedEntry(&iter)) {
-            int isNew;
-
-            Blt_CreateHashEntry(&nodeTable, (char *)entryPtr->node, &isNew);
-        }
-    }
-    {
-        Blt_HashEntry *hPtr;
-        Blt_HashSearch cursor;
-        Tcl_Obj *listObjPtr;
-
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        for (hPtr = Blt_FirstHashEntry(&nodeTable, &cursor); hPtr != NULL; 
-             hPtr = Blt_NextHashEntry(&cursor)) {
-            Blt_TreeNode node;
-            Tcl_Obj *objPtr;
-            
-            node = (Blt_TreeNode)Blt_GetHashKey(&nodeTable, hPtr);
-            objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
-        Tcl_SetObjResult(interp, listObjPtr);
-    }
-    Blt_DeleteHashTable(&nodeTable);
-    return TCL_OK;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -14824,16 +14676,144 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * TagForgetOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+    int i;
+
+    for (i = 3; i < objc; i++) {
+        Blt_Tree_ForgetTag(viewPtr->tree, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagNamesOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+    Tcl_Obj *listObjPtr, *objPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewStringObj("all", -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    if (objc == 3) {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch cursor;
+
+        objPtr = Tcl_NewStringObj("root", -1);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        for (hPtr = Blt_Tree_FirstTag(viewPtr->tree, &cursor); hPtr != NULL;
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeTagEntry *tPtr;
+
+            tPtr = Blt_GetHashValue(hPtr);
+            objPtr = Tcl_NewStringObj(tPtr->tagName, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+    } else {
+        int i;
+
+        for (i = 3; i < objc; i++) {
+            Blt_Chain tags;
+            Blt_ChainLink link;
+            Entry *entryPtr;
+
+            if (GetEntry(interp, viewPtr, objv[i], &entryPtr) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            tags = Blt_Chain_Create();
+            AddEntryTags(viewPtr, entryPtr, tags);
+            for (link = Blt_Chain_FirstLink(tags); link != NULL; 
+                 link = Blt_Chain_NextLink(link)) {
+                objPtr = Tcl_NewStringObj(Blt_Chain_GetValue(link), -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+            Blt_Chain_Destroy(tags);
+        }
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagNodesOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TagNodesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+    Blt_HashTable nodeTable;
+    int i;
+
+    Blt_InitHashTable(&nodeTable, BLT_ONE_WORD_KEYS);
+    for (i = 3; i < objc; i++) {
+        EntryIterator iter;
+        Entry *entryPtr;
+
+        if (GetEntryIterator(interp, viewPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
+             entryPtr = NextTaggedEntry(&iter)) {
+            int isNew;
+
+            Blt_CreateHashEntry(&nodeTable, (char *)entryPtr->node, &isNew);
+        }
+    }
+    {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch cursor;
+        Tcl_Obj *listObjPtr;
+
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        for (hPtr = Blt_FirstHashEntry(&nodeTable, &cursor); hPtr != NULL; 
+             hPtr = Blt_NextHashEntry(&cursor)) {
+            Blt_TreeNode node;
+            Tcl_Obj *objPtr;
+            
+            node = (Blt_TreeNode)Blt_GetHashKey(&nodeTable, hPtr);
+            objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+        Tcl_SetObjResult(interp, listObjPtr);
+    }
+    Blt_DeleteHashTable(&nodeTable);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * TagOp --
  *
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec tagOps[] = {
-    {"add",    1, TagAddOp,    5, 0, "tag id...",},
-    {"delete", 1, TagDeleteOp, 5, 0, "tag id...",},
-    {"forget", 1, TagForgetOp, 4, 0, "tag...",},
-    {"names",  2, TagNamesOp,  3, 0, "?id...?",}, 
-    {"nodes",  2, TagNodesOp,  4, 0, "tag ?tag...?",},
+    {"add",    1, TagAddOp,    5, 0, "tagName nodeName...",},
+    {"delete", 1, TagDeleteOp, 5, 0, "tagName nodeName...",},
+    {"forget", 1, TagForgetOp, 4, 0, "tagName...",},
+    {"names",  2, TagNamesOp,  3, 0, "?nodeName...?",}, 
+    {"nodes",  2, TagNodesOp,  4, 0, "tagName ?tagName...?",},
 };
 
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);

@@ -645,8 +645,6 @@ typedef struct {
     int openRelief, closeRelief;
     int width, height;
     Icon *icons;
-    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
-                                         * entry. */
 } Button;
 
 /*
