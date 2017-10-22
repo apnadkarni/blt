@@ -58,14 +58,19 @@
 #include "bltBind.h"
 #include "bltBg.h"
 
-#define ITEM_NONE               0
-#define ITEM_ENTRY              (1<<0)
-#define ITEM_ENTRY_BUTTON       (1<<1)
-#define ITEM_COLUMN             (1<<2)
-#define ITEM_COLUMN_TITLE       (1<<3)
-#define ITEM_COLUMN_RULE        (1<<4)
-#define ITEM_CELL               (1<<5)
-#define ITEM_STYLE              (ClientData)0x10004
+typedef enum {
+    ITEM_NONE,
+    ITEM_ENTRY,
+    ITEM_BUTTON,
+    ITEM_COLUMN_TITLE,
+    ITEM_COLUMN_RESIZE,
+    ITEM_CELL
+} ItemType;
+    
+typedef struct {
+    ClientData clientData;
+    int type;
+} BindTagKey;
 
 #define TITLE_PADX      5
 #define TITLE_PADY      1
@@ -640,6 +645,8 @@ typedef struct {
     int openRelief, closeRelief;
     int width, height;
     Icon *icons;
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+                                         * entry. */
 } Button;
 
 /*
@@ -917,10 +924,8 @@ struct _TreeView {
     Blt_BindTable bindTable;            /* Binding information for
                                          * entries. */
 
-    Blt_HashTable entryTagTable;
-    Blt_HashTable buttonTagTable;
-    Blt_HashTable columnTagTable;
-    Blt_HashTable styleTagTable;
+    Blt_HashTable bindTagTable;
+    Blt_HashTable uidTable;
     CellStyle *stylePtr;                /* Default style for text cells */
     Column treeColumn;
     Column *colActivePtr; 

@@ -139,7 +139,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_AUTO_CREATE                 "0"
 #define DEF_COLUMN_FILTERS              "0"
 #define DEF_BACKGROUND                  STD_NORMAL_BACKGROUND
-#define DEF_BIND_TAGS                   "all"
+#define DEF_BIND_TAGS                   (char *)NULL
 #define DEF_BORDERWIDTH                 STD_BORDERWIDTH
 #define DEF_COLUMN_ACTIVE_TITLE_RELIEF  "raised"
 #define DEF_COLUMN_COMMAND              (char *)NULL
@@ -498,7 +498,7 @@ static Blt_ConfigSpec columnSpecs[] =
         Blt_Offset(Column, activeTitleRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
-        Blt_Offset(Column, bindTagsObjPtr), BLT_CONFIG_NULL_OK,
+        Blt_Offset(Column, titleBindTagsObjPtr), BLT_CONFIG_NULL_OK,
         &cachedObjOption},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_COLUMN_COMMAND, 
         Blt_Offset(Column, cmdObjPtr),
@@ -581,7 +581,7 @@ static Blt_ConfigSpec rowSpecs[] =
         Blt_Offset(Row, activeTitleRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
-        Blt_Offset(Row, bindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
+        Blt_Offset(Row, titleBindTagsObjPtr), BLT_CONFIG_NULL_OK, &cachedObjOption},
     {BLT_CONFIG_STRING, "-command", "command", "Command", DEF_ROW_COMMAND, 
         Blt_Offset(Row, cmdObjPtr), 
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
@@ -3785,18 +3785,27 @@ GetColumnByIndex(TableView *viewPtr, const char *string, Column **colPtrPtr)
 
         objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
         if ((objPtr != NULL) && ((objPtr->flags & DELETED) == 0)) {
-            unsigned long flags;
+            ItemType type;
 
-            flags = (long)Blt_GetCurrentHint(viewPtr->bindTable);
-            if (flags & ITEM_COLUMN_MASK) {
+            type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
+            switch (type) {
+            case ITEM_COLUMN_TITLE:
+            case ITEM_COLUMN_FILTER:
+            case ITEM_COLUMN_RESIZE:
                 colPtr = (Column *)objPtr;
-            } else if (flags & ITEM_CELL) {
-                Cell *cellPtr;
-                CellKey *keyPtr;
-
-                cellPtr = (Cell *)objPtr;
-                keyPtr = GetKey(cellPtr);
-                colPtr = keyPtr->colPtr;
+                break;
+            case ITEM_CELL:
+                {
+                    Cell *cellPtr;
+                    CellKey *keyPtr;
+                    
+                    cellPtr = (Cell *)objPtr;
+                    keyPtr = GetKey(cellPtr);
+                    colPtr = keyPtr->colPtr;
+                }
+                break;
+            default:
+                break;
             }
         }
     } else if ((c == 'p') && (strcmp(string, "previous") == 0)) {
@@ -4000,18 +4009,27 @@ GetRowByIndex(TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
 
         objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
         if ((objPtr != NULL) && ((objPtr->flags & DELETED) == 0)) {
-            unsigned long flags;
+            ItemType type;
 
-            flags = (long)Blt_GetCurrentHint(viewPtr->bindTable);
-            if (flags & ITEM_ROW_MASK) {
+            type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
+            switch (type) {
+            case ITEM_ROW_TITLE:
+            case ITEM_ROW_FILTER:
+            case ITEM_ROW_RESIZE:
                 rowPtr = (Row *)objPtr;
-            } else if (flags & ITEM_CELL) {
-                Cell *cellPtr;
-                CellKey *keyPtr;
-
-                cellPtr = (Cell *)objPtr;
-                keyPtr = GetKey(cellPtr);
-                rowPtr = keyPtr->rowPtr;
+                break;
+            case ITEM_CELL:
+                {
+                    Cell *cellPtr;
+                    CellKey *keyPtr;
+                    
+                    cellPtr = (Cell *)objPtr;
+                    keyPtr = GetKey(cellPtr);
+                    rowPtr = keyPtr->rowPtr;
+                }
+                break;
+            default:
+                break;
             }
         }
     } else if ((c == 'l') && (strncmp(string, "last", length) == 0)) {
@@ -4310,10 +4328,10 @@ GetCellByIndex(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 
         objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
         if ((objPtr != NULL) && ((objPtr->flags & DELETED) == 0)) {
-            unsigned long flags;
-
-            flags = (long)Blt_GetCurrentHint(viewPtr->bindTable);
-            if (flags & ITEM_CELL) {
+            ItemType type;
+            
+            type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
+            if (type == ITEM_CELL) {
                 *cellPtrPtr = (Cell *)objPtr;
             }
         }
@@ -4723,11 +4741,10 @@ AddSelectionRange(TableView *viewPtr)
 
         for (colPtr = firstColPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
             Cell *cellPtr;
-            Blt_HashEntry *hPtr;
             int isNew;
 
             cellPtr = GetCell(viewPtr, rowPtr, colPtr);
-            hPtr = Blt_CreateHashEntry(&selPtr->cellTable, cellPtr, &isNew);
+            Blt_CreateHashEntry(&selPtr->cellTable, cellPtr, &isNew);
             if (colPtr == lastColPtr) {
                 break;
             }
@@ -4765,12 +4782,12 @@ GetSelectedCells(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
     selPtr = &viewPtr->selectCells;
     minRowPtr = maxRowPtr = NULL;
     minColPtr = maxColPtr = NULL;
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->selectCells.cellTable, &iter); 
+    for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
          hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
         Cell *cellPtr;
         CellKey *keyPtr;
 
-        cellPtr = (Cell *)Blt_GetHashKey(&viewPtr->selectCells.cellTable, hPtr);
+        cellPtr = (Cell *)Blt_GetHashKey(&selPtr->cellTable, hPtr);
         keyPtr = GetKey(cellPtr);
         if ((minRowPtr == NULL) || (minRowPtr->index > keyPtr->rowPtr->index)){
             minRowPtr = keyPtr->rowPtr;
@@ -4789,6 +4806,76 @@ GetSelectedCells(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
     anchorPtr->colPtr = minColPtr;
     markPtr->rowPtr = maxRowPtr;
     markPtr->colPtr = maxColPtr;
+}
+
+static void
+GetSelectedRows(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
+{
+    Row *rowPtr;
+    Column *colPtr;
+    CellSelection *selPtr;
+
+    selPtr = &viewPtr->selectCells;
+    for (rowPtr = anchorPtr->rowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+        int selected;
+
+        selected = FALSE;
+        rowPtr->flags &= ~HAS_SELECTION;
+        for (colPtr = anchorPtr->colPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+            CellKey key;
+
+            key.colPtr = colPtr;
+            key.rowPtr = rowPtr;
+            if (Blt_FindHashEntry(&selPtr->cellTable, &key) != NULL) {
+                selected = TRUE;
+                break;
+            }
+            if (colPtr == markPtr->colPtr) {
+                break;
+            }
+        }
+        if (selected) {
+            rowPtr->flags |= HAS_SELECTION;
+        }
+        if (rowPtr == markPtr->rowPtr) {
+            break;
+        }
+    }
+}
+
+static void
+GetSelectedColumns(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
+{
+    Row *rowPtr;
+    Column *colPtr;
+    CellSelection *selPtr;
+
+    selPtr = &viewPtr->selectCells;
+    for (colPtr = anchorPtr->colPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+        int selected;
+
+        selected = FALSE;
+        colPtr->flags &= ~HAS_SELECTION;
+        for (rowPtr = anchorPtr->rowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
+            CellKey key;
+
+            key.colPtr = colPtr;
+            key.rowPtr = rowPtr;
+            if (Blt_FindHashEntry(&selPtr->cellTable, &key) != NULL) {
+                selected = TRUE;
+                break;
+            }
+            if (rowPtr == markPtr->rowPtr) {
+                break;
+            }
+        }
+        if (selected) {
+            colPtr->flags |= HAS_SELECTION;
+        }
+        if (colPtr == markPtr->colPtr) {
+            break;
+        }
+    }
 }
 
 static void
@@ -4924,104 +5011,136 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 }
 
 static ClientData
-RowBindTagProc(TableView *viewPtr, const char *key)
+MakeStringBindTag(TableView *viewPtr, const char *string, int type)
 {
     Blt_HashEntry *hPtr;
     int isNew;                          /* Not used. */
+    BindTagKey key;
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->rowBindTagTable, key, &isNew);
-    return Blt_GetHashKey(&viewPtr->rowBindTagTable, hPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
+    memset(&key, 0, sizeof(key));
+    key.type = type;
+    key.clientData = Blt_GetHashKey(&viewPtr->uidTable, hPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->bindTagTable, &key, &isNew);
+    return Blt_GetHashKey(&viewPtr->bindTagTable, hPtr);
 }
 
 static ClientData
-ColumnBindTagProc(TableView *viewPtr, const char *key)
+MakeBindTag(TableView *viewPtr, ClientData clientData, int type)
 {
     Blt_HashEntry *hPtr;
     int isNew;                          /* Not used. */
+    BindTagKey key;
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->colBindTagTable, key, &isNew);
-    return Blt_GetHashKey(&viewPtr->colBindTagTable, hPtr);
-}
-
-static ClientData
-CellBindTagProc(TableView *viewPtr, const char *key)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;                          /* Not used. */
-
-    hPtr = Blt_CreateHashEntry(&viewPtr->cellBindTagTable, key, &isNew);
-    return Blt_GetHashKey(&viewPtr->cellBindTagTable, hPtr);
+    memset(&key, 0, sizeof(key));
+    key.type = type;
+    key.clientData = clientData;
+    hPtr = Blt_CreateHashEntry(&viewPtr->bindTagTable, &key, &isNew);
+    return Blt_GetHashKey(&viewPtr->bindTagTable, hPtr);
 }
 
 static void
-AddBindTags(TableView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr,
-            TagProc *tagProc)
+AddBindTags(TableView *viewPtr, Blt_Chain tags, Tcl_Obj *objPtr, int type)
 {
     int objc;
     Tcl_Obj **objv;
     
     if (Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) == TCL_OK) {
         int i;
-        for (i = 0; i < objc; i++) {
-            const char *string;
 
-            string = Tcl_GetString(objv[i]);
-            Blt_Chain_Append(tags, (*tagProc)(viewPtr, string));
+        for (i = 0; i < objc; i++) {
+            ClientData object;
+
+            object = MakeStringBindTag(viewPtr, Tcl_GetString(objv[i]), type);
+            Blt_Chain_Append(tags, object);
         }
     }
 }
 
 static void
-AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint, 
+AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint, 
                Blt_Chain tags)
 {
     TableView *viewPtr;
-    long flags = (long)hint;
+    ItemType type = (ItemType)hint;
     TableObj *objPtr;
-
-    objPtr = object;
+    
+    objPtr = item;
     if (objPtr->flags & DELETED) {
         return;
     }
     viewPtr = Blt_GetBindingData(table);
-    if (flags & ITEM_COLUMN_FILTER) {
-        Blt_Chain_Append(tags, ColumnBindTagProc(viewPtr, "ColumnFilter"));
-    } else if (flags & ITEM_COLUMN_RESIZE) {
-        Blt_Chain_Append(tags, ColumnBindTagProc(viewPtr, "Resize"));
-    } else if (flags & ITEM_COLUMN_TITLE) {
-        Column *colPtr = object;
+    switch(type) {
+    case ITEM_COLUMN_FILTER:
+        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        break;
 
-        Blt_Chain_Append(tags, colPtr);
-        if (colPtr->bindTagsObjPtr != NULL) {
-            AddBindTags(viewPtr, tags, colPtr->bindTagsObjPtr,
-                        ColumnBindTagProc);
-        }
-    } else if (flags & ITEM_ROW_RESIZE) {
-        Blt_Chain_Append(tags, RowBindTagProc(viewPtr, "Resize"));
-    } else if (flags & ITEM_ROW_TITLE) {
-        Row *rowPtr = object;
+    case ITEM_COLUMN_RESIZE:
+        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        break;
 
-        Blt_Chain_Append(tags, rowPtr);
-        if (rowPtr->bindTagsObjPtr != NULL) {
-            AddBindTags(viewPtr, tags, rowPtr->bindTagsObjPtr, RowBindTagProc);
-        }
-    } else if (flags & ITEM_CELL) {
-        Cell *cellPtr = object;
-        CellStyle *stylePtr;
-        CellKey *keyPtr;
+    case ITEM_COLUMN_TITLE:
+        {
+            Column *colPtr = item;
             
-        keyPtr = GetKey(cellPtr);
-        stylePtr = GetCurrentStyle(viewPtr, keyPtr->rowPtr, keyPtr->colPtr,
-                                   cellPtr);
-        if (stylePtr->name != NULL) {
-            Blt_Chain_Append(tags, CellBindTagProc(viewPtr, stylePtr->name));
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, colPtr, type));
+            if (colPtr->titleBindTagsObjPtr != NULL) {
+                /* Append column title bind tags. */
+                AddBindTags(viewPtr, tags, colPtr->titleBindTagsObjPtr, type);
+            }
         }
-        Blt_Chain_Append(tags, 
-                CellBindTagProc(viewPtr, stylePtr->classPtr->className));
-        Blt_Chain_Append(tags, CellBindTagProc(viewPtr, "all"));
-    } else {
-        fprintf(stderr, "unknown object %lx\n", (unsigned long)object);
+        break;
+        
+    case ITEM_ROW_RESIZE:
+        Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+        break;
+
+    case ITEM_ROW_TITLE:
+        {
+            Row *rowPtr = item;
+            
+            /* Append pointer to row. */
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, item, type));
+            if (rowPtr->titleBindTagsObjPtr != NULL) {
+                /* Append row title bind tags. */
+                AddBindTags(viewPtr, tags, rowPtr->titleBindTagsObjPtr, type);
+            }
+        }
+        break;
+        
+    case ITEM_CELL:
+        {
+            Cell *cellPtr = item;
+            CellStyle *stylePtr;
+            CellKey *keyPtr;
+            ClientData tag;
+            
+            keyPtr = GetKey(cellPtr);
+            tag = MakeBindTag(viewPtr, cellPtr, type);
+            Blt_Chain_Append(tags, tag);
+            stylePtr = GetCurrentStyle(viewPtr, keyPtr->rowPtr, keyPtr->colPtr,
+                                       cellPtr);
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, keyPtr->rowPtr, type));
+            Blt_Chain_Append(tags, MakeBindTag(viewPtr, keyPtr->colPtr, type));
+            if (stylePtr->name != NULL) {
+                /* Append cell style name. */
+                Blt_Chain_Append(tags, 
+                                 MakeStringBindTag(viewPtr, stylePtr->name, type));
+            }
+            /* Append cell style class. */
+            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, 
+                                                     stylePtr->classPtr->className,
+                                                     type));
+        }
+        break;
+
+    default:
+        fprintf(stderr, "unknown item type (%d) %lx\n", type,
+                (unsigned long)item);
+        break;
     }
+    /* Append "all". */
+    Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
 }
 
 /*ARGSUSED*/
@@ -5046,19 +5165,13 @@ TableViewPickProc(
      * "grab" cell. */
     if (viewPtr->postPtr != NULL) {
         if (hintPtr != NULL) {
-            unsigned long flags;
-            
-            flags = ITEM_CELL;
-            *hintPtr = (ClientData)flags;
+            *hintPtr = (ClientData)ITEM_CELL;
         }
         return viewPtr->postPtr;
     }
     if (viewPtr->filter.postPtr != NULL) {
         if (hintPtr != NULL) {
-            unsigned long flags;
-            
-            flags = ITEM_COLUMN_FILTER;
-            *hintPtr = (ClientData)flags;
+            *hintPtr = (ClientData)ITEM_COLUMN_FILTER;
         }
         return viewPtr->filter.postPtr;
     }
@@ -5086,23 +5199,21 @@ TableViewPickProc(
 
         if (y < (viewPtr->inset + viewPtr->colTitleHeight)) {
             if (hintPtr != NULL) {
-                unsigned long flags;
+                ItemType type;
                 
-                flags = ITEM_COLUMN_TITLE;
                 if (worldX >= (colPtr->worldX + colPtr->width - RESIZE_AREA)) {
-                    flags |= ITEM_COLUMN_RESIZE;
+                    type = ITEM_COLUMN_RESIZE;
+                } else {
+                    type = ITEM_COLUMN_TITLE;
                 }
-                *hintPtr = (ClientData)flags;
+                *hintPtr = (ClientData)type;
             }
             return colPtr;              /* We're picking the filter. */
         }
         if (y < (viewPtr->inset + viewPtr->colTitleHeight + 
                  viewPtr->colFilterHeight)) {
             if (hintPtr != NULL) {
-                unsigned long flags;
-                
-                flags = ITEM_COLUMN_FILTER;
-                *hintPtr = (ClientData)flags;
+                *hintPtr = (ClientData)ITEM_COLUMN_FILTER;
             }
             return colPtr;              /* We're picking the title/resize. */
         }
@@ -5112,13 +5223,14 @@ TableViewPickProc(
         (viewPtr->flags & ROW_TITLES) && 
         (x < (viewPtr->inset + viewPtr->rowTitleWidth))) {
         if (hintPtr != NULL) {
-            unsigned long flags;
+            ItemType type;
 
-            flags = ITEM_ROW_TITLE;
             if (worldY >= (rowPtr->worldY + rowPtr->height - RESIZE_AREA)) {
-                flags |= ITEM_ROW_RESIZE;
+                type = ITEM_ROW_RESIZE;
+            } else {
+                type = ITEM_ROW_TITLE;
             }
-            *hintPtr = (ClientData)flags;
+            *hintPtr = (ClientData)type;
         }
         return rowPtr;                  /* We're picking the title/resize. */
     }
@@ -5129,12 +5241,8 @@ TableViewPickProc(
         return NULL;                    /* Ignore disabled rows. */
     }
     cellPtr = GetCell(viewPtr, rowPtr, colPtr);
-
     if (hintPtr != NULL) {
-        unsigned long flags;
-
-        flags = ITEM_CELL;
-        *hintPtr = (ClientData)flags;
+        *hintPtr = (ClientData)ITEM_CELL;
     }
     return cellPtr;
 }
@@ -5186,6 +5294,8 @@ ResetTableView(TableView *viewPtr)
     Blt_DeleteHashTable(&viewPtr->rowTable);
     Blt_DeleteHashTable(&viewPtr->columnTable);
     Blt_DeleteHashTable(&viewPtr->cellTable);
+    Blt_DeleteHashTable(&viewPtr->bindTagTable);
+    Blt_InitHashTable(&viewPtr->bindTagTable, sizeof(BindTagKey)/sizeof(int));
     Blt_InitHashTable(&viewPtr->cellTable, sizeof(CellKey)/sizeof(int));
     Blt_InitHashTable(&viewPtr->rowTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
@@ -5266,9 +5376,8 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
     Blt_DeleteHashTable(&viewPtr->cellTable);
     Blt_DeleteHashTable(&viewPtr->rowTable);
     Blt_DeleteHashTable(&viewPtr->columnTable);
-    Blt_DeleteHashTable(&viewPtr->rowBindTagTable);
-    Blt_DeleteHashTable(&viewPtr->colBindTagTable);
-    Blt_DeleteHashTable(&viewPtr->cellBindTagTable);
+    Blt_DeleteHashTable(&viewPtr->bindTagTable);
+    Blt_DeleteHashTable(&viewPtr->uidTable);
     Blt_DeleteHashTable(&viewPtr->cachedObjTable);
     Blt_Pool_Destroy(viewPtr->rowPool);
     Blt_Pool_Destroy(viewPtr->columnPool);
@@ -5490,14 +5599,22 @@ SelectionProc(
             CellKey anchor, mark;
 
             GetSelectedCells(viewPtr, &anchor, &mark);
-            
+            GetSelectedRows(viewPtr, &anchor, &mark);
+            GetSelectedColumns(viewPtr, &anchor, &mark);
             for (rowPtr = anchor.rowPtr; rowPtr != NULL; 
                  rowPtr = rowPtr->nextPtr) {
                 Column *colPtr;
 
+                if ((rowPtr->flags & HAS_SELECTION) == 0) {
+                    continue;
+                }
                 CsvStartRecord(&writer);
                 for (colPtr = anchor.colPtr; colPtr != NULL; 
                      colPtr = colPtr->nextPtr) {
+
+                    if ((colPtr->flags & HAS_SELECTION) == 0) {
+                        continue;
+                    }
                     CsvAppendValue(&writer, viewPtr, rowPtr, colPtr);
                     if (colPtr == mark.colPtr) {
                         break;
@@ -6781,7 +6898,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static int
 BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    ClientData object;
+    ClientData btag;
     Cell *cellPtr;
 
     /*
@@ -6791,11 +6908,11 @@ BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((GetCellFromObj(NULL, viewPtr, objv[2], &cellPtr) != TCL_OK) ||
         (cellPtr == NULL)) {
         /* Assume that this is a binding tag. */
-        object = CellBindTagProc(viewPtr, Tcl_GetString(objv[2]));
+        btag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[2]), ITEM_CELL);
     } else {
-        object = cellPtr;
+        btag = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
     } 
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, btag, 
          objc - 3, objv + 3);
 }
 
@@ -7659,7 +7776,7 @@ fprintf(stderr, "ColumnActivate: Column %s is NULL\n", Tcl_GetString(objv[3]));
  *
  *      Bind a callback to an event on a column title.
  *
- *        pathName column bind tag sequence command
+ *        pathName column bind tag type sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -7668,16 +7785,35 @@ static int
 ColumnBindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
-    ClientData object;
+    ClientData tag;
     Column *colPtr;
+    const char *string;
+    int length;
+    char c;
+    ItemType type;
 
-    if (GetColumn(NULL, viewPtr, objv[3], &colPtr) == TCL_OK) {
-        object = colPtr;
+    string = Tcl_GetStringFromObj(objv[4], &length);
+    c = string[0];
+    if ((c == 'c') && (strncmp(string, "cell", length) == 0)) {
+        type = ITEM_CELL;
+    } else if ((c == 't') && (strncmp(string, "title", length) == 0)) {
+        type = ITEM_COLUMN_TITLE;
+    } else if ((c == 'r') && (strncmp(string, "resize", length) == 0)) {
+        type = ITEM_COLUMN_RESIZE;
+    } else if ((c == 'f') && (strncmp(string, "filter", length) == 0)) {
+        type = ITEM_COLUMN_FILTER;
     } else {
-        object = ColumnBindTagProc(viewPtr, Tcl_GetString(objv[3]));
+        Tcl_AppendResult(interp, "Bad column bind tag type \"", string, "\"",
+                         (char *)NULL);
+        return TCL_ERROR;
     }
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object,
-        objc - 4, objv + 4);
+    if (GetColumn(NULL, viewPtr, objv[3], &colPtr) == TCL_OK) {
+        tag = MakeBindTag(viewPtr, colPtr, type);
+    } else {
+        tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
+    }
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, tag,
+        objc - 5, objv + 5);
 }
 
 /*
@@ -8651,7 +8787,7 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec columnOps[] = {
     {"activate",   1, ColumnActivateOp,   4, 4, "colName",}, 
-    {"bind",       1, ColumnBindOp,       4, 6, "tagName ?sequence command?",},
+    {"bind",       1, ColumnBindOp,       5, 7, "tagName type ?sequence command?",},
     {"cget",       2, ColumnCgetOp,       5, 5, "colName option",}, 
     {"configure",  2, ColumnConfigureOp,  4, 0, "colName ?option value ...?",}, 
     {"deactivate", 2, ColumnDeactivateOp, 3, 3, "",},
@@ -9783,7 +9919,7 @@ RowActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowBindOp --
  *
- *        pathName row bind tag sequence command
+ *        pathName row bind tag type sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -9795,14 +9931,29 @@ RowBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     ClientData object;
     Row *rowPtr;
+    const char *string;
+    int length;
+    char c;
+    ItemType type;
 
-    if (GetRow(NULL, viewPtr, objv[3], &rowPtr) == TCL_OK) {
-        object = rowPtr;
+    string = Tcl_GetStringFromObj(objv[4], &length);
+    c = string[0];
+    if ((c == 'c') && (strncmp(string, "cell", length) == 0)) {
+        type = ITEM_CELL;
+    } else if ((c == 't') && (strncmp(string, "title", length) == 0)) {
+        type = ITEM_ROW_TITLE;
+    } else if ((c == 'r') && (strncmp(string, "resize", length) == 0)) {
+        type = ITEM_ROW_RESIZE;
     } else {
-        object = RowBindTagProc(viewPtr, Tcl_GetString(objv[3]));
+        return TCL_ERROR;
+    }
+    if (GetRow(NULL, viewPtr, objv[3], &rowPtr) == TCL_OK) {
+        object = MakeBindTag(viewPtr, rowPtr, type);
+    } else {
+        object = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
     }
     return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object,
-        objc - 4, objv + 4);
+        objc - 5, objv + 5);
 }
 
 /*
@@ -10636,7 +10787,7 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec rowOps[] =
 {
     {"activate",   1, RowActivateOp,   4, 4, "rowName",},
-    {"bind",       1, RowBindOp,       4, 6, "tagName ?sequence command?",},
+    {"bind",       1, RowBindOp,       5, 7, "tagName type ?sequence command?",},
     {"cget",       2, RowCgetOp,       5, 5, "rowName option",},
     {"configure",  2, RowConfigureOp,  4, 0, "rowName ?option value ...?",},
     {"deactivate", 3, RowDeactivateOp, 3, 3, "",},
@@ -13243,14 +13394,13 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->filter.activeRelief = TK_RELIEF_RAISED;
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
         TableViewPickProc, AppendTagsProc);
-    Blt_InitHashTableWithPool(&viewPtr->cellTable, sizeof(CellKey));
+    Blt_InitHashTableWithPool(&viewPtr->cellTable, sizeof(CellKey)/sizeof(int));
     Blt_InitHashTableWithPool(&viewPtr->rowTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->iconTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->rowBindTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->colBindTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->cellBindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->bindTagTable, sizeof(BindTagKey)/sizeof(int));
+    Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->selectCells.cellTable, 
                               BLT_ONE_WORD_KEYS);

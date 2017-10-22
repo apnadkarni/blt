@@ -4393,7 +4393,7 @@ SetdataOp(
                 Tcl_GetString(objv[i]), &isNew);
         if (!isNew) {
             argv = Blt_GetHashValue(hPtr);
-            Tcl_Free(argv);
+            Tcl_Free((char *)argv);
         }
         if (Tcl_SplitList(interp, Tcl_GetString(objv[i + 1]), &argc, &argv) 
             != TCL_OK) {

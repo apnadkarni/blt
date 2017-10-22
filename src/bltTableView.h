@@ -118,11 +118,12 @@
                                          * redrawn. */
 
 /* Row and column only flags */
-#define DELETED         (1<<10)         /* The row or column has been
+#define DELETED         (1<<10)         /* The row, column, cell has been
                                          * deleted. */
 
 #define POSTED          (1<<11)         /* Cells can be posted. */
 #define STICKY          (1<<12)
+#define HAS_SELECTION   (1<<13)
 
 /* These are tableview only flags. */
 #define LAYOUT_PENDING  (1<<13)
@@ -170,22 +171,29 @@
                                          * the view when the sort
                                          * -decreasing flag is changed. */
 
-
 /* Item types used picking objects in widget. */
-#define ITEM_CELL            (1<<0)
-#define ITEM_COLUMN_FILTER   (1<<1)
-#define ITEM_COLUMN_TITLE    (1<<2)
-#define ITEM_COLUMN_RESIZE   (1<<3)
-#define ITEM_ROW_TITLE       (1<<4)
-#define ITEM_ROW_RESIZE      (1<<5)
-#define ITEM_ROW_MASK        (ITEM_ROW_RESIZE|ITEM_ROW_TITLE)
-#define ITEM_COLUMN_MASK \
-    (ITEM_COLUMN_FILTER|ITEM_COLUMN_RESIZE|ITEM_COLUMN_TITLE)
-#define ITEM_STYLE          (0x10004)
+typedef enum {
+    ITEM_CELL,
+    ITEM_COLUMN_FILTER,
+    ITEM_COLUMN_TITLE,
+    ITEM_COLUMN_RESIZE,
+    ITEM_ROW_FILTER,
+    ITEM_ROW_TITLE,
+    ITEM_ROW_RESIZE
+} ItemType;
 
+#define ITEM_MASK            (0x7)
+
+#define ITEM_STYLE          (0x10004)
+    
 #define SHOW_VALUES       (1<<20)
 
 #define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
+
+typedef struct {
+    int type;
+    ClientData clientData;
+} BindTagKey;
 
 /*
  * Limits --
@@ -431,7 +439,7 @@ struct _Row {
     long visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
-    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+    Tcl_Obj *titleBindTagsObjPtr;       /* List of binding tags for this
                                          * row. */
     BLT_TABLE_ROW row;                  /* Row in the datatable this
                                          * structure is associated with. */
@@ -490,7 +498,7 @@ struct _Column {
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */
-    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+    Tcl_Obj *titleBindTagsObjPtr;       /* List of binding tags for this
                                          * column. */
     BLT_TABLE_COLUMN column;            /* Column in the datatable this
                                          * structure is associated with. */
@@ -756,9 +764,8 @@ struct _TableView {
     Blt_HashTable cachedObjTable;       /* Table of strings. */
     Blt_HashTable iconTable;            /* Table of icons. */
     Blt_HashTable styleTable;           /* Table of cell styles. */
-    Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */
-    Blt_HashTable colBindTagTable;      /* Table of column bindtags. */
-    Blt_HashTable cellBindTagTable;     /* Table of cell bindtags. */
+    Blt_HashTable bindTagTable;         /* Table of row bindtags. */
+    Blt_HashTable uidTable;             /* Table of strings. */
     Row *rowHeadPtr, *rowTailPtr;
     Column *colHeadPtr, *colTailPtr;
     Row **rowMap;                       /* Array of pointers to rows. This

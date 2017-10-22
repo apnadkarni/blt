@@ -36,3 +36,4 @@ blt::tk::scrollbar $view.editor.xbar
 blt::tk::scrollbar $view.editor.ybar
 
 $view column configure x -style textbox 
+
