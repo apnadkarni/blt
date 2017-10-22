@@ -4324,30 +4324,30 @@ GetEntryFromSpecialId(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
     return TCL_OK;
 }
 
-static BindTagKey *
+static BindTag
 MakeBindTag(TreeView *viewPtr, ClientData clientData, ItemType type)
 {
     Blt_HashEntry *hPtr;
     int isNew;                          /* Not used. */
-    BindTagKey key;
+    struct _BindTag tag;
 
-    memset(&key, 0, sizeof(key));
-    key.type = type;
-    key.clientData = clientData;
-    hPtr = Blt_CreateHashEntry(&viewPtr->bindTagTable, &key, &isNew);
+    memset(&tag, 0, sizeof(tag));
+    tag.type = type;
+    tag.clientData = clientData;
+    hPtr = Blt_CreateHashEntry(&viewPtr->bindTagTable, &tag, &isNew);
     return Blt_GetHashKey(&viewPtr->bindTagTable, hPtr);
 }
 
-static BindTagKey *
+static BindTag
 MakeStringBindTag(TreeView *viewPtr, const char *string, ItemType type)
 {
     Blt_HashEntry *hPtr;
     int isNew;                          /* Not used. */
-    void *keyPtr;
+    char *key;
     
     hPtr = Blt_CreateHashEntry(&viewPtr->uidTable, string, &isNew);
-    keyPtr = Blt_GetHashKey(&viewPtr->uidTable, hPtr);
-    return MakeBindTag(viewPtr, (ClientData)keyPtr, type);
+    key = Blt_GetHashKey(&viewPtr->uidTable, hPtr);
+    return MakeBindTag(viewPtr, (ClientData)key, type);
 }
 
 /*ARGSUSED*/
@@ -5308,7 +5308,9 @@ AppendTagsProc(
             Column *colPtr = object;
             
             Blt_Chain_Append(tags, MakeBindTag(viewPtr, colPtr, type));
-            Blt_Chain_Append(tags, MakeStringBindTag(viewPtr, "all", type));
+            if (colPtr->bindTagsObjPtr != NULL) {
+                AddTags(viewPtr, tags, colPtr->bindTagsObjPtr, type);
+            }
         }
         break;
         
@@ -6242,7 +6244,8 @@ NewView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
         PickItem, AppendTagsProc);
-    Blt_InitHashTable(&viewPtr->bindTagTable, sizeof(BindTagKey)/sizeof(int));
+    Blt_InitHashTable(&viewPtr->bindTagTable,
+                      sizeof(struct _BindTag)/sizeof(int));
     Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
 
     viewPtr->entryPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
@@ -8991,7 +8994,7 @@ static int
 BindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
-    BindTagKey *keyPtr;
+    BindTag tag;
     Entry *entryPtr;
     TreeView *viewPtr = clientData;
 
@@ -9003,11 +9006,11 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (entryPtr != NULL) {
             return TCL_OK;      /* Special id doesn't currently exist. */
         }
-        keyPtr = MakeBindTag(viewPtr, entryPtr, ITEM_ENTRY);
+        tag = MakeBindTag(viewPtr, entryPtr, ITEM_ENTRY);
     } else {
-        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[2]), ITEM_ENTRY);
+        tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[2]), ITEM_ENTRY);
     } 
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, tag, 
          objc - 3, objv + 3);
 }
 
@@ -9171,7 +9174,7 @@ static int
 ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
-    BindTagKey *keyPtr;
+    BindTag tag;
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
     Blt_TreeNode node;
@@ -9179,12 +9182,12 @@ ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
         && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
         (entryPtr != NULL)) {
-        keyPtr = MakeBindTag(viewPtr, entryPtr, ITEM_BUTTON);
+        tag = MakeBindTag(viewPtr, entryPtr, ITEM_BUTTON);
     } else {
-        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]),ITEM_BUTTON);
+        tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), ITEM_BUTTON);
     } 
     /* Assume that this is a binding tag. */
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, tag, 
         objc - 4, objv + 4);
 }
 
@@ -9421,7 +9424,7 @@ static int
 CellBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
            Tcl_Obj *const *objv)
 {
-    BindTagKey *keyPtr;
+    BindTag tag;
     Cell *cellPtr;
     TreeView *viewPtr = clientData;
 
@@ -9430,11 +9433,11 @@ CellBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
             fprintf(stderr, "can't find %s\n", Tcl_GetString(objv[3]));
             return TCL_OK;
         }
-        keyPtr = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
+        tag = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
     } else {
-        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), ITEM_CELL);
+        tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), ITEM_CELL);
     }
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, tag, 
          objc - 4, objv + 4);
 }
 
@@ -10144,7 +10147,7 @@ static int
 ColumnBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
 {
-    BindTagKey *keyPtr;
+    BindTag tag;
     Column *colPtr;
     ItemType type;
     TreeView *viewPtr = clientData;
@@ -10167,11 +10170,11 @@ ColumnBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if ((GetColumn(NULL, viewPtr, objv[3], &colPtr) == TCL_OK) && 
         (colPtr != NULL)) {
-        keyPtr = MakeBindTag(viewPtr, colPtr, type);
+        tag = MakeBindTag(viewPtr, colPtr, type);
     } else {
-        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
+        tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
     }
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr,
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, tag,
         objc - 5, objv + 5);
 }
 
@@ -11064,7 +11067,7 @@ static int
 EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
-    BindTagKey *keyPtr;
+    BindTag tag;
     Entry *entryPtr;
     ItemType type;
     TreeView *viewPtr = clientData;
@@ -11087,14 +11090,13 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
         && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
         (entryPtr != NULL)) {
-        keyPtr = MakeBindTag(viewPtr, entryPtr, type);
+        tag = MakeBindTag(viewPtr, entryPtr, type);
     } else {
-        keyPtr = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
+        tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
     } 
-    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, keyPtr, 
+    return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, tag, 
          objc - 5, objv + 5);
 }
-
 
 /*
  *---------------------------------------------------------------------------

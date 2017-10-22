@@ -191,10 +191,10 @@ typedef enum {
 
 #define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
 
-typedef struct {
-    int type;
+typedef struct _BindTag {
     ClientData clientData;
-} BindTagKey;
+    int type;
+} *BindTag;
 
 /*
  * Limits --
@@ -440,7 +440,7 @@ struct _Row {
     long visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
-    Tcl_Obj *titleBindTagsObjPtr;       /* List of binding tags for this
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
                                          * row. */
     BLT_TABLE_ROW row;                  /* Row in the datatable this
                                          * structure is associated with. */
@@ -499,7 +499,7 @@ struct _Column {
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */
-    Tcl_Obj *titleBindTagsObjPtr;       /* List of binding tags for this
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
                                          * column. */
     BLT_TABLE_COLUMN column;            /* Column in the datatable this
                                          * structure is associated with. */

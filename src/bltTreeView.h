@@ -67,10 +67,10 @@ typedef enum {
     ITEM_CELL
 } ItemType;
     
-typedef struct {
+typedef struct _BindTag {
     ClientData clientData;
     int type;
-} BindTagKey;
+} *BindTag;
 
 #define TITLE_PADX      5
 #define TITLE_PADY      1
