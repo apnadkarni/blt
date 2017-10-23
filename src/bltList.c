@@ -536,11 +536,13 @@ Blt_List_GetNthNode(List *listPtr, long position, int direction)
  *
  * Blt_List_Sort --
  *
- *      Find the node based upon a given position in list.
+ *      Sorts the list based upon a sort comparison routine provided.
  *
  * Results:
- *      Returns the pointer to the node, if that numbered element
- *      exists. Otherwise NULL.
+ *      None.
+ *
+ * Side Effects:
+ *      The list is rearranged to its sorted order.
  *
  *---------------------------------------------------------------------------
  */
