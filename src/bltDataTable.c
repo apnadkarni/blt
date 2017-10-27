@@ -4292,7 +4292,7 @@ BLT_TABLE_TRACE
 blt_table_create_trace(
     Table *tablePtr,                    /* Table to be traced. */
     Row *rowPtr, 
-    Column *colPtr,                     /* Cell in table. */
+    Column *colPtr,                     /* Row/column in table. */
     const char *rowTag, 
     const char *colTag,
     unsigned int flags,                 /* Bit mask indicating what actions

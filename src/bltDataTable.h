@@ -139,7 +139,8 @@ typedef struct _BLT_TABLE_ROWS {
     BLT_TABLE_ROW *map;                 /* Array of row pointers. */
     Blt_HashTable labelTable;           /* Hash table of labels. Maps
                                          * labels to table offsets. */
-    long nextRowId;                  /* Used to generate default labels. */
+    long nextRowId;                     /* Used to generate default
+                                         * row labels. */
     Blt_Chain freeList;                 /* List of free rows. */
 } BLT_TABLE_ROWS;
 

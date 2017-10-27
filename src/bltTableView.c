@@ -4420,6 +4420,7 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     if (GetCellByIndex(interp, viewPtr, objPtr, cellPtrPtr) == TCL_OK) {
         return TCL_OK;
     }
+    /* FIXME: Try to get cell by tag. */
     /*
      * Pick apart the cell descriptor to get the row and columns.
      */
@@ -4460,6 +4461,7 @@ GetCellsFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
         *cellsPtr = cells;
         return TCL_OK;
     }
+    /* FIXME: Try to get cells by tag. */
     /*
      * Pick apart the cell descriptor to get the row and columns.
      */
@@ -4476,7 +4478,6 @@ GetCellsFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     if (GetRows(interp, viewPtr, objv[0], &rows) != TCL_OK) {
         return TCL_ERROR;
     }
-    
     if (GetColumns(interp, viewPtr, objv[1], &columns) != TCL_OK) {
         Blt_Chain_Destroy(rows);
         return TCL_ERROR;
