@@ -6083,6 +6083,8 @@ PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (objc == 2) {
         itemPtr = comboPtr->postedPtr;
+        /* Check if 1) we have a posted item, 2) it's a cascade, and 3) it
+         * has an menu attached to it. */
         if ((itemPtr != NULL) && (itemPtr->flags & ITEM_CASCADE) && 
             (itemPtr->menuObjPtr != NULL)) {
             Tcl_SetObjResult(interp, itemPtr->menuObjPtr);
@@ -6321,21 +6323,39 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboMenu *comboPtr = clientData;
     Item *itemPtr;
-    const char *cmd;
+    const char *string;
+    char c;
     int result;
 
-    if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((itemPtr == NULL) || (itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN))) {
-        return TCL_OK;                  /* Item is currently disabled or
+    itemPtr = NULL;
+    if (objc > 2) {
+        if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if ((itemPtr == NULL) || 
+            (itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN))) {
+            return TCL_OK;              /* Item is currently disabled or
                                          * hidden. */
+        }
     }
-    cmd = Tcl_GetString(objv[1]);
-    Tcl_Preserve(itemPtr);
-    comboPtr->selectPtr = itemPtr;
-    result = SelectItem(interp, comboPtr, itemPtr, cmd[0] == 's');
-    Tcl_Release(itemPtr);
+    string = Tcl_GetString(objv[1]);
+    c = string[0];
+    if ((itemPtr == NULL) || (c == 'd')) {
+        fprintf(stderr, "deselect selectPtr=%x\n", comboPtr->selectPtr);
+        if (comboPtr->selectPtr != NULL) {
+            if (comboPtr->selectPtr->flags & ITEM_CASCADE) {
+                UnpostCascade(comboPtr);
+            }
+            comboPtr->selectPtr->flags &= ~ITEM_SELECTED;
+            comboPtr->selectPtr = NULL;
+        }
+        return TCL_OK;
+    } else {
+        Tcl_Preserve(itemPtr);
+        comboPtr->selectPtr = itemPtr;
+        result = SelectItem(interp, comboPtr, itemPtr, c == 's');
+        Tcl_Release(itemPtr);
+    }
     return result;
 }
 
@@ -6997,7 +7017,7 @@ static Blt_OpSpec menuOps[] =
     {"configure",   2, ConfigureOp,   2, 0, "?option value ...?",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
     {"delete",      3, DeleteOp,      2, 0, "?itemName ...?",},
-    {"deselect",    3, SelectOp,      3, 3, "itemName",},
+    {"deselect",    3, SelectOp,      2, 2, "",},
     {"exists",      1, ExistsOp,      3, 3, "itemName",},
     {"find",        1, FindOp,        3, 0, "string ?switches?",},
     {"index",       3, IndexOp,       3, 4, "?-value? itemName",},
