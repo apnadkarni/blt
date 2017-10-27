@@ -40,7 +40,7 @@ namespace eval blt {
 	array set _private {
 	    afterId         -
 	    posted          ""
-	    trace           0
+	    trace           1
 	    cascades       ""
 	}
 	proc trace { mesg } {
@@ -73,7 +73,7 @@ bind BltComboView <Leave> {
 }
 
 bind BltComboView <Motion> { 
-    blt::ComboView::trace "blt::ComboView Motion %\# %X,%Y"
+    blt::ComboView::trace "blt::ComboView Motion %W %X,%Y"
     blt::ComboView::MotionEvent %W %X %Y
 }
 
@@ -90,7 +90,6 @@ bind BltComboView <ButtonRelease> {
 bind BltComboView <B1-Motion> { 
     blt::ComboView::MotionEvent %W %X %Y
 }
-
 
 bind BltComboView <B1-Enter> {
     after cancel $blt::ComboView::_private(afterId)
@@ -336,6 +335,7 @@ proc ::blt::ComboView::MotionEvent { altview x y } {
     if { $view == "" } {
 	set view $altview
     } 
+	set view $altview
     if { ([winfo class $view] != "BltComboMenu" &&
 	    [winfo class $view] != "BltComboView") } {
 	return

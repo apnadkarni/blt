@@ -8328,7 +8328,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a column command.
  *
- *        .h column invoke columnName
+ *        pathName column invoke columnName
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -9400,8 +9400,8 @@ FilterUnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Comparison routine (used by qsort) to sort a chain of subnodes.
  *      A simple string comparison is performed on each node name.
  *
- *      .h filter configure col
- *      .h filter cget col -recurse root
+ *      pathName filter configure col
+ *      pathName filter cget col -recurse root
  *
  *---------------------------------------------------------------------------
  */
@@ -11492,8 +11492,8 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Comparison routine (used by qsort) to sort a chain of subnodes.
  *      A simple string comparison is performed on each node name.
  *
- *      .h sort auto
- *      .h sort once -recurse root
+ *      pathName sort auto
+ *      pathName sort once -recurse root
  *
  * Results:
  *      1 is the first is greater, -1 is the second is greater, 0

@@ -1238,7 +1238,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             $menu add -type separator
         }
         $menu listadd $values \
-            -command  [list blt::TableView::SingleValueFilter $w]
+            -command [list blt::TableView::SingleValueFilter $w]
     } else {
         set rows [$table sort -columns $col -unique -rows $rows]
         if { [llength $rows] > 0 } {
@@ -1250,7 +1250,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             $menu add \
                 -text $fmtvalue \
                 -value $value \
-                -command  [list blt::TableView::SingleValueFilter $w]
+                -command [list blt::TableView::SingleValueFilter $w]
         }
     }
     set text [$w column cget $col -filtertext]

@@ -223,7 +223,8 @@ $menu.m listadd $labels \
 blt::tk::scrollbar $menu.m.xbar  
 blt::tk::scrollbar $menu.m.ybar 
 
-bind BltComboEntry <3> {
+bind . <3> {
+    puts stderr "release grab"
     grab release [grab current]
 }
 
