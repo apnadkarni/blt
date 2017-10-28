@@ -1376,6 +1376,14 @@ blt::table . \
     0,0 .e -fill x -anchor n 
 
 
+bind .e.m <Motion> {
+   if { [winfo containing %X %Y] != ".e.m.autofilter.comboview" &&
+   	[winfo containing %X %Y] != "" } {
+	.e.m.autofilter.comboview deselect
+        puts stderr "deselect comboview window"
+    }
+    }
+
 after 5000 {
   puts stderr "grab=[grab current]"
 }

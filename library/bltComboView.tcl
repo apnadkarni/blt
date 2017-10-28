@@ -273,8 +273,11 @@ proc ::blt::ComboView::ButtonPressEvent { view x y } {
     # The button press event did not occur inside of any menu.
     $view unpost 
     set _private(cascades) ""
+
+    # Pop the grab before invoking the menu item command.
+    blt::grab pop $view
     event generate $view <<MenuSelect>>
-    #blt::grab pop $view
+    $view invoke $item
 }
 
 proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
@@ -297,7 +300,7 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	} 
 	$view unpost
 	set _private(cascades) ""
-	#blt::grab pop $view
+	blt::grab pop $view
 	event generate $view <<MenuSelect>>
 	$view invoke $item
 	return
@@ -336,8 +339,8 @@ proc ::blt::ComboView::MotionEvent { altview x y } {
 	set view $altview
     } 
 	set view $altview
-    if { ([winfo class $view] != "BltComboMenu" &&
-	    [winfo class $view] != "BltComboView") } {
+    if { [winfo class $view] != "BltComboMenu" &&
+         [winfo class $view] != "BltComboView" } {
 	return
     }
     # Handle the top most menu first.
@@ -346,7 +349,9 @@ proc ::blt::ComboView::MotionEvent { altview x y } {
 	if { [$view type $item] == "cascade" } {
 	    set cascade [$view item cget $item -menu]
 	    if { $cascade != "" } {
-		blt::grab push $view -global
+                if { [winfo class $view] != "BltComboView" } {
+                    blt::grab push $view -global
+                }
 		focus $cascade
 		bind $cascade <Unmap> \
 		    [list blt::ComboView::ReleaseGrab $view %W]
