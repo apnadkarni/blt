@@ -5832,6 +5832,8 @@ blt_table_sort_rows(Table *tablePtr)
     return SortRows(&tablePtr->corePtr->rows, (QSortCompareProc *)CompareRows);
 }
 
+
+
 void
 blt_table_sort_rows_subset(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
 {

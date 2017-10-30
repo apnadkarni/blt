@@ -60,9 +60,14 @@ namespace eval blt {
 # a cascaded chain of menus, after the focus has already been
 # restored to wherever it was before menu selection started.
 
-bind BltComboView <Enter> { 
+bind BltComboView <Visibility> { 
     blt::ComboView::trace "blt::ComboView %# <Enter> %W"
     focus %W
+}
+
+bind BltComboView <Unmap> { 
+    blt::ComboView::trace "blt::ComboView %# <Ummap> %W"
+    %W postcascade none
 }
 
 bind BltComboView <Leave> { 
@@ -73,7 +78,7 @@ bind BltComboView <Leave> {
 }
 
 bind BltComboView <Motion> { 
-    blt::ComboView::trace "blt::ComboView Motion %W %X,%Y"
+    #blt::ComboView::trace "blt::ComboView Motion %W %X,%Y"
     blt::ComboView::MotionEvent %W %X %Y
 }
 

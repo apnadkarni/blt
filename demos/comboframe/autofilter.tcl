@@ -1379,10 +1379,21 @@ blt::table . \
 bind .e.m <Motion> {
    if { [winfo containing %X %Y] != ".e.m.autofilter.comboview" &&
    	[winfo containing %X %Y] != "" } {
-	.e.m.autofilter.comboview deselect
+	#.e.m.autofilter.comboview postcascade none
+	#.e.m.autofilter.comboview deselect
+	.e.m.autofilter.comboview deactivate
         puts stderr "deselect comboview window"
     }
     }
+
+bind .e.m <ButtonRelease-1> {
+   puts stderr "Unmap comboframe"
+   .e.m.autofilter.comboview postcascade none
+}
+bind .e.m.autofilter <ButtonRelease-1> {
+   puts stderr "Unmap autofilter"
+   .e.m.autofilter.comboview postcascade none
+}
 
 after 5000 {
   puts stderr "grab=[grab current]"

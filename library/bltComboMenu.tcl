@@ -40,7 +40,7 @@ namespace eval blt {
 	array set _private {
 	    afterId         -1
 	    popOnRelease    0
-	    trace           0
+	    trace           1
 	    ignoreRelease   0
 	}
 	proc trace { mesg } {

@@ -563,6 +563,11 @@ static Blt_SwitchSpec sortSwitches[] =
 };
 
 typedef struct {
+    BLT_COLUMN_ROW row;
+    long count;
+} FreqMap;
+
+typedef struct {
     unsigned int flags;
 } WatchSwitches;
 
@@ -2409,6 +2414,39 @@ PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     return listObjPtr;
 }
 
+static Tcl_Obj *
+PrintFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
+            FreqMap *map, BLT_TABLE_COLUMN col, unsigned int flags)
+{
+    long i;
+    Tcl_Obj *listObjPtr;
+    
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (i = 1; i < numRows; i++) {
+        Tcl_Obj *objPtr;
+        int isEmpty;
+        BLT_TABLE_ROW row;
+
+        row = map[i].row;
+        isEmpty = !blt_table_value_exists(cmdPtr->table, row, col);
+        if ((isEmpty) && (flags & SORT_NONEMPTY)) {
+            continue;
+        }
+        if (flags & SORT_VALUES) {
+            if (isEmpty) {
+                objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
+            } else {
+                objPtr = blt_table_get_obj(cmdPtr->table, row, col);
+            }
+        } else {
+            objPtr = GetRowIndexObj(cmdPtr->table, row);
+        }
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewLongObj(map[i].count);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    return listObjPtr;
+}
 
 static Tcl_Obj *
 PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
@@ -7805,6 +7843,22 @@ SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
+static int
+CompareFrequencies(void *a, void *b)
+{
+    FreqMap *rowPtr1, *rowPtr2;
+
+    rowPtr1 = *(FreqMap **)a;
+    rowPtr2 = *(FreqMap **)b;
+    if (rowPtr1->count > rowPtr2->count) {
+        return -1;
+    }
+    if (rowPtr2->count > rowPtr1->count) {
+        return 1;
+    }
+    return 0;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -7876,6 +7930,70 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         blt_table_sort_rows_subset(table, numRows, map);
         switches.flags |= SORT_LIST;
     }
+
+#ifdef notdef
+    if (switches.sortFlags & SORT_FREQUENCY) {
+        BLT_TABLE_COLUMN col;
+        BLT_TABLE_COMPARE_PROC *proc;
+        FreqMap freqMap; 
+        long i;
+        
+        col = order[0].column;
+        proc = blt_table_get_compare_proc(table, col, flags);
+        freqMap = Blt_AssertCalloc(numRows, sizeof(FreqMap));
+        /* Load the map with frequencies of rows. */
+        for (i = 1; i < numRows; /*empty*/) {
+            long j;
+            long count;
+            
+            /* Find the next run of similar rows. */
+            count = 1;
+            for (j = i+1; j < numRows; j++) {
+                if (((*proc)(table, col, map[i], map[j])) != 0) {
+                    break;
+                }
+            }
+            if (switches.flags & SORT_UNIQUE) {
+                /* Just one entry: the first row and count. */
+                freqMap[numFreq].row = map[i];
+                freqMap[numFreq].count = count;
+                nextFreq++;
+                i = j;
+            } else {
+                /* An entry for each row. Replicate the count. */
+                for (/*empty*/; i < j; i++) {
+                    freqMap[i].row = map[i];
+                    freqMap[i].count = count;
+                    numFreq++;
+                }
+            }
+        }
+        qsort(freqMap, numFreq, sizeof(FreqMap),
+              (QSortCompareProc *)CompareFrequencies);
+        if (switches.flags & SORT_LIST) {
+            Tcl_Obj *listObjPtr;
+            BLT_TABLE_COLUMN col;
+            
+            /* Return the new row order as a list. */
+            col = order[0].column;
+            listObjPtr = PrintFrequencies(interp, cmdPtr, numFreq, freqMap,
+                   col, switches.flags);
+            if (listObjPtr != NULL) {
+                Tcl_SetObjResult(interp, listObjPtr);
+            }
+            Blt_Free(freqMap);
+            Blt_Free(map);
+        } else {
+            /* Overwrite the original sort map with the frequency map. */
+            for (i = 0; i < freqMap; i++) {
+                map[i] = freqMap[i].row;
+            }
+            Blt_Free(freqMap);
+            /* Make row order permanent. */
+            blt_table_set_row_map(table, map);
+        }
+    } else {
+#endif
     if (switches.flags & SORT_LIST) {
         Tcl_Obj *listObjPtr;
         BLT_TABLE_COLUMN col;

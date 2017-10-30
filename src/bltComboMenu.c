@@ -150,7 +150,7 @@ static const char emptyString[] = "";
 #define ITEM_REDRAW       (1<<2)        /* Item needs to be redrawn. */
 #define ITEM_GEOMETRY     (1<<3)        /* Item needs its geometry to be
                                          * recomputed. */
-#define ITEM_SELECTED     (1<<4)        /* Radiobutton/checkbutton is
+#define ITEM_INDICATOR_ON (1<<4)        /* Radiobutton/checkbutton is
                                          * selected. */
 /* Item state. */
 #define ITEM_NORMAL       (1<<5)        /* Draw item normally. */
@@ -654,7 +654,8 @@ struct _ComboMenu {
                                          * currently has a cascade menu
                                          * posted. */
     Tk_Window menuWin;                  /* Cascade menu window. */
-    Item *selectPtr;                    /* Last item selected. */
+    Item *selectPtr;                    /* Last item selected. If NULL, no
+                                         * item is selected */
     Item *firstPtr, *lastPtr;           /* Defines the range of visible
                                          * menu items. */
     int xOffset, yOffset;               /* Scroll offsets of viewport in
@@ -1447,17 +1448,20 @@ StepItem(Item *itemPtr)
  *---------------------------------------------------------------------------
  */
 static int
-UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
-                      int newState)
+UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr)
 {
-    if (itemPtr->flags & (ITEM_CASCADE|ITEM_SEPARATOR)) {
-        return TCL_OK;
-    }
+    Item *itemPtr;
 
+    itemPtr = comboPtr->selectPtr;
+    if (itemPtr != NULL) {
+        if (itemPtr->flags & (ITEM_CASCADE|ITEM_SEPARATOR)) {
+            return TCL_OK;
+        }
+    }
     if (comboPtr->iconVarObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
-        if (itemPtr->icon == NULL) {
+        if ((itemPtr == NULL) || (itemPtr->icon == NULL)) {
             objPtr = Tcl_NewStringObj("", -1);
         } else {
             objPtr = Tcl_NewStringObj(IconName(itemPtr->icon), -1);
@@ -1467,10 +1471,14 @@ UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
             return TCL_ERROR;
         }
     }
-    if ((comboPtr->textVarObjPtr != NULL) && (itemPtr->text != emptyString)) {
+    if (comboPtr->textVarObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
-        objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+        if (itemPtr == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        } else {
+            objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+        }
         if (Tcl_ObjSetVar2(interp, comboPtr->textVarObjPtr, NULL, objPtr, 
                            TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
@@ -1484,7 +1492,7 @@ UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
  *
  * SelectItem --
  *
- *      Sets the given item as selected. The -textvariable, -iconvariable,
+ *      Marks the given item as selected. The -textvariable, -iconvariable,
  *      -valuevariable, and -variable TCL variables are set.
  *
  * Results:
@@ -1493,37 +1501,40 @@ UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
  *---------------------------------------------------------------------------
  */
 static int
-SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
-          int newState)
+SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr)
 {
     comboPtr->selectPtr = itemPtr;
-    if (itemPtr->flags & (ITEM_CASCADE|ITEM_SEPARATOR)) {
-        return TCL_OK;
+    if (itemPtr != NULL) {
+        if (itemPtr->flags & (ITEM_CASCADE|ITEM_SEPARATOR)) {
+            return TCL_OK;
+        }
     }
-    if (newState == -1) {
-        newState = (itemPtr->flags & ITEM_SELECTED) == 0;
-    }
-    if (UpdateTextAndIconVars(interp, comboPtr, itemPtr, newState) != TCL_OK) {
+    if (UpdateTextAndIconVars(interp, comboPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     if (comboPtr->valueVarObjPtr != NULL) {
         Tcl_Obj *objPtr;
         
-        objPtr = itemPtr->valueObjPtr;
-        if (objPtr == NULL) {
-            objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+        if (itemPtr == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        } else {
+            objPtr = itemPtr->valueObjPtr;
+            if (objPtr == NULL) {
+                objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+            }
         }
         if (Tcl_ObjSetVar2(interp, comboPtr->valueVarObjPtr, NULL, objPtr, 
                            TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
         }
     }
-    if (itemPtr->varNameObjPtr != NULL) {
+    if ((itemPtr != NULL) && (itemPtr->varNameObjPtr != NULL)) {
         Tcl_Obj *objPtr;
+        Tcl_Obj *resultObjPtr;
         
         objPtr = NULL;
         if (itemPtr->flags & ITEM_CHECKBUTTON) {
-            objPtr = (newState) ? 
+            objPtr = (itemPtr->flags & ITEM_INDICATOR_ON) ? 
                 itemPtr->onValueObjPtr : itemPtr->offValueObjPtr;
         } else {
             objPtr = itemPtr->valueObjPtr;
@@ -1531,16 +1542,15 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr,
                 objPtr = Tcl_NewStringObj(itemPtr->text, -1);
             }
         }
-        if (objPtr != NULL) {
-            Tcl_Obj *resultObjPtr;
-            
-            Tcl_IncrRefCount(objPtr);
-            resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->varNameObjPtr, NULL,
-                        objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
-            Tcl_DecrRefCount(objPtr);
-            if (resultObjPtr == NULL) {
-                return TCL_ERROR;
-            }
+        if (objPtr == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        }
+        Tcl_IncrRefCount(objPtr);
+        resultObjPtr = Tcl_ObjSetVar2(interp, itemPtr->varNameObjPtr, NULL,
+                 objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
+        Tcl_DecrRefCount(objPtr);
+        if (resultObjPtr == NULL) {
+            return TCL_ERROR;
         }
     }
     return TCL_OK;
@@ -3403,7 +3413,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
     if (bool) {
         ComboMenu *comboPtr;
 
-        if (itemPtr->flags & ITEM_SELECTED) {
+        if (itemPtr->flags & ITEM_INDICATOR_ON) {
             return FALSE;                       /* Already selected. */
         }
         comboPtr = itemPtr->comboPtr;
@@ -3429,9 +3439,9 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
                 return FALSE;
             }
         }
-        itemPtr->flags |= ITEM_SELECTED;
-    } else if (itemPtr->flags & ITEM_SELECTED) {
-        itemPtr->flags &= ~ITEM_SELECTED;
+        itemPtr->flags |= ITEM_INDICATOR_ON;
+    } else if (itemPtr->flags & ITEM_INDICATOR_ON) {
+        itemPtr->flags &= ~ITEM_INDICATOR_ON;
     } else {
         return FALSE;                   /* Already deselected. */
     }
@@ -3843,7 +3853,7 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
      * If the variable is being unset, then re-establish the trace.
      */
     if (flags & TCL_TRACE_UNSETS) {
-        itemPtr->flags &= ~ITEM_SELECTED;
+        itemPtr->flags &= ~ITEM_INDICATOR_ON;
         if (flags & TCL_TRACE_DESTROYED) {
             char *varName;
 
@@ -5147,6 +5157,9 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     itemPtr = comboPtr->activePtr;
     if (itemPtr != NULL) {
+        if (itemPtr->flags & ITEM_CASCADE) {
+            UnpostCascade(comboPtr);
+        }
         /* Deactivate any active item. */
         ActivateItem(comboPtr, NULL);
         EventuallyRedrawItem(itemPtr);
@@ -5457,8 +5470,9 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = TCL_OK;
     Tcl_Preserve(itemPtr);
 
+    /* Select the currently selected item. */
     comboPtr->selectPtr = itemPtr;
-    result = SelectItem(interp, comboPtr, itemPtr, -1);
+    result = SelectItem(interp, comboPtr, itemPtr);
     if (result == TCL_OK) {
         if (comboPtr->cmdObjPtr != NULL) {
             result = Tcl_EvalObjEx(interp, comboPtr->cmdObjPtr,
@@ -6163,9 +6177,11 @@ ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetItemFromObj(NULL, comboPtr, objv[2], &itemPtr) != TCL_OK) {
         return TCL_OK;
     }
-    SeeItem(comboPtr, itemPtr, TK_ANCHOR_W);
+    if (itemPtr == NULL) {
+        SeeItem(comboPtr, itemPtr, TK_ANCHOR_W);
+    }
     comboPtr->selectPtr = itemPtr;
-    if (UpdateTextAndIconVars(interp, comboPtr, itemPtr, -1) != TCL_OK) {
+    if (UpdateTextAndIconVars(interp, comboPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     /* Deactivate any active item. */
@@ -6306,14 +6322,15 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectOp --
  *
- *      Sets the given item as selected. The -textvariable, -iconvariable,
- *      -valuevariable, and -variable TCL variables are set, but the TCL
- *      commands are *not* invoked.
+ *      Selects the given radiobutton or checkbutton item.  The
+ *      -textvariable, -iconvariable, -valuevariable, and -variable TCL
+ *      variables are set, but the TCL commands are *not* invoked.
  *
  * Results:
  *      Standard TCL result.
  *
  *  pathName select itemName 
+ *  pathName deselect ?itemName?
  *
  *---------------------------------------------------------------------------
  */
@@ -6324,9 +6341,7 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     const char *string;
-    char c;
-    int result;
-
+    
     itemPtr = NULL;
     if (objc > 2) {
         if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
@@ -6339,24 +6354,15 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     string = Tcl_GetString(objv[1]);
-    c = string[0];
-    if ((itemPtr == NULL) || (c == 'd')) {
-        fprintf(stderr, "deselect selectPtr=%x\n", comboPtr->selectPtr);
-        if (comboPtr->selectPtr != NULL) {
-            if (comboPtr->selectPtr->flags & ITEM_CASCADE) {
-                UnpostCascade(comboPtr);
-            }
-            comboPtr->selectPtr->flags &= ~ITEM_SELECTED;
-            comboPtr->selectPtr = NULL;
+    if ((itemPtr != NULL) &&
+        (itemPtr->flags & (ITEM_CHECKBUTTON|ITEM_RADIOBUTTON))) {
+        if (string[0] == 'd') {
+            itemPtr->flags &= ~ITEM_INDICATOR_ON;
+        } else {
+            itemPtr->flags |= ITEM_INDICATOR_ON;
         }
-        return TCL_OK;
-    } else {
-        Tcl_Preserve(itemPtr);
-        comboPtr->selectPtr = itemPtr;
-        result = SelectItem(interp, comboPtr, itemPtr, c == 's');
-        Tcl_Release(itemPtr);
     }
-    return result;
+    return SelectItem(interp, comboPtr, itemPtr);
 }
 
 /*ARGSUSED*/
@@ -7338,7 +7344,7 @@ DrawCheckButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
 
     comboPtr = itemPtr->comboPtr;
     stylePtr = itemPtr->stylePtr;
-    on = (itemPtr->flags & ITEM_SELECTED);
+    on = (itemPtr->flags & ITEM_INDICATOR_ON);
     fillColor = (stylePtr->checkButtonFillColor) 
         ? stylePtr->checkButtonFillColor : comboPtr->checkButtonFillColor;
     outlineColor = (stylePtr->checkButtonOutlineColor) 
@@ -7394,7 +7400,7 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
     }       
     Blt_Bg_SetOrigin(comboPtr->tkwin, bg, -(comboPtr->bgOffsetX + x),
                      -(comboPtr->bgOffsetY + y));
-    state = (itemPtr->flags & ITEM_SELECTED);
+    state = (itemPtr->flags & ITEM_INDICATOR_ON);
     if (itemPtr->flags & ITEM_DISABLED) {
         picture = Blt_PaintRadioButton(w, h, bg,
                 Blt_Bg_BorderColor(stylePtr->disabledBg),
