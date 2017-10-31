@@ -39,6 +39,10 @@
 #include "bltInt.h"
 #include "tclIntDecls.h"
 
+#ifdef HAVE_STDLIB_H
+  #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
+
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
@@ -528,8 +532,6 @@ typedef struct {
     unsigned int tsFlags;
     BLT_TABLE table;
     BLT_TABLE_ITERATOR ri, ci;
-    Tcl_Obj *valuesVarObjPtr;           /* Specifies TCL variable to store 
-                                         * ordered values. */
     Tcl_Obj *freqArrVarObjPtr;          /* Specifies TCL array variable to 
                                          * store value/frequency pairs. */
     Tcl_Obj *freqListVarObjPtr;         /* Specifies TCL variable to store
@@ -542,6 +544,8 @@ typedef struct {
 
 #define SORT_UNIQUE     (1<<16)         /* Indicates to output only the
                                          * first of an equal run.  */
+#define SORT_RETURN_VALUES (1<<17)      /* Specifies TCL variable to store 
+                                         * ordered values. */
 #define SORT_ALTER      (1<<18)         /* Indicates to rearrange the
                                          * table. */
 #define SORT_NONEMPTY   (1<<19)         /* Indicates to not consider empty
@@ -577,8 +581,8 @@ static Blt_SwitchSpec sortSwitches[] =
         Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITS_NOARG, "-unique", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE},
-    {BLT_SWITCH_OBJ, "-valuesvariable", "varName", (char *)NULL,
-        Blt_Offset(SortSwitches, valueVarObjPtr)},
+    {BLT_SWITCH_BITS_NOARG, "-values", "", (char *)NULL,
+        Blt_Offset(SortSwitches, flags), 0, SORT_RETURN_VALUES},
     {BLT_SWITCH_END}
 };
 
@@ -2421,7 +2425,7 @@ PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
         if ((isEmpty) && (flags & SORT_NONEMPTY)) {
             continue;
         }
-        if (flags & SORT_VALUES) {
+        if (flags & SORT_RETURN_VALUES) {
             if (isEmpty) {
                 objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
             } else {
@@ -2436,15 +2440,13 @@ PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 }
 
 static int
-SetFreqArrVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, FreqMap *map,
-                   BLT_TABLE_COLUMN col, SortSwitches *switchesPtr)
+SetFreqArrVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
+                   FreqMap *freqMap, BLT_TABLE_COLUMN col,
+                   SortSwitches *switchesPtr)
 {
-    Tcl_Obj *listObjPtr;
-    BLT_TABLE_COLUMN col;
     long i;
 
     /* Return the new row order as a list. */
-    col = order[0].column;
     for (i = 0; i < numRows; i++) {
         BLT_TABLE_ROW row;
         Tcl_Obj *valueObjPtr, *freqObjPtr, *objPtr;
@@ -2452,7 +2454,7 @@ SetFreqArrVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, FreqMap *map,
         
         row = freqMap[i].row;
         isEmpty = !blt_table_value_exists(cmdPtr->table, row, col);
-        if ((isEmpty) && (switchPtr->flags & SORT_NONEMPTY)) {
+        if ((isEmpty) && (switchesPtr->flags & SORT_NONEMPTY)) {
             continue;
         }
         if (isEmpty) {
@@ -2471,14 +2473,14 @@ SetFreqArrVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, FreqMap *map,
 }
 
 static int
-SetFreqListVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, FreqMap *map,
+SetFreqListVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
+                    FreqMap *freqMap,
                     BLT_TABLE_COLUMN col, SortSwitches *switchesPtr)
 {
-    BLT_TABLE_COLUMN col;
     long i;
+    Tcl_Obj *listObjPtr;
 
     /* Return the new row order as a list. */
-    col = order[0].column;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (i = 0; i < numRows; i++) {
         Tcl_Obj *objPtr;
@@ -2494,16 +2496,33 @@ SetFreqListVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, FreqMap *map,
 }
 
 static int
+CompareFrequencies(void *a, void *b)
+{
+    FreqMap *rowPtr1, *rowPtr2;
+
+    rowPtr1 = *(FreqMap **)a;
+    rowPtr2 = *(FreqMap **)b;
+    if (rowPtr1->count > rowPtr2->count) {
+        return -1;
+    }
+    if (rowPtr2->count > rowPtr1->count) {
+        return 1;
+    }
+    return 0;
+}
+
+static int
 SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
                 BLT_TABLE_ROW *map, BLT_TABLE_COLUMN col, 
                 SortSwitches *switchesPtr)
 {
     BLT_TABLE_COMPARE_PROC *proc;
-    FreqMap freqMap; 
-    long i;
+    FreqMap *freqMap; 
+    long i, numFreq;
     
     proc = blt_table_get_compare_proc(cmdPtr->table, col, switchesPtr->tsFlags);
     freqMap = Blt_AssertCalloc(numRows, sizeof(FreqMap));
+    numFreq = 0;
     /* Load the map with frequencies of rows. */
     for (i = 0; i < numRows; /*empty*/) {
         long j;
@@ -2516,11 +2535,11 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
                 break;
             }
         }
-        if (switches.flags & SORT_UNIQUE) {
+        if (switchesPtr->flags & SORT_UNIQUE) {
             /* Just one entry: the first row and count. */
             freqMap[numFreq].row = map[i];
             freqMap[numFreq].count = count;
-            nextFreq++;
+            numFreq++;
             i = j;
         } else {
             /* An entry for each row. Replicate the count. */
@@ -2531,28 +2550,28 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
             }
         }
     }
-    if (switches.flags & SORT_BYFREQ) {
+    if (switchesPtr->flags & SORT_BYFREQ) {
         /* Sort the rows by their frequency. */
         qsort(freqMap, numFreq, sizeof(FreqMap),
               (QSortCompareProc *)CompareFrequencies);
     }
-    if (switches.freqArrVarObjPtr != NULL) {
+    if (switchesPtr->freqArrVarObjPtr != NULL) {
         /* Set the TCL array with the frequencies */
         if (SetFreqArrVariable(interp, cmdPtr, numFreq, freqMap, col,
                                switchesPtr) != TCL_OK) {
             return TCL_ERROR;
         }
     }
-    if (switches.freqListVarObjPtr != NULL) {
+    if (switchesPtr->freqListVarObjPtr != NULL) {
         /* Set the TCL array with the list of frequencies. */
         if (SetFreqListVariable(interp, cmdPtr, numFreq, freqMap, col,
                                 switchesPtr) != TCL_OK) {
             return TCL_ERROR;
         }
     }
-    if (switches.flags & SORT_ALTER) {
+    if (switchesPtr->flags & SORT_ALTER) {
         /* Overwrite the original sort map with the frequency map. */
-        for (i = 0; i < freqMap; i++) {
+        for (i = 0; i < numFreq; i++) {
             map[i] = freqMap[i].row;
         }
         /* Make row order permanent. */
@@ -2562,48 +2581,35 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     return TCL_OK;
 }
 
-
 static int
-SetUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
+SetSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
                         BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
                         SortSwitches *switchesPtr)
 {
-    BLT_TABLE_COMPARE_PROC *proc;
     Tcl_Obj *listObjPtr;
     long i;
     
-    /* Get the compare procedure for the column. We'll use that to sift out
-     * unique values. */
-    proc = blt_table_get_compare_proc(cmdPtr->table, col, switchesPtr->tsFlags);
-
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 0; i < numRows; /*empty*/) {
-        long j;
+    for (i = 0; i < numRows; i++) {
         Tcl_Obj *objPtr;
 
-        /* Find the next run of similar rows. */
-        for (j = i + 1; j < numRows; j++) {
-            if (((*proc)(cmdPtr->table, col, rows[i], rows[j])) != 0) {
-                break;
-            }
+        if (switchesPtr->flags & SORT_RETURN_VALUES) {
+            objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+        } else {
+            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
         }
-        objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
         if (objPtr != NULL) {
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
-        i = j;
     }
-    if (Tcl_ObjSetVar2(interp, switchesPtr->valuesVarObjPtr, NULL, 
-                       listObjPtr, 0) == NULL) {
-        return TCL_ERROR;
-    }
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
-static Tcl_Obj *
-SetUniqueRows(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-              BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
-              SortSwitches *switchesPtr)
+static int
+SetUniqueSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
+                      BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
+                      SortSwitches *switchesPtr)
 {
     BLT_TABLE_COMPARE_PROC *proc;
     Tcl_Obj *listObjPtr;
@@ -2625,17 +2631,17 @@ SetUniqueRows(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
                 break;
             }
         }
-        /* Convert the table offset back to a client index. */
-        objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
+        if (switchesPtr->flags & SORT_RETURN_VALUES) {
+            objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+        } else {
+            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
+        }
         if (objPtr != NULL) {
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         i = j;
     }
-    if (Tcl_ObjSetVar2(interp, switchesPtr->valuesVarObjPtr, NULL, 
-                       listObjPtr, 0) == NULL) {
-        return TCL_ERROR;
-    }
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
@@ -7984,22 +7990,6 @@ SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
-static int
-CompareFrequencies(void *a, void *b)
-{
-    FreqMap *rowPtr1, *rowPtr2;
-
-    rowPtr1 = *(FreqMap **)a;
-    rowPtr2 = *(FreqMap **)b;
-    if (rowPtr1->count > rowPtr2->count) {
-        return -1;
-    }
-    if (rowPtr2->count > rowPtr1->count) {
-        return 1;
-    }
-    return 0;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -8043,7 +8033,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (switches.flags & SORT_NONEMPTY) {
             goto error;
         }
-        if (numRows > 0) {
+        if (switches.ri.numEntries > 0) {
             goto error;
         }
     }
@@ -8069,7 +8059,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         map = Blt_AssertCalloc(switches.ri.numEntries, sizeof(BLT_TABLE_ROW));
         for (row = blt_table_first_tagged_row(&switches.ri); row != NULL; 
              row = blt_table_next_tagged_row(&switches.ri)) {
-            if (flags & SORT_NONEMPTY) {
+            if (switches.flags & SORT_NONEMPTY) {
                 if (!blt_table_value_exists(table, row, col)) {
                     continue;
                 }
@@ -8083,10 +8073,10 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_ROW row;
 
         i = 0;
-        map = Blt_AssertCalloc(blt_table_numrows(table), sizeof(BLT_TABLE_ROW));
+        map = Blt_AssertCalloc(blt_table_num_rows(table),sizeof(BLT_TABLE_ROW));
         for (row = blt_table_first_row(table); row != NULL; 
              row = blt_table_next_row(row)) {
-            if (flags & SORT_NONEMPTY) {
+            if (switches.flags & SORT_NONEMPTY) {
                 if (!blt_table_value_exists(table, row, col)) {
                     continue;
                 }
@@ -8107,19 +8097,14 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
     } 
-    if (switches.valuesVarObjPtr != NULL) {
-        Tcl_Obj *listObjPtr;
-
-        if (switches.flags & SORT_UNIQUE) {
-            result = SetUniqueSortedValues(interp, cmdPtr, numRows, map, col, 
-                                      &switches);
-        } else {
-            result = SetSortedValues(interp, cmdPtr, numRows, map, col, 
-                                     &switches);
-        }
-        if (result != TCL_OK) {
-            goto error;
-        }
+    if (switches.flags & SORT_UNIQUE) {
+        result = SetUniqueSortedResult(interp, cmdPtr, numRows, map, col, 
+                                       &switches);
+    } else {
+        result = SetSortedResult(interp, cmdPtr, numRows, map, col, &switches);
+    }
+    if (result != TCL_OK) {
+        goto error;
     }
     if (order != NULL) {
         Blt_Free(order);
@@ -8127,13 +8112,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (switches.flags & SORT_ALTER) {
         /* Make row order permanent. */
         blt_table_set_row_map(table, map);
-    }
-    if (switches.flags & SORT_UNIQUE) {
-        result = SetUniqueSortedIndices(interp, cmdPtr, numRows, map, col, 
-                                        &switches);
-    } else {
-        result = SetSortedIndices(interp, cmdPtr, numRows, map, col, 
-                                  &switches);
     }
     if (result != TCL_OK) {
         goto error;
