@@ -2495,20 +2495,24 @@ SetFreqListVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     return TCL_OK;
 }
 
+static unsigned int sortFlags;
+
 static int
 CompareFrequencies(const void *a, const void *b)
 {
     FreqMap *rowPtr1, *rowPtr2;
+    int result;
 
     rowPtr1 = *(FreqMap **)a;
     rowPtr2 = *(FreqMap **)b;
     if (rowPtr1->count > rowPtr2->count) {
-        return -1;
+        result = -1;
+    } else if (rowPtr2->count > rowPtr1->count) {
+        result = 1;
+    } else {
+        result = 0;
     }
-    if (rowPtr2->count > rowPtr1->count) {
-        return 1;
-    }
-    return 0;
+    return (sortFlags & TABLE_SORT_DECREASING) ? -result : result;
 }
 
 static int
@@ -2523,12 +2527,13 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     proc = blt_table_get_compare_proc(cmdPtr->table, col, switchesPtr->tsFlags);
     freqMap = Blt_AssertCalloc(numRows, sizeof(FreqMap));
     numFreq = 0;
-    /* Load the map with frequencies of rows. */
+
+    /* Load the map with the frequencies of each run for a value. */
     for (i = 0; i < numRows; /*empty*/) {
         long j;
         long count;
         
-        /* Find the next run of similar rows. */
+        /* Find the next run of the same value as the current. */
         count = 1;
         for (j = i+1; j < numRows; j++) {
             if (((*proc)(cmdPtr->table, col, map[i], map[j])) != 0) {
@@ -2536,7 +2541,7 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
             }
         }
         if (switchesPtr->flags & SORT_UNIQUE) {
-            /* Just one entry: the first row and count. */
+            /* Just one entry. Use the first row and count. */
             freqMap[numFreq].row = map[i];
             freqMap[numFreq].count = count;
             numFreq++;
@@ -2551,7 +2556,9 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
         }
     }
     if (switchesPtr->flags & SORT_BYFREQ) {
-        /* Sort the rows by their frequency. */
+        /* Sort the rows by their frequency. Set the global sortFlags
+         * variable so that CompareFrequencies can pick it up. */
+        sortFlags = switchesPtr->tsFlags;
         qsort(freqMap, numFreq, sizeof(FreqMap), CompareFrequencies);
     }
     if (switchesPtr->freqArrVarObjPtr != NULL) {
@@ -2582,8 +2589,8 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 
 static int
 SetSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-                        BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
-                        SortSwitches *switchesPtr)
+                BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
+                SortSwitches *switchesPtr)
 {
     Tcl_Obj *listObjPtr;
     long i;

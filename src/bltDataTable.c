@@ -2305,7 +2305,6 @@ CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr, unsigned int flags)
 typedef struct {
     BLT_TABLE table;
     BLT_TABLE_SORT_ORDER *order;
-    Blt_HashTable freqTable;
     long numColumns;
     unsigned int flags;
 } TableSortData;
@@ -2342,41 +2341,6 @@ CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     assert(valuePtr2 != NULL);
     return Blt_DictionaryCompare(GetValueString(valuePtr1),
                                  GetValueString(valuePtr2));
-}
-
-static int
-CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-                     Row *rowPtr2)
-{
-    Value *valuePtr1, *valuePtr2;
-    Blt_HashEntry *hPtr1, *hPtr2;
-    long f1, f2;
-
-    valuePtr1 = valuePtr2 = NULL;
-    if (colPtr->vector != NULL) {
-        valuePtr1 = colPtr->vector + rowPtr1->offset;
-        if (IsEmptyValue(valuePtr1)) {
-            valuePtr1 = NULL;
-        }
-        valuePtr2 = colPtr->vector + rowPtr2->offset;
-        if (IsEmptyValue(valuePtr2)) {
-            valuePtr2 = NULL;
-        }
-    }
-    if (IsEmptyValue(valuePtr1)) {
-        if (IsEmptyValue(valuePtr2)) {
-            return 0;
-        }
-        return 1;
-    } else if (IsEmptyValue(valuePtr2)) {
-        return -1;
-    }
-    /* FIXME: Frequency only works for string types. */
-    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, GetValueString(valuePtr1));
-    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, GetValueString(valuePtr2));
-    f1 = (long)Blt_GetHashValue(hPtr1);
-    f2 = (long)Blt_GetHashValue(hPtr2);
-    return f1 - f2;
 }
 
 static int
@@ -2543,9 +2507,6 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
         switch (flags & TABLE_SORT_TYPE_MASK) {
         case TABLE_SORT_DICTIONARY:
             proc = CompareDictionaryStrings;
-            break;
-        case TABLE_SORT_FREQUENCY:
-            proc = CompareFrequencyRows;
             break;
         default:
         case TABLE_SORT_ASCII:
@@ -5783,7 +5744,6 @@ blt_table_sort_init(Table *tablePtr, BLT_TABLE_SORT_ORDER *order,
     sortData.order = order;
     sortData.numColumns = numColumns;
     sortData.flags = flags;
-    Blt_InitHashTable(&sortData.freqTable, BLT_STRING_KEYS);
     for (i = 0; i < numColumns; i++) {
         BLT_TABLE_SORT_ORDER *sortPtr;
 
@@ -5792,38 +5752,11 @@ blt_table_sort_init(Table *tablePtr, BLT_TABLE_SORT_ORDER *order,
         sortPtr->cmpProc = blt_table_get_compare_proc(tablePtr, 
                 sortPtr->column, flags);
     }
-    if (flags & TABLE_SORT_FREQUENCY) {
-        Row *rowPtr;
-        BLT_TABLE_COLUMN col;
-
-        col = order[0].column;
-        for (rowPtr = (Row *)tablePtr->corePtr->rows.headPtr; rowPtr != NULL; 
-             rowPtr = rowPtr->nextPtr) {
-            Blt_HashEntry *hPtr;
-            const char *string;
-            int isNew;
-            long refCount;
-
-            if (!blt_table_value_exists(tablePtr, rowPtr, col)) {
-                continue;
-            }
-            string = blt_table_get_string(tablePtr, rowPtr, col);
-            hPtr = Blt_CreateHashEntry(&sortData.freqTable, string, &isNew);
-            if (isNew) {
-                refCount = 0;
-            } else {
-                refCount = (long)Blt_GetHashValue(hPtr);
-            }
-            refCount++;
-            Blt_SetHashValue(hPtr, refCount);
-        }
-    }
 }
 
 void
 blt_table_sort_finish()
 {
-    Blt_DeleteHashTable(&sortData.freqTable);
 }
 
 BLT_TABLE_ROW *

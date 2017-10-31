@@ -823,7 +823,6 @@ typedef struct {
 #define TABLE_SORT_AUTO                 (0)
 #define TABLE_SORT_ASCII                (1<<3)
 #define TABLE_SORT_DICTIONARY           (2<<3)
-#define TABLE_SORT_FREQUENCY            (3<<3)
 
 BLT_EXTERN void blt_table_sort_init(BLT_TABLE table, 
         BLT_TABLE_SORT_ORDER *order, size_t numCompares, unsigned int flags);
