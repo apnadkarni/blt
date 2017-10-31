@@ -2496,7 +2496,7 @@ SetFreqListVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 }
 
 static int
-CompareFrequencies(void *a, void *b)
+CompareFrequencies(const void *a, const void *b)
 {
     FreqMap *rowPtr1, *rowPtr2;
 
@@ -2552,8 +2552,7 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     }
     if (switchesPtr->flags & SORT_BYFREQ) {
         /* Sort the rows by their frequency. */
-        qsort(freqMap, numFreq, sizeof(FreqMap),
-              (QSortCompareProc *)CompareFrequencies);
+        qsort(freqMap, numFreq, sizeof(FreqMap), CompareFrequencies);
     }
     if (switchesPtr->freqArrVarObjPtr != NULL) {
         /* Set the TCL array with the frequencies */
