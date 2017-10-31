@@ -1233,6 +1233,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     set list {}
     set rows [GetColumnFilterRows $w $col]
     if { $fmtcmd == "" } {
+        #$table sort -columns $col -valuesvariable values -unique -rows $rows
         set values [$table sort -columns $col -values -unique -rows $rows]
         if { [llength $values] > 0 } {
             $menu add -type separator
@@ -1240,6 +1241,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
         $menu listadd $values \
             -command [list blt::TableView::SingleValueFilter $w]
     } else {
+        #set rows [$table sort -columns $col -unique -rows $rows]
         set rows [$table sort -columns $col -unique -rows $rows]
         if { [llength $rows] > 0 } {
             $menu add -type separator
@@ -1314,6 +1316,7 @@ proc blt::TableView::Top10ByFrequencyFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
+    #set rows [$table sort -byfrequency -columns $col -row $rows]
     set rows [$table sort -frequency -columns $col -row $rows]
     set numRows [llength $rows]
     if { $numRows > 10 } {
@@ -1330,6 +1333,7 @@ proc blt::TableView::Top10ByValueFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
+    #set rows [$table sort -columns $col -row $rows -nonempty]
     set rows [$table sort -columns $col -row $rows -nonempty]
     set numRows [llength $rows]
     if { $numRows > 10 } {
@@ -1346,6 +1350,7 @@ proc blt::TableView::Bottom10ByFrequencyFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
+    #set rows [$table sort -byfrequency -columns $col -row $rows -decreasing]
     set rows [$table sort -frequency -columns $col -row $rows -decreasing]
     set numRows [llength $rows]
     if { $numRows > 10 } {
@@ -1362,7 +1367,8 @@ proc blt::TableView::Bottom10ByValueFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
-    set rows [$table sort -columns $col -row $rows -decreasing]
+    #set rows [$table sort -columns $col -rows $rows -decreasing]
+    set rows [$table sort -columns $col -rows $rows -decreasing]
     set numRows [llength $rows]
     if { $numRows > 10 } {
         set rows [lrange $rows [expr $numRows - 10] end]

@@ -828,7 +828,7 @@ typedef struct {
 BLT_EXTERN void blt_table_sort_init(BLT_TABLE table, 
         BLT_TABLE_SORT_ORDER *order, size_t numCompares, unsigned int flags);
 BLT_EXTERN BLT_TABLE_ROW *blt_table_sort_rows(BLT_TABLE table);
-BLT_EXTERN void blt_table_sort_rows_subset(BLT_TABLE table, long numRows, 
+BLT_EXTERN void blt_table_sort_row_map(BLT_TABLE table, long numRows, 
         BLT_TABLE_ROW *rows);
 BLT_EXTERN void blt_table_sort_finish(void);
 BLT_EXTERN BLT_TABLE_COMPARE_PROC *blt_table_get_compare_proc(BLT_TABLE table, 

@@ -5835,7 +5835,7 @@ blt_table_sort_rows(Table *tablePtr)
 
 
 void
-blt_table_sort_rows_subset(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
+blt_table_sort_row_map(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
 {
     /* Sort the map and return it. */
     qsort((char *)rows, numRows, sizeof(BLT_TABLE_ROW), 

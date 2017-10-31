@@ -1497,10 +1497,10 @@ BLT_EXTERN void		blt_table_sort_init(BLT_TABLE table,
 /* 238 */
 BLT_EXTERN BLT_TABLE_ROW * blt_table_sort_rows(BLT_TABLE table);
 #endif
-#ifndef blt_table_sort_rows_subset_DECLARED
-#define blt_table_sort_rows_subset_DECLARED
+#ifndef blt_table_sort_row_map_DECLARED
+#define blt_table_sort_row_map_DECLARED
 /* 239 */
-BLT_EXTERN void		blt_table_sort_rows_subset(BLT_TABLE table,
+BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table,
 				long numRows, BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_sort_finish_DECLARED
@@ -1986,7 +1986,7 @@ typedef struct BltTclProcs {
     void (*blt_table_delete_notifier) (BLT_TABLE table, BLT_TABLE_NOTIFIER notifier); /* 236 */
     void (*blt_table_sort_init) (BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, size_t numCompares, unsigned int flags); /* 237 */
     BLT_TABLE_ROW * (*blt_table_sort_rows) (BLT_TABLE table); /* 238 */
-    void (*blt_table_sort_rows_subset) (BLT_TABLE table, long numRows, BLT_TABLE_ROW *rows); /* 239 */
+    void (*blt_table_sort_row_map) (BLT_TABLE table, long numRows, BLT_TABLE_ROW *rows); /* 239 */
     void (*blt_table_sort_finish) (void); /* 240 */
     BLT_TABLE_COMPARE_PROC * (*blt_table_get_compare_proc) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int flags); /* 241 */
     BLT_TABLE_ROW * (*blt_table_get_row_map) (BLT_TABLE table); /* 242 */
@@ -2995,9 +2995,9 @@ extern BltTclProcs *bltTclProcsPtr;
 #define blt_table_sort_rows \
 	(bltTclProcsPtr->blt_table_sort_rows) /* 238 */
 #endif
-#ifndef blt_table_sort_rows_subset
-#define blt_table_sort_rows_subset \
-	(bltTclProcsPtr->blt_table_sort_rows_subset) /* 239 */
+#ifndef blt_table_sort_row_map
+#define blt_table_sort_row_map \
+	(bltTclProcsPtr->blt_table_sort_row_map) /* 239 */
 #endif
 #ifndef blt_table_sort_finish
 #define blt_table_sort_finish \

@@ -252,7 +252,7 @@ BltTclProcs bltTclProcs = {
     blt_table_delete_notifier, /* 236 */
     blt_table_sort_init, /* 237 */
     blt_table_sort_rows, /* 238 */
-    blt_table_sort_rows_subset, /* 239 */
+    blt_table_sort_row_map, /* 239 */
     blt_table_sort_finish, /* 240 */
     blt_table_get_compare_proc, /* 241 */
     blt_table_get_row_map, /* 242 */
