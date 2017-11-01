@@ -1369,7 +1369,8 @@ blt::comboframe .e.m  \
 
 set table [blt::datatable create]
 $table restore -file ./data/graph4a.tab
-
+$table sort -frequencyarray freqArr -column 2
+parray freqArr
 autofilter::NewAutoFilter .e.m.autofilter $table
 
 blt::table . \

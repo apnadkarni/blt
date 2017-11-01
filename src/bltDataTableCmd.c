@@ -529,30 +529,30 @@ static Blt_SwitchSpec restoreSwitches[] =
 
 typedef struct {
     unsigned int flags;
+    unsigned int returnType;
     unsigned int tsFlags;
-    BLT_TABLE table;
     BLT_TABLE_ITERATOR ri, ci;
     Tcl_Obj *freqArrVarObjPtr;          /* Specifies TCL array variable to 
                                          * store value/frequency pairs. */
     Tcl_Obj *freqListVarObjPtr;         /* Specifies TCL variable to store
                                          * list of frequencies, one per
                                          * row. */
-    Tcl_Obj *reorderObjPtr;             /* Specifies a TCL list of row
-                                         * indices to reorder the rows of
-                                         * the table. */
 } SortSwitches;
 
 #define SORT_UNIQUE     (1<<16)         /* Indicates to output only the
                                          * first of an equal run.  */
-#define SORT_RETURN_VALUES (1<<17)      /* Specifies TCL variable to store 
-                                         * ordered values. */
-#define SORT_ALTER      (1<<18)         /* Indicates to rearrange the
+#define SORT_ALTER      (1<<19)         /* Indicates to rearrange the
                                          * table. */
-#define SORT_NONEMPTY   (1<<19)         /* Indicates to not consider empty
+#define SORT_NONEMPTY   (1<<20)         /* Indicates to not consider empty
                                          * values when sorting.  */
-#define SORT_BYFREQ     (1<<20)         /* Indicates to sort by the
+#define SORT_BYFREQ     (1<<21)         /* Indicates to sort by the
                                          * frequency of the value. */
-
+#define SORT_RETURN_INDICES (0)         /* Indicates to return the sorted
+                                         * rows by their labels. */
+#define SORT_RETURN_VALUES  (1)          /* Indicates to return the sorted
+                                         * rows by their values. */
+#define SORT_RETURN_LABELS  (2)         /* Indicates to return the sorted
+                                         * rows by their labels. */
 static Blt_SwitchSpec sortSwitches[] = 
 {
     {BLT_SWITCH_BITS_NOARG, "-alter", "", (char *)NULL,
@@ -571,18 +571,20 @@ static Blt_SwitchSpec sortSwitches[] =
         Blt_Offset(SortSwitches, freqArrVarObjPtr)},
     {BLT_SWITCH_OBJ, "-frequencylistvariable", "varName", (char *)NULL,
         Blt_Offset(SortSwitches, freqListVarObjPtr)},
+    {BLT_SWITCH_VALUE, "-indices", "", (char *)NULL,
+        Blt_Offset(SortSwitches, returnType), 0, SORT_RETURN_INDICES},
+    {BLT_SWITCH_VALUE, "-labels", "", (char *)NULL,
+        Blt_Offset(SortSwitches, returnType), 0, SORT_RETURN_LABELS},
     {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
         Blt_Offset(SortSwitches, tsFlags), 0, TABLE_SORT_IGNORECASE},
     {BLT_SWITCH_BITS_NOARG, "-nonempty", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY},
-    {BLT_SWITCH_OBJ, "-reorder", "", (char *)NULL,
-        Blt_Offset(SortSwitches, reorderObjPtr)},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,
         Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITS_NOARG, "-unique", "", (char *)NULL,
         Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE},
-    {BLT_SWITCH_BITS_NOARG, "-values", "", (char *)NULL,
-        Blt_Offset(SortSwitches, flags), 0, SORT_RETURN_VALUES},
+    {BLT_SWITCH_VALUE, "-values", "", (char *)NULL,
+        Blt_Offset(SortSwitches, returnType), 0, SORT_RETURN_VALUES},
     {BLT_SWITCH_END}
 };
 
@@ -693,6 +695,15 @@ GetRowIndexObj(BLT_TABLE table, BLT_TABLE_ROW row)
 
     index = blt_table_row_index(table, row);
     return Tcl_NewLongObj(index);
+}
+
+static Tcl_Obj *
+GetRowLabelObj(BLT_TABLE table, BLT_TABLE_ROW row) 
+{
+    const char *string;
+
+    string = blt_table_row_label(row);
+    return Tcl_NewStringObj(string, -1);
 }
 
 
@@ -2409,36 +2420,6 @@ DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
     return (result) ? TCL_OK : TCL_ERROR;
 }
 
-static Tcl_Obj *
-PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-            BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
-{
-    long i;
-    Tcl_Obj *listObjPtr;
-    
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 1; i < numRows; i++) {
-        Tcl_Obj *objPtr;
-        int isEmpty;
-        
-        isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
-        if ((isEmpty) && (flags & SORT_NONEMPTY)) {
-            continue;
-        }
-        if (flags & SORT_RETURN_VALUES) {
-            if (isEmpty) {
-                objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
-            } else {
-                objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-            }
-        } else {
-            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
-        }
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    }
-    return listObjPtr;
-}
-
 static int
 SetFreqArrVariable(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
                    FreqMap *freqMap, BLT_TABLE_COLUMN col,
@@ -2522,11 +2503,11 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 {
     BLT_TABLE_COMPARE_PROC *proc;
     FreqMap *freqMap; 
-    long i, numFreq;
+    long i, numEntries;
     
     proc = blt_table_get_compare_proc(cmdPtr->table, col, switchesPtr->tsFlags);
     freqMap = Blt_AssertCalloc(numRows, sizeof(FreqMap));
-    numFreq = 0;
+    numEntries = 0;
 
     /* Load the map with the frequencies of each run for a value. */
     for (i = 0; i < numRows; /*empty*/) {
@@ -2539,19 +2520,20 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
             if (((*proc)(cmdPtr->table, col, map[i], map[j])) != 0) {
                 break;
             }
+            count++;
         }
         if (switchesPtr->flags & SORT_UNIQUE) {
             /* Just one entry. Use the first row and count. */
-            freqMap[numFreq].row = map[i];
-            freqMap[numFreq].count = count;
-            numFreq++;
+            freqMap[numEntries].row = map[i];
+            freqMap[numEntries].count = count;
+            numEntries++;
             i = j;
         } else {
             /* An entry for each row. Replicate the count. */
             for (/*empty*/; i < j; i++) {
                 freqMap[i].row = map[i];
                 freqMap[i].count = count;
-                numFreq++;
+                numEntries++;
             }
         }
     }
@@ -2559,25 +2541,25 @@ SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
         /* Sort the rows by their frequency. Set the global sortFlags
          * variable so that CompareFrequencies can pick it up. */
         sortFlags = switchesPtr->tsFlags;
-        qsort(freqMap, numFreq, sizeof(FreqMap), CompareFrequencies);
+        qsort(freqMap, numEntries, sizeof(FreqMap), CompareFrequencies);
     }
     if (switchesPtr->freqArrVarObjPtr != NULL) {
         /* Set the TCL array with the frequencies */
-        if (SetFreqArrVariable(interp, cmdPtr, numFreq, freqMap, col,
+        if (SetFreqArrVariable(interp, cmdPtr, numEntries, freqMap, col,
                                switchesPtr) != TCL_OK) {
             return TCL_ERROR;
         }
     }
     if (switchesPtr->freqListVarObjPtr != NULL) {
         /* Set the TCL array with the list of frequencies. */
-        if (SetFreqListVariable(interp, cmdPtr, numFreq, freqMap, col,
+        if (SetFreqListVariable(interp, cmdPtr, numEntries, freqMap, col,
                                 switchesPtr) != TCL_OK) {
             return TCL_ERROR;
         }
     }
     if (switchesPtr->flags & SORT_ALTER) {
         /* Overwrite the original sort map with the frequency map. */
-        for (i = 0; i < numFreq; i++) {
+        for (i = 0; i < numEntries; i++) {
             map[i] = freqMap[i].row;
         }
         /* Make row order permanent. */
@@ -2599,10 +2581,16 @@ SetSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     for (i = 0; i < numRows; i++) {
         Tcl_Obj *objPtr;
 
-        if (switchesPtr->flags & SORT_RETURN_VALUES) {
+        switch(switchesPtr->returnType) {
+        case SORT_RETURN_VALUES:
             objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-        } else {
+            break;
+        case SORT_RETURN_LABELS:
+            objPtr = GetRowLabelObj(cmdPtr->table, rows[i]);
+            break;
+        case SORT_RETURN_INDICES:
             objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
+            break;
         }
         if (objPtr != NULL) {
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -2637,10 +2625,16 @@ SetUniqueSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
                 break;
             }
         }
-        if (switchesPtr->flags & SORT_RETURN_VALUES) {
+        switch(switchesPtr->returnType) {
+        case SORT_RETURN_VALUES:
             objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-        } else {
+            break;
+        case SORT_RETURN_LABELS:
+            objPtr = GetRowLabelObj(cmdPtr->table, rows[i]);
+            break;
+        case SORT_RETURN_INDICES:
             objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
+            break;
         }
         if (objPtr != NULL) {
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -4770,8 +4764,8 @@ ColumnTagOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the interpreter
  *      result.
  *      
- *      tableName column type column 
- *      tableName column type column ?typeName columnName typeName ...?
+ *      tableName column type columnName
+ *      tableName column type columnName ?typeName columnName typeName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5491,7 +5485,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- *      tableName get row column ?defValue?
+ *      tableName get rowName columnName ?defValue?
  *
  *---------------------------------------------------------------------------
  */
@@ -5665,7 +5659,7 @@ KeysOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- *      tableName append row column ?value ...?
+ *      tableName append rowName columnName ?value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5747,8 +5741,8 @@ LookupOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * MinMaxOp --
  *  
- *      $t min $column
- *      $t max $column 
+ *      tableName min columnName
+ *      tableName max columnName 
  *
  *---------------------------------------------------------------------------
  */
@@ -5828,7 +5822,7 @@ MinMaxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumColumnsOp --
  *  
- *      $t numcolumns 
+ *      tableName numcolumns 
  *
  *---------------------------------------------------------------------------
  */
@@ -5875,8 +5869,7 @@ NumColumnsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumRowsOp --
  *  
- *      $t numrows
- *      $t numcolumns 
+ *      tableName numrows
  *
  *---------------------------------------------------------------------------
  */
@@ -5942,8 +5935,7 @@ PackOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RestoreOp --
  *
- * $t restore $string -overwrite -notags
- * $t restorefile $fileName -overwrite -notags
+ * tableName restore ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -5995,7 +5987,6 @@ RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the
  *      interpreter result.
  *
- * Example:
  *      tableName row copy destRow srcRow ?-table srcTable?
  *
  *---------------------------------------------------------------------------
@@ -6064,8 +6055,7 @@ RowCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the
  *      interpreter result.
  *
- * Example:
- *      $t row create -before 0 -after 1 -label label
+ *      tableName row create -before 0 -after 1 -label label
  *      
  *---------------------------------------------------------------------------
  */
@@ -6176,8 +6166,7 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $dest row dup label ?label?... 
+ *      tableName row dup label ?label...? 
  *
  *---------------------------------------------------------------------------
  */
@@ -6234,11 +6223,10 @@ RowDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Results:
  *      A standard TCL result. If the tag or row index is invalid,
- *      TCL_ERROR is returned and an error message is left in the interpreter
- *      result.
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
- * Example:
- *      $t row empty row
+ *      tableName row empty rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6287,8 +6275,7 @@ RowEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row exists n
+ *      tableName row exists rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6317,8 +6304,7 @@ RowExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row extend numRows
+ *      tableName row extend numRows
  *      
  *---------------------------------------------------------------------------
  */
@@ -6390,8 +6376,7 @@ RowExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      the interpreter result.  If the row index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      $t row get ?-labels? row ?col...?
+ *      tableName row get ?-labels? rowName ?columnName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6480,8 +6465,7 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row index $row
+ *      tableName row index rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6533,8 +6517,7 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row indices $row $row
+ *      tableName row indices rowName ?rowName ...?
  *      
  *---------------------------------------------------------------------------
  */
@@ -6574,8 +6557,7 @@ RowIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result. 
  *
- * Example:
- *      $t row isnumeric $row
+ *      tableName row isnumeric rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6620,8 +6602,7 @@ RowIsNumericOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result. 
  *
- * Example:
- *      $t row isalpha $row
+ *      tableName row isalpha rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6677,9 +6658,7 @@ RowIsHeaderOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the interpreter
  *      result.
  *
- * Example:
- *
- *      $dst row concat $src -rows $rows  
+ *      destTable row join srcTable -rows rowList
  *
  *---------------------------------------------------------------------------
  */
@@ -6841,8 +6820,7 @@ RowLabelOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      the interpreter result.  If the row index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      $t row labels ?labelList?
+ *      tableName row labels ?labelList?
  *
  *---------------------------------------------------------------------------
  */
@@ -6901,8 +6879,6 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  If successful, a list of values is returned in
  *      the interpreter result.  If the row index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
- *      
- * Example:
  *      
  *      tableName row move destRow firstRow lastRow ?switches...?
  *
@@ -6965,10 +6941,7 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Always returns TCL_OK.  The interpreter result is a list of row
  *      labels.
  *      
- * Example:
- *      $t row names 
- *      $t row names pattern
- *      $t row names pattern1 pattern2...
+ *      tableName row names ?pattern...?
  *
  *---------------------------------------------------------------------------
  */
@@ -7023,8 +6996,7 @@ RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the interpreter
  *      result.
  *
- * Example:
- *      $t row empty row
+ *      tableName row nonempty row
  *      
  *---------------------------------------------------------------------------
  */
@@ -7062,6 +7034,53 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RowReorderOp --
+ *
+ *      Reorders the table according to give TCL list of rows.
+ *
+ * Results:
+ *      A standard TCL result. 
+ *
+ *      tableName row reorder rowList
+ *      
+ *---------------------------------------------------------------------------
+ */
+static int
+RowReorderOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
+{
+    BLT_TABLE_ROW *map;
+    Cmd *cmdPtr = clientData;
+    Tcl_Obj **elv;
+    int elc;
+    long i;
+    
+    if (Tcl_ListObjGetElements(interp, objv[3], &elc, &elv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (elc != blt_table_num_rows(cmdPtr->table)) {
+        Tcl_AppendResult(interp,
+            "# of elements in the row list does not match the # of rows.",
+            (char *)NULL);
+        return TCL_ERROR;
+    }
+    map = Blt_AssertCalloc(elc, sizeof(BLT_TABLE_ROW));
+    for (i = 0; i < elc; i++) {
+        BLT_TABLE_ROW row;
+        
+        row = blt_table_get_row(interp, cmdPtr->table, elv[i]);
+        if (row == NULL) {
+            return TCL_ERROR;
+        }
+        map[i] = row;
+    }
+    blt_table_set_row_map(cmdPtr->table, map);
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -7076,9 +7095,7 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      $t row set row ?switches? ?column value?...
- *      $t row set row ?switches? ?column value?...
+ *      tableName row set rowName ?switches? ?columnName value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -7912,6 +7929,7 @@ static Blt_OpSpec rowOps[] =
     {"move",      1, RowMoveOp,     6, 0, "destRow firstRow lastRow ?switches?",},
     {"names",     2, RowNamesOp,    3, 0, "?pattern ...?",},
     {"nonempty",  3, RowNonEmptyOp, 4, 4, "rowName",},
+    {"reorder",   1, RowReorderOp,  4, 4, "rowList",},
     {"set",       1, RowSetOp,      5, 0, "rowName columnName ?value...?",},
     {"tag",       1, RowTagOp,      3, 0, "op args...",},
     {"unset",     1, RowUnsetOp,    4, 0, "rowName ?indices...?",},
@@ -8010,7 +8028,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
     BLT_TABLE_ROW *map;
     BLT_TABLE_COLUMN col;
     BLT_TABLE_SORT_ORDER *sp, *order;
@@ -8025,21 +8042,30 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* Process switches  */
     memset(&switches, 0, sizeof(SortSwitches));
     switches.tsFlags = TABLE_SORT_AUTO;
-    table = switches.table = cmdPtr->table;
     rowIterSwitch.clientData = cmdPtr->table;
     columnIterSwitch.clientData = cmdPtr->table;
+    blt_table_iterate_all_columns(cmdPtr->table, &switches.ci);
     if (Blt_ParseSwitches(interp, sortSwitches, objc - 2, objv + 2, &switches, 
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;               
     }
     if (switches.flags & SORT_ALTER) {
         if (switches.flags & SORT_UNIQUE) {
+            Tcl_AppendResult(interp,
+                 "-alter and -unique switches are incompatible.",
+                (char *)NULL);
             goto error;
         }
         if (switches.flags & SORT_NONEMPTY) {
+            Tcl_AppendResult(interp,
+                 "-alter and -empty switches are incompatible.",
+                (char *)NULL);
             goto error;
         }
         if (switches.ri.numEntries > 0) {
+            Tcl_AppendResult(interp,
+                 "-alter and -rows switches are incompatible.",
+                (char *)NULL);
             goto error;
         }
     }
@@ -8054,7 +8080,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         sp->column = col;
         sp++;
     }
-    blt_table_sort_init(table, order, numColumns, switches.tsFlags);
+    blt_table_sort_init(cmdPtr->table, order, numColumns, switches.tsFlags);
     col = order[0].column;
     /* Create a row map, pruning out empty values if necessary. */
     if (switches.ri.numEntries > 0) {
@@ -8066,7 +8092,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         for (row = blt_table_first_tagged_row(&switches.ri); row != NULL; 
              row = blt_table_next_tagged_row(&switches.ri)) {
             if (switches.flags & SORT_NONEMPTY) {
-                if (!blt_table_value_exists(table, row, col)) {
+                if (!blt_table_value_exists(cmdPtr->table, row, col)) {
                     continue;
                 }
             }
@@ -8079,11 +8105,12 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_ROW row;
 
         i = 0;
-        map = Blt_AssertCalloc(blt_table_num_rows(table),sizeof(BLT_TABLE_ROW));
-        for (row = blt_table_first_row(table); row != NULL; 
+        map = Blt_AssertCalloc(blt_table_num_rows(cmdPtr->table),
+                               sizeof(BLT_TABLE_ROW));
+        for (row = blt_table_first_row(cmdPtr->table); row != NULL; 
              row = blt_table_next_row(row)) {
             if (switches.flags & SORT_NONEMPTY) {
-                if (!blt_table_value_exists(table, row, col)) {
+                if (!blt_table_value_exists(cmdPtr->table, row, col)) {
                     continue;
                 }
             }
@@ -8093,7 +8120,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         numRows = i;
     }
     /* Sort the row map. */
-    blt_table_sort_row_map(table, numRows, map);
+    blt_table_sort_row_map(cmdPtr->table, numRows, map);
     
     if ((switches.freqArrVarObjPtr != NULL) || 
         (switches.freqListVarObjPtr != NULL) || 
@@ -8117,7 +8144,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (switches.flags & SORT_ALTER) {
         /* Make row order permanent. */
-        blt_table_set_row_map(table, map);
+        blt_table_set_row_map(cmdPtr->table, map);
     }
     if (result != TCL_OK) {
         goto error;

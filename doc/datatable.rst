@@ -830,6 +830,11 @@ the command.  The operations available for *datatables* are listed below.
   Returns the column indices of the non-empty cells in the row.  *RowName* may
   be a label, index, or tag, but may not represent more than one row.
 
+*tableName* **row reorder**  *rowList*
+  Reorders the rows in table according to *rowList*.  *RowList* is a list
+  of row labels or indices. It must contain as many elements as there are
+  rows in the table.
+
 *tableName* **row set**  *rowName* ?\ *columnName* *value* ... ? 
   Sets values for cells in the specified row. *RowName* may be a label,
   index, or tag and may refer to multiple rows (example: "all").  If one or
@@ -933,33 +938,38 @@ the command.  The operations available for *datatables* are listed below.
   fails, an error will be returned.
 
 *tableName* **sort** ?\ *switches* ... ?
-  Sorts the table.  Column are compared in order. The type comparison is
-  determined from the column type.  But you can use **-ascii** or
-  **-dictionary** switch to sort the rows.  If the **-noreorder**,
-  **-nonempty**, **-unique**, or **-rows** switches are present, the list of
-  the sorted rows will be returned but the rows of the table will not be
-  rearranged the table. *Switches* can be one of the following:
+  Sorts the rows of the table.  Each column is compared in order.  
+  By default, this command returns the indices of the sorted rows.  You
+  can use the **-labels** or **-values** switches to return the row labels
+  or values instead.
+
+  *Switches* can be one of the following:
+
+  **-alter** 
+    Indicates to reorder the rows in the table.  By default, the indices of
+    the sorted rows is returned, but the rows are not reordered.  This
+    switch changes the order of the table.  This switch is can not be used
+    with the **-nonempty**, **-unique**, or **-rows** switches.
 
   **-ascii**
-    Uses string comparison with Unicode code-point collation order (the name
-    is for backward-compatibility reasons.)  The string representation of
-    the values are compared.   
+    Uses string comparison with Unicode code-point collation order (the
+    name is for backward-compatibility reasons).  The string representation
+    of the values are compared.  By default, the column type is used to
+    determine how to compare values.
 
   **-byfrequency** 
-    Sorts rows according to the frequency of their values.  The rows
-    of *tableName* will not be rearranged.  A list of the row
-    indices will be returned instead.
+    Sorts rows according to the frequency of their values.  
 
   **-columns** *columnList*
-    Compares the cells in order of the columns in *columnList*.
+    Specifies the column order to compare the rows in the table.
     *ColumnList* is a list of column specifiers. Each specifier may be a
     column label, index, or tag and may refer to multiple columns (example:
-    "all"). By default all columns are compared in their order in the
-    datatable.
+    "all").  The extra columns act as tiebreakers.  If two rows in a column
+    are equal, then the next column in the list is compared.
 
   **-decreasing** 
-    Sorts rows highest to lowest. By default rows are sorted lowest to
-    highest.
+    Sorts rows highest value to lowest value. By default rows are sorted
+    lowest to highest.
 
   **-dictionary** 
     Uses dictionary-style comparison. This is the same as **-ascii**
@@ -967,33 +977,36 @@ the command.  The operations available for *datatables* are listed below.
     strings contain embedded numbers, the numbers compare as integers, not
     characters.  For example, in **-dictionary** mode, "bigBoy" sorts
     between "bigbang" and "bigboy", and "x10y" sorts between "x9y" and
-    "x11y".
+    "x11y". By default, the column type is used to determine how to
+    compare values.
+
+  **-indices** 
+    Indicates to return the index for each sorted row.  This is the
+    default.
+
+  **-labels** 
+    Indicates to return the labels for each sorted row.
 
   **-nocase** 
     Ignores case when comparing values.  This only has affect when the
-    **-ascii** switch is present.
+    **-ascii** switch is used.
 
   **-nonempty** 
-    Sorts only non-empty cells. The rows of *tableName* will not be
-    rearranged.  A list of the row indices will be returned instead.
-
-  **-noreorder** 
-    Indicates not to reorder the rows in the table.  This switch is implied
-    when the **-nonempty**, **-unique**, or **-rows** switches are used.
+    Sort only non-empty cells.  Empty cells in the primary sorting column
+    are ignored.  The switch can not be used with the **-alter** switch.
 
   **-rows** *rowList*
-    Consider only the rows in *rowList*.  *RowList* is a list of
+    Sort only the rows in *rowList*.  *RowList* is a list of
     of row labels, indices, or tags that may refer to multiple rows.
-    The table will not be reordered.
+    The switch can not be used with the **-alter** switch.
 
   **-unique** 
-    Returns only the unique rows.  The rows of *tableName* will not be
-    rearranged.  
+    Returns only the unique rows.  The switch can not be used with the
+    **-alter** switch.
 
-  **-valuesvariable** *varName* 
-    Returns the row values instead of their indices.  The rows of
-    *tableName* will not be rearranged.  A list of the row values
-    will be returned instead.
+  **-values** 
+    Indicates to return the sorted values for each row,column,
+    where column is the primary sorting key. 
 
 *tableName* **trace cell** *rowName* *columnName* *ops* *cmdPrefix*
   Registers a command to be invoked when the cell (designated by *rowName*
