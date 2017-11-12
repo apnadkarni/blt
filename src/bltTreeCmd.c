@@ -3453,53 +3453,56 @@ static void
 FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, 
                Tcl_StatBuf *statPtr, ReadDirectory *readPtr)
 {    
+    int mode;
     if (readPtr->mask & READ_DIR_SIZE) {
         Blt_Tree_SetValue(interp, tree, node, "size",  
-                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_size));
+                          Tcl_NewWideIntObj(Tcl_GetSizeFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_MTIME) {
         Blt_Tree_SetValue(interp, tree, node, "mtime",  
-                Tcl_NewLongObj((long)statPtr->st_mtime));
+                Tcl_NewLongObj(Tcl_GetModificationTimeFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_CTIME) {
         Blt_Tree_SetValue(interp, tree, node, "ctime",  
-                Tcl_NewLongObj((long)statPtr->st_ctime));
+                Tcl_NewLongObj(Tcl_GetChangeTimeFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_ATIME) {
         Blt_Tree_SetValue(interp, tree, node, "atime",  
-                Tcl_NewLongObj((long)statPtr->st_atime));
+                Tcl_NewLongObj(Tcl_GetAccessTimeFromStat(statPtr)));
     }
+    mode = Tcl_GetModeFromStat(statPtr);
     if (readPtr->mask & READ_DIR_MODE) {
         Blt_Tree_SetValue(interp, tree, node, "mode", 
-                Tcl_NewIntObj(statPtr->st_mode));
+                Tcl_NewIntObj(mode));
     }
     if (readPtr->mask & READ_DIR_PERMS) {
         Blt_Tree_SetValue(interp, tree, node, "perms", 
-                Tcl_NewIntObj(statPtr->st_mode & 07777));
+                Tcl_NewIntObj(mode & 07777));
     }
     if (readPtr->mask & READ_DIR_UID) {
         Blt_Tree_SetValue(interp, tree, node, "uid", 
-                Tcl_NewIntObj(statPtr->st_uid));
+                Tcl_NewIntObj(Tcl_GetUserIdFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_GID) {
         Blt_Tree_SetValue(interp, tree, node, "gid", 
-                Tcl_NewIntObj(statPtr->st_gid));
+                Tcl_NewIntObj(Tcl_GetGroupIdFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_TYPE) {
         Blt_Tree_SetValue(interp, tree, node, "type", 
-                Tcl_NewStringObj(GetTypeFromMode(statPtr->st_mode), -1));
+                Tcl_NewStringObj(GetTypeFromMode(mode), -1));
     }
     if (readPtr->mask & READ_DIR_INO) {
         Blt_Tree_SetValue(interp, tree, node, "ino",  
-                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_ino));
+                Tcl_NewWideIntObj(Tcl_GetFSInodeFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_NLINK) {
         Blt_Tree_SetValue(interp, tree, node, "nlink",  
-                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_nlink));
+                Tcl_NewWideIntObj(Tcl_GetLinkCountFromStat(statPtr)));
     }
     if (readPtr->mask & READ_DIR_DEV) {
+        /* APN TBD - should this not be GetFSDevice, not GetDeviceType ? */
         Blt_Tree_SetValue(interp, tree, node, "dev",  
-                Tcl_NewWideIntObj((Tcl_WideInt)statPtr->st_rdev));
+                Tcl_NewWideIntObj(Tcl_GetDeviceTypeFromStat(statPtr)));
     }
 }
 
@@ -3516,6 +3519,7 @@ MakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
     Tcl_Obj **objv, *listObjPtr;
     int objc, length, i;
     int result, count;
+    Tcl_StatBuf *statPtr = NULL;
     
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (hidden) {
@@ -3531,8 +3535,8 @@ MakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
     }
     Tcl_GetStringFromObj(objPtr, &length);
     count = 0;
+    statPtr = Tcl_AllocStatBuf();
     for (i = 0; i < objc; i++) {
-        Tcl_StatBuf stat;
         int numParts;
         Tcl_Obj *tailObjPtr, *partsObjPtr;
         Blt_TreeNode child;
@@ -3541,8 +3545,12 @@ MakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
             goto error;                 /* Can't convert path. */
         }
+#if 0
+        We do not have sizeof(Tcl_StatBuf) - opaque structure
+        and in any case Tcl_FSStat will init all fields                  
         memset(&stat, 0, sizeof(Tcl_StatBuf));
-        if (Tcl_FSStat(objv[i], &stat) < 0) {
+#endif
+        if (Tcl_FSStat(objv[i], statPtr) < 0) {
             continue;                   /* Can't stat entry. */
         }
         /* Get the tail of the path. */
@@ -3570,7 +3578,7 @@ MakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
         }
         child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
         Tcl_DecrRefCount(partsObjPtr);
-        FillEntryData(interp, cmdPtr->tree, child, &stat, readPtr);
+        FillEntryData(interp, cmdPtr->tree, child, statPtr, readPtr);
 
         /* Recursively read the subdirectory into the tree. */
         result = ReadDirectoryIntoTree(interp, cmdPtr, objv[i], child, readPtr);
@@ -3585,9 +3593,13 @@ MakeSubdirs(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
             count++;
         }
     }
+    if (statPtr)
+        ckfree(statPtr);
     Tcl_DecrRefCount(listObjPtr);
     return (count > 0) ? READ_DIR_MATCH : READ_DIR_NOMATCH;
  error:
+    if (statPtr)
+        ckfree(statPtr);
     Tcl_DecrRefCount(listObjPtr);
     return READ_DIR_ERROR;
 }
@@ -3598,6 +3610,7 @@ MatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
 {
     Tcl_Obj **objv, *listObjPtr, **patterns;
     int objc, i, numMatches, numPatterns;
+    Tcl_StatBuf *statPtr = NULL;
     unsigned int patternFlags;
     Tcl_GlobTypeData data = {
         0, 0, NULL, NULL
@@ -3626,18 +3639,17 @@ MatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
      if (Tcl_ListObjGetElements(interp, listObjPtr, &objc, &objv) != TCL_OK) {
         goto error;                     /* Can't split entry list. */
     }
+    statPtr = Tcl_AllocStatBuf();
     numMatches = 0;                     /* Count # of matches. */
     for (i = 0; i < objc; i++) {
         Tcl_Obj *partsObjPtr, *tailObjPtr;
-        Tcl_StatBuf stat;
         const char *label;
         int isMatch, numParts;
         
         if (Tcl_FSConvertToPathType(interp, objv[i]) != TCL_OK) {
            goto error;                 /* Can't convert path. */
         }
-        memset(&stat, 0, sizeof(Tcl_StatBuf));
-        if (Tcl_FSStat(objv[i], &stat) < 0) {
+        if (Tcl_FSStat(objv[i], statPtr) < 0) {
             continue;                   /* Can't stat entry. */
         }
         /* Get the tail of the path. */
@@ -3679,14 +3691,18 @@ MatchEntries(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *objPtr,
             if (child == NULL) {
                 child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
                 assert(child != NULL);
-                FillEntryData(interp, cmdPtr->tree, child, &stat, readPtr);
+                FillEntryData(interp, cmdPtr->tree, child, statPtr, readPtr);
             }
         }
         Tcl_DecrRefCount(partsObjPtr);
     }
+    if (statPtr)
+        ckfree(statPtr);
     Tcl_DecrRefCount(listObjPtr);
     return (numMatches > 0) ? READ_DIR_MATCH : READ_DIR_NOMATCH;
  error:
+    if (statPtr)
+        ckfree(statPtr);
     Tcl_DecrRefCount(listObjPtr);
     return READ_DIR_ERROR;
 }

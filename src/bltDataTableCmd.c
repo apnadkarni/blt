@@ -2365,6 +2365,7 @@ static const char *
 GetTypeFromMode(int mode)
 {
 #ifdef WIN32
+    /* APN TBD - for Win32, this does not match docs */
    if (mode == -1) {
        return "unknown";
    } else if (mode & FILE_ATTRIBUTE_DIRECTORY) {
@@ -2420,6 +2421,7 @@ ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName,
 {
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
+    long mode;
 
     row = blt_table_create_row(interp, table, NULL);
     if (row == NULL) {
@@ -2432,54 +2434,67 @@ ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName,
     }
     blt_table_set_string(interp, table, row, col, fileName, -1);
 
+    mode = Tcl_GetModeFromStat(statPtr);
     if (switchesPtr->mask & READ_DIR_TYPE) {
         col = GetColumn(interp, table, "type", TABLE_COLUMN_TYPE_STRING);
         blt_table_set_string(interp, table, row, col,
-                             GetTypeFromMode(statPtr->st_mode), -1);
+                             GetTypeFromMode(mode), -1);
     }
     if (switchesPtr->mask & READ_DIR_SIZE) {
         col = GetColumn(interp, table, "size", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_size);
+        /* TBD APN - 64-bit truncation! */
+        blt_table_set_long(interp, table, row, col, 
+                           Tcl_GetSizeFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_UID) {
         col = GetColumn(interp, table, "uid", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_uid);
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetUserIdFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_GID) {
         col = GetColumn(interp, table, "gid", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_gid);
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetGroupIdFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_ATIME) {
         col = GetColumn(interp, table, "atime", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_atime);
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetAccessTimeFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_MTIME) {
         col = GetColumn(interp, table, "mtime", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_mtime);
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetModificationTimeFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_CTIME) {
         col = GetColumn(interp, table, "ctime", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_ctime);
+        blt_table_set_long(interp, table, row, col, 
+                           Tcl_GetChangeTimeFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_MODE) {
         col = GetColumn(interp, table, "mode", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_mode);
+        blt_table_set_long(interp, table, row, col, mode);
     }
     if (switchesPtr->mask & READ_DIR_PERMS) {
         col = GetColumn(interp, table, "perms", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_mode & 07777);
+        blt_table_set_long(interp, table, row, col, mode & 07777);
     }
     if (switchesPtr->mask & READ_DIR_INO) {
         col = GetColumn(interp, table, "ino", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_ino);
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetFSInodeFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_NLINK) {
         col = GetColumn(interp, table, "nlink", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_nlink);
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetLinkCountFromStat(statPtr));
     }
     if (switchesPtr->mask & READ_DIR_DEV) {
         col = GetColumn(interp, table, "dev", TABLE_COLUMN_TYPE_LONG);
-        blt_table_set_long(interp, table, row, col, statPtr->st_rdev);
+        /* APN TBD - should this be GetDevice and not GetDeviceType?
+           But original code used rdev, not dev. */
+        blt_table_set_long(interp, table, row, col,
+                           Tcl_GetDeviceTypeFromStat(statPtr));
     }
 }
 
@@ -4754,9 +4769,9 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     ReadDirectory reader;
     Tcl_Obj **patterns, **entries, *listObjPtr;
-    Tcl_StatBuf stat;
     int i, numPatterns, numEntries;
     unsigned int patternFlags;
+    Tcl_StatBuf *statPtr = NULL;
     Tcl_GlobTypeData data = {
         0, TCL_GLOB_PERM_R, /* macType*/NULL, /*macCreator*/NULL
     };
@@ -4783,13 +4798,14 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 #endif
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (Tcl_FSStat(objv[2], &stat) != 0) {
+    statPtr = Tcl_AllocStatBuf();
+    if (Tcl_FSStat(objv[2], statPtr) != 0) {
         Tcl_AppendResult(interp, "Can't stat directory \"",
                          Tcl_GetString(objv[2]), "\": ",
                          Tcl_PosixError(interp), (char *)NULL);
         goto error;
     }
-    if (!S_ISDIR(stat.st_mode)) {
+    if (!S_ISDIR(Tcl_GetModeFromStat(statPtr))) {
         Tcl_AppendResult(interp, "\"", Tcl_GetString(objv[2]),
                          "\" is not a directory", (char *)NULL);
         goto error;
@@ -4807,15 +4823,18 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 0; i < numEntries; i++) {
         Tcl_Obj *partsObjPtr, *tailObjPtr;
-        Tcl_StatBuf stat;
         const char *label;
         int isMatch, numParts;
 
         if (Tcl_FSConvertToPathType(interp, entries[i]) != TCL_OK) {
            goto error;                 /* Can't convert path. */
         }
+#if 0
+        Size of Tcl_StatBuf is not known but thats ok since Tcl_FSStat
+        should init all fields
         memset(&stat, 0, sizeof(Tcl_StatBuf));
-        if (Tcl_FSStat(entries[i], &stat) < 0) {
+#endif
+        if (Tcl_FSStat(entries[i], statPtr) < 0) {
             continue;                   /* Can't stat entry. */
         }
         /* Get the tail of the path. */
@@ -4859,13 +4878,17 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
         if (isMatch) {
-            ExportToTable(interp, cmdPtr->table, label, &stat, &reader);
+            ExportToTable(interp, cmdPtr->table, label, statPtr, &reader);
         }
         Tcl_DecrRefCount(partsObjPtr);
     }
+    if (statPtr)
+        ckfree(statPtr);
     Tcl_DecrRefCount(listObjPtr);
     return TCL_OK;
  error:
+    if (statPtr)
+        ckfree(statPtr);
     Tcl_DecrRefCount(listObjPtr);
     return TCL_ERROR;
 }
