@@ -183,7 +183,7 @@ typedef enum  ScaleTypes {
 #ifdef _WIN32
 typedef int Blt_Xlib_Status;
 #else
-typedef Status Blt_Xlib_Status
+typedef Status Blt_Xlib_Status;
 #endif
 
 #endif /*_BLT_TYPES_H*/
