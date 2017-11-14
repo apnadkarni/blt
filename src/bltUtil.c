@@ -913,8 +913,10 @@ Blt_DictionaryCompare(const char *left, const char *right)
 }
 #endif
 
-#ifndef NDEBUG
-
+/*
+ *  Note - this function is needed even when NDEBUG is defined as it
+ * is referenced from the BLT stubs table.
+ */
 void
 Blt_Assert(const char *testExpr, const char *fileName, int lineNumber)
 {
@@ -923,7 +925,6 @@ Blt_Assert(const char *testExpr, const char *fileName, int lineNumber)
     fflush(stderr);
     abort();
 }
-#endif  /* NDEBUG */
 
 /*ARGSUSED*/
 void
@@ -967,7 +968,7 @@ Blt_Warn(const char *fmt, ...)
         vsnprintf(buf, 1024, fmt, args);
         buf[1023] = '\0';
         MessageBeep(MB_ICONEXCLAMATION);
-        MessageBox(NULL, buf, "Warning from BLT",
+        MessageBoxA(NULL, buf, "Warning from BLT",
                    MB_ICONSTOP | MB_OK | MB_TASKMODAL | MB_SETFOREGROUND);
     }
 #else

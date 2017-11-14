@@ -1496,11 +1496,13 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Drawable drawable;
     HBITMAP hBitmap;
     HDC hDC;
-    DOCINFO di;
+    DOCINFOA di;
     double pageWidth, pageHeight;
     int result;
     double scale, sx, sy;
     int jobId;
+
+    /* APN TBD - fix for Unicode */
 
     graphPtr->width = Tk_Width(graphPtr->tkwin);
     graphPtr->height = Tk_Height(graphPtr->tkwin);
@@ -1576,7 +1578,7 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     ZeroMemory(&di, sizeof(di));
     di.cbSize = sizeof(di);
     di.lpszDocName = "Graph Contents";
-    jobId = StartDoc(hDC, &di);
+    jobId = StartDocA(hDC, &di);
     if (jobId <= 0) {
         Tcl_AppendResult(interp, "can't start document: ", Blt_LastError(),
             (char *)NULL);
@@ -1834,9 +1836,11 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
     int result;
     DWORD count, numBytes;
 
+    /* APN TBD - fix for Unicode */
+
     result = TCL_ERROR;
     hMem = NULL;
-    hFile = CreateFile(
+    hFile = CreateFileA(
        fileName,                        /* File path */
        GENERIC_WRITE,                   /* Access mode */
        0,                               /* No sharing. */
@@ -1985,7 +1989,7 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             Tcl_DStringAppend(&ds, Tk_PathName(graphPtr->tkwin), -1);
             Tcl_DStringAppend(&ds, "\0", -1);
             title = Tcl_DStringValue(&ds);
-            hDC = CreateEnhMetaFile(hRefDC, NULL, NULL, title);
+            hDC = CreateEnhMetaFileA(hRefDC, NULL, NULL, title);
             Tcl_DStringFree(&ds);
             
             if (hDC == NULL) {
@@ -2025,7 +2029,7 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
                 } else {
                     HENHMETAFILE hMetaFile2;
                     
-                    hMetaFile2 = CopyEnhMetaFile(hMetaFile, imgName);
+                    hMetaFile2 = CopyEnhMetaFileA(hMetaFile, imgName);
                     if (hMetaFile2 != NULL) {
                         result = TCL_OK;
                         DeleteEnhMetaFile(hMetaFile2); 

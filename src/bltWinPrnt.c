@@ -44,7 +44,6 @@
 #include <X11/Xutil.h>
 #include <ctype.h>
 
-#undef Status
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 #include <winspool.h>
 #endif /* _MSC_VER || __BORLANDC__ */

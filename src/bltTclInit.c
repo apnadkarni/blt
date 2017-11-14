@@ -278,7 +278,8 @@ SetLibraryPath(Tcl_Interp *interp)
 #ifndef BLT_REGISTRY_KEY
   #define BLT_REGISTRY_KEY "Software\\BLT\\" BLT_VERSION "\\" TCL_VERSION
 #endif
-        result = RegOpenKeyEx(
+        /* APN TBD - this needs to be fixed for Unicode support */
+        result = RegOpenKeyExA(
               HKEY_LOCAL_MACHINE, /* Parent key. */
               BLT_REGISTRY_KEY, /* Path to sub-key. */
               0,                /* Reserved. */
@@ -289,12 +290,12 @@ SetLibraryPath(Tcl_Interp *interp)
             DWORD size;
 
             /* Query once to get the size of the string needed */
-            result = RegQueryValueEx(key, "BLT_LIBRARY", NULL, NULL, NULL, 
+            result = RegQueryValueExA(key, "BLT_LIBRARY", NULL, NULL, NULL, 
                      &size);
             if (result == ERROR_SUCCESS) {
                 Tcl_DStringSetLength(&ds, size);
                 /* And again to collect the string. */
-                RegQueryValueEx(key, "BLT_LIBRARY", NULL, NULL,
+                RegQueryValueExA(key, "BLT_LIBRARY", NULL, NULL,
                                 (LPBYTE)Tcl_DStringValue(&ds), &size);
                 RegCloseKey(key);
             }

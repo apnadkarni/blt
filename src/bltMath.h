@@ -38,6 +38,9 @@
 #ifndef _BLT_MATH_H
 #define _BLT_MATH_H
 
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 #include <math.h>
 
 #ifdef HAVE_FLOAT_H

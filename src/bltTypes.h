@@ -171,6 +171,21 @@ typedef enum  ScaleTypes {
     SCALE_LINEAR, SCALE_LOG, SCALE_TIME, SCALE_CUSTOM
 } ScaleType;
 
+/*
+ *----------------------------------------------------------------------
+ *
+ * Blt_Xlib_Status --
+ *
+ *      Typedef to resolve naming conflict between X definition of Status
+ *      and Win32 Status enum from gdi
+ *----------------------------------------------------------------------
+ */
+#ifdef _WIN32
+typedef int Blt_Xlib_Status;
+#else
+typedef Status Blt_Xlib_Status
+#endif
+
 #endif /*_BLT_TYPES_H*/
 
 /*

@@ -89,7 +89,9 @@ typedef struct _Blt_Pid {
 #endif
 
 #include <time.h>
-#include <sys/time.h>
+#ifndef _MSC_VER
+#  include <sys/time.h>
+#endif
 
 typedef struct {
     int year;                           /* Year 0-9999. */

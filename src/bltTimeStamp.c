@@ -227,7 +227,11 @@ static Pattern datePatterns[] = {
     { 5, {_DOT, _MONTH, _DOT,   _MDAY}}, /* 13. .mon.dd (.Jan.31) */
     { 6, {_YEAR, _DOT, _MONTH, _DOT, _MDAY}}, /* 14. yy.mon.dd (1999.Jan.31) */
     { 6, {_YEAR, _COLON,  _MONTH, _COLON, _MDAY}}, /* 15. yyyy:mm:dd hh:mm:ss */
+#ifdef _MSC_VER
+    { 1, }
+#else
     { 1, {}}
+#endif
 };
 
 static int numDatePatterns = sizeof(datePatterns) / sizeof(Pattern);

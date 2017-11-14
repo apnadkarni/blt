@@ -224,7 +224,7 @@ XQueryTreeErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
 Window
 Blt_GetParentWindow(Display *display, Window window)
 {
-    Status status;
+    Blt_Xlib_Status status;
     Tk_ErrorHandler handler;
     Window *children;
     Window root, parent;
@@ -345,7 +345,7 @@ Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr,
     int code;
     int x, y;
     unsigned int w, h, bw, depth;
-    Status status;
+    Blt_Xlib_Status status;
     
     code = TCL_OK;
     handler = Tk_CreateErrorHandler(display, -1, X_GetGeometry, -1, 
@@ -515,7 +515,7 @@ int
 Blt_ReparentWindow(Display *display, Window window, Window newParent, 
                    int x, int y)
 {
-    Status status;
+    Blt_Xlib_Status status;
     Tk_ErrorHandler handler;
     int code;
     

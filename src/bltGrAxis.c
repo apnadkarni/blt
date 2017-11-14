@@ -7223,7 +7223,9 @@ Blt_MakeAxisTag(Graph *graphPtr, const char *tagName)
 }
 
 #include <time.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 #define SECONDS_SECOND        (1)
 #define SECONDS_MINUTE        (60)

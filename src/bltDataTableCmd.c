@@ -2366,6 +2366,7 @@ GetTypeFromMode(int mode)
 {
 #ifdef WIN32
     /* APN TBD - for Win32, this does not match docs */
+    /* APN TBD - also, does stat.mode actually contain FILE_ATTRIBUTE flags? */
    if (mode == -1) {
        return "unknown";
    } else if (mode & FILE_ATTRIBUTE_DIRECTORY) {

@@ -2327,6 +2327,7 @@ Blt_PaintRadioButtonOld(
         DrawCircleShadow(destPtr, x, y, r, 0.0, TRUE, &shadow);
     }
     DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
+    /* APN TBD - following line should be fillColorPtr->u32 != outlineColorPtr.u32 ? */
     if (fill.u32 != outline.u32) {
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
         DrawCircle(destPtr, x, y, r, 1.0, brush, TRUE);

@@ -56,62 +56,62 @@
 #endif
 
 #ifndef NO_SFTP
-extern Tcl_AppInitProc Blt_sftp_Init;
+BLT_EXTERN Tcl_AppInitProc Blt_sftp_Init;
 #endif
 #ifndef NO_MESH
-extern Tcl_AppInitProc Blt_MeshCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_MeshCmdInitProc;
 #endif
 #ifndef NO_ARCBALL
-extern Tcl_AppInitProc Blt_ArcBallCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_ArcBallCmdInitProc;
 #endif
 #ifndef NO_BASE64
-extern Tcl_AppInitProc Blt_Base64CmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_Base64CmdInitProc;
 #endif
 #ifndef NO_BGEXEC
-extern Tcl_AppInitProc Blt_BgexecCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_BgexecCmdInitProc;
 #endif
 #ifndef NO_PTYEXEC
-extern Tcl_AppInitProc Blt_PtyExecCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_PtyExecCmdInitProc;
 #endif
 #ifndef NO_CHECKSUM
-extern Tcl_AppInitProc Blt_ChecksumCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_ChecksumCmdInitProc;
 #endif
 #ifndef NO_CSV
-extern Tcl_AppInitProc Blt_CsvCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_CsvCmdInitProc;
 #endif
 #ifndef NO_DEBUG
-extern Tcl_AppInitProc Blt_DebugCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_DebugCmdInitProc;
 #endif
 #ifndef NO_FILECMD
-extern Tcl_AppInitProc Blt_FileCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_FileCmdInitProc;
 #endif
 #ifdef WIN32
 #  ifndef NO_PRINTER
-extern Tcl_AppInitProc Blt_PrinterCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_PrinterCmdInitProc;
 #  endif
 #endif  /*WIN32*/
 
 #ifndef NO_VECTOR
-extern Tcl_AppInitProc Blt_VectorCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_VectorCmdInitProc;
 #endif
 #ifndef NO_WATCH
-extern Tcl_AppInitProc Blt_WatchCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_WatchCmdInitProc;
 #endif
 
 #ifndef NO_SPLINE
-extern Tcl_AppInitProc Blt_SplineCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_SplineCmdInitProc;
 #endif
 
 #ifndef NO_TREE
-extern Tcl_AppInitProc Blt_TreeCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_TreeCmdInitProc;
 #endif
 
 #ifndef NO_TIMESTAMP
-extern Tcl_AppInitProc Blt_TimeStampCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_TimeStampCmdInitProc;
 #endif
 
 #ifndef NO_COMPARE
-extern Tcl_AppInitProc Blt_CompareCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_CompareCmdInitProc;
 #endif
 
 #endif /*_BLT_TCL_INIT_H*/

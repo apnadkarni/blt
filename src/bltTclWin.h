@@ -56,18 +56,22 @@ typedef float *TCHAR;
 #ifdef _MSC_VER
 #define fileno   _fileno
 #endif
+#if 0 /* APN TBD */
 #define isnan(x)                _isnan(x)
-#define strcasecmp(s1,s2)       _stricmp(s1,s2)
-#define strncasecmp(s1,s2,n)    _strnicmp(s1,s2,n)
-#define vsnprintf               _vsnprintf
 #define isascii(c)              __isascii(c)
+#endif
+#define strcasecmp              _stricmp
+#define strncasecmp             _strnicmp
+#define vsnprintf               _vsnprintf
 #endif /* _MSC_VER || __BORLANDC__ */
 
 #ifdef __BORLANDC__
 #define isnan(x)                _isnan(x)
 #endif
 
+#if 0
 BLT_EXTERN double hypot(double x, double y);
+#endif
 
 #if defined(__BORLANDC__) || defined(_MSC_VER)
 #ifdef FINITE
@@ -75,6 +79,20 @@ BLT_EXTERN double hypot(double x, double y);
 #define FINITE(x)               _finite(x)
 #endif
 #endif /* __BORLANDC__ || _MSC_VER */
+
+#ifdef _MSC_VER
+typedef SSIZE_T ssize_t;
+
+#define S_IS(mode_, s_flags_) (((mode_) & S_IFMT) == (s_flags_))
+#define S_ISDIR(mode_) S_IS(mode_, S_IFDIR)
+#define S_ISREG(mode_) S_IS(mode_, S_IFREF)
+#define S_ISCHR(mode_) S_IS(mode_, S_IFCHR)
+
+#define R_OK 04
+#define F_OK 00
+#define W_OK 02
+
+#endif
 
 BLT_EXTERN ssize_t Blt_AsyncRead(int fd, char *buffer, size_t size);
 BLT_EXTERN ssize_t Blt_AsyncWrite(int fd, const char *buffer, 

@@ -279,7 +279,7 @@ GetNotifierWindow(void)
      * module.
      */
     if (hWindow == NULL) {
-        WNDCLASS class;
+        WNDCLASSA class;
         HINSTANCE hInstance;
 
         memset(&class, 0, sizeof(WNDCLASS));
@@ -834,12 +834,13 @@ static int
 TempFileName(char *name)                /* (out) Buffer to hold name of
                                          * temporary file. */
 {
-    if ((GetTempPath(MAX_PATH, name) > 0) &&
-        (GetTempFileName(name, "TCL", 0, name))) {
+    /* APN TBD - fix for Unicode */
+    if ((GetTempPathA(MAX_PATH, name) > 0) &&
+        (GetTempFileNameA(name, "TCL", 0, name))) {
         return 1;
     }
     /* Bail out and use the current working directory. */
-    return GetTempFileName(".", "TCL", 0, name);
+    return GetTempFileNameA(".", "TCL", 0, name);
 }
 
 /*
@@ -863,14 +864,15 @@ OpenRedirectFile(const char *path, DWORD accessFlags, DWORD createFlags)
     HANDLE hFile;
     DWORD attribFlags;
 
+    /* APN TBD - fix for Unicode */
     attribFlags = 0;
     if (createFlags & (TRUNCATE_EXISTING | OPEN_EXISTING)) {
-        attribFlags = GetFileAttributes(path);
+        attribFlags = GetFileAttributesA(path);
         if (attribFlags == 0xFFFFFFFF) {
             attribFlags = 0;
         }
     }
-    hFile = CreateFile(path,
+    hFile = CreateFileA(path,
         accessFlags,                    /* Access mode flags */
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,                           /* No security */
@@ -923,10 +925,12 @@ CreateTempFile(const char *data)        /* String to write into temp file, or
     HANDLE hFile;
     DWORD lastError;
 
+    /* APN TBD - fix for Unicode */
+
     if (!TempFileName(fileName)) {
         return INVALID_HANDLE_VALUE;
     }
-    hFile = CreateFile(
+    hFile = CreateFileA(
         fileName,                       /* File path */
         GENERIC_READ | GENERIC_WRITE,   /* Access mode */
         0,                              /* No sharing. */
@@ -973,7 +977,7 @@ CreateTempFile(const char *data)        /* String to write into temp file, or
   error:
     lastError = GetLastError();
     CloseHandle(hFile);
-    DeleteFile(fileName);               /* Do I need this? Delete on close? */
+    DeleteFileA(fileName);               /* Do I need this? Delete on close? */
     TclWinConvertError(lastError);
     return INVALID_HANDLE_VALUE;
 }
@@ -1141,7 +1145,7 @@ GetFullPath(
                                          * interpreter. */
     ApplicationType * typePtr)
 {                                       /* (out) Type of program */
-    TCHAR *rest;
+    char *rest;
     DWORD attr;
     int length;
     char cmd[MAX_PATH + 5];
@@ -1152,6 +1156,8 @@ GetFullPath(
     {
         "", ".com", ".exe", ".bat", NULL
     };
+
+    /* APN TBD - fix for Unicode */
 
     *typePtr = APPL_NONE;
 
@@ -1164,7 +1170,7 @@ GetFullPath(
         strcpy(ext, *p);                /* Append the DOS extension to the
                                          * program name. */
 
-        if (!SearchPath(
+        if (!SearchPathA(
                 NULL,                   /* Use standard Windows search
                                          * paths */
                 cmd,                    /* Program name */
@@ -1219,7 +1225,7 @@ GetFullPath(
         /* For 16-bit applications, convert the long executable path name to a
          * short one.  Otherwise the application may not be able to correctly
          * parse its own command line.  */
-        GetShortPathName(fullPath, fullPath, MAX_PATH);
+        GetShortPathNameA(fullPath, fullPath, MAX_PATH);
     }
     return TCL_OK;
 }
@@ -1587,9 +1593,9 @@ StartProcess(
     argv[0] = progPath;
 
     command = ConcatCmdArgs(interp, argc, argv, &ds);
-    result = CreateProcess(
+    result = CreateProcessA(
         NULL,                           /* Module name. */
-        (TCHAR *)command,               /* Command line */
+        command,                        /* Command line */
         NULL,                           /* Process security */
         NULL,                           /* Thread security */
         TRUE,                           /* Inherit handles */
