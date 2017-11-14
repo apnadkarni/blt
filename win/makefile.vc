@@ -1,0 +1,222 @@
+#------------------------------------------------------------- -*- makefile -*-
+#
+# Makefile for rbc
+#
+# Basic build, test and install
+#   nmake /f makefile.vc INSTALLDIR=c:\tcl TCLDIR=c:\path\to\tcl\sources TKDIR=c:\path\to\tk\sources
+#   nmake /f makefile.vc INSTALLDIR=c:\tcl test TCLDIR=c:\path\to\tcl\sources TKDIR=c:\path\to\tk\sources
+#   nmake /f makefile.vc INSTALLDIR=c:\tcl install TCLDIR=c:\path\to\tcl\sources TKDIR=c:\path\to\tk\sources
+# Note this extension needs both Tcl and Tk *source* to build.
+#
+# For other build options (debug, static etc.),
+# See TIP 477 (https://core.tcl.tk/tips/doc/trunk/tip/477.md) for
+# detailed documentation.
+# 
+# See the file "license.terms" for information on usage and redistribution
+# of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+#
+#------------------------------------------------------------------------------
+
+
+PROJECT = blt
+NEED_TK = 1
+NEED_TK_SOURCE = 1
+NEED_TCL_SOURCE = 1
+
+GENERICDIR = ..\src
+
+# TBD - 
+DOTVERSION = 4.0
+!include "rules-ext.vc"
+
+N_OBJS =		bltTed.o bltKiosk.o
+
+TK_OBJS =		$(TMP_DIR)\tkButton.obj \
+			$(TMP_DIR)\tkFrame.obj \
+			$(TMP_DIR)\bltScrollbar.obj 
+
+GRAPH_OBJS =		$(TMP_DIR)\bltGrAxis.obj \
+			$(TMP_DIR)\bltGrBar.obj \
+			$(TMP_DIR)\bltGrElem.obj \
+			$(TMP_DIR)\bltGrHairs.obj \
+			$(TMP_DIR)\bltGrIsoline.obj \
+			$(TMP_DIR)\bltGrLegd.obj \
+			$(TMP_DIR)\bltGrLine2.obj \
+			$(TMP_DIR)\bltGrMarker.obj \
+			$(TMP_DIR)\bltGrMisc.obj \
+			$(TMP_DIR)\bltGrPen.obj \
+			$(TMP_DIR)\bltGrPlay.obj \
+			$(TMP_DIR)\bltGrPs.obj \
+			$(TMP_DIR)\bltGrContour.obj \
+			$(TMP_DIR)\bltGraph.obj 
+
+TREEVIEW_OBJS =		$(TMP_DIR)\bltTreeView.obj \
+			$(TMP_DIR)\bltTreeViewStyle.obj 
+
+TABLEVIEW_OBJS =	$(TMP_DIR)\bltTableView.obj \
+			$(TMP_DIR)\bltTableViewStyle.obj 
+
+PICTURE_OBJS =		$(TMP_DIR)\bltPicture.obj \
+			$(TMP_DIR)\bltPictCanv.obj \
+			$(TMP_DIR)\bltPictColor.obj \
+			$(TMP_DIR)\bltPictMmx.obj \
+			$(TMP_DIR)\bltPictText.obj 
+
+PICTURE_PKG_OBJS =	$(TMP_DIR)\bltPictBmp.obj \
+			$(TMP_DIR)\bltPictGif.obj \
+			$(TMP_DIR)\bltPictIco.obj \
+			$(TMP_DIR)\bltPictJpg.obj \
+			$(TMP_DIR)\bltPictPbm.obj \
+			$(TMP_DIR)\bltPictPdf.obj \
+			$(TMP_DIR)\bltPictPhoto.obj \
+			$(TMP_DIR)\bltPictPng.obj \
+			$(TMP_DIR)\bltPictPs.obj \
+			$(TMP_DIR)\bltPictText.obj \
+			$(TMP_DIR)\bltPictTga.obj \
+			$(TMP_DIR)\bltPictTif.obj \
+			$(TMP_DIR)\bltPictXbm.obj \
+			$(TMP_DIR)\bltPictXpm.obj 
+
+TREE_OBJS =		$(TMP_DIR)\bltTree.obj \
+			$(TMP_DIR)\bltTreeCmd.obj \
+
+TREE_PKG_OBJS =		$(TMP_DIR)\bltTreeJson.obj  \
+			$(TMP_DIR)\bltTreeXml.obj 
+
+MISC_PKG_OBJS =		$(TMP_DIR)\bltSftp.obj
+
+DATATABLE_OBJS =	$(TMP_DIR)\bltDataTable.obj \
+			$(TMP_DIR)\bltDataTableCmd.obj \
+
+DATATABLE_PKG_OBJS =	$(TMP_DIR)\bltDataTableCsv.obj \
+			$(TMP_DIR)\bltDataTableMysql.obj \
+			$(TMP_DIR)\bltDataTablePsql.obj \
+			$(TMP_DIR)\bltDataTableSqlite.obj \
+			$(TMP_DIR)\bltDataTableTree.obj \
+			$(TMP_DIR)\bltDataTableTxt.obj \
+			$(TMP_DIR)\bltDataTableVec.obj \
+			$(TMP_DIR)\bltDataTableXml.obj 
+
+BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
+			$(TREE_OBJS) \
+			$(TMP_DIR)\bltAlloc.obj \
+			$(TMP_DIR)\bltArrayObj.obj \
+			$(TMP_DIR)\bltBase64.obj \
+			$(TMP_DIR)\bltBgexec.obj \
+			$(TMP_DIR)\bltChain.obj \
+			$(TMP_DIR)\bltCompare.obj \
+			$(TMP_DIR)\bltChecksum.obj \
+			$(TMP_DIR)\bltCsv.obj \
+			$(TMP_DIR)\bltDBuffer.obj \
+			$(TMP_DIR)\bltDebug.obj \
+			$(TMP_DIR)\bltHash.obj \
+			$(TMP_DIR)\bltInitCmd.obj \
+			$(TMP_DIR)\bltList.obj \
+			$(TMP_DIR)\bltMesh.obj \
+			$(TMP_DIR)\bltNsUtil.obj \
+			$(TMP_DIR)\bltParse.obj \
+			$(TMP_DIR)\bltPool.obj \
+			$(TMP_DIR)\bltSpline.obj \
+			$(TMP_DIR)\bltSwitch.obj \
+			$(TMP_DIR)\bltTags.obj \
+			$(TMP_DIR)\bltTclInit.obj \
+			$(TMP_DIR)\bltTclIntProcs.obj \
+			$(TMP_DIR)\bltTclProcs.obj \
+			$(TMP_DIR)\bltTimeStamp.obj \
+			$(TMP_DIR)\bltTri.obj \
+			$(TMP_DIR)\bltUtil.obj \
+			$(TMP_DIR)\bltVar.obj \
+			$(TMP_DIR)\bltVecCmd.obj \
+			$(TMP_DIR)\bltVecFft.obj \
+			$(TMP_DIR)\bltVecMath.obj \
+			$(TMP_DIR)\bltVector.obj \
+			$(TMP_DIR)\bltWatch.obj \
+			$(TMP_DIR)\bltWinDde.obj \
+			$(TMP_DIR)\bltWinPipe.obj \
+			$(TMP_DIR)\bltWinUtil.obj 
+
+BLT_TCL_OBJS =		$(BLT_TCL_SO_OBJS) \
+			$(TMP_DIR)\bltTclPkgsInit.obj \
+			$(TREE_PKG_OBJS) \
+			$(DATATABLE_PKG_OBJS) \
+			$(MISC_PKG_OBJS)
+
+BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
+			$(PICTURE_OBJS) \
+			$(TREEVIEW_OBJS) \
+			$(TABLEVIEW_OBJS) \
+			$(TMP_DIR)\bltAfm.obj \
+			$(TMP_DIR)\bltArcBall.obj \
+			$(TMP_DIR)\bltBeep.obj \
+			$(TMP_DIR)\bltBg.obj \
+			$(TMP_DIR)\bltBind.obj \
+			$(TMP_DIR)\bltBitmap.obj \
+			$(TMP_DIR)\bltBusy.obj \
+			$(TMP_DIR)\bltCanvEps.obj \
+			$(TMP_DIR)\bltComboButton.obj \
+			$(TMP_DIR)\bltComboEditor.obj \
+			$(TMP_DIR)\bltComboEntry.obj \
+			$(TMP_DIR)\bltComboMenu.obj \
+			$(TMP_DIR)\bltComboTree.obj \
+			$(TMP_DIR)\bltConfig.obj \
+			$(TMP_DIR)\bltContainer.obj \
+			$(TMP_DIR)\bltCutbuffer.obj \
+			$(TMP_DIR)\bltDragdrop.obj \
+			$(TMP_DIR)\bltDrawerset.obj \
+			$(TMP_DIR)\bltFilmstrip.obj \
+			$(TMP_DIR)\bltGrab.obj \
+			$(TMP_DIR)\bltHtext.obj \
+			$(TMP_DIR)\bltImage.obj \
+			$(TMP_DIR)\bltListView.obj \
+			$(TMP_DIR)\bltOldConfig.obj \
+			$(TMP_DIR)\bltPaintBrush.obj \
+			$(TMP_DIR)\bltPalette.obj \
+			$(TMP_DIR)\bltPaneset.obj \
+			$(TMP_DIR)\bltPhoto.obj \
+			$(TMP_DIR)\bltPictCmd.obj \
+			$(TMP_DIR)\bltPictDraw.obj \
+			$(TMP_DIR)\bltPs.obj \
+			$(TMP_DIR)\bltScrollset.obj \
+			$(TMP_DIR)\bltTable.obj \
+			$(TMP_DIR)\bltTabset.obj \
+			$(TMP_DIR)\bltText.obj \
+			$(TMP_DIR)\bltTifTags.obj \
+			$(TMP_DIR)\bltTkInit.obj \
+			$(TMP_DIR)\bltTkIntProcs.obj \
+			$(TMP_DIR)\bltTkProcs.obj \
+			$(TMP_DIR)\bltWinBitmap.obj \
+			$(TMP_DIR)\bltWinDraw.obj \
+			$(TMP_DIR)\bltWinFont.obj \
+			$(TMP_DIR)\bltWinPainter.obj \
+			$(TMP_DIR)\bltWinPrnt.obj \
+			$(TMP_DIR)\bltWinWindow.obj \
+			$(TMP_DIR)\bltWindow.obj \
+			$(TMP_DIR)\bltWinop.obj  \
+			$(TK_OBJS)
+
+BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
+			$(TMP_DIR)\bltTkPkgsInit.obj \
+			$(TMP_DIR)\bltStaticInit.obj \
+			$(PICTURE_PKG_OBJS) 
+
+PRJ_OBJS = $(BLT_TCL_SO_OBJS) $(BLT_TK_SO_OBJS)
+
+PRJ_DEFINES	=  -D_CRT_SECURE_NO_WARNINGS -DWIN32=1 -wd4018 -wd4244 -wd4267 -DNO_DDE -DNO_SFTP -DNO_BGEXEC
+
+!if "$(MACHINE)" == "AMD64"
+BLT_LIBDIR = .\deps\vc15\x64
+!else
+BLT_LIBDIR = .\deps\vc15\x64
+!endif
+PRJ_INCLUDES = -I"$(BLT_LIBDIR)\include"  -I"$(BLT_LIBDIR)\include\freetype2" 
+PRJ_LIBS = winspool.lib comdlg32.lib shlwapi.lib "$(BLT_LIBDIR)\lib\freetype_a.lib"
+
+!include "$(_RULESDIR)\targets.vc"
+
+install: default-install-docs-html install-demos
+default-install-libraries: install-prologues
+install-prologues:
+	@$(CPY) $(LIBDIR)\*.pro "$(SCRIPT_INSTALL_DIR)"
+pkgindex: default-pkgindex-tea
+install-demos: default-install-demos
+
