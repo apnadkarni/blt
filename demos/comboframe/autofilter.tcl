@@ -46,6 +46,7 @@ namespace eval autofilter {
 	iconvariable ""
 	column		2
 	table		""
+	tableview	""
 	showfreq	0
 	selectall	0
     }
@@ -138,6 +139,39 @@ proc ::autofilter::BuildTextSearchFilterMenu { w menu } {
         -icon $_private(icon) \
         -style mystyle \
         -command [list autofilter::BetweenTextSearch $w] 
+}
+
+proc autofilter::GetColumnFilterRows { tableview column } {
+    variable _private 
+    set list {}
+    set table [$tableview cget -table]
+    for { set c 0 } { $c < [$table numcolumns] } { incr c } {
+        set expr [$tableview column cget $c -filterdata]
+        if { $c == $column } {
+            continue
+        }
+        if { $expr == "" } {
+            continue
+        }
+        lappend list $expr
+    }
+    set expr [join $list " && "]
+    if { $expr != "" } {
+#       puts stderr "find \"$expr\" <= [$table find $expr]"
+        return [$table find $expr]
+    }
+    return "@all"
+}
+
+proc autofilter::ApplyFilters { tableview } {
+    set table [$tableview cget -table]
+    set rows [GetColumnFilterRows $tableview -1]
+    if { $rows == "@all" } {
+        eval $w row expose @all
+    } else {
+        eval $w row hide @all
+        eval $w row expose $rows
+    }
 }
 
 proc autofilter::EqualsNumberSearch { w } {
@@ -1054,14 +1088,14 @@ proc autofilter::CreateSearchDialog { w } {
     return $top
 }
 
-proc autofilter::ApplyFilters { w } {
-    set table [$w cget -table]
-    set rows [GetColumnFilterRows $w -1]
+proc autofilter::ApplyFilters { tableview } {
+    set table [$tableview cget -table]
+    set rows [GetColumnFilterRows $tableview -1]
     if { $rows == "@all" } {
-        eval $w row expose @all
+        eval $tableview row expose @all
     } else {
-        eval $w row hide @all
-        eval $w row expose $rows
+        eval $tableview row hide @all
+        eval $tableview row expose $rows
     }
 }
 
@@ -1093,10 +1127,12 @@ proc autofilter::UpdateFilter { w } {
 proc autofilter::AllFilter { w } {
     variable _private
 
-    set col $_private(column)
-    $w column configure $col -filterdata ""
-    ApplyFilters $w
+    $_private(tableview) column configure $_private(column) -filterdata ""
+    ApplyFilters $_private(tableview)
+    $w configure -text "All" -icon $_private(icon)
+    Ok $w
 }
+
 
 
 proc autofilter::Top10 { w } {
@@ -1166,21 +1202,23 @@ proc autofilter::Bottom100 { w } {
 proc autofilter::EmptyFilter { w } {
     variable _private
 
-    set col $_private(column)
-    set index [$w column index $col]
+    set index [$_private(tableview) column index $_private(column)]
     set expr " (!\[info exists ${index}\]) "
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
+    $_private(tableview) column configure $_private(column) -filterdata $expr
+    ApplyFilters $_private(tableview)
+    $w configure -text "Empty" -icon $_private(icon)
+    Ok $w
 }
 
-proc autofilter::NonEmptyFilter { w } {
+proc autofilter::NonemptyFilter { w } {
     variable _private
 
-    set col $_private(column)
-    set index [$w column index $col]
+    set index [$_private(tableview) column index $_private(column)]
     set expr " (\[info exists ${index}\]) "
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
+    $_private(tableview) column configure $_private(column) -filterdata $expr
+    $w configure -text "Nonempty" -icon $_private(icon)
+    ApplyFilters $_private(tableview)
+    Ok $w
 }
 
 proc autofilter::SingleValueFilter { w } {
@@ -1202,15 +1240,29 @@ proc autofilter::SingleValueFilter { w } {
     ApplyFilters $w
 }
 
-proc autofilter::NewAutoFilter { w table } {
+proc autofilter::AutoFilter { w tableview } {
     variable _private
 
-    set _private(table) $table
-    blt::tk::frame $w
+    blt::comboframe $w \
+	-restrictwidth min \
+	-window $w.frame \
+	-highlightthickness 0 \
+	-bd 1 -relief solid	-fill both \
+	-iconvariable myIcon \
+	-textvariable myText
 
-    blt::comboview $w.comboview \
-	-background white -bd 0
-    set view $w.comboview 
+    set table [$tableview cget -table]
+    set _private(table) $table
+    set _private(tableview) $tableview
+    set f $w.frame
+    blt::tk::frame $w.frame -bd 0 
+
+    blt::comboview $f.comboview \
+	-background white -bd 0 \
+        -iconvariable $_private(iconvariable)  \
+        -textvariable $_private(textvariable)  
+
+    set view $f.comboview 
     $view configure -font "Arial 9"
     if { ![$view style exists mystyle] } {
         $view style create mystyle -font "Arial 9 italic"
@@ -1285,84 +1337,75 @@ proc autofilter::NewAutoFilter { w table } {
     $table column type "Frequency" integer
     $table column values "Value" $values
     $table column values "Frequency" $freq
-    blt::scrollset $w.ss \
-	-window $w.ss.tableview \
-	-yscrollbar $w.ss.ys \
-	-xscrollbar $w.ss.xs
-    blt::tableview $w.ss.tableview \
+    blt::scrollset $f.ss \
+	-window $f.ss.tableview \
+	-yscrollbar $f.ss.ys \
+	-xscrollbar $f.ss.xs
+    blt::tableview $f.ss.tableview \
 	-table $table \
+	-bd 0 \
 	-width 2i \
 	-height 1i \
 	-highlightthickness 0 \
 	-columntitleborderwidth 0 \
-	-columntitlebackground grey97
-    blt::tk::scrollbar $w.ss.xs 
-    blt::tk::scrollbar $w.ss.ys
+	-columntitlebackground grey97 \
 
-    $w.ss.tableview style create checkbox checkbox -showvalue 0  -fillcolor "white"
-    $w.ss.tableview configure \
+    blt::tk::scrollbar $f.ss.xs 
+    blt::tk::scrollbar $f.ss.ys
+    $f.ss.tableview style configure default -font "Arial 9" -altbg white
+    $f.ss.tableview style create checkbox checkbox -showvalue 0 \
+	-fillcolor "white"  -altbg white
+    $f.ss.tableview configure \
 	-columntitlefont "Arial 8"
-    $w.ss.tableview column configure "Select" \
-	-title " " -style checkbox
-    $w.ss.tableview column configure "Value" \
+    $f.ss.tableview column configure "Select" \
+	-title " " -style checkbox -weight 0.0
+    $f.ss.tableview column configure "Value" \
 	-title [$_private(table) column label $_private(column)]
-    $w.ss.tableview column configure "Frequency" -hide yes
+    $f.ss.tableview column configure "Frequency" -hide yes
 
-    blt::tk::checkbutton $w.all \
+    blt::tk::checkbutton $f.all \
 	-text "Select All" -font "Arial 8" -relief flat \
 	-variable autofilter::_private(selectall) \
 	-command [list autofilter::SelectAll $w]
-    blt::tk::checkbutton $w.freq \
+    blt::tk::checkbutton $f.freq \
 	-text "Show Frequency" -font "Arial 8" -relief flat \
 	-variable autofilter::_private(showfreq) \
 	-command [list autofilter::ShowFrequency $w]
-    blt::tk::button $w.cancel -text "Cancel" \
-	-command [list autofilter::Cancel $w]
-    blt::tk::button $w.done -text "Done" \
-	-command [list autofilter::Ok $w]
+    blt::tk::button $f.cancel -text "Cancel" \
+	-command [list autofilter::Cancel $w] \
+	-font "Arial 10" 
+    blt::tk::button $f.done -text "Done" \
+	-command [list autofilter::Ok $w] \
+	-font "Arial 10" 
 
-    blt::table $w \
-	0,0 $w.comboview -fill both -cspan 2 \
-	1,0 $w.ss -fill both -cspan 2 \
-	2,0 $w.all -cspan 2 -anchor w \
-	3,0 $w.freq -cspan 2 -anchor w \
-	4,0 $w.cancel \
-	4,1 $w.done
+    blt::table $f \
+	0,0 $f.comboview -fill both -cspan 2 -pady {0 2} \
+	1,0 $f.ss -fill both -cspan 2 \
+	2,0 $f.all -cspan 2 -anchor w \
+	3,0 $f.freq -cspan 2 -anchor w \
+	4,0 $f.cancel -width 0.8i -pady 2 \
+	4,1 $f.done -width 0.8i -pady 2 
 }
     
 proc autofilter::ShowFrequency { w } {
     variable _private
-    $w.ss.tableview column configure Frequency -show $_private(showfreq)
+    $w.frame.ss.tableview column configure Frequency -show $_private(showfreq)
 }
 
 proc autofilter::SelectAll { w } {
     variable _private
-    set table [$w.ss.tableview cget -table]
+
+    set table [$w.frame.ss.tableview cget -table]
     $table set @all Select $_private(selectall)
     puts values=[$table column values Select]
 }
 
-proc autofilter::Cancel { w } {
-    set menu [winfo parent $w]
-    $menu unpost
+proc autofilter::Cancel { menu } {
+    $menu unpost 0
 }
 
-proc autofilter::Ok { w } {
-    variable _state
-    variable _table
-    
-    set selected {}
-    foreach name [array names _state] {
-	if { $_state($name) == "selected" } {
-	    array set elem $_table($name)
-	    lappend selected $elem(symbol)
-	}
-    }
-    set text [lsort -dictionary $selected]
-    set menu [winfo parent $w]
-    set mb [winfo parent $menu]
-    $mb configure -text [join $text {, }]
-    $menu unpost
+proc autofilter::Ok { menu } {
+    $menu unpost 1
 }
 
 set imgData {
@@ -1382,53 +1425,43 @@ if { [file exists ../library] } {
     set blt_library ../library
 }
 
-#    -postcommand {.e.m configure -width [winfo width .e] ; update} \
     set myIcon ""
 blt::comboentry .e \
     -image $image \
-    -textvariable myText1 \
-    -iconvariable myIcon1 \
+    -textvariable myText \
+    -iconvariable myIcon \
     -arrowrelief flat \
     -textwidth 0 \
-    -menu .e.m \
+    -menu .e.autofilter \
     -exportselection yes \
     -clearbutton yes 
 
 #    -bg $bg 
 
-blt::comboframe .e.m  \
-    -restrictwidth min \
-    -window .e.m.autofilter \
-    -highlightthickness 0 \
 
 set table [blt::datatable create]
 $table restore -file ./data/graph4a.tab
 $table sort -frequencyarray freqArr -column 2
+blt::scrollset .ss \
+    -window .ss.tableview \
+    -yscrollbar .ss.ys \
+    -xscrollbar .ss.xs
+blt::tableview .ss.tableview \
+    -table $table \
+    -bd 0 
+blt::tk::scrollbar .ss.xs 
+blt::tk::scrollbar .ss.ys
+
 parray freqArr
-autofilter::NewAutoFilter .e.m.autofilter $table
+autofilter::AutoFilter .e.autofilter .ss.tableview
 
 blt::table . \
-    0,0 .e -fill x -anchor n 
+    0,0 .e -anchor e -width 2i  \
+    1,0 .ss -fill both 
 
 
-bind .e.m <Leave> {
-    #.e.m.autofilter.comboview postcascade none
-    #.e.m.autofilter.comboview deselect
-    .e.m.autofilter.comboview deactivate
-    #        puts stderr "deselect comboview window"
-}
-
-bind .e.m <B1-Leave> {
-    puts stderr "button press left comboview window"
-}
-
-bind .e.m <ButtonRelease-1> {
-   puts stderr "Unmap comboframe"
-   .e.m.autofilter.comboview postcascade none
-}
-bind .e.m.autofilter <ButtonRelease-1> {
-   puts stderr "Unmap autofilter"
-   .e.m.autofilter.comboview postcascade none
+bind .e.autofilter <Leave> {
+    .e.autofilter.frame.comboview deactivate
 }
 
 after 5000 {

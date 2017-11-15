@@ -3028,10 +3028,10 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
  *
  * CheckBoxStyleGeometryProc --
  *
- *      Determines the space requirements for the "checkbox" given the value
- *      to be displayed.  Depending upon whether an icon or text is displayed
- *      and their relative placements, this routine computes the space needed
- *      for the text entry.
+ *      Determines the space requirements for the "checkbox" given the
+ *      value to be displayed.  Depending upon whether an icon or text is
+ *      displayed and their relative placements, this routine computes the
+ *      space needed for the text entry.
  *
  * Results:
  *      None.
@@ -3099,7 +3099,7 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
             gap = stylePtr->gap;
         }
     }
-    cellPtr->width  += stylePtr->gap + bw + iw + gap + tw;
+    cellPtr->width  += bw + iw + gap + tw;
     cellPtr->height += MAX3(bh, th, ih) | 0x1;
     cellPtr->width  = ODD(cellPtr->width);
     cellPtr->height = ODD(cellPtr->height);

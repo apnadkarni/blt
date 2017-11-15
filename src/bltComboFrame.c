@@ -98,12 +98,14 @@ static const char emptyString[] = "";
 #define DEF_HIGHLIGHT_BG  STD_NORMAL_BACKGROUND
 #define DEF_HIGHLIGHT_COLOR             RGB_BLACK
 #define DEF_HIGHLIGHT_WIDTH             "2"
+#define DEF_ICON          ((char *)NULL)
 #define DEF_ICON_VARIABLE ((char *)NULL)
 #define DEF_PADX          "0"
 #define DEF_PADY          "0"
 #define DEF_POSTCOMMAND   ((char *)NULL)
 #define DEF_RELIEF        "solid"
 #define DEF_TAKE_FOCUS    "0"
+#define DEF_TEXT          ((char *)NULL)
 #define DEF_TEXT_VARIABLE ((char *)NULL)
 #define DEF_UNPOSTCOMMAND ((char *)NULL)
 #define DEF_WIDTH         "0"
@@ -155,6 +157,23 @@ struct _ComboFrame {
                                          * widget.  Used to delete widget
                                          * command. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
+    Tcl_Obj *iconObjPtr;                /* Icon of the the selected item.
+                                         * This value is set by user code.
+                                         */
+    Tcl_Obj *textObjPtr;                /* Text of the the selected item. 
+                                         * This value is set by user code.
+                                         */
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the value of the -icon
+                                         * option when the menu is unposted 
+                                         * successfully.  */
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If
+                                         * non-NULL, this variable will be
+                                         * set to the value of the -text
+                                         * option when the menu is unposted
+                                         * successfully. */
+
     Tcl_Obj *resetCmdObjPtr;            /* If non-NULL, command to be
                                          * executed when this menu is
                                          * has been reset. */
@@ -236,6 +255,11 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
         Blt_Offset(ComboFrame, highlightWidth), 0},
+    {BLT_CONFIG_OBJ, "-icon", "icon", "Icon", DEF_ICON, 
+        Blt_Offset(ComboFrame, iconObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
+        DEF_ICON_VARIABLE, Blt_Offset(ComboFrame, iconVarObjPtr), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_PADX,
         Blt_Offset(ComboFrame, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_PADY,
@@ -253,6 +277,11 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, &restrictOption},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKE_FOCUS, Blt_Offset(ComboFrame, takeFocusObjPtr), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-text", "text", "Text", DEF_TEXT, 
+        Blt_Offset(ComboFrame, textObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
+        DEF_TEXT_VARIABLE, Blt_Offset(ComboFrame, textVarObjPtr), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-unpostcommand", "unpostCommand", "UnpostCommand", 
         DEF_UNPOSTCOMMAND, Blt_Offset(ComboFrame, unpostCmdObjPtr), 
@@ -971,6 +1000,50 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
 /*
  *---------------------------------------------------------------------------
  *
+ * UpdateTextAndIconVars --
+ *
+ *      Sets the -textvariable and -iconvariable variables.
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+UpdateTextAndIconVars(Tcl_Interp *interp, ComboFrame *comboPtr)
+{
+    if (comboPtr->iconVarObjPtr != NULL) {
+        Tcl_Obj *objPtr;
+        
+        if (comboPtr->iconObjPtr == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        } else {
+            objPtr = comboPtr->iconObjPtr;
+        }
+        if (Tcl_ObjSetVar2(interp, comboPtr->iconVarObjPtr, NULL, objPtr, 
+                           TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
+            return TCL_ERROR;
+        }
+    }
+    if (comboPtr->textVarObjPtr != NULL) {
+        Tcl_Obj *objPtr;
+        
+        if (comboPtr->textObjPtr == NULL) {
+            objPtr = Tcl_NewStringObj("", -1);
+        } else {
+            objPtr = comboPtr->textObjPtr;
+        }
+        if (Tcl_ObjSetVar2(interp, comboPtr->textVarObjPtr, NULL, objPtr, 
+                           TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
+            return TCL_ERROR;
+        }
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * PostWindowSwitchProc --
  *
  *      Converts a window name into Tk window.
@@ -1386,9 +1459,11 @@ ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * UnpostOp --
  *
- *      Unposts this menu.
+ *      Unposts this menu.  Status can be 1 for "ok" or 0 for "cancel".
+ *      If true, the -iconvariable and -textvariable variables are updated
+ *      with the current values of -icon and -text respectively.
  *
- *      pathName post 
+ *      pathName unpost ?bool? 
  *
  *---------------------------------------------------------------------------
  */
@@ -1397,10 +1472,22 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     ComboFrame *comboPtr = clientData;
+    int state;
 
+    state = FALSE;
+    if (objc == 3) {
+        if (Tcl_GetBooleanFromObj(interp, objv[2], &state) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
     if (!WithdrawMenu(comboPtr)) {
         fprintf(stderr, "menu is already unposted\n");
         return TCL_OK;          /* This menu is already unposted. */
+    }
+    if (state) {
+        if (UpdateTextAndIconVars(interp, comboPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     /*
      * If there is a unpost command for the menu, execute it.  
@@ -1525,7 +1612,7 @@ static Blt_OpSpec frameOps[] =
     {"overbutton",  1, OverButtonOp,  4, 4, "x y",},
     {"post",        1, PostOp,        2, 0, "switches ...",},
     {"reset",       1, ResetOp,       3, 3, "string",},
-    {"unpost",      1, UnpostOp,      2, 2, "",},
+    {"unpost",      1, UnpostOp,      2, 3, "?bool?",},
     {"withdraw",    1, WithdrawOp,    2, 2, "",},
 };
 
