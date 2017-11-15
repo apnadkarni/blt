@@ -44,7 +44,10 @@ namespace eval autofilter {
 	icon                autofilter::filter
 	textvariable ""
 	iconvariable ""
-	column		0
+	column		2
+	table		""
+	showfreq	0
+	selectall	0
     }
 }
 
@@ -1203,10 +1206,10 @@ proc autofilter::NewAutoFilter { w table } {
     variable _private
 
     set _private(table) $table
-    blt::tk::frame $w -bg white
+    blt::tk::frame $w
 
     blt::comboview $w.comboview \
-	-background white
+	-background white -bd 0
     set view $w.comboview 
     $view configure -font "Arial 9"
     if { ![$view style exists mystyle] } {
@@ -1273,9 +1276,15 @@ proc autofilter::NewAutoFilter { w table } {
     }
 
     set table [blt::datatable create]
+    $table column create -label "Select"  
     $table column create -label "Value"  
-    $table column create -label "Frequency"
-
+    $table column create -label "Frequency" 
+    set values [$_private(table) sort -frequencylist freq \
+		    -column $_private(column) -values -unique] 
+    $table column type "Value" [$_private(table) column type $_private(column)]
+    $table column type "Frequency" integer
+    $table column values "Value" $values
+    $table column values "Frequency" $freq
     blt::scrollset $w.ss \
 	-window $w.ss.tableview \
 	-yscrollbar $w.ss.ys \
@@ -1283,17 +1292,30 @@ proc autofilter::NewAutoFilter { w table } {
     blt::tableview $w.ss.tableview \
 	-table $table \
 	-width 2i \
-	-height 0 
+	-height 1i \
+	-highlightthickness 0 \
+	-columntitleborderwidth 0 \
+	-columntitlebackground grey97
     blt::tk::scrollbar $w.ss.xs 
     blt::tk::scrollbar $w.ss.ys
 
+    $w.ss.tableview style create checkbox checkbox -showvalue 0  -fillcolor "white"
     $w.ss.tableview configure \
 	-columntitlefont "Arial 8"
-    $w.ss.tableview column configure "Value"
-    $w.ss.tableview column configure "Frequency"
+    $w.ss.tableview column configure "Select" \
+	-title " " -style checkbox
+    $w.ss.tableview column configure "Value" \
+	-title [$_private(table) column label $_private(column)]
+    $w.ss.tableview column configure "Frequency" -hide yes
 
-    blt::tk::button $w.all -text "All" -font "Arial 8"
-    blt::tk::button $w.none -text "None" -font "Arial 8"
+    blt::tk::checkbutton $w.all \
+	-text "Select All" -font "Arial 8" -relief flat \
+	-variable autofilter::_private(selectall) \
+	-command [list autofilter::SelectAll $w]
+    blt::tk::checkbutton $w.freq \
+	-text "Show Frequency" -font "Arial 8" -relief flat \
+	-variable autofilter::_private(showfreq) \
+	-command [list autofilter::ShowFrequency $w]
     blt::tk::button $w.cancel -text "Cancel" \
 	-command [list autofilter::Cancel $w]
     blt::tk::button $w.done -text "Done" \
@@ -1302,12 +1324,24 @@ proc autofilter::NewAutoFilter { w table } {
     blt::table $w \
 	0,0 $w.comboview -fill both -cspan 2 \
 	1,0 $w.ss -fill both -cspan 2 \
-	2,0 $w.all \
-	2,1 $w.none \
-	3,0 $w.cancel \
-	3,1 $w.done
+	2,0 $w.all -cspan 2 -anchor w \
+	3,0 $w.freq -cspan 2 -anchor w \
+	4,0 $w.cancel \
+	4,1 $w.done
 }
     
+proc autofilter::ShowFrequency { w } {
+    variable _private
+    $w.ss.tableview column configure Frequency -show $_private(showfreq)
+}
+
+proc autofilter::SelectAll { w } {
+    variable _private
+    set table [$w.ss.tableview cget -table]
+    $table set @all Select $_private(selectall)
+    puts values=[$table column values Select]
+}
+
 proc autofilter::Cancel { w } {
     set menu [winfo parent $w]
     $menu unpost
@@ -1377,15 +1411,16 @@ blt::table . \
     0,0 .e -fill x -anchor n 
 
 
-bind .e.m <Motion> {
-   if { [winfo containing %X %Y] != ".e.m.autofilter.comboview" &&
-   	[winfo containing %X %Y] != "" } {
-	#.e.m.autofilter.comboview postcascade none
-	#.e.m.autofilter.comboview deselect
-	.e.m.autofilter.comboview deactivate
-        puts stderr "deselect comboview window"
-    }
-    }
+bind .e.m <Leave> {
+    #.e.m.autofilter.comboview postcascade none
+    #.e.m.autofilter.comboview deselect
+    .e.m.autofilter.comboview deactivate
+    #        puts stderr "deselect comboview window"
+}
+
+bind .e.m <B1-Leave> {
+    puts stderr "button press left comboview window"
+}
 
 bind .e.m <ButtonRelease-1> {
    puts stderr "Unmap comboframe"
