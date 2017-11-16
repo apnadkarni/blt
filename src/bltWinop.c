@@ -66,6 +66,8 @@
 static Tcl_ObjCmdProc WinopCmd;
 
 typedef struct _WindowNode WindowNode;
+static int selectTableInitialized = 0;
+static Blt_HashTable selectTable;
 
 /*
  *  WindowNode --
@@ -519,6 +521,82 @@ FillTree(Tcl_Interp *interp, Display *display, Window window, Blt_Tree tree,
 
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LostSelection --
+ *
+ *      This procedure is called back by Tk when the selection is grabbed
+ *      away.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The existing selection is unhighlighted, and the window is marked
+ *      as not containing a selection.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+LostSelection(ClientData clientData)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    assert(selectTableInitialized);
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tcl_DStringFree(dsPtr);
+        Blt_Free(dsPtr);
+        Blt_DeleteHashEntry(&selectTable, hPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionProc --
+ *
+ *      This procedure is called back by Tk when the selection is requested
+ *      by someone.  It returns part or all of the selection in a buffer
+ *      provided by the caller.
+ *
+ * Results:
+ *      The return value is the number of non-NULL bytes stored at buffer.
+ *      Buffer is filled (or partially filled) with a NUL-terminated string
+ *      containing part or all of the selection, as given by offset and
+ *      maxBytes.
+ *
+ * Side effects:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SelectionProc(
+    ClientData clientData,              /* Information about the widget. */
+    int offset,                         /* Offset within selection of first
+                                         * character to be returned. */
+    char *buffer,                       /* Location in which to place
+                                         * selection. */
+    int maxBytes)                       /* Maximum number of bytes to place
+                                         * at buffer, not including
+                                         * terminating NULL character. */
+{
+    Tcl_DString *dsPtr = clientData;
+    int size;
+
+    size = Tcl_DStringLength(dsPtr) - offset;
+    strncpy(buffer, Tcl_DStringValue(dsPtr) + offset, maxBytes);
+    buffer[maxBytes] = '\0';
+    return (size > maxBytes) ? maxBytes : size;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -776,17 +854,239 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- *  SetScreenSizeOp --
+ * SelectionAppendOp
+ *
+ *      Add strings to the selection.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection changes.
+ *
+ *      blt::winop selection append ?string...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionAppendOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                  Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+    int isNew;
+    Tcl_DString *dsPtr;
+    int i;
+
+    hPtr = Blt_CreateHashEntry(&selectTable, tkMain, &isNew);
+    if (isNew) {
+        dsPtr = Blt_AssertMalloc(sizeof(Tcl_DString));
+        Tcl_DStringInit(dsPtr);
+        Blt_SetHashValue(hPtr, dsPtr);
+        Tk_CreateSelHandler(tkMain, XA_PRIMARY, XA_STRING, SelectionProc,
+                            dsPtr, XA_STRING);
+    }
+    dsPtr = Blt_GetHashValue(hPtr);
+    for (i = 3; i < objc; i++) {
+        const char *string;
+        int length;
+
+        string = Tcl_GetStringFromObj(objv[i], &length);
+        Tcl_DStringAppend(dsPtr, string, length);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionClearOp
+ *
+ *      Clears the selection.
+ *
+ *      blt::winop selection clear 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionClearOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tcl_DStringFree(dsPtr);
+        Blt_Free(dsPtr);
+        Blt_DeleteHashEntry(&selectTable, hPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionCurrentOp
+ *
+ *      Returns the current selection.
+ *
+ *      blt::winop selection current 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), Tcl_DStringValue(dsPtr),
+                         Tcl_DStringLength(dsPtr));
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionExportOp
+ *
+ *      Exports the current selection.  It is not an error if not selection
+ *      is present.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection is exported.
+ *
+ *      blt::winop selection export
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tk_OwnSelection(tkMain, XA_PRIMARY, LostSelection, dsPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionPresentOp
+ *
+ *      Returns 1 if there is a selection and 0 if it isn't.
+ *
+ * Results:
+ *      A standard TCL result.  interp->result will contain a boolean string
+ *      indicating if there is a selection.
+ *
+ *      pathName selection present 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    int state;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    state = (hPtr != NULL);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionOp --
+ *
+ *      This procedure handles the individual options for text selections.
+ *      The selected text is designated by start and end indices into the text
+ *      pool.  The selected segment has both a anchored and unanchored ends.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection changes.
+ *
+ *      pathName selection op args
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec selectionOps[] =
+{
+    {"append",   1, SelectionAppendOp,   3, 0, "?string...?",},
+    {"clear",    2, SelectionClearOp,    3, 3, "",},
+    {"current",  2, SelectionCurrentOp,  3, 3, "",},
+    {"export",   1, SelectionExportOp,   3, 3, "",},
+    {"present",  1, SelectionPresentOp,  3, 3, "",},
+};
+static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
+
+static int
+SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    if (!selectTableInitialized) {
+        Blt_InitHashTable(&selectTable, BLT_ONE_WORD_KEYS);
+        selectTableInitialized = TRUE;
+    }
+    proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG2, 
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc) (clientData, interp, objc, objv);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ *  ScreenSizeOp --
  *
  *      Sets the size of the screen.
  *
- *      blt::winop setscreensize width height
+ *      blt::winop screensize width height
  *
  * ------------------------------------------------------------------------ 
  */
 #if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
 static int
-SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+ScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
     Display *display;
@@ -1059,8 +1359,9 @@ static Blt_OpSpec winOps[] =
     {"query",    1, QueryOp,    2, 2, "",},
     {"raise",    1, RaiseOp,    2, 0, "?windowName ...?",},
 #if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
-    {"screensize", 1, SetScreenSizeOp, 4, 4, "w h",},
+    {"screensize", 1, ScreenSizeOp, 4, 4, "w h",},
 #endif  /* HAVE_RANDR && HAVE_XRRGETSCREENRESOURCES */
+    {"selection", 1, SelectionOp, 2, 0, "args...",},
     {"top",      2, TopOp,      4, 4, "x y",},
     {"tree",     2, TreeOp,     4, 4, "windowName treeName",},
     {"unmap",    1, UnmapOp,    2, 0, "?windowName ...?",},

@@ -1209,9 +1209,11 @@ ClearSelections(TableView *viewPtr)
 {
     switch (viewPtr->selectMode) {
     case SELECT_CELLS:
-        Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
-        Blt_InitHashTable(&viewPtr->selectCells.cellTable,
-                          sizeof(CellKey)/sizeof(int));
+        if (viewPtr->selectCells.cellTable.numEntries > 0) {
+            Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
+            Blt_InitHashTable(&viewPtr->selectCells.cellTable,
+                              sizeof(CellKey)/sizeof(int));
+        }
         break;
     case SELECT_SINGLE_ROW:
     case SELECT_MULTIPLE_ROWS:
@@ -1226,10 +1228,6 @@ ClearSelections(TableView *viewPtr)
             Blt_Chain_Reset(viewPtr->selectRows.list);
         }
         break;
-    }
-    EventuallyRedraw(viewPtr);
-    if (viewPtr->selectCmdObjPtr != NULL) {
-        EventuallyInvokeSelectCommand(viewPtr);
     }
 }
 
@@ -4587,6 +4585,7 @@ LostSelection(ClientData clientData)
 
     if (viewPtr->flags & SELECT_EXPORT) {
         ClearSelections(viewPtr);
+        EventuallyRedraw(viewPtr);
     }
 }
 
@@ -11006,6 +11005,10 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     ClearSelections(viewPtr);
+    EventuallyRedraw(viewPtr);
+    if (viewPtr->selectCmdObjPtr != NULL) {
+        EventuallyInvokeSelectCommand(viewPtr);
+    }
     return TCL_OK;
 }
 
