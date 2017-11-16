@@ -556,6 +556,8 @@ ComputeGeometry(ComboFrame *comboPtr)
 
     w = Tk_ReqWidth(comboPtr->child);
     h = Tk_ReqHeight(comboPtr->child);
+    fprintf(stderr, "ComputeGeometry %s: Req w=%d h=%d\n", 
+            Tk_PathName(comboPtr->tkwin), w, h);
     w += 2 * (comboPtr->highlightWidth + comboPtr->borderWidth) + 
         PADDING(comboPtr->padX);
     h += 2 * (comboPtr->highlightWidth + comboPtr->borderWidth) +
@@ -1309,9 +1311,18 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     comboPtr->post.menuWidth = comboPtr->post.x2 - comboPtr->post.x1;
     comboPtr->post.menuHeight = comboPtr->post.y2 - comboPtr->post.y1;
+    fprintf(stderr, "PostOp: x1=%d y1=%d x2=%d y2=%d menuWidth=%d lastMenuWidth=%d normalWidth=%d\n", 
+            comboPtr->post.x1, comboPtr->post.y1, 
+            comboPtr->post.x2, comboPtr->post.y2, 
+            comboPtr->post.menuWidth, 
+            comboPtr->post.lastMenuWidth, comboPtr->normalWidth);
+            
     if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth)) {
+        fprintf(stderr,"1. ComputeGeometry from PostOp\n");
         ComputeGeometry(comboPtr);
     }
+    fprintf(stderr, "PostOp: new menuWidth=%d normalWidth=%d\n", 
+            comboPtr->post.menuWidth, comboPtr->normalWidth);
     comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
     x = 0;                              /* Suppress compiler warning; */
     y = comboPtr->post.y2;
@@ -1335,7 +1346,10 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         break;
     }
+    fprintf(stderr, "PostOp: before FixMenuCoords x=%d y=%d\n", x, y);
     FixMenuCoords(comboPtr, &x, &y);
+    fprintf(stderr, "PostOp: after FixMenuCoords x=%d y=%d\n", x, y);
+
     /*
      * If there is a post command for the menu, execute it.  This may
      * change the size of the menu, so be sure to recompute the menu's
@@ -1358,6 +1372,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (comboPtr->tkwin == NULL) {
             return TCL_OK;
         }
+        fprintf(stderr,"2. ComputeGeometry from PostOp\n");
         ComputeGeometry(comboPtr);
     }
 
@@ -1970,6 +1985,7 @@ DisplayProc(ClientData clientData)
          * coordinates of the comboframe's new layout.  */
         return;
     }
+    fprintf(stderr,"3. ComputeGeometry from DisplayOp\n");
     ComputeGeometry(comboPtr);
     /*
      * Create a pixmap the size of the window for double buffering.

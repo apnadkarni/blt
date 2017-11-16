@@ -580,6 +580,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
     # the menu just below the menubutton, as for a pull-down.
 
     update idletasks
+    update
     if { [catch { $w post } msg] != 0 } {
 	# Error posting menu (e.g. bogus -postcommand). Unpost it and
 	# reflect the error.

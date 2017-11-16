@@ -1385,6 +1385,9 @@ proc autofilter::AutoFilter { w tableview } {
 	3,0 $f.freq -cspan 2 -anchor w \
 	4,0 $f.cancel -width 0.8i -pady 2 \
 	4,1 $f.done -width 0.8i -pady 2 
+    puts stderr "update in Autofilter"
+    update idletasks
+    update 
 }
     
 proc autofilter::ShowFrequency { w } {

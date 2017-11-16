@@ -681,7 +681,11 @@ GetSlaveReqWidth(Scrollset *setPtr)
     width = 2 * setPtr->iPadX;
     if (setPtr->slave != NULL) {
         width += Tk_ReqWidth(setPtr->slave);
+    fprintf(stderr, "1. GetSlaveReqWidth(%s)=%d\n", Tk_PathName(setPtr->slave),
+            Tk_ReqWidth(setPtr->slave));
     }
+    fprintf(stderr, "2. GetSlaveReqWidth(%s)=%d\n", Tk_PathName(setPtr->tkwin), 
+            width);
     width = GetBoundedWidth(width, &setPtr->reqSlaveWidth);
     return width;
 }
@@ -941,6 +945,7 @@ ComputeGeometry(Scrollset *setPtr)
 
     slaveWidth  = GetSlaveReqWidth(setPtr);
     slaveHeight = GetSlaveReqHeight(setPtr);
+    fprintf(stderr, "1. slaveWidth=%d\n", slaveWidth);
     if ((setPtr->flags & SLAVE_XVIEW) == 0) {
         setPtr->worldWidth = slaveWidth;
         setPtr->flags &= ~X_DISPLAY;
@@ -980,12 +985,14 @@ ComputeGeometry(Scrollset *setPtr)
             if (slaveWidth > setPtr->reqSlaveWidth.max) {
                 slaveWidth = setPtr->reqSlaveWidth.max;
             }
+    fprintf(stderr, "2. slaveWidth=%d\n", slaveWidth);
         } else {
             dx = (cavityWidth - slaveWidth);
         }
         setPtr->xOffset = 0;
     } else if (setPtr->flags & SLAVE_XVIEW) {
-        slaveWidth = cavityWidth;
+        slaveWidth = cavityWidth; 
+   fprintf(stderr, "3. slaveWidth=%d\n", slaveWidth);
     }
     if ((cavityHeight - PADDING(setPtr->padY)) > slaveHeight) {
         cavityHeight -= PADDING(setPtr->padY);
@@ -1009,7 +1016,9 @@ ComputeGeometry(Scrollset *setPtr)
     setPtr->shangleWidth  = setPtr->yScrollbarWidth;
     setPtr->yScrollbarHeight = cavityHeight - setPtr->xScrollbarHeight;
     setPtr->xScrollbarWidth  = cavityWidth  - setPtr->yScrollbarWidth;
-        
+    fprintf(stderr, "ComputeGeometry(%s): slaveWidth=%d, cavityWidth=%d yScrollbarWidth=%d\n",
+            Tk_PathName(setPtr->tkwin), 
+            slaveWidth, cavityWidth, setPtr->yScrollbarWidth);
     if (setPtr->slave != NULL) {
         if ((setPtr->xScrollbar == NULL) && (slaveWidth > cavityWidth)) {
             slaveWidth = cavityWidth;

@@ -197,8 +197,8 @@ command.  The following operations are available for *comboframe* widgets:
     Holds the name of an image associated with the selected item.
     *ImageName* is the name of an Tk photo or BLT picture.  The image
     is not displayed by the *comboframe* widget.  If the **-iconvariable**
-    option is set, the value of that variable will be set to *imageName*.
-    The default is "".
+    option is set, the value of that variable will be set to *imageName*
+    when the menu if unposted. The default is "".
 
   **-iconvariable** *varName*
     Specifies the name of a global TCL variable that contains the name of
