@@ -1210,7 +1210,8 @@ ClearSelections(TableView *viewPtr)
     switch (viewPtr->selectMode) {
     case SELECT_CELLS:
         Blt_DeleteHashTable(&viewPtr->selectCells.cellTable);
-        Blt_InitHashTable(&viewPtr->selectCells.cellTable, BLT_ONE_WORD_KEYS);
+        Blt_InitHashTable(&viewPtr->selectCells.cellTable,
+                          sizeof(CellKey)/sizeof(int));
         break;
     case SELECT_SINGLE_ROW:
     case SELECT_MULTIPLE_ROWS:
@@ -3234,10 +3235,7 @@ DestroyCell(Cell *cellPtr)
             (*cellPtr->stylePtr->classPtr->freeProc)(cellPtr->stylePtr);
         }
     }
-    if ((keyPtr->rowPtr == viewPtr->selectRows.anchorPtr) || 
-        (keyPtr->rowPtr == viewPtr->selectRows.markPtr)) {
-        viewPtr->selectRows.markPtr = viewPtr->selectRows.anchorPtr = NULL;
-    }
+    ClearSelections(viewPtr);
     if (cellPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&viewPtr->cellTable, cellPtr->hashPtr);
     }
@@ -4519,7 +4517,7 @@ IterateCellsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
     int i;
 
     chain = Blt_Chain_Create();
-    Blt_InitHashTableWithPool(&cellTable, BLT_ONE_WORD_KEYS);
+    Blt_InitHashTableWithPool(&cellTable, sizeof(CellKey)/sizeof(int));
     for (i = 0; i < objc; i++) {
         Blt_Chain cells;
         Blt_ChainLink link;
@@ -4535,8 +4533,10 @@ IterateCellsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
             cellPtr = Blt_Chain_GetValue(link);
             if (cellPtr != NULL) {
                 int isNew;
+                CellKey *keyPtr;
 
-                Blt_CreateHashEntry(&cellTable, (char *)cellPtr, &isNew);
+                keyPtr = GetKey(cellPtr);
+                Blt_CreateHashEntry(&cellTable, (char *)keyPtr, &isNew);
                 if (isNew) {
                     Blt_Chain_Append(chain, cellPtr);
                 }
@@ -4719,6 +4719,7 @@ AddSelectionRange(TableView *viewPtr)
     CellSelection *selPtr;
     Row *rowPtr, *firstRowPtr, *lastRowPtr;
     Column *firstColPtr, *lastColPtr;
+    CellKey key;
 
     selPtr = &viewPtr->selectCells;
     if (selPtr->anchorPtr == NULL) {
@@ -4741,12 +4742,12 @@ AddSelectionRange(TableView *viewPtr)
     for (rowPtr = firstRowPtr; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
         Column *colPtr;
 
+        key.rowPtr = rowPtr;
         for (colPtr = firstColPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
-            Cell *cellPtr;
             int isNew;
 
-            cellPtr = GetCell(viewPtr, rowPtr, colPtr);
-            Blt_CreateHashEntry(&selPtr->cellTable, cellPtr, &isNew);
+            key.colPtr = colPtr;
+            Blt_CreateHashEntry(&selPtr->cellTable, &key, &isNew);
             if (colPtr == lastColPtr) {
                 break;
             }
@@ -4786,11 +4787,9 @@ GetSelectedCells(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
     minColPtr = maxColPtr = NULL;
     for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
          hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-        Cell *cellPtr;
         CellKey *keyPtr;
 
-        cellPtr = (Cell *)Blt_GetHashKey(&selPtr->cellTable, hPtr);
-        keyPtr = GetKey(cellPtr);
+        keyPtr = (CellKey *)Blt_GetHashKey(&selPtr->cellTable, hPtr);
         if ((minRowPtr == NULL) || (minRowPtr->index > keyPtr->rowPtr->index)){
             minRowPtr = keyPtr->rowPtr;
         } 
@@ -4823,7 +4822,8 @@ GetSelectedRows(TableView *viewPtr, CellKey *anchorPtr, CellKey *markPtr)
 
         selected = FALSE;
         rowPtr->flags &= ~HAS_SELECTION;
-        for (colPtr = anchorPtr->colPtr; colPtr != NULL; colPtr = colPtr->nextPtr) {
+        for (colPtr = anchorPtr->colPtr; colPtr != NULL; 
+             colPtr = colPtr->nextPtr) {
             CellKey key;
 
             key.colPtr = colPtr;
@@ -4933,26 +4933,30 @@ ConfigureRow(TableView *viewPtr, Row *rowPtr)
 static void
 PrintEventFlags(int type)
 {
-    fprintf(stderr, "event flags are: ");
+    Tcl_DString ds;
+
+    Tcl_DStringInit(&ds);
+    Tcl_DStringAppend(&ds "event flags are: ", -1);
     if (type & TABLE_NOTIFY_COLUMN_CHANGED) {
-        fprintf(stderr, "-column ");
+        Tcl_DStringAppend(&ds "-column ", -1);
     } 
     if (type & TABLE_NOTIFY_ROW_CHANGED) {
-        fprintf(stderr, "-row ");
+        Tcl_DStringAppend(&ds "-row ", -1);
     } 
     if (type & TABLE_NOTIFY_CREATE) {
-        fprintf(stderr, "-create ");
+        Tcl_DStringAppend(&ds "-create ", -1);
     } 
     if (type & TABLE_NOTIFY_DELETE) {
-        fprintf(stderr, "-delete ");
+        Tcl_DStringAppend(&ds "-delete ", -1);
     }
     if (type & TABLE_NOTIFY_MOVE) {
-        fprintf(stderr, "-move ");
+        Tcl_DStringAppend(&ds "-move ", -1);
     }
     if (type & TABLE_NOTIFY_RELABEL) {
-        fprintf(stderr, "-relabel ");
+        Tcl_DStringAppend(&ds "-relabel ", -1);
     }
-    fprintf(stderr, "\n");
+    fprintf(stderr, "%s\n", Tcl_DStringValue(&ds));
+    Tcl_DStringFree(&ds);
 }
 #endif
 
@@ -5272,6 +5276,7 @@ ResetTableView(TableView *viewPtr)
         Cell *cellPtr;
 
         cellPtr = Blt_GetHashValue(hPtr);
+        cellPtr->hashPtr = NULL;
         DestroyCell(cellPtr);
     }
     Blt_SetCurrentItem(viewPtr->bindTable, NULL, NULL);
@@ -5583,7 +5588,8 @@ SelectionProc(
             GetSelectedCells(viewPtr, &anchor, &mark);
             GetSelectedRows(viewPtr, &anchor, &mark);
             GetSelectedColumns(viewPtr, &anchor, &mark);
-            for (rowPtr = anchor.rowPtr; rowPtr != NULL; 
+            for (rowPtr = anchor.rowPtr; 
+                 rowPtr != NULL && rowPtr->index <= mark.rowPtr->index; 
                  rowPtr = rowPtr->nextPtr) {
                 Column *colPtr;
 
@@ -7656,12 +7662,10 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 
             for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
                  hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-                Cell *cellPtr;
                 CellKey *keyPtr;
                 Tcl_Obj *objPtr, *subListObjPtr;
                 
-                cellPtr = Blt_GetHashValue(hPtr);
-                keyPtr = GetKey(cellPtr);
+                keyPtr = Blt_GetHashValue(hPtr);
                 subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
                 objPtr = GetRowIndexObj(viewPtr, keyPtr->rowPtr);
                 Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
@@ -11088,7 +11092,7 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (((rowPtr->flags|colPtr->flags) & (HIDDEN | DISABLED)) == 0) {
             Blt_HashEntry *hPtr;
 
-            hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, cellPtr);
+            hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, keyPtr);
             if (hPtr != NULL) {
                 state = TRUE;
             }
@@ -13385,7 +13389,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->cachedObjTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->selectCells.cellTable, 
-                              BLT_ONE_WORD_KEYS);
+                              sizeof(CellKey)/sizeof(int));
     viewPtr->rowPool    = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->columnPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->cellPool   = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);

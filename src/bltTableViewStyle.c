@@ -1376,7 +1376,7 @@ CellIsSelected(TableView *viewPtr, Cell *cellPtr)
             return TRUE;
         }
     }
-    hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, cellPtr);
+    hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, (char *)keyPtr);
     return (hPtr != NULL);
 }
 
