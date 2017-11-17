@@ -379,16 +379,17 @@ NotifyClients(Palette *palPtr, unsigned int flags)
      Blt_ChainLink link;
 
      for (link = Blt_Chain_FirstLink(palPtr->notifiers); link != NULL;
-        link = Blt_Chain_NextLink(link)) {
+          link = Blt_Chain_NextLink(link)) {
          PaletteNotifier *notifyPtr;
-
-         /* Notify each client that the paint brush has changed. The client
-          * should schedule itself for redrawing.  */
+         
+         /* Notify each client that the palette has changed or is in the
+          * process of being destroyed. The client should schedule itself
+          * for redrawing.  */
          notifyPtr = Blt_Chain_GetValue(link);
-        if (notifyPtr->proc != NULL) {
-            (*notifyPtr->proc)(palPtr, notifyPtr->clientData, flags);
-        }
-    }
+         if (notifyPtr->proc != NULL) {
+             (*notifyPtr->proc)(palPtr, notifyPtr->clientData, flags);
+         }
+     }
 }
 
 static int
@@ -835,7 +836,9 @@ NewPalette(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
 static void
 DestroyPalette(Palette *palPtr)
 {
-    NotifyClients(palPtr, PALETTE_DELETE_NOTIFY);
+    if (Blt_Chain_GetLength(palPtr->notifiers) > 0) {
+        NotifyClients(palPtr, PALETTE_DELETE_NOTIFY);
+    }
     if (palPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable, palPtr->hashPtr);
     }
@@ -1526,7 +1529,9 @@ LoadData(Tcl_Interp *interp, Palette *palPtr)
     } else {
         return TCL_OK;
     }
-    NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    if (Blt_Chain_GetLength(palPtr->notifiers) > 0) {
+        NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    }
     return result;
 }
 
@@ -1711,8 +1716,6 @@ DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
         char info[2000];
 
         Blt_FormatString(info, 2000, "\n    (while loading palettes)");
-        fprintf(stderr, "error load palettes: %s: %s\n", info,
-                Tcl_GetString(Tcl_GetObjResult(interp)));
         Tcl_AddErrorInfo(interp, info);
         Tcl_BackgroundError(interp);
         return TCL_ERROR;
@@ -1875,7 +1878,9 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
     }
-    NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    if (Blt_Chain_GetLength(palPtr->notifiers) > 0) {
+        NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    }
     Tcl_SetStringObj(Tcl_GetObjResult(interp), palPtr->name, -1);
     return TCL_OK;
  error:
@@ -2452,16 +2457,17 @@ Blt_Palette_DeleteNotifier(Blt_Palette palette,
                            ClientData clientData)
 {
     Palette *palPtr = (Palette *)palette;
-    Blt_ChainLink link;
+    Blt_ChainLink link, next;
     
-     for (link = Blt_Chain_FirstLink(palPtr->notifiers); link != NULL;
-        link = Blt_Chain_NextLink(link)) {
-         PaletteNotifier *notifyPtr;
+      for (link = Blt_Chain_FirstLink(palPtr->notifiers); link != NULL;
+           link = next) {
+          PaletteNotifier *notifyPtr;
 
-         notifyPtr = Blt_Chain_GetValue(link);
-         if ((notifyPtr->proc == notifyProc) &&
-             (notifyPtr->clientData == clientData)) {
-             Blt_Chain_DeleteLink(palPtr->notifiers, link);
+          next = Blt_Chain_NextLink(link);
+          notifyPtr = Blt_Chain_GetValue(link);
+          if ((notifyPtr->proc == notifyProc) &&
+              (notifyPtr->clientData == clientData)) {
+              Blt_Chain_DeleteLink(palPtr->notifiers, link);
              return;
          }
      }

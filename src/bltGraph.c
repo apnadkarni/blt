@@ -954,6 +954,9 @@ DestroyGraph(DestroyData dataPtr)
 {
     Graph *graphPtr = (Graph *)dataPtr;
 
+    if (graphPtr->flags & REDRAW_PENDING) {
+        Tcl_CancelIdleCall(DisplayProc, graphPtr);
+    }
     Blt_FreeOptions(configSpecs, (char *)graphPtr, graphPtr->display, 0);
     /*
      * Destroy the individual components of the graph: elements, markers,

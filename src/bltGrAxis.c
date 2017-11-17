@@ -1543,18 +1543,23 @@ ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
+    Blt_Palette palette;
     Axis *axisPtr = (Axis *)widgRec;
     const char *string;
     
     string = Tcl_GetString(objPtr);
     if ((string == NULL) || (string[0] == '\0')) {
-        FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
         return TCL_OK;
     }
-    if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
+    if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_Palette_CreateNotifier(*palPtr, PaletteChangedProc, axisPtr);
+    if (*palPtr != NULL) {
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
+    }
+    Blt_Palette_CreateNotifier(palette, PaletteChangedProc, axisPtr);
+    *palPtr = palette;
     return TCL_OK;
 }
 
