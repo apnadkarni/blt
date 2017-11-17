@@ -836,9 +836,6 @@ NewPalette(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
 static void
 DestroyPalette(Palette *palPtr)
 {
-    if (Blt_Chain_GetLength(palPtr->notifiers) > 0) {
-        NotifyClients(palPtr, PALETTE_DELETE_NOTIFY);
-    }
     if (palPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable, palPtr->hashPtr);
     }
@@ -1916,7 +1913,14 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetPaletteFromObj(interp, dataPtr, objv[i], &palPtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        DestroyPalette(palPtr);
+        if (palPtr->hashPtr != NULL) {
+            /* Remove the palette from the hash table so that we can't find
+             * it by its name. */
+            Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable,palPtr->hashPtr);
+            palPtr->hashPtr = NULL;
+        }
+        /* Palette won't be freed until its reference count goes to 0. */
+        Blt_Palette_Delete(palPtr);
     }
     return TCL_OK;
 }    
@@ -2497,14 +2501,10 @@ Blt_Palette_TwoColorPalette(int low, int high)
 }
 
 void
-Blt_Palette_Free(Blt_Palette palette)
+Blt_Palette_Delete(Blt_Palette palette)
 {
     Palette *palPtr = (Palette *)palette;
 
-    if (palPtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable, palPtr->hashPtr);
-        palPtr->hashPtr = NULL;
-    }
     palPtr->refCount--;
     if (palPtr->refCount <= 0) {
         DestroyPalette(palPtr);

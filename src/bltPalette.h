@@ -56,7 +56,6 @@ typedef void (Blt_Palette_NotifyProc) (Blt_Palette palette,
         ClientData clientData, unsigned int flags);
 
 #define PALETTE_CHANGE_NOTIFY   (1<<0)
-#define PALETTE_DELETE_NOTIFY   (1<<1)
 
 BLT_EXTERN int Blt_Palette_GetFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         Blt_Palette *palPtr);
@@ -69,7 +68,7 @@ BLT_EXTERN void Blt_Palette_DeleteNotifier(Blt_Palette palette,
         Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN const char *Blt_Palette_Name(Blt_Palette palette);
 BLT_EXTERN Blt_Palette Blt_Palette_TwoColorPalette(int low, int high);
-BLT_EXTERN void Blt_Palette_Free(Blt_Palette palette);
+BLT_EXTERN void Blt_Palette_Delete(Blt_Palette palette);
 
 BLT_EXTERN int Blt_Palette_GetRGBColor(Blt_Palette palette, double value);
 

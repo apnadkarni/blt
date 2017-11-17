@@ -1066,8 +1066,12 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * PaletteChangedProc
+ * PaletteChangedProc --
  *
+ *      Palettes are used by the underlying paint brush but are not
+ *      directly controlled by them.  We have to manage changes to the
+ *      palette by notifying clients of the background object to redraw
+ *      themselves.
  *
  * Results:
  *      None.
@@ -1079,23 +1083,35 @@ static void
 PaletteChangedProc(Blt_Palette palette, ClientData clientData, 
                    unsigned int flags)
 {
-     if (flags & PALETTE_DELETE_NOTIFY) {
-         PaintBrush *brushPtr = clientData;
+    BackgroundObject *corePtr = clientData;
 
-         brushPtr->palette = NULL;
-    }
+    NotifyClients(corePtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreePalette --
+ *
+ *      Free the palette (reducing its reference count).  Remove the
+ *      notifier that we setup for the palette.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static void
 FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
-
+    
     if (*palPtr != NULL) {
-        Blt_PaintBrush brush = (Blt_PaintBrush)widgRec;
+        BackgroundObject *corePtr = clientData;
 
-        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brush);
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, corePtr);
+        Blt_Palette_Delete(*palPtr);
         *palPtr = NULL;
     }
 }
@@ -1105,7 +1121,10 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToPalette --
  *
- *      Convert the string representation of a palette into its token.
+ *      Convert the string representation of a palette into its token.  We
+ *      have to notify background clients when the palette changes.  Since
+ *      the BackgroundObject is a proxy for the PaintBrush, we won't be 
+ *      notified by the paint brush.
  *
  * Results:
  *      The return value is a standard TCL result.  The palette token is
@@ -1118,19 +1137,31 @@ static int
 ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
+    BackgroundObject *corePtr = clientData;
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
-    Blt_PaintBrush brush = (Blt_PaintBrush)(widgRec);
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-        FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
-        return TCL_OK;
+    Blt_Palette palette;
+    int length;
+
+    Tcl_GetStringFromObj(objPtr, &length);
+    palette = NULL;
+    /* If the palette is the empty string (""), just remove the current
+     * palette. */
+    if (length > 0) {
+        if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
-    if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
-        return TCL_ERROR;
+    if (*palPtr != NULL) {
+        /* Delete the old palette and its associated notifier. */
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, corePtr);
+        Blt_Palette_Delete(*palPtr);
     }
-    Blt_Palette_CreateNotifier(*palPtr, PaletteChangedProc, brush);
+    /* Create a notifier to tell us when the palette changes or is
+     * deleted. */
+    if (palette != NULL) {
+        Blt_Palette_CreateNotifier(palette, PaletteChangedProc, corePtr);
+    }
+    *palPtr = palette;
     return TCL_OK;
 }
 
@@ -1152,6 +1183,7 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              char *widgRec, int offset, int flags)
 {
     Blt_Palette palette = *(Blt_Palette *)(widgRec + offset);
+
     if (palette == NULL) {
         return Tcl_NewStringObj("", -1);
     } 
@@ -2010,6 +2042,7 @@ ConfigureBackground(Tcl_Interp *interp, BackgroundObject *corePtr, int objc,
         }
     }
     imageOption.clientData = corePtr;
+    paletteOption.clientData = corePtr;
     result = Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, bgSpecs,
         numBgArgs, bgArgs, (char *)corePtr, flags);
     if (result == TCL_OK) {

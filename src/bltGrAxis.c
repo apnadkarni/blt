@@ -1505,9 +1505,6 @@ PaletteChangedProc(Blt_Palette palette, ClientData clientData,
 {
     Axis *axisPtr = clientData;
 
-     if (flags & PALETTE_DELETE_NOTIFY) {
-        axisPtr->palette = NULL;
-    }
     axisPtr->flags |= MAP_ITEM;
     axisPtr->obj.graphPtr->flags |= CACHE_DIRTY;
     Blt_EventuallyRedrawGraph(axisPtr->obj.graphPtr);
@@ -1520,8 +1517,11 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     Axis *axisPtr = (Axis *)widgRec;
 
-    Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
-    *palPtr = NULL;
+    if (*palPtr != NULL) {
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
+        Blt_Palette_Delete(*palPtr);
+        *palPtr = NULL;
+    }
 }
 
 /*
@@ -1545,20 +1545,27 @@ ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     Blt_Palette palette;
     Axis *axisPtr = (Axis *)widgRec;
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
-        return TCL_OK;
-    }
-    if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
-        return TCL_ERROR;
+    int length;
+
+    Tcl_GetStringFromObj(objPtr, &length);
+    palette = NULL;
+    /* If the palette is the empty string (""), just remove the current
+     * palette. */
+    if (length > 0) {
+        if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     if (*palPtr != NULL) {
+        /* Delete the old palette and its associated notifier. */
         Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
+        Blt_Palette_Delete(*palPtr);
     }
-    Blt_Palette_CreateNotifier(palette, PaletteChangedProc, axisPtr);
+    /* Create a notifier to tell us when the palette changes or is
+     * deleted. */
+    if (palette != NULL) {
+        Blt_Palette_CreateNotifier(palette, PaletteChangedProc, axisPtr);
+    }
     *palPtr = palette;
     return TCL_OK;
 }
