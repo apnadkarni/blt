@@ -3406,7 +3406,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     unsigned int iw, ih, th;
     int relief;
     TreeView *viewPtr;
-    int x0, y0;
+    int x0;
 
     viewPtr = stylePtr->viewPtr;
     rowPtr = cellPtr->entryPtr;
@@ -3463,7 +3463,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowHeight -= 2 * stylePtr->borderWidth;
     colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
 
-    x0 = x; y0 = y;
+    x0 = x;
     x += stylePtr->borderWidth + colPtr->pad.side1;
     y += stylePtr->borderWidth;
 

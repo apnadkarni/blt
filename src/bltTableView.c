@@ -6779,7 +6779,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BboxOp --
  *
- *      pathName bbox cell ?cellName ...? ?switches?
+ *      pathName bbox cellName ?switches ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6788,11 +6788,16 @@ static int
 BboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
+    Cell *cellPtr;
+    CellKey *keyPtr;
+    Column *colPtr;
+    Row *rowPtr;
     TableView *viewPtr = clientData;
-    int i;
-    int x1, y1, x2, y2;
     Tcl_Obj *listObjPtr;
-
+    int w, h;
+    int x1, y1, x2, y2;
+    BBoxSwitches switches;
+    
     if (viewPtr->table == NULL) {
         Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
         return TCL_ERROR;
@@ -6807,57 +6812,47 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         ComputeGeometry(viewPtr);
     }
 
-    x1 = viewPtr->worldWidth;
-    y1 = viewPtr->worldHeight;
-    x2 = y2 = 0;
-    for (i = 2; i < objc; i++) {
-        Cell *cellPtr;
-        CellKey *keyPtr;
-        Column *colPtr;
-        Row *rowPtr;
-
-        if (GetCellFromObj(interp, viewPtr, objv[i], &cellPtr)  != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (cellPtr == NULL) {
-            continue;
-        }
-        keyPtr = GetKey(cellPtr);
-        rowPtr = keyPtr->rowPtr;
-        colPtr = keyPtr->colPtr;
-        if (x1 > colPtr->worldX) {
-            x1 = colPtr->worldX;
-        }
-        if ((colPtr->worldX + colPtr->width) > x2) {
-            x2 = colPtr->worldX + colPtr->width;
-        }
-        if (y1 > rowPtr->worldY) {
-            y1 = rowPtr->worldY;
-        }
-        if ((rowPtr->worldY + rowPtr->height) > y2) {
-            y2 = rowPtr->worldY + rowPtr->height;
-        }
+    if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr)  != TCL_OK) {
+        return TCL_ERROR;
     }
-    {
-        int w, h;
-
-        w = VPORTWIDTH(viewPtr);
-        h = VPORTHEIGHT(viewPtr);
-        /*
-         * Do a min-max text for the intersection of the viewport and the
-         * computed bounding box.  If there is no intersection, return the
-         * empty string.
-         */
-        if ((x2 < viewPtr->xOffset) || (y2 < viewPtr->yOffset) ||
-            (x1 >= (viewPtr->xOffset + w)) || (y1 >= (viewPtr->yOffset + h))) {
-            return TCL_OK;
-        }
-        x1 = SCREENX(viewPtr, x1);
-        y1 = SCREENY(viewPtr, y1);
-        x2 = SCREENX(viewPtr, x2);
-        y2 = SCREENY(viewPtr, y2);
+    if (cellPtr == NULL) {
+        return TCL_OK;
     }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, bboxSwitches, objc - 3, objv + 3, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    keyPtr = GetKey(cellPtr);
+    rowPtr = keyPtr->rowPtr;
+    colPtr = keyPtr->colPtr;
+    x1 = colPtr->worldX;
+    x2 = colPtr->worldX + colPtr->width;
+    y1 = rowPtr->worldY;
+    y2 = rowPtr->worldY + rowPtr->height;
 
+    w = VPORTWIDTH(viewPtr);
+    h = VPORTHEIGHT(viewPtr);
+    /*
+     * Do a min-max text for the intersection of the viewport and the
+     * computed bounding box.  If there is no intersection, return the
+     * empty string.
+     */
+    if ((x2 < viewPtr->xOffset) || (y2 < viewPtr->yOffset) ||
+        (x1 >= (viewPtr->xOffset + w)) || (y1 >= (viewPtr->yOffset + h))) {
+        return TCL_OK;
+    }
+    x1 = SCREENX(viewPtr, x1);
+    y1 = SCREENY(viewPtr, y1);
+    x2 = SCREENX(viewPtr, x2);
+    y2 = SCREENY(viewPtr, y2);
+    if (switches.flags & BBOX_ROOT) {
+        int rootX, rootY;
+        
+        Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+        x1 += rootX, y1 += rootY;
+        x2 += rootX, y2 += rootY;
+    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
@@ -6953,7 +6948,7 @@ CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellBboxOp --
  *
- *      pathName cell bbox cellName
+ *      pathName cell bbox cellName ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6962,11 +6957,16 @@ static int
 CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
+    Cell *cellPtr;
+    CellKey *keyPtr;
+    Column *colPtr;
+    Row *rowPtr;
     TableView *viewPtr = clientData;
-    int i;
-    int x1, y1, x2, y2;
     Tcl_Obj *listObjPtr;
-
+    int w, h;
+    int x1, y1, x2, y2;
+    BBoxSwitches switches;
+    
     if (viewPtr->table == NULL) {
         Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
         return TCL_ERROR;
@@ -6981,57 +6981,47 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         ComputeGeometry(viewPtr);
     }
 
-    x1 = viewPtr->worldWidth;
-    y1 = viewPtr->worldHeight;
-    x2 = y2 = 0;
-    for (i = 3; i < objc; i++) {
-        Cell *cellPtr;
-        CellKey *keyPtr;
-        Column *colPtr;
-        Row *rowPtr;
-
-        if (GetCellFromObj(interp, viewPtr, objv[i], &cellPtr)  != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (cellPtr == NULL) {
-            continue;
-        }
-        keyPtr = GetKey(cellPtr);
-        rowPtr = keyPtr->rowPtr;
-        colPtr = keyPtr->colPtr;
-        if (x1 > colPtr->worldX) {
-            x1 = colPtr->worldX;
-        }
-        if ((colPtr->worldX + colPtr->width) > x2) {
-            x2 = colPtr->worldX + colPtr->width;
-        }
-        if (y1 > rowPtr->worldY) {
-            y1 = rowPtr->worldY;
-        }
-        if ((rowPtr->worldY + rowPtr->height) > y2) {
-            y2 = rowPtr->worldY + rowPtr->height;
-        }
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr)  != TCL_OK) {
+        return TCL_ERROR;
     }
-    {
-        int w, h;
-
-        w = VPORTWIDTH(viewPtr);
-        h = VPORTHEIGHT(viewPtr);
-        /*
-         * Do a min-max text for the intersection of the viewport and the
-         * computed bounding box.  If there is no intersection, return the
-         * empty string.
-         */
-        if ((x2 < viewPtr->xOffset) || (y2 < viewPtr->yOffset) ||
-            (x1 >= (viewPtr->xOffset + w)) || (y1 >= (viewPtr->yOffset + h))) {
-            return TCL_OK;
-        }
-        x1 = SCREENX(viewPtr, x1);
-        y1 = SCREENY(viewPtr, y1);
-        x2 = SCREENX(viewPtr, x2);
-        y2 = SCREENY(viewPtr, y2);
+    if (cellPtr == NULL) {
+        return TCL_OK;
     }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, bboxSwitches, objc - 3, objv + 3, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    keyPtr = GetKey(cellPtr);
+    rowPtr = keyPtr->rowPtr;
+    colPtr = keyPtr->colPtr;
+    x1 = colPtr->worldX;
+    x2 = colPtr->worldX + colPtr->width;
+    y1 = rowPtr->worldY;
+    y2 = rowPtr->worldY + rowPtr->height;
 
+    w = VPORTWIDTH(viewPtr);
+    h = VPORTHEIGHT(viewPtr);
+    /*
+     * Do a min-max text for the intersection of the viewport and the
+     * computed bounding box.  If there is no intersection, return the
+     * empty string.
+     */
+    if ((x2 < viewPtr->xOffset) || (y2 < viewPtr->yOffset) ||
+        (x1 >= (viewPtr->xOffset + w)) || (y1 >= (viewPtr->yOffset + h))) {
+        return TCL_OK;
+    }
+    x1 = SCREENX(viewPtr, x1);
+    y1 = SCREENY(viewPtr, y1);
+    x2 = SCREENX(viewPtr, x2);
+    y2 = SCREENY(viewPtr, y2);
+    if (switches.flags & BBOX_ROOT) {
+        int rootX, rootY;
+        
+        Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+        x1 += rootX, y1 += rootY;
+        x2 += rootX, y2 += rootY;
+    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
@@ -7534,7 +7524,7 @@ CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec cellOps[] =
 {
     {"activate",   1, CellActivateOp,    3, 4, "?cellName?",},
-    {"bbox",       1, CellBboxOp,        4, 4, "cellName",},
+    {"bbox",       1, CellBboxOp,        4, 0, "cellName ?switches ...?",},
     {"cget",       2, CellCgetOp,        5, 5, "cellName option",},
     {"configure",  2, CellConfigureOp,   4, 0, "cellName ?option value ...?",},
     {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
@@ -12124,7 +12114,7 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec viewOps[] =
 {
     {"activate",     1, ActivateOp,      3, 3, "cellName"},
-    {"bbox",         2, BboxOp,          3, 0, "cellName ?cellName ...?",}, 
+    {"bbox",         2, BboxOp,          3, 0, "cellName ?switches ...?",}, 
     {"bind",         2, BindOp,          3, 5, "cellName ?sequence command?",}, 
     {"cell",         2, CellOp,          2, 0, "args",}, 
     {"cget",         2, CgetOp,          3, 3, "option",}, 

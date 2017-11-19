@@ -57,8 +57,6 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-static const char emptyString[] = "";
-
 #define REDRAW_PENDING          (1<<0)  /* Indicates that the widget will
                                          * be redisplayed at the next idle
                                          * point. */
@@ -881,6 +879,7 @@ RestrictToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return NULL;
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -917,7 +916,7 @@ GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
     *yPtr = y;
     return TCL_OK;
 }
-
+#endif
     
 /*
  *---------------------------------------------------------------------------

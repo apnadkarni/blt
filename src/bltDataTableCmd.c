@@ -2581,6 +2581,7 @@ SetSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     for (i = 0; i < numRows; i++) {
         Tcl_Obj *objPtr;
 
+        objPtr = NULL;
         switch(switchesPtr->returnType) {
         case SORT_RETURN_VALUES:
             objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
@@ -2625,6 +2626,7 @@ SetUniqueSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
                 break;
             }
         }
+        objPtr = NULL;
         switch(switchesPtr->returnType) {
         case SORT_RETURN_VALUES:
             objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
