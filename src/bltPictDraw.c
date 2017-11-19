@@ -2407,6 +2407,7 @@ Blt_PaintRadioButtonOld(
     brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
     bg.u32 = Blt_XColorToPixel(bgColorPtr); 
     fill.u32 = Blt_XColorToPixel(fillColorPtr);
+    outline.u32 = Blt_XColorToPixel(outlineColorPtr);
     Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xFF);
     w &= ~1;
     destPtr = Blt_CreatePicture(w, h);
