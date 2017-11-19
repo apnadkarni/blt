@@ -61,35 +61,43 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
+#define DEBUG                   0
 #define VPORTWIDTH(s)   (Tk_Width((s)->tkwin) - (s)->yScrollbarWidth)
 #define VPORTHEIGHT(s)  (Tk_Height((s)->tkwin) - (s)->xScrollbarHeight)
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 
 #define REDRAW_PENDING          (1<<0)  /* A redraw request is pending.  */
-#define LAYOUT_PENDING          (1<<1)  /* A request to recompute the layout of
-                                         * the scrollbars and slave widget is
-                                         * pending.  */
-#define UPDATE_PENDING          (1<<2)  /* A request to call the widget update
-                                         * procedure because scrollbars or 
-                                         * slave widget has been configured. */
-#define SCROLLX                 (1<<3)  /* A request to set the X scrollbar is
-                                         * pending. */
-#define SCROLLY                 (1<<4)  /* A request to set the Y scrollbar is
-                                         * pending. */
-#define SCROLL_PENDING          (SCROLLX|SCROLLY)
+#define LAYOUT_PENDING          (1<<1)  /* A request to recompute the
+                                         * layout of the scrollbars and
+                                         * slave widget is pending.  */
+#define UPDATE_PENDING          (1<<2)  /* A request to call the widget
+                                         * update procedure because
+                                         * scrollbars or slave widget has
+                                         * been configured. */
+#define GEOMETRY                (1<<3)  /* The scrollset needs to have its
+                                         * geometry computed. */
+#define X_SCROLL                (1<<4)  /* A request to set the X scrollbar
+                                         * is pending. */
+#define Y_SCROLL                (1<<5)  /* A request to set the Y scrollbar
+                                         * is pending. */
+#define SCROLL_PENDING          (X_SCROLL|Y_SCROLL)
 
-#define X_INSTALL_PENDING       (1<<5)  /* A request to install a new
+#define X_INSTALL_PENDING       (1<<6)  /* A request to install a new
                                          * x-scrollbar widget is pending. */
-#define Y_INSTALL_PENDING       (1<<6)  /* A request to install a new
+#define Y_INSTALL_PENDING       (1<<7)  /* A request to install a new
                                          * y-scrollbar widget is pending. */
-#define SLAVE_INSTALL_PENDING   (1<<7)  /* A request to install a new slave
+#define SLAVE_INSTALL_PENDING   (1<<8)  /* A request to install a new slave
                                          * widget is pending.  */
-#define X_DISPLAY               (1<<8)  /* Display the x-scrollbar. */
-#define Y_DISPLAY               (1<<9)  /* Display the y-scrollbar. */
-#define SLAVE_XVIEW             (1<<10) /* The slave widget has a "xview"
+#define X_DISPLAY               (1<<9)  /* Display the x-scrollbar. */
+#define Y_DISPLAY               (1<<10) /* Display the y-scrollbar. */
+#define SLAVE_XVIEW             (1<<11) /* The slave widget has a "xview"
                                          * operation */
-#define SLAVE_YVIEW             (1<<11) /* The slave widget has a "yview"
+#define SLAVE_YVIEW             (1<<12) /* The slave widget has a "yview"
                                          * operation. */
+#define X_STATIC                (1<<13) /* The x-scrollbar should always
+                                         * be displayed. */
+#define Y_STATIC                (1<<14) /* The y-scrollbar should always
+                                         * be displayed. */
 
 #define DEF_ANCHOR              "center"
 #define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
@@ -102,10 +110,12 @@
 #define DEF_PADY                "0"
 #define DEF_WIDTH               "0"
 #define DEF_WINDOW              ((char *)NULL)
+#define DEF_XMODE               "auto"
 #define DEF_XSCROLLBAR          ((char *)NULL)
 #define DEF_XSCROLLCOMMAND      ((char *)NULL)
 #define DEF_XSCROLLINCREMENT    "2"
 #define DEF_XVIEWCOMMAND        ((char *)NULL)
+#define DEF_YMODE               "auto"
 #define DEF_YSCROLLBAR          ((char *)NULL)
 #define DEF_YSCROLLCOMMAND      ((char *)NULL)
 #define DEF_YSCROLLINCREMENT    "2"
@@ -129,29 +139,21 @@ typedef struct {
 } Limits;
 
 typedef struct {
-    /*
-     * This works around a bug in the Tk API.  Under under Win32, Tk tries
-     * to read the widget record of toplevel windows (TopLevel or Frame
-     * widget), to get its menu name field.  What this means is that we
-     * must carefully arrange the fields of this widget so that the
-     * menuName field is at the same offset in the structure.
-     */
-
+    unsigned int flags;
+    Tcl_Interp *interp;                 /* Interpreter associated with
+                                         * widget.  Used to delete widget
+                                         * command. */
+    Display *display;                   /* Display containing widget.
+                                         * Used, among other things, so
+                                         * that resources can * be freed
+                                         * even after tkwin has gone
+                                         * away. */
     Tk_Window tkwin;                    /* Window that embodies the frame.
-                                         * NULL means that the window has been
-                                         * destroyed but the data structures
-                                         * haven't yet been cleaned up. */
-
-    Display *display;                   /* Display containing widget.  Used,
-                                         * among other things, so that
-                                         * resources can * be freed even after
-                                         * tkwin has gone away. */
-
-    Tcl_Interp *interp;                 /* Interpreter associated with widget.
-                                         * Used to delete widget command. */
-
+                                         * NULL means that the window has
+                                         * been destroyed but the data
+                                         * structures haven't yet been
+                                         * cleaned up. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
-
     Tcl_Obj *slaveObjPtr;               /* Name of the slave widget to be
                                          * embed into the widget window. */
     Tk_Window slave;                    /* Slave window to be managed by this
@@ -168,15 +170,16 @@ typedef struct {
     Blt_Pad padY;                       /* Extra padding placed above and
                                          * below the slave */
     Blt_Bg bg;
-    int iPadX, iPadY;                   /* Extra padding added to the interior
-                                         * of the widget (i.e. adds to the
-                                         * requested size of the widget) */
+    int iPadX, iPadY;                   /* Extra padding added to the
+                                         * interior of the widget
+                                         * (i.e. adds to the requested size
+                                         * of the widget) */
     int fill;                           /* Indicates how the widget should
                                          * fill the span of cells it
                                          * occupies. */
-    int slaveX, slaveY;                 /* Origin of widget wrt container. */
+    int slaveX, slaveY;                 /* Origin of widget wrt
+                                           container. */
     int slaveWidth, slaveHeight;        /* Dimension of slave widget. */
-    unsigned int flags;
     Tk_Cursor cursor;                   /* Current cursor for window or
                                          * None. */
 
@@ -230,9 +233,17 @@ typedef struct {
 
 static Blt_OptionParseProc ObjToLimits;
 static Blt_OptionPrintProc LimitsToObj;
-static Blt_CustomOption limitsOption =
-{
+static Blt_CustomOption limitsOption = {
     ObjToLimits, LimitsToObj, NULL, (ClientData)0
+};
+
+static Blt_OptionParseProc ObjToMode;
+static Blt_OptionPrintProc ModeToObj;
+static Blt_CustomOption xModeOption = {
+    ObjToMode, ModeToObj, NULL, (ClientData)X_STATIC
+};
+static Blt_CustomOption yModeOption = {
+    ObjToMode, ModeToObj, NULL, (ClientData)Y_STATIC
 };
 
 static Blt_ConfigSpec scrollsetSpecs[] =
@@ -260,6 +271,9 @@ static Blt_ConfigSpec scrollsetSpecs[] =
         Blt_Offset(Scrollset, reqSlaveHeight), 0, &limitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", "reqSlaveWidth", "ReqWidth", (char *)NULL, 
         Blt_Offset(Scrollset, reqSlaveWidth), 0, &limitsOption},
+    {BLT_CONFIG_CUSTOM, "-xmode", "xMode", "Mode", DEF_XMODE,
+        Blt_Offset(Scrollset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        &xModeOption},
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", DEF_XSCROLLBAR, 
         Blt_Offset(Scrollset, xScrollbarObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
@@ -271,6 +285,9 @@ static Blt_ConfigSpec scrollsetSpecs[] =
     {BLT_CONFIG_OBJ, "-xviewcommand", "xViewCommand", "ViewCommand",
         DEF_XVIEWCOMMAND, Blt_Offset(Scrollset, xViewCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-ymode", "xMode", "Mode", DEF_YMODE,
+        Blt_Offset(Scrollset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        &yModeOption},
     {BLT_CONFIG_OBJ, "-yscrollbar", "yScrollbar", "Scrollbar", DEF_YSCROLLBAR, 
         Blt_Offset(Scrollset, yScrollbarObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
@@ -332,6 +349,69 @@ EventuallyRedraw(Scrollset *setPtr)
         Tcl_DoWhenIdle(DisplayProc, setPtr);
         setPtr->flags |= REDRAW_PENDING;
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjMode --
+ *
+ *      Converts the obj to the a scrollbar mode. The possible values
+ *      are "auto" or "static".
+ *
+ * Results:
+ *      The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    unsigned long bitMask = (unsigned long)clientData;
+    const char *string;
+    char c;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'a') && (strncmp(string, "auto", length) == 0)) {
+        *flagsPtr &= ~bitMask;
+    } else if ((c == 's') && (strncmp(string, "static", length) == 0)) {
+        *flagsPtr |= bitMask;
+    } else {
+        Tcl_AppendResult(interp, "unknown mode value \"", string,
+                         "\": should be auto or static.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ModeToObj --
+ *
+ *      Convert the mode to its string representation.
+ *
+ * Results:
+ *      The string representation of the mode is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+ModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)  
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    unsigned long bitMask = (unsigned long)clientData;
+    const char *string;
+
+    string = (*flagsPtr & bitMask) ?  "static" : "auto" ;
+    return Tcl_NewStringObj(string, -1);
 }
 
 /*
@@ -504,7 +584,6 @@ LimitsToObj(
     }
     return listObjPtr;
 }
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -681,11 +760,7 @@ GetSlaveReqWidth(Scrollset *setPtr)
     width = 2 * setPtr->iPadX;
     if (setPtr->slave != NULL) {
         width += Tk_ReqWidth(setPtr->slave);
-    fprintf(stderr, "1. GetSlaveReqWidth(%s)=%d\n", Tk_PathName(setPtr->slave),
-            Tk_ReqWidth(setPtr->slave));
     }
-    fprintf(stderr, "2. GetSlaveReqWidth(%s)=%d\n", Tk_PathName(setPtr->tkwin), 
-            width);
     width = GetBoundedWidth(width, &setPtr->reqSlaveWidth);
     return width;
 }
@@ -778,6 +853,7 @@ InstallWindow(
     }
     ManageWindow(setPtr, tkwin);
     *tkwinPtr = tkwin;
+    setPtr->flags |= GEOMETRY;
     return TCL_OK;
 }
 
@@ -935,109 +1011,175 @@ ConfigureScrollbarsProc(ClientData clientData)
 static void
 ComputeGeometry(Scrollset *setPtr)
 {
-    int cavityWidth, cavityHeight;
+    int slaveWidth, slaveHeight;
+    int w, h;
+    
+    slaveWidth = GetSlaveReqWidth(setPtr);
+    slaveHeight = GetSlaveReqHeight(setPtr);
+    w = slaveWidth + PADDING(setPtr->padX);
+    h = slaveHeight + PADDING(setPtr->padY);
+
+    /* Override the computed requested size of the scrollset window if
+     * the user has specified a size. */
+    if (setPtr->reqWidth > 0) {
+        w = setPtr->reqWidth;
+    }
+    if (setPtr->reqHeight > 0) {
+        h = setPtr->reqHeight;
+    }
+    setPtr->worldWidth = setPtr->worldHeight = 0;
+    if ((setPtr->flags & SLAVE_XVIEW) == 0) {
+        /* Embedded window doesn't have a xview operation. */
+        setPtr->worldWidth = slaveWidth;
+    } 
+    if ((setPtr->flags & SLAVE_YVIEW) == 0) { 
+        /* Embedded window doesn't have a yview operation. */
+        setPtr->worldHeight = slaveHeight;
+    }
+    if ((w != Tk_ReqWidth(setPtr->tkwin)) || 
+        (h != Tk_ReqHeight(setPtr->tkwin))) {
+        Tk_GeometryRequest(setPtr->tkwin, w, h);
+    } 
+    setPtr->flags &= ~GEOMETRY;
+    setPtr->flags |= LAYOUT_PENDING;
+}
+
+static void
+ArrangeWindows(Scrollset *setPtr)
+{ 
+    int viewWidth, viewHeight;
     int dx, dy;
     int slaveWidth, slaveHeight;
     int x, y;
     
-    cavityWidth  = Tk_Width(setPtr->tkwin);
-    cavityHeight = Tk_Height(setPtr->tkwin);
+    viewWidth  = Tk_Width(setPtr->tkwin) - PADDING(setPtr->padX);
+    viewHeight = Tk_Height(setPtr->tkwin) - PADDING(setPtr->padY);
+    x = setPtr->padX.side1;
+    y = setPtr->padY.side1;
 
-    slaveWidth  = GetSlaveReqWidth(setPtr);
+    slaveWidth = GetSlaveReqWidth(setPtr);
     slaveHeight = GetSlaveReqHeight(setPtr);
-    fprintf(stderr, "1. slaveWidth=%d\n", slaveWidth);
+
+    /* For non-native scrolling widgets, reset to no scrollbars. */
     if ((setPtr->flags & SLAVE_XVIEW) == 0) {
-        setPtr->worldWidth = slaveWidth;
         setPtr->flags &= ~X_DISPLAY;
+        setPtr->xScrollbarHeight = 0;
+        setPtr->worldWidth = slaveWidth;
     }
     if ((setPtr->flags & SLAVE_YVIEW) == 0) {
-        setPtr->worldHeight = slaveHeight;
         setPtr->flags &= ~Y_DISPLAY;
+        setPtr->yScrollbarWidth = 0;
+        setPtr->worldHeight = slaveHeight;
     }
-    setPtr->xScrollbarHeight = setPtr->yScrollbarWidth = 0;
-    if ((setPtr->xScrollbar != NULL) && (setPtr->worldWidth > cavityWidth)) {
+    /* Step 1. If scrollbars are static, set them now. */
+    if ((setPtr->xScrollbar != NULL) && (setPtr->flags & (X_DISPLAY|X_STATIC))){
+        viewHeight -= setPtr->xScrollbarHeight;
+        slaveWidth = viewWidth;
         setPtr->xScrollbarHeight = Tk_ReqHeight(setPtr->xScrollbar);
-        cavityHeight -= setPtr->xScrollbarHeight;
+        setPtr->flags |= X_DISPLAY;
+    }
+    if ((setPtr->yScrollbar != NULL) && (setPtr->flags & (Y_DISPLAY|Y_STATIC))){
+        viewWidth -= setPtr->yScrollbarWidth;
+        slaveHeight = viewHeight;
+        setPtr->yScrollbarWidth = Tk_ReqWidth(setPtr->yScrollbar);
+        setPtr->flags |= Y_DISPLAY;
+    }
+
+    /* Step 2: For non-native scrolling widgets, compare the requested
+     *         size of the embedded window versus the viewport size. */
+    if ((setPtr->xScrollbar != NULL) &&
+        ((setPtr->flags & (SLAVE_XVIEW|X_DISPLAY)) == 0) &&
+        (viewWidth < slaveWidth)) {
+        /* Reduce the viewport height by the height of the x-scrollbar. */
+        viewHeight -= setPtr->xScrollbarHeight;
+        slaveWidth = viewWidth;
+        setPtr->xScrollbarHeight = Tk_ReqHeight(setPtr->xScrollbar);
         setPtr->flags |= X_DISPLAY;
     } 
-    if ((setPtr->yScrollbar != NULL) && (setPtr->worldHeight > cavityHeight)) {
+    if ((setPtr->yScrollbar != NULL) &&
+        ((setPtr->flags & (SLAVE_YVIEW|Y_DISPLAY)) == 0) &&
+        (viewHeight < slaveHeight)) {
+        /* Reduce the viewport width by the width of the y-scrollbar. */
+        viewWidth -= setPtr->yScrollbarWidth;
+        slaveHeight = viewHeight;
         setPtr->yScrollbarWidth = Tk_ReqWidth(setPtr->yScrollbar);
-        cavityWidth -= setPtr->yScrollbarWidth;
         setPtr->flags |= Y_DISPLAY;
     }
-    if ((setPtr->xScrollbar != NULL) && (setPtr->xScrollbarHeight == 0) && 
-        ((setPtr->worldWidth > cavityWidth) || (setPtr->flags & X_DISPLAY))) {
+
+    /* Step 3: Did the addition of a scrollbar affect the size in the other
+     *         dimension? Limit this to non-native scrolling widgets. We'll
+     *         let the "set" callback tell us if a scrollbar is needed for
+     *         native widgets. */
+    if ((setPtr->xScrollbar != NULL) &&
+        ((setPtr->flags & (SLAVE_XVIEW|X_DISPLAY)) == 0) &&
+        (viewWidth < slaveWidth)) {
+        viewHeight -= setPtr->xScrollbarHeight;
+        slaveWidth = viewWidth;
         setPtr->xScrollbarHeight = Tk_ReqHeight(setPtr->xScrollbar);
-        cavityHeight -= setPtr->xScrollbarHeight;
         setPtr->flags |= X_DISPLAY;
     }
-    if ((setPtr->yScrollbar != NULL) && (setPtr->yScrollbarWidth == 0) && 
-        ((setPtr->worldHeight > cavityHeight) || (setPtr->flags & Y_DISPLAY))) {
+    if ((setPtr->yScrollbar != NULL) &&
+        ((setPtr->flags & (SLAVE_YVIEW|Y_DISPLAY)) == 0) &&
+        (viewHeight < slaveHeight)) {
+        viewWidth -= setPtr->yScrollbarWidth;
+        slaveHeight = viewHeight;
         setPtr->yScrollbarWidth = Tk_ReqWidth(setPtr->yScrollbar);
-        cavityWidth -= setPtr->yScrollbarWidth;
         setPtr->flags |= Y_DISPLAY;
     }
-    dx = dy = 0;
-    if ((cavityWidth - PADDING(setPtr->padX)) > slaveWidth) {
-        cavityWidth -= PADDING(setPtr->padX);
+
+    /* Step 4: If the embedded widget is smaller than the viewport, adjust
+     *         the size of the slave to fill the viewport. */
+    if (viewWidth > slaveWidth) {
         if (setPtr->fill & FILL_X) {
-            slaveWidth = cavityWidth;
-            if (slaveWidth > setPtr->reqSlaveWidth.max) {
-                slaveWidth = setPtr->reqSlaveWidth.max;
-            }
-    fprintf(stderr, "2. slaveWidth=%d\n", slaveWidth);
-        } else {
-            dx = (cavityWidth - slaveWidth);
-        }
+            slaveWidth = viewWidth;
+        } 
         setPtr->xOffset = 0;
-    } else if (setPtr->flags & SLAVE_XVIEW) {
-        slaveWidth = cavityWidth; 
-   fprintf(stderr, "3. slaveWidth=%d\n", slaveWidth);
+    } else if (viewWidth < slaveWidth) {
+        if (setPtr->flags & SLAVE_XVIEW) {
+            /* Only native x-scrolling slaves. */
+            slaveWidth = viewWidth; 
+        }
     }
-    if ((cavityHeight - PADDING(setPtr->padY)) > slaveHeight) {
-        cavityHeight -= PADDING(setPtr->padY);
+    if (viewHeight > slaveHeight) {
         if (setPtr->fill & FILL_Y) {
-            slaveHeight = cavityHeight;
-            if (slaveHeight > setPtr->reqSlaveHeight.max) {
-                slaveHeight = setPtr->reqSlaveHeight.max;
-            } 
-        } else {
-            dy = (cavityHeight - slaveHeight);
+            slaveHeight = viewHeight;
         }
         setPtr->yOffset = 0;
-    } else if (setPtr->flags & SLAVE_YVIEW) {
-        slaveHeight = cavityHeight;
+    } else if (viewHeight < slaveHeight) {
+        if (setPtr->flags & SLAVE_YVIEW) {
+            /* Only native y-scrolling slaves. */
+            slaveHeight = viewHeight;
+        }
     }
     x = y = 0;
+    dx = dy = 0;
     if ((dx > 0) || (dy > 0)) {
         TranslateAnchor(dx, dy, setPtr->anchor, &x, &y);
     }
     setPtr->shangleHeight = setPtr->xScrollbarHeight;
     setPtr->shangleWidth  = setPtr->yScrollbarWidth;
-    setPtr->yScrollbarHeight = cavityHeight - setPtr->xScrollbarHeight;
-    setPtr->xScrollbarWidth  = cavityWidth  - setPtr->yScrollbarWidth;
-    fprintf(stderr, "ComputeGeometry(%s): slaveWidth=%d, cavityWidth=%d yScrollbarWidth=%d\n",
-            Tk_PathName(setPtr->tkwin), 
-            slaveWidth, cavityWidth, setPtr->yScrollbarWidth);
+    setPtr->yScrollbarHeight = viewHeight - setPtr->xScrollbarHeight;
+    setPtr->xScrollbarWidth  = viewWidth  - setPtr->yScrollbarWidth;
+    
     if (setPtr->slave != NULL) {
-        if ((setPtr->xScrollbar == NULL) && (slaveWidth > cavityWidth)) {
-            slaveWidth = cavityWidth;
+        if ((setPtr->xScrollbar == NULL) && (slaveWidth > viewWidth)) {
+            slaveWidth = viewWidth;
             if (slaveWidth < setPtr->reqSlaveWidth.min) {
                 slaveWidth = setPtr->reqSlaveWidth.min;
             } 
         }
-        if ((setPtr->yScrollbar == NULL) && (slaveHeight > cavityHeight)) {
-            slaveHeight = cavityHeight;
+        if ((setPtr->yScrollbar == NULL) && (slaveHeight > viewHeight)) {
+            slaveHeight = viewHeight;
             if (slaveHeight < setPtr->reqSlaveHeight.min) {
                 slaveHeight = setPtr->reqSlaveHeight.min;
             } 
         }
-        if (cavityWidth > slaveWidth) {
+        if (viewWidth > slaveWidth) {
             x += Tk_Changes(setPtr->slave)->border_width;
         } else {
             x = Tk_Changes(setPtr->slave)->border_width;
         }
-        if (cavityHeight > slaveHeight) {
+        if (viewHeight > slaveHeight) {
             y += Tk_Changes(setPtr->slave)->border_width;
         } else { 
             y = Tk_Changes(setPtr->slave)->border_width;
@@ -1045,24 +1187,132 @@ ComputeGeometry(Scrollset *setPtr)
     }
     setPtr->slaveX = x;
     setPtr->slaveY = y;
-    setPtr->slaveWidth = slaveWidth;
-    setPtr->slaveHeight = slaveHeight;
-    setPtr->cavityWidth = cavityWidth;
-    setPtr->cavityHeight = cavityHeight;
     
-    /* Adjust the scroll offsets to put as much of the slave widget in view as
-     * possible. */
+    /* For non-scrolling widgets, adjust the scroll offsets to put as much
+     * of the slave widget in view as possible. */
     if ((setPtr->flags & SLAVE_YVIEW) == 0) {
-        if ((slaveHeight - setPtr->yOffset) < cavityHeight) {
-            setPtr->yOffset = slaveHeight - cavityHeight;
-        }
-        setPtr->flags |= SCROLLY;
+        slaveHeight = setPtr->worldHeight;
+        setPtr->flags |= Y_SCROLL;
     }
     if ((setPtr->flags & SLAVE_XVIEW) == 0) {
-        if ((slaveWidth - setPtr->xOffset) < cavityWidth) {
-            setPtr->xOffset = slaveWidth - cavityWidth;
+        slaveWidth = setPtr->worldWidth;
+        setPtr->flags |= X_SCROLL;
+    }
+    /*
+     * If the widget is too small (i.e. it has only an external border)
+     * then unmap it.
+     */
+    if ((slaveWidth < 1) || (slaveHeight < 1)) {
+        if (Tk_IsMapped(setPtr->slave)) {
+            if (setPtr->tkwin != Tk_Parent(setPtr->slave)) {
+                Tk_UnmaintainGeometry(setPtr->slave, setPtr->tkwin);
+            }
+            Tk_UnmapWindow(setPtr->slave);
         }
-        setPtr->flags |= SCROLLX;
+    } else {
+        
+        if (setPtr->xOffset > 0) {
+            x -= setPtr->xOffset;
+        }
+        if (setPtr->yOffset > 0) {
+            y -= setPtr->yOffset;
+        }
+        if (setPtr->tkwin != Tk_Parent(setPtr->slave)) {
+            Tk_MaintainGeometry(setPtr->slave, setPtr->tkwin, x, y,
+                                slaveWidth, slaveHeight);
+        } else {
+#ifdef notdef
+            fprintf(stderr, "x=%d,y=%d, slaveX=%d slaveY=%d slaveWidth=%d sw=%d slaveHeight=%d, sh=%d\n",
+                    x, y, Tk_X(setPtr->slave), Tk_Y(setPtr->slave),
+                    slaveWidth, Tk_Width(setPtr->slave),
+                    slaveHeight, Tk_Height(setPtr->slave));
+#endif
+            if ((x != Tk_X(setPtr->slave)) || (y != Tk_Y(setPtr->slave)) ||
+                (slaveWidth != Tk_Width(setPtr->slave)) ||
+                (slaveHeight != Tk_Height(setPtr->slave))) {
+                
+                Tk_MoveResizeWindow(setPtr->slave, x, y, 
+                                    slaveWidth, slaveHeight);
+                setPtr->flags |= SCROLL_PENDING;
+            }
+            if (!Tk_IsMapped(setPtr->slave)) {
+                Tk_MapWindow(setPtr->slave);
+            }
+        }
+    }
+    /* Manage the geometry of the scrollbars. */
+    
+    if (setPtr->flags & Y_DISPLAY) {
+        int x, y;
+        int yScrollbarHeight;
+        
+        x = VPORTWIDTH(setPtr);
+        y = 0;
+        yScrollbarHeight = VPORTHEIGHT(setPtr);
+#ifdef notdef
+            fprintf(stderr, "Yscrollbar x=%d,y=%d, ysX=%d ysY=%d ysWidth=%d cw=%d ysHeight=%d, ch=%d\n",
+                    x, y, Tk_X(setPtr->yScrollbar), Tk_Y(setPtr->yScrollbar),
+                    setPtr->yScrollbarWidth, Tk_Width(setPtr->yScrollbar),
+                    yScrollbarHeight, Tk_Height(setPtr->yScrollbar));
+#endif
+
+        if ((Tk_Width(setPtr->yScrollbar) != setPtr->yScrollbarWidth) ||
+            (Tk_Height(setPtr->yScrollbar) != yScrollbarHeight) ||
+            (x != Tk_X(setPtr->yScrollbar)) || 
+            (y != Tk_Y(setPtr->yScrollbar))) {
+            Tk_MoveResizeWindow(setPtr->yScrollbar, x, y, 
+                                setPtr->yScrollbarWidth, yScrollbarHeight);
+        }
+        if (!Tk_IsMapped(setPtr->yScrollbar)) {
+            Tk_MapWindow(setPtr->yScrollbar);
+            XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->yScrollbar));
+        }
+    } else if ((setPtr->yScrollbar != NULL) && 
+               (Tk_IsMapped(setPtr->yScrollbar))) {
+        Tk_UnmapWindow(setPtr->yScrollbar);
+    }
+    
+    if (setPtr->flags & X_DISPLAY) {
+        int x, y;
+        int xScrollbarWidth;
+        
+        x = 0;
+        y = VPORTHEIGHT(setPtr);
+        xScrollbarWidth = VPORTWIDTH(setPtr);
+        if ((Tk_Width(setPtr->xScrollbar) != xScrollbarWidth) ||
+            (Tk_Height(setPtr->xScrollbar) != setPtr->xScrollbarHeight) ||
+            (x != Tk_X(setPtr->xScrollbar)) || 
+            (y != Tk_Y(setPtr->xScrollbar))) {
+            Tk_MoveResizeWindow(setPtr->xScrollbar, x, y, xScrollbarWidth,
+                                setPtr->xScrollbarHeight);
+        }
+        if (!Tk_IsMapped(setPtr->xScrollbar)) {
+            Tk_MapWindow(setPtr->xScrollbar);
+            XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->xScrollbar));
+        }
+    } else if ((setPtr->xScrollbar != NULL) && 
+               (Tk_IsMapped(setPtr->xScrollbar))) {
+        Tk_UnmapWindow(setPtr->xScrollbar);
+    }
+    
+    if ((setPtr->yScrollbarWidth > 0) && (setPtr->xScrollbarHeight > 0)) {
+        int shangleX, shangleY;
+        
+        shangleX = VPORTWIDTH(setPtr);
+        shangleY = VPORTHEIGHT(setPtr);
+        if ((shangleX != Tk_X(setPtr->shangle)) || 
+            (shangleY != Tk_Y(setPtr->shangle)) ||
+            (setPtr->shangleWidth != Tk_Width(setPtr->shangle)) ||
+            (setPtr->shangleHeight != Tk_Height(setPtr->shangle))) {
+            Tk_MoveResizeWindow(setPtr->shangle, shangleX, shangleY,
+                   setPtr->shangleWidth, setPtr->shangleHeight);
+        }
+        if (!Tk_IsMapped(setPtr->shangle)) {
+            Tk_MapWindow(setPtr->shangle);
+            XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->shangle));
+        }
+    } else {
+        Tk_UnmapWindow(setPtr->shangle);
     }
     setPtr->flags &= ~LAYOUT_PENDING;
 }
@@ -1159,7 +1409,7 @@ ScrollsetEventProc(ClientData clientData, XEvent *eventPtr)
             EventuallyRedraw(setPtr);
         }
     } else if (eventPtr->type == ConfigureNotify) {
-        setPtr->flags |= LAYOUT_PENDING;
+        setPtr->flags |= GEOMETRY;
         EventuallyRedraw(setPtr);
     } else if (eventPtr->type == DestroyNotify) {
         if (setPtr->tkwin != NULL) {
@@ -1225,7 +1475,7 @@ WindowEventProc(
                    (eventPtr->xany.window == Tk_WindowId(setPtr->shangle))) {
             setPtr->shangle = NULL;
         } 
-        setPtr->flags |= LAYOUT_PENDING;
+        setPtr->flags |= GEOMETRY;
         EventuallyRedraw(setPtr);
     }
 }
@@ -1267,7 +1517,7 @@ ScrollsetCustodyProc(ClientData clientData, Tk_Window tkwin)
         setPtr->flags &= ~(X_DISPLAY|Y_DISPLAY);
     }
     Tk_UnmaintainGeometry(tkwin, setPtr->tkwin);
-    setPtr->flags |= LAYOUT_PENDING;
+    setPtr->flags |= GEOMETRY;
     EventuallyRedraw(setPtr);
 }
 
@@ -1276,8 +1526,8 @@ ScrollsetCustodyProc(ClientData clientData, Tk_Window tkwin)
  *
  * ScrollsetGeometryProc --
  *
- *      This procedure is invoked by Tk_GeometryRequest for scrollbars managed
- *      by the scrollset.
+ *      This procedure is invoked by Tk_GeometryRequest for scrollbars
+ *      managed by the scrollset.
  *
  * Results:
  *      None.
@@ -1294,7 +1544,7 @@ ScrollsetGeometryProc(ClientData clientData, Tk_Window tkwin)
 {
     Scrollset *setPtr = (Scrollset *)clientData;
 
-    setPtr->flags |= LAYOUT_PENDING;
+    setPtr->flags |= GEOMETRY;
     EventuallyRedraw(setPtr);
 }
 
@@ -1336,7 +1586,7 @@ ConfigureOp(Scrollset *setPtr, Tcl_Interp *interp, int objc,
     if (result == TCL_ERROR) {
         return TCL_ERROR;
     }
-    setPtr->flags |= LAYOUT_PENDING;
+    setPtr->flags |= GEOMETRY;
     EventuallyRedraw(setPtr);
     return TCL_OK;
 }
@@ -1398,6 +1648,11 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (Tcl_GetDoubleFromObj(interp, objv[3], &last) != TCL_OK) {
         return TCL_ERROR;
     }
+    if ((Tk_Width(setPtr->tkwin) <= 1) || (Tk_Height(setPtr->tkwin) <= 1)) {
+        /* The first and last values are not reliable when the size of the
+         * viewport is 1x1. */
+        return TCL_OK;
+    }
     first = FCLAMP(first);
     last = FCLAMP(last);
 #ifdef notdef
@@ -1413,10 +1668,12 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
              * scrollbar. */
             if ((first <= 0.0) && (last >= 1.0)) {
                 setPtr->flags &= ~X_DISPLAY; /* Hide scrollbar. */
+                setPtr->xScrollbarHeight = 0;
             } else {
                 setPtr->flags |= X_DISPLAY; /* Display x-scrollbar. */
+                setPtr->xScrollbarHeight = Tk_ReqHeight(setPtr->xScrollbar);
             }            
-            setPtr->flags |= LAYOUT_PENDING;
+            setPtr->flags |= GEOMETRY;
             EventuallyRedraw(setPtr);
         }
     } else if (string[0] == 'y') {
@@ -1426,10 +1683,12 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             }
             if ((first <= 0.0) && (last >= 1.0)) {
                 setPtr->flags &= ~Y_DISPLAY;     /* Hide scrollbar. */
+                setPtr->yScrollbarWidth = 0;
             } else {
                 setPtr->flags |= Y_DISPLAY; /* Display x-scrollbar. */
+                setPtr->yScrollbarWidth = Tk_ReqWidth(setPtr->yScrollbar);
             }
-            setPtr->flags |= LAYOUT_PENDING;
+            setPtr->flags |= GEOMETRY;
             EventuallyRedraw(setPtr);
         }
     } else {
@@ -1515,7 +1774,7 @@ XviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         != TCL_OK) {
         return TCL_ERROR;
     }
-    setPtr->flags |= SCROLL_PENDING;
+    setPtr->flags |= LAYOUT_PENDING | X_SCROLL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
 }
@@ -1524,7 +1783,7 @@ XviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 YviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int height;
+    int viewHeight;
 
     if (setPtr->flags & SLAVE_YVIEW) {
         Tcl_Obj *cmdObjPtr;
@@ -1551,7 +1810,7 @@ YviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         return result;
     }
 
-    height = VPORTHEIGHT(setPtr);
+    viewHeight = VPORTHEIGHT(setPtr);
     if (objc == 2) {
         double first, last;
 
@@ -1560,17 +1819,17 @@ YviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
          * the "canvas"-style of scrolling.
          */
         first = (double)setPtr->yOffset / setPtr->worldHeight;
-        last  = (double)(setPtr->yOffset + height) / setPtr->worldHeight;
+        last  = (double)(setPtr->yOffset + viewHeight) / setPtr->worldHeight;
         Tcl_AppendElement(interp, Blt_Dtoa(interp, FCLAMP(first)));
         Tcl_AppendElement(interp, Blt_Dtoa(interp, FCLAMP(last)));
         return TCL_OK;
     }
     if (Blt_GetScrollInfoFromObj(interp, objc - 2, objv + 2, &setPtr->yOffset,
-        setPtr->worldHeight, height, setPtr->yScrollUnits, 
+        setPtr->worldHeight, viewHeight, setPtr->yScrollUnits, 
         BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
         return TCL_ERROR;
     }
-    setPtr->flags |= SCROLL_PENDING;
+    setPtr->flags |= LAYOUT_PENDING | Y_SCROLL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
 }
@@ -1639,14 +1898,14 @@ NewScrollset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr = Blt_AssertCalloc(1, sizeof(Scrollset));
 
     Tk_SetClass(tkwin, "BltScrollset");
-    setPtr->tkwin = tkwin;
+    setPtr->anchor = TK_ANCHOR_CENTER;
     setPtr->display = Tk_Display(tkwin);
+    setPtr->fill = FILL_BOTH;
+    setPtr->flags |= (GEOMETRY | SCROLL_PENDING);
     setPtr->interp = interp;
-    setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
+    setPtr->tkwin = tkwin;
     setPtr->xScrollUnits = 2;
     setPtr->yScrollUnits = 2;
-    setPtr->anchor = TK_ANCHOR_CENTER;
-    setPtr->fill = FILL_BOTH;
     ResetLimits(&setPtr->reqSlaveWidth);
     ResetLimits(&setPtr->reqSlaveHeight);
     Blt_SetWindowInstanceData(tkwin, setPtr);
@@ -1828,129 +2087,15 @@ Blt_ScrollsetCmdInitProc(Tcl_Interp *interp)
 }
 
 static void
-DrawScrollset(Scrollset *setPtr)
+DrawShangle(Scrollset *setPtr)
 {
-    if (setPtr->slave != NULL) {
-        /*
-         * If the widget is too small (i.e. it has only an external border)
-         * then unmap it.
-         */
-        if ((setPtr->slaveWidth < 1) || (setPtr->slaveHeight < 1)) {
-            if (Tk_IsMapped(setPtr->slave)) {
-                if (setPtr->tkwin != Tk_Parent(setPtr->slave)) {
-                    Tk_UnmaintainGeometry(setPtr->slave, setPtr->tkwin);
-                }
-                Tk_UnmapWindow(setPtr->slave);
-            }
-        } else {
-            int x, y;
-
-            x = setPtr->slaveX;
-            y = setPtr->slaveY;
-            if (setPtr->xOffset > 0) {
-                x -= setPtr->xOffset;
-            }
-            if (setPtr->yOffset > 0) {
-                y -= setPtr->yOffset;
-            }
-            if (setPtr->tkwin != Tk_Parent(setPtr->slave)) {
-                Tk_MaintainGeometry(setPtr->slave, setPtr->tkwin, x, y,
-                                    setPtr->slaveWidth, setPtr->slaveHeight);
-            } else {
-#ifdef notdef
-                    fprintf(stderr, "x=%d,y=%d, sx=%d,sy=%d w=%d sw=%d h=%d, sh=%d\n",
-                            x, y, Tk_X(setPtr->slave), Tk_Y(setPtr->slave),
-                            setPtr->slaveWidth, Tk_Width(setPtr->slave),
-                            setPtr->slaveHeight, Tk_Height(setPtr->slave));
-#endif
-                if ((x != Tk_X(setPtr->slave)) || (y != Tk_Y(setPtr->slave)) ||
-                    (setPtr->slaveWidth != Tk_Width(setPtr->slave)) ||
-                    (setPtr->slaveHeight != Tk_Height(setPtr->slave))) {
-                            
-                    Tk_MoveResizeWindow(setPtr->slave, x, y, 
-                        setPtr->slaveWidth, setPtr->slaveHeight);
-                }
-                if (!Tk_IsMapped(setPtr->slave)) {
-                    Tk_MapWindow(setPtr->slave);
-                }
-            }
-        }
+    if (!Tk_IsMapped(setPtr->shangle)) {
+        Tk_MapWindow(setPtr->shangle);
+        XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->shangle));
     }
-
-    /* Manage the geometry of the scrollbars. */
-    
-    if (setPtr->yScrollbarWidth > 0) {
-        int x, y;
-        int yScrollbarHeight;
-
-        x = VPORTWIDTH(setPtr);
-        y = 0;
-        yScrollbarHeight = VPORTHEIGHT(setPtr);
-        if ((Tk_Width(setPtr->yScrollbar) != setPtr->yScrollbarWidth) ||
-            (Tk_Height(setPtr->yScrollbar) != yScrollbarHeight) ||
-            (x != Tk_X(setPtr->yScrollbar)) || 
-            (y != Tk_Y(setPtr->yScrollbar))) {
-            Tk_MoveResizeWindow(setPtr->yScrollbar, x, y, 
-                setPtr->yScrollbarWidth, yScrollbarHeight);
-        }
-        if (!Tk_IsMapped(setPtr->yScrollbar)) {
-            Tk_MapWindow(setPtr->yScrollbar);
-            XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->yScrollbar));
-        }
-    } else if ((setPtr->yScrollbar != NULL) && 
-               (Tk_IsMapped(setPtr->yScrollbar))) {
-        Tk_UnmapWindow(setPtr->yScrollbar);
-    }
-
-    if (setPtr->xScrollbarHeight > 0) {
-        int x, y;
-        int xScrollbarWidth;
-
-        x = 0;
-        y = VPORTHEIGHT(setPtr);
-        xScrollbarWidth = VPORTWIDTH(setPtr);
-        if ((Tk_Width(setPtr->xScrollbar) != xScrollbarWidth) ||
-            (Tk_Height(setPtr->xScrollbar) != setPtr->xScrollbarHeight) ||
-            (x != Tk_X(setPtr->xScrollbar)) || 
-            (y != Tk_Y(setPtr->xScrollbar))) {
-            Tk_MoveResizeWindow(setPtr->xScrollbar, x, y, xScrollbarWidth,
-                setPtr->xScrollbarHeight);
-        }
-        if (!Tk_IsMapped(setPtr->xScrollbar)) {
-            Tk_MapWindow(setPtr->xScrollbar);
-            XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->xScrollbar));
-        }
-    } else if ((setPtr->xScrollbar != NULL) && 
-               (Tk_IsMapped(setPtr->xScrollbar))) {
-        Tk_UnmapWindow(setPtr->xScrollbar);
-    }
-
-    if ((setPtr->yScrollbarWidth > 0) && (setPtr->xScrollbarHeight > 0)) {
-        int shangleX, shangleY;
-        int shangleWidth, shangleHeight;
-
-        shangleX = VPORTWIDTH(setPtr);
-        shangleY = VPORTHEIGHT(setPtr);
-        shangleWidth = setPtr->yScrollbarWidth;
-        shangleHeight = setPtr->xScrollbarHeight;
-        if ((shangleX != Tk_X(setPtr->shangle)) || 
-            (shangleY != Tk_Y(setPtr->shangle)) ||
-            (shangleWidth != Tk_Width(setPtr->shangle)) ||
-            (shangleHeight != Tk_Height(setPtr->shangle))) {
-            Tk_MoveResizeWindow(setPtr->shangle, shangleX, 
-                shangleY, shangleWidth, shangleHeight);
-        }
-        if (!Tk_IsMapped(setPtr->shangle)) {
-            Tk_MapWindow(setPtr->shangle);
-            XRaiseWindow(setPtr->display, Tk_WindowId(setPtr->shangle));
-        }
-        Blt_Bg_FillRectangle(setPtr->shangle, 
-                Tk_WindowId(setPtr->shangle), setPtr->bg, 
-                0, 0, shangleWidth, shangleHeight, 0, TK_RELIEF_FLAT);
-
-    } else {
-        Tk_UnmapWindow(setPtr->shangle);
-    }
+    Blt_Bg_FillRectangle(setPtr->shangle, Tk_WindowId(setPtr->shangle),
+        setPtr->bg, 0, 0, setPtr->shangleWidth, setPtr->shangleHeight,
+        0, TK_RELIEF_FLAT);
 }
 
 /*
@@ -1972,38 +2117,22 @@ static void
 DisplayProc(ClientData clientData)
 {
     Scrollset *setPtr = clientData;
-    int reqWidth, reqHeight;
 
     setPtr->flags &= ~REDRAW_PENDING;
     if (setPtr->tkwin == NULL) {
         return;                         /* Window destroyed (should not get
                                          * here) */
     }
-    /*
-     * The requested size of the host container is always the requested
-     * size of the slave widget without scrollbars. Only when the size of
-     * the window is less than the requested size to we add scrollbars
-     * (non-scrolling widgets).
-     */
-    reqWidth = (setPtr->reqWidth > 0) ? setPtr->reqWidth : 
-        GetSlaveReqWidth(setPtr) + setPtr->yScrollbarWidth;
-    reqHeight = (setPtr->reqHeight > 0) ? setPtr->reqHeight : 
-        GetSlaveReqHeight(setPtr) + setPtr->xScrollbarHeight;
-
-    if ((reqWidth != Tk_ReqWidth(setPtr->tkwin)) || 
-        (reqHeight != Tk_ReqHeight(setPtr->tkwin))) {
-        Tk_GeometryRequest(setPtr->tkwin, reqWidth, reqHeight);
+    if (setPtr->flags & GEOMETRY) {
+        ComputeGeometry(setPtr);
     }
-
-#ifdef notdef
     if ((Tk_Width(setPtr->tkwin) <= 1) || (Tk_Height(setPtr->tkwin) <= 1)){
-        /* Don't bother computing the layout until the window size is
-         * something reasonable. */
+        /* Don't bother arranging the window and scrollbars until the
+         * widget's size is something reasonable. */
         return;
     }
-#endif
     if (setPtr->flags & LAYOUT_PENDING) {
-        ComputeGeometry(setPtr);
+        ArrangeWindows(setPtr);
     }
     if (!Tk_IsMapped(setPtr->tkwin)) {
         /* The scrollset's window isn't displayed, so don't bother drawing
@@ -2018,11 +2147,11 @@ DisplayProc(ClientData clientData)
          */
         w = VPORTWIDTH(setPtr);
         h = VPORTHEIGHT(setPtr);
-        if ((setPtr->xScrollCmdObjPtr != NULL) && (setPtr->flags & SCROLLX)) {
+        if ((setPtr->xScrollCmdObjPtr != NULL) && (setPtr->flags & X_SCROLL)) {
             Blt_UpdateScrollbar(setPtr->interp, setPtr->xScrollCmdObjPtr,
                 setPtr->xOffset, setPtr->xOffset + w, setPtr->worldWidth);
         }
-        if ((setPtr->yScrollCmdObjPtr != NULL) && (setPtr->flags & SCROLLY)) {
+        if ((setPtr->yScrollCmdObjPtr != NULL) && (setPtr->flags & Y_SCROLL)) {
             Blt_UpdateScrollbar(setPtr->interp, setPtr->yScrollCmdObjPtr,
                 setPtr->yOffset, setPtr->yOffset + h, setPtr->worldHeight);
         }
@@ -2030,9 +2159,12 @@ DisplayProc(ClientData clientData)
     }
     if ((setPtr->slaveWidth < VPORTWIDTH(setPtr)) ||
         (setPtr->slaveHeight < VPORTHEIGHT(setPtr))) {
+        /* Only needed if -padx or -pady is used. */
         Blt_Bg_FillRectangle(setPtr->tkwin, Tk_WindowId(setPtr->tkwin), 
                 setPtr->bg, 0, 0, VPORTWIDTH(setPtr), VPORTHEIGHT(setPtr), 
                 0, TK_RELIEF_FLAT);
     }
-    DrawScrollset(setPtr);
+    if ((setPtr->shangleWidth > 0) && (setPtr->shangleHeight > 0)) {
+        DrawShangle(setPtr);
+    }
 }

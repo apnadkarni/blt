@@ -157,10 +157,6 @@ $tree find root -glob *.tcl -addtag "tcl_files"
 .ss.t entry configure "header_files" -foreground cyan4
 .ss.t entry configure "tcl_files" -foreground red4 
 
-.ss.t column bind all <ButtonRelease-3> {
-    %W configure -flat no
-}
-
 #.ss.t style configure text -background #F8fbF8 -selectbackground #D8fbD8 
 
 .ss.t style checkbox check \

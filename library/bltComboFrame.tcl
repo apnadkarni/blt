@@ -39,7 +39,7 @@ namespace eval blt {
 	variable _private
 	array set _private {
 	    popOnRelease    0
-	    trace           1
+	    trace           0
 	}
 	proc trace { mesg } {
 	    variable _private 
