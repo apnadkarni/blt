@@ -2281,6 +2281,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      imageName draw rectangle x1 y1 x2 y2 ?switches ...?
  *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
  *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 int
@@ -2389,13 +2390,9 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 }
 
 Blt_Picture
-Blt_PaintRadioButtonOld(
-     int w, int h, 
-     XColor *bgColorPtr, 
-     XColor *fillColorPtr, 
-     XColor *outlineColorPtr, 
-     XColor *indicatorColorPtr, 
-     int on)
+Blt_PaintRadioButtonOld(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr, 
+                        XColor *outlineColorPtr, XColor *indicatorColorPtr,
+                        int on)
 {
     Pict *destPtr;
     int x, y, r;
