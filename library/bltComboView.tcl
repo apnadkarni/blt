@@ -158,16 +158,16 @@ bind BltComboView <KeyPress-Return> {
     blt::ComboView::SelectItem %W
 }
 
-bind BltComboView <Escape> {
+bind BltComboView <KeyPress-Escape> {
     blt::ComboView::trace "blt::ComboView Keypress-escape %W"
     blt::ComboView::Cancel
 }
 
-bind BltComboView <Left> {
+bind BltComboView <KeyPress-Left> {
     blt::ComboView::LastMenu
 }
 
-bind BltComboView <Right> {
+bind BltComboView <KeyPress-Right> {
     blt::ComboView::NextMenu
 }
 
@@ -280,6 +280,7 @@ proc ::blt::ComboView::ButtonPressEvent { view x y } {
     set _private(cascades) ""
 
     # Pop the grab before invoking the menu item command.
+    puts stderr "1. grab pop"
     blt::grab pop $view
     event generate $view <<MenuSelect>>
     $view invoke $item
@@ -305,7 +306,10 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	} 
 	$view unpost
 	set _private(cascades) ""
-	blt::grab pop $view
+        if { [winfo class $view] != "BltComboView" } {
+            puts stderr "2. grab pop"
+            blt::grab pop $view
+        }
 	event generate $view <<MenuSelect>>
 	$view invoke $item
 	return
@@ -329,7 +333,10 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	} 
 	$m unpost
 	set _private(cascades) ""
-	blt::grab pop $view
+        if { [winfo class $view] != "BltComboView" } {
+            puts stderr "3. grab pop"
+            blt::grab pop $view
+        }
 	event generate $view <<MenuSelect>>
 	$m invoke $item
 	return
@@ -493,7 +500,10 @@ proc ::blt::ComboView::SelectItem { view } {
     } 
     $m unpost
     set _private(cascades) ""
-    blt::grab pop $m
+    if { [winfo class $m] != "BltComboView" } {
+        puts stderr "4. grab pop"
+        blt::grab pop $m
+    }
     event generate $m <<MenuSelect>>
     $m invoke $item
 }
@@ -503,16 +513,20 @@ proc ::blt::ComboView::Cancel {} {
 
     set m [blt::grab current]
     if { $m == "" || [winfo class $m] != "BltComboView" } {
-	return
+	returnd
     }
     $m unpost 
     event generate $m <<MenuSelect>>
-    blt::grab pop $m
+    puts stderr "5. grab pop"
+    #blt::grab pop $m
 }
 
 proc ::blt::ComboView::ReleaseGrab { view menu } {
     variable _private 
 
     bind $menu <Unmap> {}
-    blt::grab pop $view
+    if { [winfo class $view] != "BltComboView" } {
+        puts stderr "6. grab pop"
+        blt::grab pop $view
+    }
 }

@@ -1385,9 +1385,8 @@ proc autofilter::AutoFilter { w tableview } {
 	3,0 $f.freq -cspan 2 -anchor w \
 	4,0 $f.cancel -width 0.8i -pady 2 \
 	4,1 $f.done -width 0.8i -pady 2 
-    puts stderr "update in Autofilter"
-    update idletasks
-    update 
+    #update idletasks
+    #update 
 }
     
 proc autofilter::ShowFrequency { w } {
@@ -1400,7 +1399,6 @@ proc autofilter::SelectAll { w } {
 
     set table [$w.frame.ss.tableview cget -table]
     $table set @all Select $_private(selectall)
-    puts values=[$table column values Select]
 }
 
 proc autofilter::Cancel { menu } {
@@ -1467,6 +1465,3 @@ bind .e.autofilter <Leave> {
     .e.autofilter.frame.comboview deactivate
 }
 
-after 5000 {
-  puts stderr "grab=[grab current]"
-}
