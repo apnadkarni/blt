@@ -295,7 +295,9 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	if { [$view type $item] == "cascade" } {
 	    set cascade [$view item cget $item -menu]
 	    if { $cascade != "" } {
-		blt::grab push $view -global
+                if { [winfo class $view] != "BltComboView" } {
+                    blt::grab push $view -global
+                }
 		$view postcascade $item
 		set _private(cascades) $cascade
 		update

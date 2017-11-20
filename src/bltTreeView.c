@@ -4423,7 +4423,7 @@ GetEntryIterator(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
     Blt_Tree tree = viewPtr->tree;
     Blt_TreeNode node;
     Blt_TreeIterator iter;
-    
+
 #ifdef notdef
     viewPtr->fromPtr = NULL;
 #endif
@@ -4434,8 +4434,7 @@ GetEntryIterator(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
     } else if (Blt_Tree_GetNodeFromObj(NULL, tree, objPtr, &node) == TCL_OK) {
         iterPtr->entryPtr = NodeToEntry(viewPtr, node);
         iterPtr->tagType = (TAG_RESERVED | TAG_SINGLE);
-    } else if (Blt_Tree_GetNodeIterator(interp, tree, objPtr, &iter)
-               == TCL_OK) {
+    } else if (Blt_Tree_GetNodeIterator(interp, tree, objPtr, &iter)== TCL_OK) {
         iterPtr->iter = iter;
         iterPtr->tagType = TAG_MULTIPLE;
         node = Blt_Tree_FirstTaggedNode(&iter);
@@ -6771,41 +6770,46 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
 static void
 PrintFlags(TreeView *viewPtr, const char *string)
 {    
-    fprintf(stderr, "%s: flags=", string);
+    Tcl_DString ds;
+
+    Tcl_DStringInit(&ds);
+    Tcl_DStringAppend(&ds, string, -1);
+    Tcl_DStringAppend(&ds, ": flags = ", -1);
     if (viewPtr->flags & LAYOUT_PENDING) {
-        fprintf(stderr, "layout ");
+        Tcl_DStringAppend(&ds, "layout ", -1);
     }
     if (viewPtr->flags & REDRAW_PENDING) {
-        fprintf(stderr, "redraw ");
+        Tcl_DStringAppend(&ds, "redraw ", -1);
     }
     if (viewPtr->flags & SCROLLX) {
-        fprintf(stderr, "xscroll ");
+        Tcl_DStringAppend(&ds, "xscroll ", -1);
     }
     if (viewPtr->flags & SCROLLY) {
-        fprintf(stderr, "yscroll ");
+        Tcl_DStringAppend(&ds, "yscroll ", -1);
     }
     if (viewPtr->flags & FOCUS) {
-        fprintf(stderr, "focus ");
+        Tcl_DStringAppend(&ds, "focus ", -1);
     }
     if (viewPtr->flags & GEOMETRY) {
-        fprintf(stderr, "geometry ");
+        Tcl_DStringAppend(&ds, "geometry ", -1);
     }
     if (viewPtr->flags & UPDATE) {
-        fprintf(stderr, "update ");
+        Tcl_DStringAppend(&ds, "update ", -1);
     }
     if (viewPtr->flags & RESORT) {
-        fprintf(stderr, "resort ");
+        Tcl_DStringAppend(&ds, "resort ", -1);
     }
     if (viewPtr->flags & SORTED) {
-        fprintf(stderr, "sorted ");
+        Tcl_DStringAppend(&ds, "sorted ", -1);
     }
     if (viewPtr->flags & SORT_PENDING) {
-        fprintf(stderr, "sort_pending ");
+        Tcl_DStringAppend(&ds, "sort_pending ", -1);
     }
     if (viewPtr->flags & REDRAW_BORDERS) {
-        fprintf(stderr, "borders ");
+        Tcl_DStringAppend(&ds, "borders ", -1);
     }
-    fprintf(stderr, "\n");
+    fprintf(stderr, "%s\n", Tcl_DStringValue(&ds));
+    Tcl_DStringFree(&ds);
 }
 #endif
 
@@ -7889,15 +7893,19 @@ DrawEntryLabel(
     /* Focus outline */
     if (isFocused) {                    
         XSegment segments[4];
+        int x0, y0, h0, w0;
 
+        w0 = width;
+        h0 = height;
+        x0 = x, y0 = y;
         if (isSelected) {
             XColor *color;
 
             color = viewPtr->selectedFg;
             XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
         }
-        if (width > maxLength) {
-            width = maxLength | 0x1;    /* Width has to be odd for the dots
+        if (w0 > maxLength) {
+            w0 = maxLength | 0x1;    /* Width has to be odd for the dots
                                          * in the focus rectangle to
                                          * align. */
         }
@@ -7909,22 +7917,22 @@ DrawEntryLabel(
          *  3         1
          *  +----2----+
          */
-        y += 2, width -= 2; height -= 4;
-        segments[0].x1 = x | 0x1;
-        segments[0].x2 = (x + width)| 0x1;
-        segments[0].y1 = segments[0].y2 = y | 0x1;
+        /*y0 += 2,*/ x0 -= 1, w0 -= 2; h0 -= 4;
+        segments[0].x1 = x0 | 0x1;
+        segments[0].x2 = (x0 + w0)| 0x1;
+        segments[0].y1 = segments[0].y2 = y0 | 0x1;
 
-        segments[1].x1 = x | 0x1;
-        segments[1].x2 = (x + width)| 0x1;
-        segments[1].y1 = segments[1].y2 = (y + height) | 0x1;
+        segments[1].x1 = x0 | 0x1;
+        segments[1].x2 = (x0 + width)| 0x1;
+        segments[1].y1 = segments[1].y2 = (y0 + height) | 0x1;
 
-        segments[2].x1 = segments[2].x2 = x | 0x1;
-        segments[2].y1 = y | 0x1;
-        segments[2].y2 = (y + height) | 0x1;
+        segments[2].x1 = segments[2].x2 = x0 | 0x1;
+        segments[2].y1 = y0 | 0x1;
+        segments[2].y2 = (y0 + height) | 0x1;
 
-        segments[3].x1 = segments[3].x2 = (x + width) | 0x1;
-        segments[3].y1 = y | 0x1;
-        segments[3].y2 = (y + height) | 0x1;
+        segments[3].x1 = segments[3].x2 = (x0 + width) | 0x1;
+        segments[3].y1 = y0 | 0x1;
+        segments[3].y2 = (y0 + height) | 0x1;
 
         XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
         if (isSelected) {
@@ -9981,6 +9989,15 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ChrootOp --
+ *
+ *      pathName chroot ?entryName?
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 ChrootOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -10004,6 +10021,15 @@ ChrootOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CloseOp --
+ *
+ *      pathName close entryName ?switches ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 CloseOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -10014,8 +10040,8 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *entryPtr;
     EntryIterator iter;
 
-    if (GetEntryIterator(interp, viewPtr, objv[3], &iter) != TCL_OK) {
-        return TCL_ERROR;
+    if (GetEntryIterator(interp, viewPtr, objv[2], &iter) != TCL_OK) {
+         return TCL_ERROR;
     }
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
@@ -10045,11 +10071,12 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
         }
         if ((viewPtr->sel.anchorPtr != NULL) && 
-            (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->sel.anchorPtr->node))) {
+            (Blt_Tree_IsAncestor(entryPtr->node, 
+                                 viewPtr->sel.anchorPtr->node))) {
             viewPtr->sel.markPtr = viewPtr->sel.anchorPtr=NULL;
         }
         if ((viewPtr->activePtr != NULL) && 
-            (Blt_Tree_IsAncestor(entryPtr->node,viewPtr->activePtr->node))){
+            (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->activePtr->node))) {
             viewPtr->activePtr = entryPtr;
         }
         if (switches.flags & CLOSE_RECURSE) {
