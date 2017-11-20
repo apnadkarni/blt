@@ -283,7 +283,7 @@ proc autofilter::NotEqualsNumberSearch { w } {
         }
     }
     if { $result && [llength $list] > 0 } {
-        set col $_private(column)
+        set col $_private(column)X
         set index [$w column index $col]
         set list [list $list]
         set expr "(!\[info exists ${index}\]) ||
