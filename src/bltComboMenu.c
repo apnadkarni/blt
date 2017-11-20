@@ -1490,7 +1490,7 @@ UpdateTextAndIconVars(Tcl_Interp *interp, ComboMenu *comboPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * SelectItem --
+
  *
  *      Marks the given item as selected. The -textvariable, -iconvariable,
  *      -valuevariable, and -variable TCL variables are set.
@@ -1535,7 +1535,7 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr)
         objPtr = NULL;
         if (itemPtr->flags & ITEM_CHECKBUTTON) {
             objPtr = (itemPtr->flags & ITEM_INDICATOR_ON) ? 
-                itemPtr->onValueObjPtr : itemPtr->offValueObjPtr;
+                itemPtr->offValueObjPtr : itemPtr->onValueObjPtr;
         } else {
             objPtr = itemPtr->valueObjPtr;
             if (objPtr == NULL) {

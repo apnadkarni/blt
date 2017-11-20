@@ -2584,6 +2584,7 @@ ftFontTextWidthProc(Blt_Font font, const char *string, int numBytes)
 {
     int width;
 
+    width = 0;                          /* Suppress compiler warning. */
     ftFontMeasureProc(font, string, numBytes, -1, 0, &width);
     return width;
 }    

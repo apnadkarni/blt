@@ -40,7 +40,7 @@ namespace eval blt {
 	array set _private {
 	    afterId         -
 	    posted          ""
-	    trace           1
+	    trace           0
 	    cascades       ""
 	}
 	proc trace { mesg } {

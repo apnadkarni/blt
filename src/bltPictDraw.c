@@ -2281,6 +2281,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      imageName draw rectangle x1 y1 x2 y2 ?switches ...?
  *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
  *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 int
@@ -2389,13 +2390,9 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 }
 
 Blt_Picture
-Blt_PaintRadioButtonOld(
-     int w, int h, 
-     XColor *bgColorPtr, 
-     XColor *fillColorPtr, 
-     XColor *outlineColorPtr, 
-     XColor *indicatorColorPtr, 
-     int on)
+Blt_PaintRadioButtonOld(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr, 
+                        XColor *outlineColorPtr, XColor *indicatorColorPtr,
+                        int on)
 {
     Pict *destPtr;
     int x, y, r;
@@ -2405,7 +2402,9 @@ Blt_PaintRadioButtonOld(
 
     /* Process switches  */
     brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
-    bg.u32 = Blt_XColorToPixel(bgColorPtr);
+    bg.u32 = Blt_XColorToPixel(bgColorPtr); 
+    fill.u32 = Blt_XColorToPixel(fillColorPtr);
+    outline.u32 = Blt_XColorToPixel(outlineColorPtr);
     Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xFF);
     w &= ~1;
     destPtr = Blt_CreatePicture(w, h);
@@ -2500,6 +2499,7 @@ GetShadowColors(Blt_Bg bg, unsigned int *normalColorPtr,
 }
 
 
+#ifdef notdef
 Blt_Picture
 Blt_PaintRadioButton0(
      int w, int h, 
@@ -2548,6 +2548,7 @@ Blt_PaintRadioButton0(
     Blt_FreeBrush(brush);
     return destPtr;
 }
+#endif
 
 Blt_Picture
 Blt_PaintRadioButton(
@@ -2833,7 +2834,6 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
     Region2d reg;
     Blt_PaintBrush brush;
     double t;
-    Blt_Shadow shadow;
     
     reg.left = reg.top = 0;
     reg.right = w;
@@ -2911,11 +2911,6 @@ Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
         break;
     }
     brush = Blt_NewColorBrush(color);
-#ifdef notdef
-        shadow.width = 2, shadow.offset = 2;
-        shadow.color.u32 = 0x5F000000;
-    PaintPolygonAA2(picture, 7, points, &reg, brush, &shadow);
-#endif
     PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
     Blt_Picture_SetCompositeFlag(picture);
