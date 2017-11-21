@@ -337,8 +337,8 @@ struct _Drawerset {
                                          * reconfigured, or deleted, but
                                          * not when the container is
                                          * resized. */
-#define SLAVE_PENDING   (1<<2)          /* A request to install a new slave
-                                         * widget is pending.  */
+#define WARD_PENDING   (1<<2)          /* A request to install a new
+                                        * embedded widget is pending.  */
 #define ANIMATE         (1<<3)          /* Animate drawer moves and drawer
                                          * open/closes */
 
@@ -3192,9 +3192,9 @@ ConfigureDrawerset(Drawerset *setPtr)
             UnmanageBase(setPtr, setPtr->base);
             setPtr->base = NULL;
         }
-        if ((setPtr->flags & SLAVE_PENDING) == 0) {
+        if ((setPtr->flags & WARD_PENDING) == 0) {
             Tcl_DoWhenIdle(InstallBase, setPtr);
-            setPtr->flags |= SLAVE_PENDING;
+            setPtr->flags |= WARD_PENDING;
         }           
     }
     setPtr->normalWidth = setPtr->normalHeight = 200;

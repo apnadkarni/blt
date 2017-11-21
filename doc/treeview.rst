@@ -287,13 +287,14 @@ to that operation.  The general form is:
 *Operation* and the *arg*s determine the exact behavior of the
 command.  The following operation are available for *treeview* widgets:
 
-*pathName* **bbox** ?\ **-screen**\ ? *tagOrId...*
+*pathName* **bbox**  *cellName* ?\ *switches ...*\ ?
   Returns of list of four numbers describing the bounding box of the
-  specified entries *tagOrId*.  The numbers represent the x and y root
-  coordinates of two opposite corners of the box.  If the **-screen** flag
-  is given, then the x-y coordinates of the bounding box are returned as
-  screen coordinates, not virtual world coordinates. Virtual coordinates
-  start from "0" from the root node.
+  *cellName*.  The numbers represent the x and y coordinates of two
+  opposite corners of the box.  *Switches* can be one of the following:
+
+  **-root**
+    Return the bounding box coordinates in root screen coordinates instead
+    of relative to the *treeview* window.
   
 *pathName* **bind** *tagName* ?\ *sequence*\? ?\ *cmdString*\ ?
   Associates *cmdString* with *tagName* such that whenever the event sequence
@@ -312,12 +313,11 @@ command.  The following operation are available for *treeview* widgets:
   *sequence* are missing then a list of all the event sequences for which
   bindings have been defined for *tagName*.
 
-*pathName* **button activate** *tagOrId*
-  Designates the node given by *tagOrId* as active.  
-  When a node is active its entry is drawn using its active icon 
-  (see the **-activeicon** option). 
-  Note that there can be only one active entry at a time.
-  The special id **active** indicates the currently active node.
+*pathName* **button activate** *entryName*
+  Designates the node given by *entryName* as active.  When a node is
+  active its entry is drawn using its active icon (see the **-activeicon**
+  option).  Note that there can be only one active entry at a time.  The
+  special id **active** indicates the currently active node.
 
 *pathName* **button bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ?
   Associates *cmdString* with *tagName* such that whenever the event sequence

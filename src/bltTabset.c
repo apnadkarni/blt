@@ -460,7 +460,7 @@ struct _Tab {
     Tk_Window tkwin;                    /* Widget to be mapped when the tab is
                                          * selected.  If NULL, don't make
                                          * space for the page. */
-    int reqSlaveWidth, reqSlaveHeight;  /* If non-zero, overrides the
+    int reqWardWidth, reqWardHeight;  /* If non-zero, overrides the
                                          * requested dimensions of the
                                          * embedded widget. */
     Tk_Window container;                /* The window containing the embedded
@@ -833,10 +833,10 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", DEF_TAB_WINDOW, 
         Blt_Offset(Tab, tkwin), BLT_CONFIG_NULL_OK, &childOption},
     {BLT_CONFIG_PIXELS_NNEG, "-windowheight", "windowHeight", "WindowHeight",
-        DEF_TAB_WINDOWHEIGHT, Blt_Offset(Tab, reqSlaveHeight), 
+        DEF_TAB_WINDOWHEIGHT, Blt_Offset(Tab, reqWardHeight), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-windowwidth", "windowWidth", "WindowWidth",
-        DEF_TAB_WINDOWWIDTH, Blt_Offset(Tab, reqSlaveWidth), 
+        DEF_TAB_WINDOWWIDTH, Blt_Offset(Tab, reqWardWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
@@ -3260,8 +3260,8 @@ GetReqWidth(Tab *tabPtr)
 {
     int width;
     
-    if (tabPtr->reqSlaveWidth > 0) {
-        width = tabPtr->reqSlaveWidth;
+    if (tabPtr->reqWardWidth > 0) {
+        width = tabPtr->reqWardWidth;
     } else {
         width = Tk_ReqWidth(tabPtr->tkwin);
     }
@@ -3291,8 +3291,8 @@ GetReqHeight(Tab *tabPtr)
 {
     int height;
 
-    if (tabPtr->reqSlaveHeight > 0) {
-        height = tabPtr->reqSlaveHeight;
+    if (tabPtr->reqWardHeight > 0) {
+        height = tabPtr->reqWardHeight;
     } else {
         height = Tk_ReqHeight(tabPtr->tkwin);
     }
@@ -4878,16 +4878,16 @@ NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
     }
     w = Tk_Width(tabPtr->tkwin);
     if (w < 2) {
-        w = (tabPtr->reqSlaveWidth > 0) 
-            ? tabPtr->reqSlaveWidth : Tk_ReqWidth(tabPtr->tkwin);
+        w = (tabPtr->reqWardWidth > 0) 
+            ? tabPtr->reqWardWidth : Tk_ReqWidth(tabPtr->tkwin);
     }
     w += PADDING(tabPtr->padX) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
     w += 2 * (setPtr->inset2 + setPtr->inset);
 #define TEAR_OFF_TAB_SIZE       5
     h = Tk_Height(tabPtr->tkwin);
     if (h < 2) {
-        h = (tabPtr->reqSlaveHeight > 0)
-            ? tabPtr->reqSlaveHeight : Tk_ReqHeight(tabPtr->tkwin);
+        h = (tabPtr->reqWardHeight > 0)
+            ? tabPtr->reqWardHeight : Tk_ReqHeight(tabPtr->tkwin);
     }
     h += PADDING(tabPtr->padY) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
     h += setPtr->inset + setPtr->inset2 + TEAR_OFF_TAB_SIZE + setPtr->outerPad;

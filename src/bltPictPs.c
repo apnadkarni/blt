@@ -472,7 +472,7 @@ PbmComment(char *bp)
 
     p = bp;
     if (*p == '#') {
-        /* Comment: file end of line */
+        /* Find end of comment line */
         while((*p != '\n') && (*p != '\0')) {
             p++;
         }

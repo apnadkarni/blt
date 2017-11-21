@@ -7865,6 +7865,58 @@ DrawEntryIcon(
 
 
 static void
+DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w, 
+                   int h, int maxLength, int isSelected, TkRegion rgn)
+{
+    XSegment segments[4];
+
+    if (isSelected) {
+        XColor *color;
+        
+        color = viewPtr->selectedFg;
+        XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
+    }
+    if (w > maxLength) {
+        w = maxLength | 0x1;            /* Width has to be odd for the dots
+                                         * in the focus rectangle to
+                                         * align. */
+    }
+    if (rgn != NULL) {
+        TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
+    }       
+    /*
+     *  +----0----+
+     *  3         1
+     *  +----2----+
+     */
+    /*y0 += 2,*/ x -= 1, w -= 2; h -= 4;
+    segments[0].x1 = x | 0x1;
+    segments[0].x2 = (x + w)| 0x1;
+    segments[0].y1 = segments[0].y2 = y | 0x1;
+
+    segments[1].x1 = x | 0x1;
+    segments[1].x2 = (x + w)| 0x1;
+    segments[1].y1 = segments[1].y2 = (y + h) | 0x1;
+
+    segments[2].x1 = segments[2].x2 = x | 0x1;
+    segments[2].y1 = y | 0x1;
+    segments[2].y2 = (y + h) | 0x1;
+
+    segments[3].x1 = segments[3].x2 = (x + w) | 0x1;
+    segments[3].y1 = y | 0x1;
+    segments[3].y2 = (y + h) | 0x1;
+
+    XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
+    if (isSelected) {
+        XSetForeground(viewPtr->display, viewPtr->focusGC, 
+                       viewPtr->focusColor->pixel);
+    }
+    if (rgn != NULL) {
+        XSetClipMask(viewPtr->display, viewPtr->focusGC, None);
+    }       
+}
+
+static void
 DrawEntryLabel(
     TreeView *viewPtr,                  /* Widget record. */
     Entry *entryPtr,                    /* Entry attribute information. */
@@ -7876,72 +7928,24 @@ DrawEntryLabel(
 {
     const char *label;
     int isFocused, isSelected, isActive;
-    int width, height;                  /* Width and height of label. */
+    int w, h;                           /* Width and height of label. */
 
     isFocused = ((entryPtr == viewPtr->focusPtr) && (viewPtr->flags & FOCUS));
     isSelected = EntryIsSelected(viewPtr, entryPtr);
     isActive = (entryPtr == viewPtr->activePtr);
 
     /* Includes padding, selection 3-D border, and focus outline. */
-    width = entryPtr->labelWidth;
-    height = entryPtr->labelHeight;
+    w = entryPtr->labelWidth;
+    h = entryPtr->labelHeight;
 
     /* Center the label, if necessary, vertically along the entry row. */
-    if (height < entryPtr->height) {
-        y += (entryPtr->height - height) / 2;
+    if (h < entryPtr->height) {
+        y += (entryPtr->height - h) / 2;
     }
     /* Focus outline */
     if (isFocused) {                    
-        XSegment segments[4];
-        int x0, y0, h0, w0;
-
-        w0 = width;
-        h0 = height;
-        x0 = x, y0 = y;
-        if (isSelected) {
-            XColor *color;
-
-            color = viewPtr->selectedFg;
-            XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
-        }
-        if (w0 > maxLength) {
-            w0 = maxLength | 0x1;    /* Width has to be odd for the dots
-                                         * in the focus rectangle to
-                                         * align. */
-        }
-        if (rgn != NULL) {
-            TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
-        }       
-        /*
-         *  +----0----+
-         *  3         1
-         *  +----2----+
-         */
-        /*y0 += 2,*/ x0 -= 1, w0 -= 2; h0 -= 4;
-        segments[0].x1 = x0 | 0x1;
-        segments[0].x2 = (x0 + w0)| 0x1;
-        segments[0].y1 = segments[0].y2 = y0 | 0x1;
-
-        segments[1].x1 = x0 | 0x1;
-        segments[1].x2 = (x0 + width)| 0x1;
-        segments[1].y1 = segments[1].y2 = (y0 + height) | 0x1;
-
-        segments[2].x1 = segments[2].x2 = x0 | 0x1;
-        segments[2].y1 = y0 | 0x1;
-        segments[2].y2 = (y0 + height) | 0x1;
-
-        segments[3].x1 = segments[3].x2 = (x0 + width) | 0x1;
-        segments[3].y1 = y0 | 0x1;
-        segments[3].y2 = (y0 + height) | 0x1;
-
-        XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
-        if (isSelected) {
-            XSetForeground(viewPtr->display, viewPtr->focusGC, 
-                viewPtr->focusColor->pixel);
-        }
-        if (rgn != NULL) {
-            XSetClipMask(viewPtr->display, viewPtr->focusGC, None);
-        }       
+        DrawFocusRectangle(viewPtr, drawable, x, y, w, h, isSelected, 
+                maxLength, rgn);
     }
     x += FOCUS_PAD + LABEL_PADX;
     y += FOCUS_PAD + LABEL_PADY;
@@ -8105,20 +8109,20 @@ DisplayCell(TreeView *viewPtr, Cell *cellPtr)
  *
  * DrawFlatEntry --
  *
- *      Draws a button for the given entry.  Note that buttons should only be
- *      drawn if the entry has sub-entries to be opened or closed.  It's the
- *      responsibility of the calling routine to ensure this.
+ *      Draws a button for the given entry.  Note that buttons should only
+ *      be drawn if the entry has sub-entries to be opened or closed.  It's
+ *      the responsibility of the calling routine to ensure this.
  *
- *      The button is drawn centered in the region immediately to the left of
- *      the origin of the entry (computed in the layout routines). The height
- *      and width of the button were previously calculated from the average row
- *      height.
+ *      The button is drawn centered in the region immediately to the left
+ *      of the origin of the entry (computed in the layout routines). The
+ *      height and width of the button were previously calculated from the
+ *      average row height.
  *
  *              button height = entry height - (2 * some arbitrary padding).
  *              button width = button height.
  *
- *      The button has a border.  The symbol (either a plus or minus) is slight
- *      smaller than the width or height minus the border.
+ *      The button has a border.  The symbol (either a plus or minus) is
+ *      slight smaller than the width or height minus the border.
  *
  *          x,y origin of entry
  *
@@ -8148,7 +8152,8 @@ DrawFlatEntry(
                                          * attribute information for
                                          * buttons. */
     Entry *entryPtr,                    /* Entry to be drawn. */
-    Drawable drawable)                  /* Pixmap or window to draw into. */
+    Drawable drawable)                  /* Pixmap or window to draw
+                                         * into. */
 {
     int level;
     int x, y, xMax;
@@ -9007,6 +9012,7 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * BboxOp --
  *
  *      pathName bbox entryName ?switches...?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
