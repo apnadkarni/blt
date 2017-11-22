@@ -1,4 +1,4 @@
-/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
+
 /*
  * bltTreeView.c --
  *
@@ -7944,8 +7944,8 @@ DrawEntryLabel(
     }
     /* Focus outline */
     if (isFocused) {                    
-        DrawFocusRectangle(viewPtr, drawable, x, y, w, h, isSelected, 
-                maxLength, rgn);
+        DrawFocusRectangle(viewPtr, drawable, x, y, w, h, 
+                maxLength, isSelected, rgn);
     }
     x += FOCUS_PAD + LABEL_PADX;
     y += FOCUS_PAD + LABEL_PADY;

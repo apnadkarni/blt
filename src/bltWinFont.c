@@ -1097,7 +1097,6 @@ GetFontFromPattern(Tcl_Interp *interp, Tk_Window tkwin, FontPattern *patternPtr)
 
     /* Rewrite the font description using the aliased family. */
     FontPatternToDString(tkwin, patternPtr, &ds);
-fprintf(stderr, "trying to open %s for %s\n",  Tcl_DStringValue(&ds), Tk_PathName(tkwin));
     tkFont = Tk_GetFont(interp, tkwin, Tcl_DStringValue(&ds));
     Tcl_DStringFree(&ds);
     return tkFont;
@@ -1591,7 +1590,6 @@ ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
     fmPtr->ascent = tm.tmAscent;
     fmPtr->descent = tm.tmDescent;
     fmPtr->linespace = tm.tmHeight + tm.tmInternalLeading;
-fprintf(stderr, "font=%s asc=%d des=%d ls=%d\n", Tk_NameOfFont(setPtr->tkFont), fmPtr->ascent, fmPtr->descent, fmPtr->linespace);
     fmPtr->tabWidth = tkFontPtr->tabWidth;
     fmPtr->underlinePos = tkFontPtr->underlinePos;
     fmPtr->underlineHeight = tkFontPtr->underlineHeight;
@@ -1780,6 +1778,9 @@ ExtFontUnderlineCharsProc(
 {
     ExtFontset *setPtr = fontPtr->clientData;
 
+    if (last == -1) {
+	last = textLen;
+    }
     Tk_UnderlineChars(display, drawable, gc, setPtr->tkFont, string, x, y, 
         first, last);
 }
@@ -1825,7 +1826,6 @@ Blt_GetFontFromObj(
         MakeAliasTable(tkwin);
         font_initialized++;
     }
-fprintf(stderr, "Blt_GetFontFromObj: font is %s\n", Tcl_GetString(objPtr));
     setPtr = GetFontsetFromObj(interp, tkwin, objPtr);
     if (setPtr == NULL) {
 #if DEBUG_FONT_SELECTION
