@@ -7944,8 +7944,8 @@ DrawEntryLabel(
     }
     /* Focus outline */
     if (isFocused) {                    
-        DrawFocusRectangle(viewPtr, drawable, x, y, w, h, isSelected, 
-                maxLength, rgn);
+        DrawFocusRectangle(viewPtr, drawable, x, y, w, h, 
+                           isSelected, maxLength, rgn);
     }
     x += FOCUS_PAD + LABEL_PADX;
     y += FOCUS_PAD + LABEL_PADY;

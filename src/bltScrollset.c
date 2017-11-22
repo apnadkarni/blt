@@ -2263,8 +2263,8 @@ DisplayProc(ClientData clientData)
     }
     if ((setPtr->wardWidth < VPORTWIDTH(setPtr)) ||
         (setPtr->wardHeight < VPORTHEIGHT(setPtr))) {
-        /* Only needed if scrollset window is bigger than the embedded
-         * widget window. */
+        /* Only need to draw the background of the scrollset window if the
+         * window is than the embedded widget. */
         Blt_Bg_FillRectangle(setPtr->tkwin, Tk_WindowId(setPtr->tkwin), 
                 setPtr->bg, 0, 0, VPORTWIDTH(setPtr), VPORTHEIGHT(setPtr), 
                 0, TK_RELIEF_FLAT);
