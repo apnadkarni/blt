@@ -1778,6 +1778,9 @@ ExtFontUnderlineCharsProc(
 {
     ExtFontset *setPtr = fontPtr->clientData;
 
+    if (last == -1) {
+	last = textLen;
+    }
     Tk_UnderlineChars(display, drawable, gc, setPtr->tkFont, string, x, y, 
         first, last);
 }

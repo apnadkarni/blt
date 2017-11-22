@@ -142,10 +142,6 @@ focus .ss.t
 
 puts "$count entries"
 
-.ss.t column bind all <ButtonRelease-3> {
-    %W configure -flat yes
-}
-
 .ss.t style checkbox check \
     -onvalue 30 -offvalue "50" \
     -showvalue yes 
