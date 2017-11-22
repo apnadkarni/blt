@@ -925,7 +925,41 @@ InstallYScrollbarProc(ClientData clientData)
     }
 }
 
-
+/*
+ *---------------------------------------------------------------------------
+ *
+ * InstallWardProc --
+ *
+ *      Idle callback to install the designated embedded widget in the
+ *      scrollset widget.  Part of the installation is to try and run
+ *      the "xview" and "yview" operations of the embedded widget to see
+ *      if they exist.  This tells us if the embedded widget natively
+ *      handles scrolling operations or if we have to move its window
+ *      to simulate scrolling.
+ *
+ *      This is done in an idle event to eliminate the chicken-and-the-egg
+ *      problem where the embedded widget must be child of the scrollset
+ *      widget, but you want to specify the -window option when you create
+ *      the scrollset, not in a separate command afterwards.
+ *
+ *      Deferring the installation requires some changes to way embedded
+ *      windows are handled.  Normally, Tk_GeometryRequest is called from
+ *      the configure routine. Because we get the requested size from the
+ *      embedded widget, we have to wait until after this routine is called
+ *      to set the requested size of the scrollset.
+ *
+ *      Further, the scrolling region as set by the "xset" or "yset"
+ *      operations may not be correct.  Scrollbars do not report the
+ *      correct first and last values when the window is only 1x1.  We have
+ *      to ignore these calls until the window is made some reasonable
+ *      size.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The window pointer is
+ *      written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 InstallWardProc(ClientData clientData)
 {
@@ -977,6 +1011,27 @@ InstallWardProc(ClientData clientData)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureScrollbarsProc --
+ *
+ *      Idle callback to run a pre-defined TCL procedure to configure the
+ *      scrollbars that have been installed.  This procedure sets the
+ *      (-orient) orientation of the scrollbars and configures the
+ *      scrolling command (-command) for the scrollbars.
+ *
+ *      This procedure gets called any time a scrollbar is installed.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects: 
+ *      The scrollset widget and its scrollbars are configured for
+ *      scrolling.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 ConfigureScrollbarsProc(ClientData clientData)
 {
@@ -997,6 +1052,28 @@ ConfigureScrollbarsProc(ClientData clientData)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ComputeGeometry --
+ *      
+ *      Calls Tk_GeometryRequest to set the requested size of the scrollset
+ *      widget.  This is usually the requested size of the embedded widget, 
+ *      but can be overridden by the -reqwidth and -reqheight options.
+ *
+ *      Normally this would be called from the configure routine.  But
+ *      since the actual installation of embedded window is deferred, this
+ *      gets called from the DisplayProc routine when the widget flag
+ *      GEOMETRY is set.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects: 
+ *      The requested size of the scrollset widget is set.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 ComputeGeometry(Scrollset *setPtr)
 {
@@ -1033,6 +1110,29 @@ ComputeGeometry(Scrollset *setPtr)
     setPtr->flags |= LAYOUT_PENDING;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ArrangeWindows --
+ *      
+ *      Does the work of arrange the child windows in the scrollset.  It
+ *      determines if scrollbars are needed (based upon the sizes of the
+ *      scrollset and embedded widgets). Up to four windows are arranged:
+ *      the embedded widget, two scrollbars, and a shangle.  The shangle
+ *      is a small window to cover the corner where the two scrollbars
+ *      meet.
+ *
+ *      This routine gets called when the size of the scrollset of any of
+ *      its child windows changes.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects: 
+ *      The child windows are moved, resized, and mapped.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 ArrangeWindows(Scrollset *setPtr)
 { 
@@ -1306,6 +1406,19 @@ ArrangeWindows(Scrollset *setPtr)
     setPtr->flags &= ~LAYOUT_PENDING;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureScrollset --
+ *      
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side Effects: 
+ *      The child windows are moved, resized, and mapped.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 ConfigureScrollset(Tcl_Interp *interp, Scrollset *setPtr, int objc,
                    Tcl_Obj *const *objv, int flags)
@@ -1428,8 +1541,9 @@ ScrollsetEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * WindowEventProc --
  *
- *      This procedure is invoked by the Tk event handler when StructureNotify
- *      events occur in a scrollbar managed by the widget.
+ *      This procedure is invoked by the Tk event handler when
+ *      StructureNotify events occur in a scrollbar or widget managed by
+ *      the scrollset widget.
  *
  * Results:
  *      None.
@@ -1438,8 +1552,9 @@ ScrollsetEventProc(ClientData clientData, XEvent *eventPtr)
  */
 static void
 WindowEventProc(
-    ClientData clientData,              /* Pointer to Entry structure for widget
-                                         * referred to by eventPtr. */
+    ClientData clientData,              /* Pointer to Scrollset structure
+                                         * for widget referred to by
+                                         * eventPtr. */
     XEvent *eventPtr)                   /* Describes what just happened. */
 {
     Scrollset *setPtr = clientData;
@@ -1474,15 +1589,15 @@ WindowEventProc(
  *
  * ScrollsetCustodyProc --
  *
- *      This procedure is invoked when a scrollbar has been stolen by another
- *      geometry manager.
+ *      This procedure is invoked when a scrollbar or embedded widget has
+ *      been stolen by another geometry manager.
  *
  * Results:
  *      None.
  *
  * Side effects:
-  *     Arranges for the scrollset to have its layout re-arranged at the next
- *      idle point.
+ *      Arranges for the scrollset to have its layout re-arranged at the
+ *      next idle point.
  *
  *---------------------------------------------------------------------------
  */
@@ -1551,7 +1666,7 @@ ScrollsetGeometryProc(ClientData clientData, Tk_Window tkwin)
  *      Commands may get excecuted; variables may get set; sub-menus may
  *      get posted.
  *
- *      .cm configure ?option value?...
+ *      pathName configure ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -1585,14 +1700,12 @@ ConfigureOp(Scrollset *setPtr, Tcl_Interp *interp, int objc,
  *
  * CgetOp --
  *
+ *      Returns the value of the named widget option.
+ *
  * Results:
  *      Standard TCL result.
  *
- * Side effects:
- *      Commands may get excecuted; variables may get set; sub-menus may
- *      get posted.
- *
- *      .cm cget option
+ *      pathName cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -1608,12 +1721,17 @@ CgetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SetOp --
  *
- *      This command is only for ward widgets that have scrolling
+ *      This command is only for embedded widgets that have scrolling
  *      capabilities: ie. the ward will issue "set" commands to what it
  *      thinks is its scrollbar. This procedure acts as a relay the "set"
  *      operation from the ward widget to scrollbar.  This routine checks
  *      to see if the first/last values are 0 and 1 respectively,
  *      indicating no scrollbar is necessary.
+ *
+ *      Because the Tk_GeometryRequest call for the scrollset is deferred
+ *      until the embedded widget has been created, it is possible for a
+ *      scrollbar to call this routine when the scrollset is still 1x1.
+ *      The first and last numbers will be bogus.  
  *
  *      pathName xset first last 
  *      pathName yset first last 
@@ -2124,9 +2242,6 @@ DisplayProc(ClientData clientData)
         ArrangeWindows(setPtr);
     }
     if (!Tk_IsMapped(setPtr->tkwin)) {
-        /* The scrollset's window isn't displayed, so don't bother drawing
-         * anything.  By getting this far, we've at least computed the
-         * coordinates of the scrollset's new layout.  */
         return;
     }
     if (setPtr->flags & SCROLL_PENDING) {
