@@ -151,7 +151,7 @@
 #define DEF_COLUMN_ARROWWIDTH           "0"
 #define DEF_COLUMN_BG                   (char *)NULL
 #define DEF_COLUMN_BINDTAGS            "all"
-#define DEF_COLUMN_BORDERWIDTH          STD_BORDERWIDTH
+#define DEF_COLUMN_BORDERWIDTH          "0"
 #define DEF_COLUMN_COLOR                RGB_BLACK
 #define DEF_COLUMN_EDIT                 "yes"
 #define DEF_COLUMN_FONT                 STD_FONT
@@ -162,12 +162,12 @@
 #define DEF_COLUMN_JUSTIFY              "center"
 #define DEF_COLUMN_MAX                  "0"
 #define DEF_COLUMN_MIN                  "0"
-#define DEF_COLUMN_PAD                  "2"
+#define DEF_COLUMN_PAD                  "0"
 #define DEF_COLUMN_RELIEF               "flat"
 #define DEF_COLUMN_STATE                "normal"
 #define DEF_COLUMN_STYLE                "default"
 #define DEF_COLUMN_TITLE_BG             STD_NORMAL_BACKGROUND
-#define DEF_COLUMN_TITLE_BORDERWIDTH    STD_BORDERWIDTH
+#define DEF_COLUMN_TITLE_BORDERWIDTH    "2"
 #define DEF_COLUMN_TITLE_FONT           STD_FONT_NORMAL
 #define DEF_COLUMN_TITLE_FOREGROUND     STD_NORMAL_FOREGROUND
 #define DEF_COLUMN_TITLE_RELIEF         "raised"

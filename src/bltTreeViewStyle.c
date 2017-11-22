@@ -3306,7 +3306,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height += 2 * CELL_PADY;
     cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
-
+fprintf(stderr, "1. cw=%d\n", cellPtr->width);
     FormatCell(cellStylePtr, cellPtr);
     if (stylePtr->icon != NULL) {
         iw = IconWidth(stylePtr->icon);
@@ -3342,6 +3342,8 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + 2 * gap + aw + tw;
+    fprintf(stderr, "2. cw=%d iw=%d gap=%d aw=%d tw=%d\n", 
+            cellPtr->width, gap, iw, aw, tw);
     cellPtr->height += MAX3(th, ih, ah);
 }
 
@@ -3417,6 +3419,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     if ((colWidth <= 0) || (rowHeight <= 0)) {
         return;
     }
+    fprintf(stderr, "col=%d colWidth=%d cellWidth=%d\n", colPtr->index, 
+            colWidth, cellPtr->width);
 
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
@@ -3525,7 +3529,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     }
     if (cellPtr->dataObjPtr != NULL) {
         TextStyle ts;
-        int xMax;
+        int maxLength;
         TextLayout *textPtr;
         const char *string;
         int length;
@@ -3534,10 +3538,12 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        xMax = SCREENX(viewPtr, colPtr->worldX) + colWidth - 
-            stylePtr->arrowWidth;
-        Blt_Ts_SetMaxLength(ts, xMax - tx);
+        maxLength = colWidth - stylePtr->arrowWidth;
+        Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
+        fprintf(stderr, "col=%d w=%d colWidth=%d cellWidth=%d maxLength=%d dx=%d tw=%d\n",
+                colPtr->index, colPtr->width, colWidth, cellWidth, 
+                maxLength, tx-x0, textPtr->width);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
@@ -4059,7 +4065,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     if ((stylePtr->flags & SHOW_TEXT) && (cellPtr->dataObjPtr != NULL)) {
         TextStyle ts;
-        int xMax;
+        int maxLength;
         TextLayout *textPtr;
         const char *string;
         int length;
@@ -4070,8 +4076,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        xMax = colWidth - iw - gap;
-        Blt_Ts_SetMaxLength(ts, xMax);
+        maxLength = colWidth - iw - gap;
+        Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
@@ -4542,7 +4548,7 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
     }
     if (stylePtr->flags & SHOW_VALUE) {
         TextStyle ts;
-        int xMax;
+        int maxLength;
         const char *string;
         int length;
         TextLayout *textPtr;
@@ -4551,8 +4557,8 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        xMax = colWidth - iw - bw - gap - stylePtr->gap;
-        Blt_Ts_SetMaxLength(ts, xMax);
+        maxLength = colWidth - iw - bw - gap - stylePtr->gap;
+        Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
