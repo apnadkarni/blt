@@ -152,8 +152,9 @@ typedef struct {
                                          * structures haven't yet been
                                          * cleaned up. */
     Tcl_Command cmdToken;               /* Token for widget's command. */
-    Tcl_Obj *wardObjPtr;                /* Name of the widget to be embed
-                                         * into the scrollset window. */
+    Tcl_Obj *winObjPtr;                 /* Name of the widget to be embed
+                                         * into the scrollset window:
+                                         * -window option.*/
     Tk_Window ward;                     /* Embedded window to be managed by
                                          * this widget. */
     Tk_Window shangle;
@@ -293,7 +294,7 @@ static Blt_ConfigSpec scrollsetSpecs[] =
     {BLT_CONFIG_PIXELS, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(Scrollset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-window", "window", "Window", DEF_WINDOW, 
-        Blt_Offset(Scrollset, wardObjPtr), 
+        Blt_Offset(Scrollset, winObjPtr), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
         0, 0}
@@ -938,7 +939,7 @@ InstallWardProc(ClientData clientData)
     if (setPtr->tkwin == NULL) {
         return;                         /* Widget has been destroyed. */
     }
-    if (InstallWindow(interp, setPtr, setPtr->wardObjPtr, &setPtr->ward) 
+    if (InstallWindow(interp, setPtr, setPtr->winObjPtr, &setPtr->ward) 
         != TCL_OK) {
         Tcl_BackgroundError(interp);
         return;
@@ -948,7 +949,7 @@ InstallWardProc(ClientData clientData)
         cmdObjPtr = Tcl_DuplicateObj(setPtr->yViewCmdObjPtr);
     } else {
         cmdObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->wardObjPtr);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->winObjPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr,Tcl_NewStringObj("yview",5));
     }
     Tcl_IncrRefCount(cmdObjPtr);
@@ -964,7 +965,7 @@ InstallWardProc(ClientData clientData)
         cmdObjPtr = Tcl_DuplicateObj(setPtr->xViewCmdObjPtr);
     } else {
         cmdObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->wardObjPtr);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->winObjPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr,Tcl_NewStringObj("xview",5));
     }
     Tcl_IncrRefCount(cmdObjPtr);
@@ -1140,7 +1141,8 @@ ArrangeWindows(Scrollset *setPtr)
         }
     }
     x = y = 0;
-    dx = dy = 0;
+    dx = viewWidth - wardWidth;
+    dy = viewHeight - wardHeight;
     if ((dx > 0) || (dy > 0)) {
         TranslateAnchor(dx, dy, setPtr->anchor, &x, &y);
     }
@@ -1210,10 +1212,9 @@ ArrangeWindows(Scrollset *setPtr)
                                 wardWidth, wardHeight);
         } else {
 #ifdef notdef
-            fprintf(stderr, "x=%d,y=%d, wardX=%d wardY=%d wardWidth=%d sw=%d wardHeight=%d, sh=%d\n",
+            fprintf(stderr, "x=%d,y=%d, wardX=%d wardY=%d wardWidth=%d wardHeight=%d, vw=%d vh=%d\n",
                     x, y, Tk_X(setPtr->ward), Tk_Y(setPtr->ward),
-                    wardWidth, Tk_Width(setPtr->ward),
-                    wardHeight, Tk_Height(setPtr->ward));
+                    wardWidth, wardHeight, viewWidth, viewHeight);
 #endif
             if ((x != Tk_X(setPtr->ward)) || (y != Tk_Y(setPtr->ward)) ||
                 (wardWidth != Tk_Width(setPtr->ward)) ||
@@ -1722,7 +1723,7 @@ XviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             cmdObjPtr = Tcl_DuplicateObj(setPtr->xViewCmdObjPtr);
         } else {
             cmdObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->wardObjPtr);
+            Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->winObjPtr);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, 
                 Tcl_NewStringObj("xview", 5));
         }
@@ -1785,7 +1786,7 @@ YviewOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             cmdObjPtr = Tcl_DuplicateObj(setPtr->yViewCmdObjPtr);
         } else {
             cmdObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->wardObjPtr);
+            Tcl_ListObjAppendElement(interp, cmdObjPtr, setPtr->winObjPtr);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, 
                                      Tcl_NewStringObj("yview", 5));
         }

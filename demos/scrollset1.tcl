@@ -4,6 +4,7 @@ package require BLT
 blt::scrollset .ss \
     -xscrollbar .ss.xsbar \
     -yscrollbar .ss.ysbar \
+    -fill none \
     -window .ss.g 
 
 blt::tk::scrollbar .ss.ysbar; # -orient vertical 
