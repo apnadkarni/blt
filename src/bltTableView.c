@@ -401,13 +401,13 @@ static Blt_ConfigSpec tableSpecs[] =
         DEF_SORT_DOWN_ICON, Blt_Offset(TableView, sort.down), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_BACKGROUND, "-disabledcolumntitlebackground", 
-        "diabledColumnTitleBackground", "DisabledTitleBackground", 
+        "disabledColumnTitleBackground", "DisabledTitleBackground", 
         DEF_DISABLED_TITLE_BG, Blt_Offset(TableView, colDisabledTitleBg), 0},
     {BLT_CONFIG_COLOR, "-disabledcolumntitleforeground", 
         "disabledColumnTitleForeground", "DisabledTitleForeground", 
         DEF_DISABLED_TITLE_FG, Blt_Offset(TableView, colDisabledTitleFg), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledrowtitlebackground", 
-        "diabledRowTitleBackground", "DisabledTitleBackground", 
+        "disabledRowTitleBackground", "DisabledTitleBackground", 
         DEF_DISABLED_TITLE_BG, Blt_Offset(TableView, rowDisabledTitleBg), 0},
     {BLT_CONFIG_COLOR, "-disabledrowtitleforeground", 
         "disabledRowTitleForeground", "DisabledTitleForeground", 
@@ -415,7 +415,6 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
         "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(TableView, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(TableView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
@@ -662,7 +661,7 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(TableView, filter.borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "diabledBackground", 
+    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground", 
         "DisabledBackground", DEF_FILTER_DISABLED_BG, 
         Blt_Offset(TableView, filter.disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
@@ -7259,7 +7258,7 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellIdentifyOp --
  *
- *      pathName cell identify cell x y 
+ *      pathName cell identify cellName x y 
  *
  *---------------------------------------------------------------------------
  */

@@ -1089,9 +1089,19 @@ ComputeGeometry(Scrollset *setPtr)
      * the user has specified a size. */
     if (setPtr->reqWidth > 0) {
         w = setPtr->reqWidth;
+    } else {
+        if ((setPtr->yScrollbar != NULL) &&
+            ((setPtr->flags & Y_STATIC) || (h > setPtr->reqHeight))) {
+            w += setPtr->yScrollbarWidth;
+        }
     }
     if (setPtr->reqHeight > 0) {
         h = setPtr->reqHeight;
+    } else {
+        if ((setPtr->xScrollbar != NULL) &&
+            ((setPtr->flags & X_STATIC) || (w > setPtr->reqWidth))) {
+            h += setPtr->xScrollbarHeight;
+        }
     }
     setPtr->worldWidth = setPtr->worldHeight = 0;
     if ((setPtr->flags & WARD_XVIEW) == 0) {

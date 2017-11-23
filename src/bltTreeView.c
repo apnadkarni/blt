@@ -204,9 +204,9 @@
 #define DEF_DASHES              "dot"
 #define DEF_EXPORT_SELECTION    "no"
 #define DEF_FLAT                "no"
-#define DEF_FOCUS_DASHES        "dot"
-#define DEF_FOCUS_FOREGROUND    STD_ACTIVE_FOREGROUND
+#define DEF_FOCUS_DASHES        "0"
 #define DEF_FOCUS_FG_MONO       STD_ACTIVE_FG_MONO
+#define DEF_FOCUS_FOREGROUND    RGB_SKYBLUE1
 #define DEF_FONT                STD_FONT_NORMAL
 #define DEF_HEIGHT              "400"
 #define DEF_HIDE_LEAVES         "no"
@@ -7868,8 +7868,6 @@ static void
 DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w, 
                    int h, int maxLength, int isSelected, TkRegion rgn)
 {
-    XSegment segments[4];
-
     if (isSelected) {
         XColor *color;
         
@@ -7877,9 +7875,7 @@ DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w,
         XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
     }
     if (w > maxLength) {
-        w = maxLength | 0x1;            /* Width has to be odd for the dots
-                                         * in the focus rectangle to
-                                         * align. */
+        w = maxLength;		
     }
     if (rgn != NULL) {
         TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
@@ -7889,24 +7885,8 @@ DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w,
      *  3         1
      *  +----2----+
      */
-    /*y0 += 2,*/ x -= 1, w -= 2; h -= 4;
-    segments[0].x1 = x | 0x1;
-    segments[0].x2 = (x + w)| 0x1;
-    segments[0].y1 = segments[0].y2 = y | 0x1;
-
-    segments[1].x1 = x | 0x1;
-    segments[1].x2 = (x + w)| 0x1;
-    segments[1].y1 = segments[1].y2 = (y + h) | 0x1;
-
-    segments[2].x1 = segments[2].x2 = x | 0x1;
-    segments[2].y1 = y | 0x1;
-    segments[2].y2 = (y + h) | 0x1;
-
-    segments[3].x1 = segments[3].x2 = (x + w) | 0x1;
-    segments[3].y1 = y | 0x1;
-    segments[3].y2 = (y + h) | 0x1;
-
-    XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
+    /*y0 += 2,*/ x -= 1, w += 2, h -= 4;
+    XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, x, y, w, h);
     if (isSelected) {
         XSetForeground(viewPtr->display, viewPtr->focusGC, 
                        viewPtr->focusColor->pixel);

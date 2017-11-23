@@ -2393,11 +2393,13 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     x += stylePtr->borderWidth + colPtr->pad.side1;
     y += stylePtr->borderWidth;
 
+#ifdef notdef
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) {
         XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
                        rowHeight - 4);
     }
+#endif
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
@@ -2500,8 +2502,9 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_SetMaxLength(ts, xMax);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-        if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
-            (viewPtr->activeCellPtr == cellPtr)) {
+        if (((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) ||
+            ((stylePtr->flags & UNDERLINE_ACTIVE) &&
+             (viewPtr->activeCellPtr == cellPtr))) {
             Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
                 &ts, tx, ty);
         }
@@ -3306,7 +3309,6 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height += 2 * CELL_PADY;
     cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
-fprintf(stderr, "1. cw=%d\n", cellPtr->width);
     FormatCell(cellStylePtr, cellPtr);
     if (stylePtr->icon != NULL) {
         iw = IconWidth(stylePtr->icon);
@@ -3319,7 +3321,7 @@ fprintf(stderr, "1. cw=%d\n", cellPtr->width);
     } else if (cellPtr->dataObjPtr != NULL) {
         TextStyle ts;
         const char *string;
-
+        
         string = Tcl_GetString(cellPtr->dataObjPtr);
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
@@ -3342,8 +3344,6 @@ fprintf(stderr, "1. cw=%d\n", cellPtr->width);
     aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + 2 * gap + aw + tw;
-    fprintf(stderr, "2. cw=%d iw=%d gap=%d aw=%d tw=%d\n", 
-            cellPtr->width, gap, iw, aw, tw);
     cellPtr->height += MAX3(th, ih, ah);
 }
 
@@ -3419,9 +3419,6 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     if ((colWidth <= 0) || (rowHeight <= 0)) {
         return;
     }
-    fprintf(stderr, "col=%d colWidth=%d cellWidth=%d\n", colPtr->index, 
-            colWidth, cellPtr->width);
-
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -3481,9 +3478,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
     colWidth  -= 2 * (FOCUS_PAD + CELL_PADX);
 
-    cellHeight = cellPtr->height - 
+    cellHeight = cellPtr->height - rowPtr->ruleHeight -
         2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD);
-    cellWidth  = cellPtr->width  - PADDING(colPtr->pad) - 
+    cellWidth  = cellPtr->width  - colPtr->ruleWidth - PADDING(colPtr->pad) - 
         2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD);
 
     /* Justify (x) and center (y) the contents of the cell. */
@@ -3538,12 +3535,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        maxLength = colWidth - stylePtr->arrowWidth;
+        maxLength = cellWidth - stylePtr->arrowWidth;
         Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
-        fprintf(stderr, "col=%d w=%d colWidth=%d cellWidth=%d maxLength=%d dx=%d tw=%d\n",
-                colPtr->index, colPtr->width, colWidth, cellWidth, 
-                maxLength, tx-x0, textPtr->width);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
@@ -3560,7 +3554,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         aw = stylePtr->arrowWidth;
         ah = stylePtr->arrowHeight;
         ax = x0 + colPtr->width - colPtr->ruleWidth - stylePtr->arrowWidth - 
-            - colPtr->pad.side1;
+            - colPtr->pad.side1 - 1;
         ay = y;
         
         if (rowHeight > ah) {

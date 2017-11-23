@@ -140,8 +140,7 @@
 #define DEF_COMMAND                     (char *)NULL
 #define DEF_DISABLE_BG                  RGB_GREY97
 #define DEF_DISABLE_FG                  RGB_GREY85
-#define DEF_FOCUS_COLOR                 "black"
-#define DEF_FOCUS_DASHES                "dot"
+#define DEF_FOCUS_COLOR                 RGB_SKYBLUE1
 #define DEF_GAP                         "3"
 #define DEF_ICON                        (char *)NULL
 #define DEF_IMAGEBOX_ACTIVE_RELIEF      "flat"
@@ -292,6 +291,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -314,6 +314,8 @@ typedef struct {
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
+                                         * text. */
+    GC focusGC;                         /* Graphics context of selected
                                          * text. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
@@ -390,6 +392,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -412,6 +415,8 @@ typedef struct {
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
+                                         * text. */
+    GC focusGC;                         /* Graphics context of selected
                                          * text. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
@@ -500,6 +505,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
                                          * is active. Textboxes are usually
@@ -520,6 +526,8 @@ typedef struct {
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
+                                         * text. */
+    GC focusGC;                         /* Graphics context of selected
                                          * text. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
@@ -632,6 +640,7 @@ typedef struct {
                                          * highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell is
                                          * selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of cell. */
     Blt_Bg activeBg;                    /* Background color when the cell is
                                          * active. Textboxes are usually never
@@ -649,6 +658,8 @@ typedef struct {
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
+                                         * text. */
+    GC focusGC;                         /* Graphics context of selected
                                          * text. */
     Tk_Justify justify;                 /* Indicates how the text or icon is
                                          * justified within the column. */
@@ -721,6 +732,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -743,6 +755,8 @@ typedef struct {
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
+                                         * text. */
+    GC focusGC;                         /* Graphics context of selected
                                          * text. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
@@ -813,6 +827,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_TEXTBOX_EDITOR, 
         Blt_Offset(TextBoxStyle, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(TextBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT,
         Blt_Offset(TextBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -886,10 +902,12 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
         Blt_Offset(TextBoxStyle, disableFg), 0},
     {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
     {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_CHECKBOX_EDIT, 
         Blt_Offset(CheckBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(CheckBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_CHECKBOX_FONT,
         Blt_Offset(TextBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -987,6 +1005,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
         Blt_Offset(ComboBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(ComboBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_COMBOBOX_FONT,
         Blt_Offset(ComboBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -1082,6 +1102,8 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
         Blt_Offset(ImageBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(ImageBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
         Blt_Offset(ImageBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -1160,6 +1182,8 @@ static Blt_ConfigSpec pushButtonStyleSpecs[] =
         Blt_Offset(PushButtonStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(PushButtonStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
         Blt_Offset(PushButtonStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -2396,8 +2420,8 @@ NewTextBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
  *
  * TextBoxStyleConfigureProc --
  *
- *      Configures a "textbox" style.  This routine generates the GCs required
- *      for a textbox style.
+ *      Configures a "textbox" style.  This routine generates the GCs
+ *      required for a textbox style.
  *
  * Results:
  *      None.
@@ -2415,11 +2439,9 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -2428,6 +2450,14 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
@@ -2681,8 +2711,15 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -2832,6 +2869,9 @@ TextBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
     Blt_Free(stylePtr);
 }
 
@@ -2894,11 +2934,9 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     if (stylePtr->size <= 0) {
         Blt_FontMetrics fm;
@@ -2913,6 +2951,14 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Active text. */
     gcValues.foreground = stylePtr->activeFg->pixel;
@@ -3200,8 +3246,15 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3418,6 +3471,9 @@ CheckBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
     if (stylePtr->offPtr != NULL) {
         Blt_Free(stylePtr->offPtr);
     }
@@ -3487,11 +3543,9 @@ ComboBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -3500,6 +3554,14 @@ ComboBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Active text. */
     gcValues.foreground = stylePtr->activeFg->pixel;
@@ -3812,8 +3874,15 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -4003,6 +4072,9 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
     if (stylePtr->painter != NULL) {
         Blt_FreePainter(stylePtr->painter);
     }
@@ -4068,11 +4140,9 @@ ImageBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -4081,6 +4151,14 @@ ImageBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
@@ -4366,8 +4444,15 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
 
     x += CELL_PADX + FOCUS_PAD;
@@ -4497,6 +4582,9 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
     Blt_Free(stylePtr);
 }
 
@@ -4557,11 +4645,9 @@ PushButtonStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -4570,6 +4656,14 @@ PushButtonStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
@@ -4837,8 +4931,15 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
 
     x += CELL_PADX + FOCUS_PAD;
@@ -4966,6 +5067,9 @@ PushButtonStyleFreeProc(CellStyle *cellStylePtr)
     }
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
     }
     Blt_Free(stylePtr);
 }
