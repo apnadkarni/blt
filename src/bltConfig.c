@@ -1255,7 +1255,7 @@ DoConfig(
 
         case BLT_CONFIG_INT_NNEG: 
             {
-                long value;
+                size_t value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
                         &value) != TCL_OK) {
@@ -1268,7 +1268,7 @@ DoConfig(
 
         case BLT_CONFIG_INT_POS: 
             {
-                long value;
+                size_t value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value) 
                     != TCL_OK) {
@@ -1334,7 +1334,7 @@ DoConfig(
 
         case BLT_CONFIG_LONG_NNEG: 
             {
-                long value;
+                size_t value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
                         &value) != TCL_OK) {
@@ -1347,7 +1347,7 @@ DoConfig(
 
         case BLT_CONFIG_LONG_POS: 
             {
-                long value;
+                size_t value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value) 
                     != TCL_OK) {

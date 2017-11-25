@@ -439,9 +439,7 @@ Blt_EmulateXMaxRequestSize(Display *display)
  *---------------------------------------------------------------------------
  */
 void
-Blt_EmulateXLowerWindow(
-    Display *display, 
-    Window window)
+Blt_EmulateXLowerWindow(Display *display, Window window)
 {
     HWND hWnd;
 

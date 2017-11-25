@@ -3232,7 +3232,7 @@ RestoreNode5(Tcl_Interp *interp, RestoreInfo *restorePtr)
     Blt_HashEntry *hPtr;
     Blt_TreeNode node, parent;
     int isNew;
-    long pid, id;
+    int64_t pid, id;
     const char **tags, **values, **names;
     int numTags, numValues, numNames;
 
@@ -3242,8 +3242,8 @@ RestoreNode5(Tcl_Interp *interp, RestoreInfo *restorePtr)
      * The second and first fields respectively are the ids of the node and
      * its parent.  The parent id of the root node is always -1.
      */
-    if ((Blt_GetLong(interp, restorePtr->argv[0], &pid) != TCL_OK) ||
-        (Blt_GetLong(interp, restorePtr->argv[1], &id) != TCL_OK)) {
+    if ((Blt_GetLong(interp, restorePtr->argv[0], &pid)!=TCL_OK) ||
+        (Blt_GetLong(interp, restorePtr->argv[1], &id)!=TCL_OK)) {
         return TCL_ERROR;
     }
     names = values = tags = NULL;
@@ -3547,7 +3547,7 @@ static int
 RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
 {
     Blt_TreeNode node;
-    long pid, id;
+    int64_t pid, id;
 
     if (restorePtr->argc != 4) {
         const char *cmdString;

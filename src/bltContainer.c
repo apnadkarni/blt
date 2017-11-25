@@ -1918,9 +1918,6 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
             sprintf(string, "0x%x", (int)w);
             if (XFetchName(conPtr->display, w, &wmName)) {
                 child = Blt_Tree_CreateNode(tree, parent, wmName, -1);
-                if (w == 0x220001c) {
-                    fprintf(stderr, "found xterm (%s)\n", wmName);
-                }
                 XFree(wmName);
             } else {
                 child = Blt_Tree_CreateNode(tree, parent, string, -1);

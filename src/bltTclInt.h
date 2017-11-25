@@ -253,8 +253,11 @@ BLT_EXTERN void Blt_FormatDate(Blt_DateTime *datePtr, const char *format,
 BLT_EXTERN int Blt_GetPositionFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         long *indexPtr);
 
+BLT_EXTERN int Blt_GetCount(Tcl_Interp *interp, const char *string, 
+        int check, size_t *countPtr);
+
 BLT_EXTERN int Blt_GetCountFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int check, long *valuePtr);
+        int check, size_t *countPtr);
 
 BLT_EXTERN long Blt_SimplifyLine (Point2d *origPts, long low, long high, 
         double tolerance, long *indices);
@@ -271,9 +274,10 @@ BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments,
 BLT_EXTERN int Blt_PolyRectClip(Region2d *extsPtr, Point2d *inputPts,
         int numInputPts, Point2d *outputPts);
 
-BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s, long *longPtr);
+BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s,
+                           int64_t *valuePtr);
 BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        long *longPtr);
+                int64_t *valuePtr);
 
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);
 BLT_EXTERN void Blt_LowerCase(char *s);

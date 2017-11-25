@@ -352,7 +352,7 @@ BLT_EXTERN Blt_TreeNode	 Blt_Tree_CreateNode(Blt_Tree tree,
 /* 61 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_CreateNodeWithId(Blt_Tree tree,
 				Blt_TreeNode parent, const char *name,
-				long inode, long position);
+				size_t inode, long position);
 #endif
 #ifndef Blt_Tree_DeleteNode_DECLARED
 #define Blt_Tree_DeleteNode_DECLARED
@@ -368,7 +368,7 @@ BLT_EXTERN int		Blt_Tree_MoveNode(Blt_Tree tree, Blt_TreeNode node,
 #ifndef Blt_Tree_GetNodeFromIndex_DECLARED
 #define Blt_Tree_GetNodeFromIndex_DECLARED
 /* 64 */
-BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNodeFromIndex(Blt_Tree tree, long inode);
+BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNodeFromIndex(Blt_Tree tree, size_t inode);
 #endif
 #ifndef Blt_Tree_FindChild_DECLARED
 #define Blt_Tree_FindChild_DECLARED
@@ -694,7 +694,7 @@ BLT_EXTERN const char *	 Blt_Tree_NodeRelativePath(Blt_TreeNode root,
 #ifndef Blt_Tree_NodePosition_DECLARED
 #define Blt_Tree_NodePosition_DECLARED
 /* 114 */
-BLT_EXTERN long		Blt_Tree_NodePosition(Blt_TreeNode node);
+BLT_EXTERN size_t	Blt_Tree_NodePosition(Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_ClearTags_DECLARED
 #define Blt_Tree_ClearTags_DECLARED
@@ -889,13 +889,13 @@ BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column_by_label(BLT_TABLE table,
 #define blt_table_get_row_by_index_DECLARED
 /* 148 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_get_row_by_index(BLT_TABLE table,
-				long index);
+				size_t index);
 #endif
 #ifndef blt_table_get_column_by_index_DECLARED
 #define blt_table_get_column_by_index_DECLARED
 /* 149 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column_by_index(BLT_TABLE table,
-				long index);
+				size_t index);
 #endif
 #ifndef blt_table_set_row_label_DECLARED
 #define blt_table_set_row_label_DECLARED
@@ -1066,16 +1066,16 @@ BLT_EXTERN int		blt_table_set_double(Tcl_Interp *interp,
 #ifndef blt_table_get_long_DECLARED
 #define blt_table_get_long_DECLARED
 /* 174 */
-BLT_EXTERN long		blt_table_get_long(Tcl_Interp *interp,
+BLT_EXTERN int64_t		blt_table_get_long(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
-				BLT_TABLE_COLUMN column, long defValue);
+				BLT_TABLE_COLUMN column, int64_t defValue);
 #endif
 #ifndef blt_table_set_long_DECLARED
 #define blt_table_set_long_DECLARED
 /* 175 */
 BLT_EXTERN int		blt_table_set_long(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
-				BLT_TABLE_COLUMN column, long value);
+				BLT_TABLE_COLUMN column, int64_t value);
 #endif
 #ifndef blt_table_get_boolean_DECLARED
 #define blt_table_get_boolean_DECLARED
@@ -1500,8 +1500,8 @@ BLT_EXTERN BLT_TABLE_ROW * blt_table_sort_rows(BLT_TABLE table);
 #ifndef blt_table_sort_row_map_DECLARED
 #define blt_table_sort_row_map_DECLARED
 /* 239 */
-BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table,
-				long numRows, BLT_TABLE_ROW *rows);
+BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table, size_t numRows,
+                                               BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_sort_finish_DECLARED
 #define blt_table_sort_finish_DECLARED
@@ -1594,23 +1594,23 @@ BLT_EXTERN int		blt_table_get_column_limits(Tcl_Interp *interp,
 #ifndef blt_table_row_DECLARED
 #define blt_table_row_DECLARED
 /* 254 */
-BLT_EXTERN BLT_TABLE_ROW blt_table_row(BLT_TABLE table, long index);
+BLT_EXTERN BLT_TABLE_ROW blt_table_row(BLT_TABLE table, size_t index);
 #endif
 #ifndef blt_table_column_DECLARED
 #define blt_table_column_DECLARED
 /* 255 */
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_column(BLT_TABLE table, long index);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_column(BLT_TABLE table, size_t index);
 #endif
 #ifndef blt_table_row_index_DECLARED
 #define blt_table_row_index_DECLARED
 /* 256 */
-BLT_EXTERN long		blt_table_row_index(BLT_TABLE table,
+BLT_EXTERN size_t	blt_table_row_index(BLT_TABLE table,
 				BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_column_index_DECLARED
 #define blt_table_column_index_DECLARED
 /* 257 */
-BLT_EXTERN long		blt_table_column_index(BLT_TABLE table,
+BLT_EXTERN size_t	blt_table_column_index(BLT_TABLE table,
 				BLT_TABLE_COLUMN column);
 #endif
 #ifndef Blt_VecMin_DECLARED
@@ -1808,10 +1808,10 @@ typedef struct BltTclProcs {
     Blt_TreeKey (*blt_Tree_GetKey) (Blt_Tree tree, const char *string); /* 58 */
     Blt_TreeKey (*blt_Tree_GetKeyFromNode) (Blt_TreeNode node, const char *string); /* 59 */
     Blt_TreeNode (*blt_Tree_CreateNode) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long position); /* 60 */
-    Blt_TreeNode (*blt_Tree_CreateNodeWithId) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long inode, long position); /* 61 */
+    Blt_TreeNode (*blt_Tree_CreateNodeWithId) (Blt_Tree tree, Blt_TreeNode parent, const char *name, size_t inode, long position); /* 61 */
     int (*blt_Tree_DeleteNode) (Blt_Tree tree, Blt_TreeNode node); /* 62 */
     int (*blt_Tree_MoveNode) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeNode parent, Blt_TreeNode before); /* 63 */
-    Blt_TreeNode (*blt_Tree_GetNodeFromIndex) (Blt_Tree tree, long inode); /* 64 */
+    Blt_TreeNode (*blt_Tree_GetNodeFromIndex) (Blt_Tree tree, size_t inode); /* 64 */
     Blt_TreeNode (*blt_Tree_FindChild) (Blt_TreeNode parent, const char *name); /* 65 */
     Blt_TreeNode (*blt_Tree_NextNode) (Blt_TreeNode root, Blt_TreeNode node); /* 66 */
     Blt_TreeNode (*blt_Tree_PrevNode) (Blt_TreeNode root, Blt_TreeNode node); /* 67 */
@@ -1861,7 +1861,7 @@ typedef struct BltTclProcs {
     const char * (*blt_Tree_NodeIdAscii) (Blt_TreeNode node); /* 111 */
     const char * (*blt_Tree_NodePath) (Blt_TreeNode node, Tcl_DString *resultPtr); /* 112 */
     const char * (*blt_Tree_NodeRelativePath) (Blt_TreeNode root, Blt_TreeNode node, const char *separator, unsigned int flags, Tcl_DString *resultPtr); /* 113 */
-    long (*blt_Tree_NodePosition) (Blt_TreeNode node); /* 114 */
+    size_t (*blt_Tree_NodePosition) (Blt_TreeNode node); /* 114 */
     void (*blt_Tree_ClearTags) (Blt_Tree tree, Blt_TreeNode node); /* 115 */
     int (*blt_Tree_HasTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 116 */
     void (*blt_Tree_AddTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 117 */
@@ -1895,8 +1895,8 @@ typedef struct BltTclProcs {
     BLT_TABLE_COLUMN (*blt_table_get_column) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr); /* 145 */
     BLT_TABLE_ROW (*blt_table_get_row_by_label) (BLT_TABLE table, const char *label); /* 146 */
     BLT_TABLE_COLUMN (*blt_table_get_column_by_label) (BLT_TABLE table, const char *label); /* 147 */
-    BLT_TABLE_ROW (*blt_table_get_row_by_index) (BLT_TABLE table, long index); /* 148 */
-    BLT_TABLE_COLUMN (*blt_table_get_column_by_index) (BLT_TABLE table, long index); /* 149 */
+    BLT_TABLE_ROW (*blt_table_get_row_by_index) (BLT_TABLE table, size_t index); /* 148 */
+    BLT_TABLE_COLUMN (*blt_table_get_column_by_index) (BLT_TABLE table, size_t index); /* 149 */
     int (*blt_table_set_row_label) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *label); /* 150 */
     int (*blt_table_set_column_label) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *label); /* 151 */
     BLT_TABLE_COLUMN_TYPE (*blt_table_name_to_column_type) (const char *typeName); /* 152 */
@@ -1921,8 +1921,8 @@ typedef struct BltTclProcs {
     int (*blt_table_set_bytes) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const unsigned char *string, int length); /* 171 */
     double (*blt_table_get_double) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 172 */
     int (*blt_table_set_double) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, double value); /* 173 */
-    long (*blt_table_get_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long defValue); /* 174 */
-    int (*blt_table_set_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long value); /* 175 */
+    int64_t (*blt_table_get_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t defValue); /* 174 */
+    int (*blt_table_set_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t value); /* 175 */
     int (*blt_table_get_boolean) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int defValue); /* 176 */
     int (*blt_table_set_boolean) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int value); /* 177 */
     BLT_TABLE_VALUE (*blt_table_get_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 178 */
@@ -1986,7 +1986,7 @@ typedef struct BltTclProcs {
     void (*blt_table_delete_notifier) (BLT_TABLE table, BLT_TABLE_NOTIFIER notifier); /* 236 */
     void (*blt_table_sort_init) (BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, size_t numCompares, unsigned int flags); /* 237 */
     BLT_TABLE_ROW * (*blt_table_sort_rows) (BLT_TABLE table); /* 238 */
-    void (*blt_table_sort_row_map) (BLT_TABLE table, long numRows, BLT_TABLE_ROW *rows); /* 239 */
+    void (*blt_table_sort_row_map) (BLT_TABLE table, size_t numRows, BLT_TABLE_ROW *rows); /* 239 */
     void (*blt_table_sort_finish) (void); /* 240 */
     BLT_TABLE_COMPARE_PROC * (*blt_table_get_compare_proc) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int flags); /* 241 */
     BLT_TABLE_ROW * (*blt_table_get_row_map) (BLT_TABLE table); /* 242 */
@@ -2001,10 +2001,10 @@ typedef struct BltTclProcs {
     int (*blt_table_set_keys) (BLT_TABLE table, int numKeys, BLT_TABLE_COLUMN *keys, int unique); /* 251 */
     int (*blt_table_key_lookup) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr); /* 252 */
     int (*blt_table_get_column_limits) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN col, Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr); /* 253 */
-    BLT_TABLE_ROW (*blt_table_row) (BLT_TABLE table, long index); /* 254 */
-    BLT_TABLE_COLUMN (*blt_table_column) (BLT_TABLE table, long index); /* 255 */
-    long (*blt_table_row_index) (BLT_TABLE table, BLT_TABLE_ROW row); /* 256 */
-    long (*blt_table_column_index) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 257 */
+    BLT_TABLE_ROW (*blt_table_row) (BLT_TABLE table, size_t index); /* 254 */
+    BLT_TABLE_COLUMN (*blt_table_column) (BLT_TABLE table, size_t index); /* 255 */
+    size_t (*blt_table_row_index) (BLT_TABLE table, BLT_TABLE_ROW row); /* 256 */
+    size_t (*blt_table_column_index) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 257 */
     double (*blt_VecMin) (Blt_Vector *vPtr); /* 258 */
     double (*blt_VecMax) (Blt_Vector *vPtr); /* 259 */
     Blt_VectorId (*blt_AllocVectorId) (Tcl_Interp *interp, const char *vecName); /* 260 */

@@ -12421,7 +12421,7 @@ ComputeLayout(TableView *viewPtr)
 static void
 ReorderVisibleIndices(TableView *viewPtr)
 {
-    long count;
+    size_t count;
     Row *rowPtr;
 
     /* Reorder visible indices. */

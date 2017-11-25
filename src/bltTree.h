@@ -100,14 +100,14 @@ typedef const char *Blt_TreeKey;
 typedef struct {
     int type;
     Blt_Tree tree;
-    long inode;                         /* Node of event */
+    size_t inode;                       /* Node of event */
     Blt_TreeNode node;
     Tcl_Interp *interp;
 } Blt_TreeNotifyEvent;
 
 typedef struct {
     Blt_TreeNode node;                  /* Node being searched. */
-    unsigned long nextIndex;            /* Index of next bucket to be
+    size_t nextIndex;                   /* Index of next bucket to be
                                          * enumerated after present one. */
     Blt_TreeValue nextValue;            /* Next entry to be enumerated in the
                                          * the current bucket. */
@@ -149,8 +149,8 @@ struct _Blt_TreeObject {
                                          * inode.*/
     Blt_HashTable keyTable;             /* Table of string keys. */
     Blt_TreeInterpData *dataPtr;
-    long nextInode;
-    long numNodes;                      /* Always counts root node. */
+    size_t nextInode;
+    size_t numNodes;                    /* Always counts root node. */
     long depth;                         /* Maximum depth of the tree. */
     unsigned int flags;                 /* Internal flags. See definitions
                                          * below. */
@@ -177,12 +177,12 @@ struct _Blt_TreeNode {
     Blt_TreeNode hnext;                 /* Next node in the hash bucket. */
     Blt_TreeKey label;                  /* Node label (doesn't have to be
                                          * unique). */
-    long inode;                         /* Serial number of the node. */
+    size_t inode;                       /* Serial number of the node. */
     Blt_TreeObject corePtr;             /* Pointer back to the tree object
                                          * that contains this node. */
     long depth;                         /* The depth of this node in the
                                          * tree. */
-    long numChildren;                   /* # of children for this node. */
+    size_t numChildren;                 /* # of children for this node. */
     Blt_TreeNode first, last;           /* First/last nodes of child nodes
                                          * stored as a linked list. */
     Blt_TreeNode *nodeTable;            /* Hash table of child nodes. */
@@ -304,7 +304,7 @@ typedef struct {
  */
 struct _Blt_TreeKeyIterator {
     Blt_TreeNode node;                  /* Table being searched. */
-    unsigned long nextIndex;            /* Index of next bucket to be
+    size_t nextIndex;                   /* Index of next bucket to be
                                          * enumerated after present one. */
     Blt_TreeValue nextValue;            /* Next entry to be enumerated in the
                                          * the current bucket. */
@@ -318,14 +318,14 @@ BLT_EXTERN Blt_TreeNode Blt_Tree_CreateNode(Blt_Tree tree, Blt_TreeNode parent,
         const char *name, long position); 
 
 BLT_EXTERN Blt_TreeNode Blt_Tree_CreateNodeWithId(Blt_Tree tree, 
-        Blt_TreeNode parent, const char *name, long inode, long position); 
+        Blt_TreeNode parent, const char *name, size_t inode, long position); 
 
 BLT_EXTERN int Blt_Tree_DeleteNode(Blt_Tree tree, Blt_TreeNode node);
 
 BLT_EXTERN int Blt_Tree_MoveNode(Blt_Tree tree, Blt_TreeNode node, 
         Blt_TreeNode parent, Blt_TreeNode before);
 
-BLT_EXTERN Blt_TreeNode Blt_Tree_GetNodeFromIndex(Blt_Tree tree, long inode);
+BLT_EXTERN Blt_TreeNode Blt_Tree_GetNodeFromIndex(Blt_Tree tree, size_t inode);
 
 BLT_EXTERN Blt_TreeNode Blt_Tree_FindChild(Blt_TreeNode parent, 
         const char *name);
@@ -467,7 +467,7 @@ BLT_EXTERN const char *Blt_Tree_NodeRelativePath(Blt_TreeNode root,
         Blt_TreeNode node, const char *separator, unsigned int flags, 
         Tcl_DString *resultPtr);
 
-BLT_EXTERN long Blt_Tree_NodePosition(Blt_TreeNode node);
+BLT_EXTERN size_t Blt_Tree_NodePosition(Blt_TreeNode node);
 
 BLT_EXTERN void Blt_Tree_ClearTags(Blt_Tree tree, Blt_TreeNode node);
 BLT_EXTERN int Blt_Tree_HasTag(Blt_Tree tree, Blt_TreeNode node, 

@@ -1605,7 +1605,7 @@ CompareItems(Blt_ChainLink *link1Ptr, Blt_ChainLink *link2Ptr)
         break;
     case SORT_INTEGER:
         {
-            long l1, l2;
+            int64_t l1, l2;
 
             if ((Blt_GetLong(NULL, s1, &l1) != TCL_OK) ||
                 (Blt_GetLong(NULL, s2, &l2) != TCL_OK)) {
@@ -2625,7 +2625,7 @@ static int
 SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 {
     ComboMenu *comboPtr;
-    long dummy;
+    int64_t dummy;
     
     if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -3144,11 +3144,12 @@ GetItemByIndex(Tcl_Interp *interp, ComboMenu *comboPtr, const char *string,
 {
     Item *itemPtr;
     char c;
-    long pos;
+    size_t pos;
 
     itemPtr = NULL;
     c = string[0];
-    if ((isdigit(c)) && (Blt_GetLong(NULL, string, &pos) == TCL_OK)) {
+    if ((isdigit(c)) && (Blt_GetCount(NULL, string, COUNT_NNEG,
+                                      &pos) == TCL_OK)) {
         Blt_ChainLink link;
 
         link = Blt_Chain_GetNthLink(comboPtr->chain, pos);

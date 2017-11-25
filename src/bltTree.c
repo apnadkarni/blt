@@ -138,7 +138,7 @@ static Blt_Hash HashOneWord(uint64_t mask, unsigned int downshift,
  * buckets.  The hash function was taken from a random-number generator.
  */
 #define RANDOM_INDEX(i) \
-    (((((long) (i))*1103515245) >> downshift) & mask)
+    (((((size_t) (i))*1103515245) >> downshift) & mask)
 #define BITSPERWORD             32
 #endif /* SIZEOF_VOID_P == 8 */
 
@@ -190,7 +190,7 @@ typedef struct {
     Tcl_Interp *interp;                 /* Source interpreter. */
     Blt_TreeKey key;                    /* Key that matched. */
     int flags;                          /* Flags that matched. */
-    long inode;                         /* Node that matched. */
+    int64_t inode;                      /* Node that matched. */
     Blt_HashEntry *hashPtr;             /* Pointer to this entry in the
                                          * trace's idle event table. */
 } TraceIdleEvent;
@@ -283,7 +283,7 @@ NextClient(Tree *treePtr)
  * -------------------------------------------------------------- 
  */
 static Node *
-NewNode(TreeObject *corePtr, const char *name, long inode)
+NewNode(TreeObject *corePtr, const char *name, size_t inode)
 {
     Node *nodePtr;
 
@@ -355,7 +355,7 @@ ReleaseTagTable(Blt_TreeTagTable *tablePtr)
  * ---------------------------------------------------------------------- 
  */
 static void
-ResetDepths(Node *parentPtr, long depth)
+ResetDepths(Node *parentPtr, size_t depth)
 {
     Node *childPtr;
 
@@ -389,9 +389,9 @@ RebuildNodeTable(Node *parentPtr)       /* Table to enlarge. */
 {
     Node **bp, **bend;
     unsigned int downshift;
-    unsigned long mask;
+    size_t mask;
     Node **buckets;
-    long numBuckets;
+    size_t numBuckets;
 
     numBuckets = (1 << parentPtr->nodeTableSize2);
     bend = parentPtr->nodeTable + numBuckets;
@@ -446,8 +446,8 @@ MakeNodeTable(Node *parentPtr)
     Node **buckets;
     Node *childPtr, *nextPtr;
     int downshift;
-    unsigned int mask;
-    unsigned int numBuckets;
+    size_t mask;
+    size_t numBuckets;
 
     assert(parentPtr->nodeTable == NULL);
     parentPtr->nodeTableSize2 = START_LOGSIZE;
@@ -514,9 +514,9 @@ LinkBefore(
         }
     } else {
         Node **bucketPtr;
-        long numBuckets;
+        size_t numBuckets;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         numBuckets = (1 << parentPtr->nodeTableSize2);
         mask = numBuckets - 1;
@@ -579,7 +579,7 @@ UnlinkNode(Node *nodePtr)
     if (parentPtr->nodeTable != NULL) {
         Node **bucketPtr;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         mask = (1 << parentPtr->nodeTableSize2) - 1;
         downshift = DOWNSHIFT_START - parentPtr->nodeTableSize2;
@@ -1150,7 +1150,7 @@ RebuildValueTable(Node *nodePtr)        /* Table to enlarge. */
     Value **bp, **bend, **buckets, **oldBuckets;
     size_t numBuckets;
     unsigned int downshift;
-    unsigned long mask;
+    size_t mask;
 
     oldBuckets = nodePtr->valueTable;
     numBuckets = (1 << nodePtr->valueTableSize2);
@@ -1239,7 +1239,7 @@ TreeDeleteValue(Node *nodePtr, Blt_TreeValue value)
     if (nodePtr->valueTable != NULL) {
         Value **bucketPtr;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         mask = (1 << nodePtr->valueTableSize2) - 1;
         downshift = DOWNSHIFT_START - nodePtr->valueTableSize2;
@@ -1411,7 +1411,7 @@ TreeFindValue(Node *nodePtr, Blt_TreeKey key)
 
     if (nodePtr->valueTable != NULL) {
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
         Value *bucket;
 
         mask = (1 << nodePtr->valueTableSize2) - 1;
@@ -1494,7 +1494,7 @@ TreeCreateValue(
         Value **bucketPtr;
         size_t numBuckets;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         numBuckets = (1 << nodePtr->valueTableSize2);
         mask = numBuckets - 1;
@@ -1584,7 +1584,7 @@ Blt_Tree_CreateNode(
     Node *beforePtr;
     Node *nodePtr;                      /* Node to be inserted. */
     TreeObject *corePtr;
-    long inode;
+    size_t inode;
     int isNew;
 
     corePtr = parentPtr->corePtr;
@@ -1634,7 +1634,7 @@ Blt_Tree_CreateNodeWithId(
     Node *parentPtr,                    /* Parent node where the new node will
                                          * be inserted. */
     const char *name,                   /* Name of node. */
-    long inode,                         /* Requested id of the new node. If a
+    size_t inode,                       /* Requested id of the new node. If a
                                          * node by this id already exists in
                                          * the tree, no node is created. */
     long position)                      /* Position in the parent's list of
@@ -1689,7 +1689,7 @@ Blt_Tree_MoveNode(Tree *treePtr, Node *nodePtr, Node *parentPtr,
                   Node *beforePtr)
 {
     TreeObject *corePtr = nodePtr->corePtr;
-    long newDepth;
+    size_t newDepth;
 
     if (nodePtr == beforePtr) {
         return TCL_ERROR;
@@ -1744,7 +1744,7 @@ Blt_Tree_DeleteNode(Tree *treePtr, Node *nodePtr)
 }
 
 Blt_TreeNode
-Blt_Tree_GetNodeFromIndex(Tree *treePtr, long inode)
+Blt_Tree_GetNodeFromIndex(Tree *treePtr, size_t inode)
 {
     TreeObject *corePtr = treePtr->corePtr;
     Blt_HashEntry *hPtr;
@@ -1828,7 +1828,7 @@ Blt_Tree_RelabelNodeWithoutNotify(Node *nodePtr, const char *string)
     Node **bucketPtr;
     Node *parentPtr;
     unsigned int downshift;
-    unsigned long mask;
+    size_t mask;
 
     oldLabel = nodePtr->label;
     nodePtr->label = Blt_Tree_GetKeyFromNode(nodePtr, string);
@@ -1890,7 +1890,7 @@ Blt_Tree_FindChild(Node *parentPtr, const char *string)
     key = Blt_Tree_GetKeyFromNode(parentPtr, string);
     if (parentPtr->nodeTable != NULL) {
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
         Node *bucketPtr;
         Node *nodePtr;
 
@@ -1927,11 +1927,11 @@ Blt_Tree_FindChild(Node *parentPtr, const char *string)
  *
  *---------------------------------------------------------------------------
  */
-long
+size_t
 Blt_Tree_NodePosition(Node *nodePtr)
 {
     Node *parentPtr;
-    long count;
+    size_t count;
 
     count = 0;
     parentPtr = nodePtr->parent;
@@ -2767,7 +2767,7 @@ Blt_Tree_SortNode(Tree *treePtr, Node *parentPtr,
                   Blt_TreeCompareNodesProc *proc)
 {
     Node **nodes, *childPtr;
-    long numNodes, i;
+    size_t numNodes, i;
 
     numNodes = parentPtr->numChildren;
     if (numNodes < 2) {
@@ -3117,7 +3117,7 @@ void
 Blt_Tree_Close(Tree *treePtr)
 {
     if (treePtr->magic != TREE_MAGIC) {
-        Blt_Warn("invalid tree object token 0x%lx\n", (unsigned long)treePtr);
+        Blt_Warn("invalid tree object token 0x%llx\n", (size_t)treePtr);
         return;
     }
     DestroyTree(treePtr);
@@ -3859,9 +3859,9 @@ Blt_Tree_Depth(Tree *treePtr)
 static int
 IsNodeId(const char *string)
 {
-    long value;
+    size_t value;
 
-    return (Blt_GetLong(NULL, string, &value) == TCL_OK);
+    return (Blt_GetCount(NULL, string, COUNT_NNEG, &value) == TCL_OK);
 }
 
 static Blt_TreeNode 
@@ -3878,9 +3878,9 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
             *token = '\0';
         }
         if (IsNodeId(p)) {
-            long inode;
+            size_t inode;
             
-            if (Blt_GetLong(interp, p, &inode) != TCL_OK) {
+            if (Blt_GetCount(interp, p, COUNT_NNEG, &inode) != TCL_OK) {
                 node = NULL;
             } else {
                 node = Blt_Tree_GetNodeFromIndex(tree, inode);
@@ -3960,14 +3960,14 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
         *p = '\0';
     }
     if (IsNodeId(string)) {
-        long inode;
+        size_t inode;
 
         if (p != NULL) {
-            if (Blt_GetLong(interp, string, &inode) != TCL_OK) {
+            if (Blt_GetCount(interp, string, COUNT_NNEG, &inode) != TCL_OK) {
                 goto error;
             }
         } else {
-            if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
+            if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, &inode) != TCL_OK) {
                 goto error;
             }
         }

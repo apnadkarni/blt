@@ -144,10 +144,10 @@
 typedef struct _BLT_TABLE_VALUE Value;
 
 typedef struct {
-    long numRows, numCols;
-    long mtime, ctime;
+    size_t numRows, numCols;
+    uint64_t mtime, ctime;
     const char *fileName;
-    long numLines;
+    size_t numLines;
     unsigned int flags;
     int argc;
     const char **argv;
@@ -390,9 +390,9 @@ CheckLabel(Tcl_Interp *interp, RowColumn *rcPtr, const char *label)
         return TCL_ERROR;
     }
     if (isdigit(UCHAR(c))) {
-        long index;
+        size_t index;
 
-        if (Blt_GetLong(NULL, (char *)label, &index) == TCL_OK) {
+        if (Blt_GetCount(NULL, (char *)label, COUNT_NNEG, &index) == TCL_OK) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, rcPtr->classPtr->name, " label \"", 
                         label, "\" can't be a number.", (char *)NULL);
@@ -445,10 +445,10 @@ GetNextColumnLabel(Columns *columnsPtr, Column *colPtr)
     }
 }
 
-static long
-GetMapSize(long oldLen, long numExtra)
+static size_t
+GetMapSize(size_t oldLen, size_t numExtra)
 {
-    long newLen, reqLen;
+    size_t newLen, reqLen;
 
     reqLen = oldLen + numExtra;
     newLen = TABLE_ALLOC_INIT_SIZE;
@@ -566,7 +566,7 @@ ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
             Blt_ChainLink link;
             
             link = Blt_Chain_FirstLink(rowsPtr->freeList);
-            offset = (long)Blt_Chain_GetValue(link);
+            offset = (size_t)Blt_Chain_GetValue(link);
             Blt_Chain_DeleteLink(rowsPtr->freeList, link);
         }
         if (chain != NULL) {
@@ -581,7 +581,7 @@ ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
 static int
 ExtendColumns(Table *tablePtr, size_t numExtraColumns, Blt_Chain chain)
 {
-    long i;
+    size_t i;
     size_t prevUsed;
     Columns *columnsPtr;
 
@@ -677,7 +677,7 @@ ResetColumnMap(Columns *columnsPtr)
 
 
 BLT_TABLE_ROW 
-blt_table_row(BLT_TABLE table, long index)  
+blt_table_row(BLT_TABLE table, size_t index)  
 {
     Rows *rowsPtr;
 
@@ -689,7 +689,7 @@ blt_table_row(BLT_TABLE table, long index)
 }
 
 BLT_TABLE_COLUMN 
-blt_table_column(BLT_TABLE table, long index)  
+blt_table_column(BLT_TABLE table, size_t index)  
 {
     Columns *columnsPtr;
 
@@ -700,7 +700,7 @@ blt_table_column(BLT_TABLE table, long index)
     return columnsPtr->map[index];
 }
 
-long 
+size_t 
 blt_table_row_index(Table *tablePtr, Row *rowPtr)
 {
     Rows *rowsPtr;
@@ -712,7 +712,7 @@ blt_table_row_index(Table *tablePtr, Row *rowPtr)
     return rowPtr->index;
 }
 
-long 
+size_t 
 blt_table_column_index(BLT_TABLE table, Column *colPtr)
 {
     Columns *columnsPtr;
@@ -861,10 +861,10 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
         objPtr = Tcl_NewDoubleObj(valuePtr->datum.d);
         break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
-        objPtr = Tcl_NewLongObj(valuePtr->datum.l);
+        objPtr = Tcl_NewWideIntObj(valuePtr->datum.w);
         break;
     case TABLE_COLUMN_TYPE_BOOLEAN:      /* boolean */
-        objPtr = Tcl_NewBooleanObj(valuePtr->datum.l);
+        objPtr = Tcl_NewBooleanObj((int)valuePtr->datum.i);
         break;
     default:
     case TABLE_COLUMN_TYPE_STRING:      /* string */
@@ -900,7 +900,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             if (Tcl_GetBooleanFromObj(interp, objPtr, &i) != TCL_OK) {
                 return TCL_ERROR;
             }
-            valuePtr->datum.l = i;
+            valuePtr->datum.i = i;
         }
         break;
 
@@ -936,7 +936,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
                    const char *s, int length, Value *valuePtr)
 {
     double d;
-    long l;
+    Tcl_WideInt w;
     Tcl_Obj *objPtr;
 
     objPtr = NULL;
@@ -967,11 +967,11 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             break;
 
         case TABLE_COLUMN_TYPE_LONG:    
-            if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
+            if (Tcl_GetWideIntFromObj(interp, objPtr, &w) != TCL_OK) {
                 Tcl_DecrRefCount(objPtr);
                 return TCL_ERROR;
             }
-            valuePtr->datum.l = l;      /* long */
+            valuePtr->datum.w = w;      /* wide integer */
             break;
 
         case TABLE_COLUMN_TYPE_BOOLEAN: 
@@ -982,7 +982,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
                     Tcl_DecrRefCount(objPtr);
                     return TCL_ERROR;
                 }
-                valuePtr->datum.l = ival; /* long */
+                valuePtr->datum.i = ival; /* boolean */
             }
             break;
         default:
@@ -1509,8 +1509,7 @@ static void
 DestroyClient(Table *tablePtr)
 {
     if (tablePtr->magic != TABLE_MAGIC) {
-        Blt_Warn("invalid table object token 0x%lx\n", 
-                 (unsigned long)tablePtr);
+        Blt_Warn("invalid table object token 0x%lx\n", (uint64_t)tablePtr);
         return;
     }
     /* Remove any traces that were set by this client. */
@@ -2305,7 +2304,7 @@ CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr, unsigned int flags)
 typedef struct {
     BLT_TABLE table;
     BLT_TABLE_SORT_ORDER *order;
-    long numColumns;
+    size_t numColumns;
     unsigned int flags;
 } TableSortData;
 
@@ -2465,7 +2464,8 @@ static int
 CompareRows(void *a, void *b)
 {
     Row *rowPtr1, *rowPtr2;
-    long i, result;
+    size_t i;
+    int result;
 
     rowPtr1 = *(Row **)a;
     rowPtr2 = *(Row **)b;
@@ -2524,7 +2524,7 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 static Row **
 SortRows(Rows *rowsPtr, QSortCompareProc *proc)
 {
-    long i;
+    size_t i;
     Row **map;
 
     /* Make a copy of the current row map. */
@@ -2543,8 +2543,11 @@ SortRows(Rows *rowsPtr, QSortCompareProc *proc)
 static void
 ReplaceRowMap(Rows *rowsPtr, Row **map)
 {
-    long i;
+    size_t i;
 
+    if (rowsPtr->numUsed == 0) {
+        return;
+    }
     /* Rethread list according to the map. */
     for (i = 0; i < rowsPtr->numUsed; i++) {
         Row *rowPtr;
@@ -2559,17 +2562,22 @@ ReplaceRowMap(Rows *rowsPtr, Row **map)
     }
     rowsPtr->headPtr = map[0];
     rowsPtr->tailPtr = map[rowsPtr->numUsed-1];
-    Blt_Free(rowsPtr->map);
+    if (rowsPtr->map != NULL) {
+        Blt_Free(rowsPtr->map);
+    }
     rowsPtr->map = map;
 }
 
 static void
 ReplaceColumnMap(Columns *columnsPtr, Column **map)
 {
-    long i;
+    size_t i;
     Column *prevPtr;
     Column *colPtr;
 
+    if (columnsPtr->numUsed == 0) {
+        return;
+    }
     /* Rethread column list according to the map. */
     prevPtr = NULL;
     for (i = 0; i < (columnsPtr->numUsed - 1); i++) {
@@ -2859,8 +2867,8 @@ RestoreError(Tcl_Interp *interp, RestoreData *restorePtr)
 static int
 RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 {
-    long numCols, numRows;
-    long count, time;
+    size_t numCols, numRows, count;
+    size_t time;
 
     /* i rows columns ctime mtime */
     if (restorePtr->argc != 5) {
@@ -2869,25 +2877,14 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
                 (char *)NULL);
         return TCL_ERROR;
     }   
-    if (Blt_GetLong(interp, restorePtr->argv[1], &count) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[1], COUNT_POS, &count)
+        != TCL_OK) {
         RestoreError(interp, restorePtr);
-        return TCL_ERROR;
-    }
-    if (count < 1) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad # of rows \"", restorePtr->argv[1], "\"", 
-                         (char *)NULL);
         return TCL_ERROR;
     }
     numRows = count;
-    if (Blt_GetLong(interp, restorePtr->argv[2], &count) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[2], COUNT_POS, &count) != TCL_OK) {
         RestoreError(interp, restorePtr);
-        return TCL_ERROR;
-    }
-    if (count < 1) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad # of columns \"", restorePtr->argv[2], 
-                "\"", (char *)NULL);
         return TCL_ERROR;
     }
     numCols = count;
@@ -2895,23 +2892,23 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         numRows += restorePtr->numRows;
         numCols += restorePtr->numCols;
     }
-    if (Blt_GetLong(interp, restorePtr->argv[3], &time) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[3], COUNT_NNEG, &time) != TCL_OK){
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    restorePtr->ctime = (unsigned long)time;
-    if (Blt_GetLong(interp, restorePtr->argv[4], &time) != TCL_OK) {
+    restorePtr->ctime = time;
+    if (Blt_GetCount(interp, restorePtr->argv[4], COUNT_NNEG, &time) != TCL_OK){
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    restorePtr->mtime = (unsigned long)time;
+    restorePtr->mtime = time;
     return TCL_OK;
 }
 
 static int
 RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 {
-    long index;
+    size_t index;
     Column *colPtr;
     int type;
     const char *label;
@@ -2925,14 +2922,9 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
                 (char *)NULL);
         return TCL_ERROR;
     }   
-    if (Blt_GetLong(interp, restorePtr->argv[1], &index) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[1], COUNT_NNEG, &index)
+        != TCL_OK) {
         RestoreError(interp, restorePtr);
-        return TCL_ERROR;
-    }
-    if (index < 0) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad column index \"", restorePtr->argv[1], 
-                "\"", (char *)NULL);
         return TCL_ERROR;
     }
     label = restorePtr->argv[2];
@@ -2987,7 +2979,7 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
     Blt_HashEntry *hPtr;
     const char *label;
     int isNew;
-    long index;
+    size_t index;
 
     /* r index label ?tagList? */
     if ((restorePtr->argc < 3) || (restorePtr->argc > 4)) {
@@ -2996,14 +2988,9 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
                          (char *)NULL);
         return TCL_ERROR;
     }   
-    if (Blt_GetLong(interp, restorePtr->argv[1], &index) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[1], COUNT_NNEG, &index)
+        != TCL_OK) {
         RestoreError(interp, restorePtr);
-        return TCL_ERROR;
-    }
-    if (index < 0) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad row index \"", restorePtr->argv[1], "\"",
-                (char *)NULL);
         return TCL_ERROR;
     }
     label = restorePtr->argv[2];
@@ -3048,7 +3035,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
     Row *rowPtr;
     Column *colPtr;
     Value *valuePtr;
-    long index;
+    size_t index;
 
     /* d row column value */
     if (restorePtr->argc != 4) {
@@ -3057,7 +3044,8 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
                 (char *)NULL);
         return TCL_ERROR;
     }   
-    if (Blt_GetLong(interp, restorePtr->argv[1], &index) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[1], COUNT_NNEG, &index)
+        != TCL_OK) {
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
@@ -3069,7 +3057,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         return TCL_ERROR;
     }
     rowPtr = Blt_GetHashValue(hPtr);
-    if (Blt_GetLong(interp, restorePtr->argv[2], &index) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[2], COUNT_NNEG, &index) != TCL_OK) {
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
@@ -3160,24 +3148,24 @@ blt_table_same_object(Table *tablePtr1, Table *tablePtr2)
 }
 
 BLT_TABLE_ROW
-blt_table_get_row_by_index(Table *tablePtr, long index)  
+blt_table_get_row_by_index(Table *tablePtr, size_t index)  
 {
     if (tablePtr->corePtr->rows.flags & REINDEX) {
         ResetRowMap(&tablePtr->corePtr->rows);
     }
-    if ((index >= 0) && (index < blt_table_num_rows(tablePtr))) {
+    if (index < blt_table_num_rows(tablePtr)) {
         return blt_table_row(tablePtr, index);
     }
     return NULL;
 }
 
 BLT_TABLE_COLUMN
-blt_table_get_column_by_index(Table *tablePtr, long index)  
+blt_table_get_column_by_index(Table *tablePtr, size_t index)  
 {
     if (tablePtr->corePtr->columns.flags & REINDEX) {
         ResetColumnMap(&tablePtr->corePtr->columns);
     }
-    if ((index >= 0) && (index < blt_table_num_columns(tablePtr))) {
+    if (index < blt_table_num_columns(tablePtr)) {
         return blt_table_column(tablePtr, index);
     }
     return NULL;
@@ -3188,7 +3176,7 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 {
     const char *p;
     const char *string;
-    long index;
+    size_t index;
     char c;
 
     string = Tcl_GetString(objPtr);
@@ -3198,7 +3186,8 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
         *sp = string + 1;
         return TABLE_SPEC_TAG;
     } else if ((isdigit(UCHAR(c))) && 
-        (Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK)) {
+               (Blt_GetCountFromObj((Tcl_Interp *)NULL, objPtr, COUNT_NNEG,
+                                    &index) == TCL_OK)) {
         return TABLE_SPEC_INDEX;
     } else if ((c == 'r') && (strncmp(string, "range:", 6) == 0)) {
         *sp = string + 6;
@@ -3305,7 +3294,7 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     const char *tag, *p;
     int result;
     Tcl_Obj *rangeObjPtr;
-    long index;
+    size_t index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
     Rows *rowsPtr;
     memset(iterPtr, 0, sizeof(BLT_TABLE_ITERATOR));
@@ -3324,9 +3313,11 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
         {
             p = Tcl_GetString(objPtr);
             if (p == tag) {
-                result = Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index);
+                result = Blt_GetCountFromObj((Tcl_Interp *)NULL, objPtr,
+                                             COUNT_NNEG, &index);
             } else {
-                result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tag, &index);
+                result = Blt_GetCount((Tcl_Interp *)NULL, (char *)tag,
+                                     COUNT_NNEG, &index);
             }
             if (result != TCL_OK) {
                 if (interp != NULL) {
@@ -3335,7 +3326,7 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                 }
                 return TCL_ERROR;
             }
-            if ((index < 0) || (index >= blt_table_num_rows(table))) {
+            if (index >= blt_table_num_rows(table)) {
                 if (interp != NULL) {
                     Tcl_AppendResult(interp, "bad row index \"", 
                                      Tcl_GetString(objPtr), "\"", (char *)NULL);
@@ -3606,7 +3597,7 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 {
     const char *p;
     const char *string;
-    long index;
+    size_t index;
     char c;
 
     string = Tcl_GetString(objPtr);
@@ -3616,7 +3607,8 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
         *sp = string + 1;
         return TABLE_SPEC_TAG;
     } else if ((isdigit(c)) && 
-        Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK) {
+               Blt_GetCountFromObj((Tcl_Interp *)NULL, objPtr, COUNT_NNEG,
+                                   &index) == TCL_OK) {
         return TABLE_SPEC_INDEX;
     } else if ((c == 'r') && (strncmp(string, "range:", 6) == 0)) {
         *sp = string + 6;
@@ -3676,7 +3668,7 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     const char *tag, *p;
     int result;
     Tcl_Obj *fromObjPtr, *toObjPtr;
-    long index;
+    size_t index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
     Columns *columnsPtr;
 
@@ -3694,9 +3686,11 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     case TABLE_SPEC_INDEX:
         p = Tcl_GetString(objPtr);
         if (p == tag) {
-            result = Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index);
+            result = Blt_GetCountFromObj((Tcl_Interp *)NULL, objPtr, COUNT_NNEG,
+                                         &index);
         } else {
-            result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tag, &index);
+            result = Blt_GetCount((Tcl_Interp *)NULL, (char *)tag, COUNT_NNEG,
+                                  &index);
         }
         if (result != TCL_OK) {
             if (interp != NULL) {
@@ -4572,7 +4566,7 @@ int
 blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
                     const char *tag)
 {
-    long dummy;
+    size_t dummy;
 
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
         return TCL_OK;          /* Don't need to create reserved tags. */
@@ -4591,7 +4585,7 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
+    if (Blt_GetCount(NULL, (char *)tag, COUNT_NNEG, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, "\" can't be a number.",
                              (char *)NULL);
@@ -4628,7 +4622,7 @@ int
 blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
                          const char *tag)
 {
-    long dummy;
+    size_t dummy;
 
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
         return TCL_OK;                  /* Don't create reserved tags. */
@@ -4647,7 +4641,7 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
+    if (Blt_GetCount(NULL, (char *)tag, COUNT_NNEG, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, "\" can't be a number.",
                              (char *)NULL);
@@ -5768,7 +5762,7 @@ blt_table_sort_rows(Table *tablePtr)
 
 
 void
-blt_table_sort_row_map(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
+blt_table_sort_row_map(Table *tablePtr, size_t numRows, BLT_TABLE_ROW *rows)
 {
     /* Sort the map and return it. */
     qsort((char *)rows, numRows, sizeof(BLT_TABLE_ROW), 
@@ -6432,7 +6426,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
             break;
         case TABLE_COLUMN_TYPE_LONG:
             {
-                long lval;
+                int64_t lval;
 
                 if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
                     return TCL_ERROR;
@@ -6660,7 +6654,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
                        Column *colPtr, const char *s, int length)
 {
     Value *valuePtr;
-    long l;
+    int64_t l;
     double d;
     Tcl_Obj *objPtr;
 
@@ -6907,12 +6901,12 @@ blt_table_get_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  *---------------------------------------------------------------------------
  */
-long
+int64_t
 blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
-                   Column *colPtr, long defVal)
+                   Column *colPtr, int64_t defVal)
 {
     Value *valuePtr;
-    long l;
+    int64_t l;
 
     if (IsEmpty(rowPtr, colPtr)) {
         return defVal;

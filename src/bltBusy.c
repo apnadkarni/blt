@@ -1112,7 +1112,7 @@ InitializeBusy(Busy *busyPtr)
     } else {
         parent = Tk_WindowId(busyPtr->tkParent);
 #ifdef WIN32
-        parent = (Window) Tk_GetHWND(parent);
+        parent = (Window)Tk_GetHWND(parent);
 #endif
     }
     mask = StructureNotifyMask;

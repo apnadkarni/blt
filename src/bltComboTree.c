@@ -2032,9 +2032,9 @@ GetEntryIterator(Tcl_Interp *interp, ComboTree *comboPtr, Tcl_Obj *objPtr,
     c = string[0];
     if (isdigit(UCHAR(string[0]))) {    
         Blt_TreeNode node;
-        long inode;
+        size_t inode;
 
-        if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
+        if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, &inode) != TCL_OK) {
             return TCL_ERROR;
         }
         node = Blt_Tree_GetNodeFromIndex(comboPtr->tree, inode);
@@ -5357,9 +5357,10 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     string = Tcl_GetString(objv[2]);
     if (isdigit(UCHAR(string[0]))) {
         Blt_TreeNode node;
-        long inode;
+        size_t inode;
 
-        if (Blt_GetLongFromObj(comboPtr->interp, objv[2], &inode) != TCL_OK) {
+        if (Blt_GetCountFromObj(comboPtr->interp, objv[2], COUNT_NNEG,
+                &inode) != TCL_OK) {
             return TCL_ERROR;
         }
         node = Blt_Tree_GetNodeFromIndex(comboPtr->tree, inode);
@@ -6503,14 +6504,14 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboTree *comboPtr = clientData;
     Entry *entryPtr;
-    long nodeId;
+    int64_t inode;
 
-    nodeId = -1;
+    inode = -1;
     if ((GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) == TCL_OK) && 
         (entryPtr != NULL)) {
-        nodeId = Blt_Tree_NodeId(entryPtr->node);
+        inode = Blt_Tree_NodeId(entryPtr->node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), nodeId);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6676,7 +6677,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(entryPtr->node));
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+                      Blt_Tree_NodeId(entryPtr->node));
     return TCL_OK;
 }
 

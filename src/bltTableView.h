@@ -436,8 +436,8 @@ struct _Row {
     int min, max, nom;                  /* Min/Max/Nominal space allowed for
                                          * column. */
     int ruleHeight;
-    long index;
-    long visibleIndex;
+    size_t index;
+    size_t visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
     Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
@@ -494,8 +494,8 @@ struct _Column {
     int min, max, nom;                  /* Min/Max/Nominal space allowed for
                                          * column. */
     int ruleWidth;
-    long index;
-    long visibleIndex;
+    size_t index;
+    size_t visibleIndex;
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */

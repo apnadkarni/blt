@@ -60,7 +60,7 @@ struct _Blt_Chain {
                                          * chain. */
     Blt_ChainLink tail;                 /* Pointer to last element in
                                          * chain. */
-    long numLinks;                      /* Number of elements in chain. */
+    size_t numLinks;                    /* Number of elements in chain. */
 };
 
 BLT_EXTERN void Blt_Chain_Init(Blt_Chain chain);

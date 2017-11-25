@@ -824,7 +824,7 @@ BLT_EXTERN int		Blt_GetPositionFromObj(Tcl_Interp *interp,
 #define Blt_GetCountFromObj_DECLARED
 /* 136 */
 BLT_EXTERN int		Blt_GetCountFromObj(Tcl_Interp *interp,
-				Tcl_Obj *objPtr, int check, long *valuePtr);
+				Tcl_Obj *objPtr, int check, size_t *countPtr);
 #endif
 #ifndef Blt_SimplifyLine_DECLARED
 #define Blt_SimplifyLine_DECLARED
@@ -862,13 +862,13 @@ BLT_EXTERN int		Blt_PolyRectClip(Region2d *extsPtr,
 #define Blt_GetLong_DECLARED
 /* 142 */
 BLT_EXTERN int		Blt_GetLong(Tcl_Interp *interp, const char *s,
-				long *longPtr);
+				int64_t *longPtr);
 #endif
 #ifndef Blt_GetLongFromObj_DECLARED
 #define Blt_GetLongFromObj_DECLARED
 /* 143 */
 BLT_EXTERN int		Blt_GetLongFromObj(Tcl_Interp *interp,
-				Tcl_Obj *objPtr, long *longPtr);
+				Tcl_Obj *objPtr, int64_t *longPtr);
 #endif
 #ifndef Blt_FormatString_DECLARED
 #define Blt_FormatString_DECLARED
@@ -1063,14 +1063,14 @@ typedef struct BltTclIntProcs {
     void (*blt_DateToSeconds) (Blt_DateTime *datePtr, double *secondsPtr); /* 133 */
     void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 134 */
     int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 135 */
-    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *valuePtr); /* 136 */
+    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, size_t *valuePtr); /* 136 */
     long (*blt_SimplifyLine) (Point2d *origPts, long low, long high, double tolerance, long *indices); /* 137 */
     int (*blt_PointInPolygon) (Point2d *samplePtr, Point2d *points, int numPoints); /* 138 */
     int (*blt_PolygonInRegion) (Point2d *points, int numPoints, Region2d *extsPtr, int enclosed); /* 139 */
     int (*blt_PointInSegments) (Point2d *samplePtr, Segment2d *segments, int numSegments, double halo); /* 140 */
     int (*blt_PolyRectClip) (Region2d *extsPtr, Point2d *inputPts, int numInputPts, Point2d *outputPts); /* 141 */
-    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 142 */
-    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 143 */
+    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, int64_t *longPtr); /* 142 */
+    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *longPtr); /* 143 */
     int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 144 */
     void (*blt_LowerCase) (char *s); /* 145 */
     void (*blt_UpperCase) (char *s); /* 146 */
