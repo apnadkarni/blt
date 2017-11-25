@@ -6480,7 +6480,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
  */
 int
 blt_table_set_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
-                   Column *colPtr, long value)
+                   Column *colPtr, int64_t value)
 {
     Value *valuePtr;
     char string[200];
@@ -6497,7 +6497,11 @@ blt_table_set_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     valuePtr->datum.l = value;
+#  if (SIZEOF_VOID_P == 8) && (SIZEOF_LONG == 4)
+    valuePtr->length = sprintf(string, "%lld", value);
+#else
     valuePtr->length = sprintf(string, "%ld", value);
+#endif
     if (strlen(string) >= TABLE_VALUE_LENGTH) {
         valuePtr->string = Blt_AssertStrdup(string);
     } else {
