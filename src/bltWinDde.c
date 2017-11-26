@@ -137,11 +137,11 @@ static Tcl_Obj *ExecuteRemoteObject(Tcl_Interp *interp, Tcl_Obj *objPtr);
 static int MakeConnection(Tcl_Interp *interp, const char *name, HCONV *convPtr);
 #ifdef __WIN64
 static HDDEDATA CALLBACK ServerProc(UINT uType, UINT uFmt, HCONV hConv, 
-        HSZ topic, HSZ item, HDDEDATA hData, DWORD dwData1, DWORD dwData2);
-#else
-static HDDEDATA CALLBACK ServerProc(UINT uType, UINT uFmt, HCONV hConv, 
         HSZ topic, HSZ item, HDDEDATA hData, DWORDLONG dwData1,
         DWORDLONG dwData2);
+#else
+static HDDEDATA CALLBACK ServerProc(UINT uType, UINT uFmt, HCONV hConv, 
+        HSZ topic, HSZ item, HDDEDATA hData, DWORD dwData1, DWORD dwData2);
 #endif
 
 static Tcl_ExitProc ExitProc;
