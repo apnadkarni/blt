@@ -1631,21 +1631,21 @@ FormatConfigValue(
 
     case BLT_CONFIG_BITMASK:
         {
-            unsigned long flags;
-            unsigned int mask;
+            uintptr_t flags;
+            uintptr_t mask;
 
-            flags = (unsigned long)sp->customPtr;
-            mask = (*(unsigned int *)ptr);
+            flags = (uintptr_t)sp->customPtr;
+            mask = (*(uintptr_t *)ptr);
             return Tcl_NewBooleanObj((mask & flags));
         }
 
     case BLT_CONFIG_BITMASK_INVERT:
         {
-            unsigned long flags;
-            unsigned int mask;
+            uintptr_t flags;
+            uintptr_t mask;
 
-            flags = (unsigned long)sp->customPtr;
-            mask = (*(unsigned int *)ptr);
+            flags = (uintptr_t)sp->customPtr;
+            mask = (*(uintptr_t *)ptr);
             return Tcl_NewBooleanObj((mask & flags) == 0);
         }
 
