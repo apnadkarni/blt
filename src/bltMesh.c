@@ -1675,9 +1675,17 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
             uintptr_t index;
 
             index = (uintptr_t)Blt_GetHashValue(hPtr);
-            fprintf(stderr, "duplicate point %ld x=%g y=%g, old=%ld x=%g y=%g\n",
+#ifdef __WIN64
+            fprintf(stderr,
+                    "duplicate point %I64d x=%g y=%g, old=%I64d x=%g y=%g\n",
                     i, x.values[i], y.values[i], index, x.values[index], 
                     y.values[index]);
+#else
+            fprintf(stderr,
+                    "duplicate point %ld x=%g y=%g, old=%ld x=%g y=%g\n",
+                    i, x.values[i], y.values[i], index, x.values[index], 
+                    y.values[index]);
+#endif
             continue;
         }
         Blt_SetHashValue(hPtr, i);

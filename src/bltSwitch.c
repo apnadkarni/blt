@@ -525,11 +525,15 @@ DoSwitch(
             break;
 
         case BLT_SWITCH_LONG:
-            if (Blt_GetLongFromObj(interp, objPtr, (long *)ptr) != TCL_OK) {
-                return TCL_ERROR;
+            {
+                int64_t value;
+                
+                if (Blt_GetLongFromObj(interp, objPtr, &value) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                *(long *)ptr = value;
             }
             break;
-
         case BLT_SWITCH_LONG_NNEG:
             {
                 size_t value;

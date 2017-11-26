@@ -2961,12 +2961,12 @@ RandomOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     if (objc == 3) {
-        long seed;
+        int64_t seed;
 
         if (Blt_GetLongFromObj(interp, objv[2], &seed) != TCL_OK) {
             return TCL_ERROR;
         }
-        srand48(seed);
+        srand48((long)seed);
     }
     for (i = 0; i < vPtr->length; i++) {
         vPtr->valueArr[i] = drand48();
