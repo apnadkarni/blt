@@ -5126,8 +5126,7 @@ void
 blt_table_close(Table *tablePtr)
 {
     if (tablePtr->magic != TABLE_MAGIC) {
-        Blt_Warn("invalid table object token 0x%lx\n", 
-                 (unsigned long)tablePtr);
+        Blt_Warn("invalid table object token 0x%lx\n", (uint64_t)tablePtr);
         return;
     }
     if (tablePtr->link2 != NULL) {
@@ -6415,7 +6414,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
         case TABLE_COLUMN_TYPE_BOOLEAN:
             {
                 int ival;
-                long lval;
+                int64_t lval;
                 
                 if (Tcl_GetBooleanFromObj(interp, objv[i], &ival) != TCL_OK) {
                     return TCL_ERROR;
@@ -6497,8 +6496,8 @@ blt_table_set_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     valuePtr->datum.l = value;
-#  if (SIZEOF_VOID_P == 8) && (SIZEOF_LONG == 4)
-    valuePtr->length = sprintf(string, "%lld", value);
+#ifdef __WIN64
+    valuePtr->length = sprintf(string, "%I64d", value);
 #else
     valuePtr->length = sprintf(string, "%ld", value);
 #endif

@@ -785,9 +785,9 @@ IsTag(Blt_Tree tree, const char *string)
 static int
 IsNodeId(const char *string)
 {
-    long value;
+    size_t value;
 
-    return (Blt_GetLong(NULL, string, &value) == TCL_OK);
+    return (Blt_GetCount(NULL, string, COUNT_NNEG, &value) == TCL_OK);
 }
 
 static int
@@ -1425,9 +1425,9 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
             *token = '\0';
         }
         if (IsNodeId(p)) {
-            long inode;
+            size_t inode;
             
-            if (Blt_GetLong(interp, p, &inode) != TCL_OK) {
+            if (Blt_GetCount(interp, p, COUNT_NNEG, &inode) != TCL_OK) {
                 node = NULL;
             } else {
                 node = Blt_Tree_GetNodeFromIndex(tree, inode);
@@ -1505,14 +1505,15 @@ GetForeignNode(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
         *p = '\0';
     }
     if (IsNodeId(string)) {
-        long inode;
+        size_t inode;
 
         if (p != NULL) {
-            if (Blt_GetLong(interp, string, &inode) != TCL_OK) {
+            if (Blt_GetCount(interp, string, COUNT_NNEG, &inode) != TCL_OK) {
                 goto error;
             }
         } else {
-            if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
+            if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, &inode)
+                != TCL_OK) {
                 goto error;
             }
         }
@@ -4779,10 +4780,10 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             for (link = Blt_Chain_FirstLink(chain); link != NULL;
                  link = next) {
                 Blt_TreeNode node;
-                long inode;
+                size_t inode;
 
                 next = Blt_Chain_NextLink(link);
-                inode = (long)Blt_Chain_GetValue(link);
+                inode = (size_t)Blt_Chain_GetValue(link);
                 node = Blt_Tree_GetNodeFromIndex(cmdPtr->tree, inode);
                 if (node != NULL) {
                     DeleteNode(cmdPtr, node);
@@ -5743,7 +5744,7 @@ LastChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ListIndexOp --
  *
- *      pathName lindex nodeName fieldName indexNum
+ *      treeName lindex nodeName fieldName indexNum
  *---------------------------------------------------------------------------
  */
 static int
@@ -5780,7 +5781,7 @@ ListIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ListLengthOp --
  *
- *      pathName llength nodeName fieldName
+ *      treeName llength nodeName fieldName
  *---------------------------------------------------------------------------
  */
 static int
@@ -6951,7 +6952,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagAddOp --
  *
- *      .t tag add tagName node1 node2 node3
+ *      treeName tag add tagName ?nodeName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6961,10 +6962,10 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeCmd *cmdPtr = clientData;
     const char *string;
-    long nodeId;
+    int64_t lval;
 
     string = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &nodeId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &lval) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", string, 
                          "\": can't be a number", (char *)NULL);
         return TCL_ERROR;
@@ -7018,10 +7019,10 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_HashTable *tablePtr;
     TreeCmd *cmdPtr = clientData;
     const char *string;
-    long nodeId;
+    int64_t lval;
 
     string = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &nodeId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &lval) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", string, 
                          "\": can't be a number", (char *)NULL);
         return TCL_ERROR;
@@ -7112,10 +7113,10 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *string;
-        long nodeId;
+        int64_t lval;
 
         string = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &nodeId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &lval) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number", (char *)NULL);
             return TCL_ERROR;
@@ -7339,10 +7340,10 @@ TagNodesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 3; i < objc; i++) {
         const char *string;
         int isNew;
-        long nodeId;
+        int64_t lval;
 
         string = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &nodeId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &lval) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number", (char *)NULL);
             goto error;
@@ -7426,10 +7427,10 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 4; i < objc; i++) {
         const char *string;
-        long nodeId;
+        int64_t lval;
 
         string = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &nodeId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &lval) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number", (char *)NULL);
             return TCL_ERROR;
@@ -7536,12 +7537,12 @@ TraceCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     const char *tagName;
     int flags;
     int length;
-    long nodeId;
+    size_t inode;
 
     string = Tcl_GetString(objv[3]);
     tagName = NULL;
     node = NULL;
-    if (Blt_GetLongFromObj(NULL, objv[3], &nodeId) == TCL_OK) {
+    if (Blt_GetCountFromObj(NULL, objv[3], COUNT_NNEG, &inode) == TCL_OK) {
         if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[3], &node)
             != TCL_OK) {
             return TCL_ERROR;
@@ -7796,6 +7797,8 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * UnsetOp --
  *
+ *      treeName unset nodeName ?fieldName...?
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -7804,28 +7807,16 @@ UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_TreeNode node;
     TreeCmd *cmdPtr = clientData;
-    long nodeId;
+    Blt_TreeIterator iter;
 
-    if (Blt_GetLongFromObj(NULL, objv[2], &nodeId) == TCL_OK) {
-        if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
-            != TCL_OK) {
-            return TCL_ERROR;
-        }
+    if (Blt_Tree_GetNodeIterator(interp, cmdPtr->tree, objv[2], &iter)
+        != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (node = Blt_Tree_FirstTaggedNode(&iter); node != NULL;
+         node = Blt_Tree_NextTaggedNode(&iter)) {
         if (UnsetValues(cmdPtr, node, objc - 3, objv + 3) != TCL_OK) {
             return TCL_ERROR;
-        }
-    } else {
-        Blt_TreeIterator iter;
-
-        if (Blt_Tree_GetNodeIterator(interp, cmdPtr->tree, objv[2], &iter) 
-            != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (node = Blt_Tree_FirstTaggedNode(&iter); node != NULL;
-             node = Blt_Tree_NextTaggedNode(&iter)) {
-            if (UnsetValues(cmdPtr, node, objc - 3, objv + 3) != TCL_OK) {
-                return TCL_ERROR;
-            }
         }
     }
     return TCL_OK;
@@ -7836,6 +7827,8 @@ UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortOp --
  *  
+ *      treeName sort nodeName ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 static int

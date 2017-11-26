@@ -1211,7 +1211,7 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 {
     const char *string;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
-    long n;
+    size_t index;
 
     spec = blt_table_row_spec(table, objPtr, &string);
     switch(spec) {
@@ -1222,13 +1222,19 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
             return TCL_ERROR;
         }
         break;
+
     case TABLE_SPEC_INDEX:
         Tcl_ResetResult(interp);
-        if (Blt_GetLong(interp, string, &n) != TCL_OK) {
+        if (Blt_GetCount(interp, string, COUNT_NNEG, &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        n -= blt_table_num_rows(table) - 1;
-        blt_table_extend_rows(interp, table, n, NULL);
+        /* Index is beyond the end of the table. Auto-create rows.  */
+        if (index >= blt_table_num_rows(table)) {
+            size_t extra;
+            
+            extra = (index + 1) - blt_table_num_rows(table);
+            blt_table_extend_rows(interp, table, extra, NULL);
+        }
         break;
     default:
         return TCL_ERROR;
@@ -1275,7 +1281,7 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 {
     const char *string;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
-    long n;
+    size_t index;
 
     spec = blt_table_column_spec(table, objPtr, &string);
     switch(spec) {
@@ -1288,11 +1294,16 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
         break;
     case TABLE_SPEC_INDEX:
         Tcl_ResetResult(interp);
-        if (Blt_GetLong(interp, string, &n) != TCL_OK) {
+        if (Blt_GetCount(interp, string, COUNT_NNEG, &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        n -= blt_table_num_columns(table) - 1;
-        blt_table_extend_columns(interp, table, n, NULL);
+        /* Index is beyond the end of the table. Auto-create columns.  */
+        if (index >= blt_table_num_columns(table)) {
+            size_t extra;
+
+            extra = (index + 1) - blt_table_num_columns(table);
+            blt_table_extend_columns(interp, table, extra, NULL);
+        }
         break;
     default:
         return TCL_ERROR;
@@ -1317,9 +1328,9 @@ IterateColumnsWithCreate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 {
     if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) != TCL_OK) {
         /* 
-         * We could not parse column descriptor.  If the column specification
-         * is a label that doesn't exist, create a new column with that label
-         * and try to load the iterator again.
+         * We could not parse column descriptor.  If the column
+         * specification is a label that doesn't exist, create a new column
+         * with that label and try to load the iterator again.
          */
 #ifdef notdef
         fprintf(stderr, "making column %s\n", Tcl_GetString(objPtr));
