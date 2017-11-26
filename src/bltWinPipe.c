@@ -2496,3 +2496,9 @@ Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t size)
     return size;
 }
 
+void
+Blt_DetachPids(int numPids, Blt_Pid *pids)
+{
+    /* Do nothing. */
+}
+
