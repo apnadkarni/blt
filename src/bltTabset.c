@@ -2235,7 +2235,7 @@ GetTabByIndex(Tcl_Interp *interp, Tabset *setPtr, const char *string,
 {
     Tab *tabPtr;
     char c;
-    long pos;
+    int64_t pos;
 
     tabPtr = NULL;
     c = string[0];
