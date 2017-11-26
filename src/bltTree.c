@@ -2079,7 +2079,7 @@ Blt_Tree_IsBefore(Node *n1Ptr, Node *n2Ptr)
         n2Ptr = n2Ptr->parent;
     }
     if (n2Ptr == n1Ptr) {
-        return TRUE;
+        return FALSE;
     }
 
     /* 
@@ -3973,7 +3973,6 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
         }
         node = Blt_Tree_GetNodeFromIndex(tree, inode);
     }  else if (tree != NULL) {
-#ifdef notdef
         if (strcmp(string, "all") == 0) {
             if (Blt_Tree_Size(Blt_Tree_RootNode(tree)) > 1) {
                 if (interp != NULL) {
@@ -3984,15 +3983,14 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
             }
             node = Blt_Tree_RootNode(tree);
         } else
-#endif
             if (strcmp(string, "root") == 0) {
             node = Blt_Tree_RootNode(tree);
         } else {
             Blt_HashTable *tablePtr;
-            Blt_HashSearch cursor;
-            Blt_HashEntry *hPtr;
 
             node = NULL;
+
+            /* Lookup the string as a tag. */
             tablePtr = Blt_Tree_TagHashTable(tree, string);
             if (tablePtr == NULL) {
                 if (interp != NULL) {
@@ -4000,14 +3998,19 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
                         "\" in ", Blt_Tree_Name(tree), (char *)NULL);
                 }
                 goto error;
-            } else if (tablePtr->numEntries > 1) {
+            } 
+            if (tablePtr->numEntries > 1) {
                 if (interp != NULL) {
                     Tcl_AppendResult(interp, "more than one node tagged as \"", 
-                         string, "\"", (char *)NULL);
+                                     string, "\"", (char *)NULL);
                 }
                 goto error;
-            } else if (tablePtr->numEntries > 0) {
-                hPtr = Blt_FirstHashEntry(tablePtr, &cursor);
+            }
+            if (tablePtr->numEntries == 1) {
+                Blt_HashSearch iter;
+                Blt_HashEntry *hPtr;
+                
+                hPtr = Blt_FirstHashEntry(tablePtr, &iter);
                 node = Blt_GetHashValue(hPtr);
                 if (p != NULL) {
                     *p = save;

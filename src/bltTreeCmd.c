@@ -189,6 +189,12 @@ static Blt_SwitchCustom nodeSwitch = {
     Blt_TreeNodeSwitchProc, NULL, NULL, (ClientData)0,
 };
 
+static Blt_SwitchParseProc PositionSwitch;
+static Blt_SwitchCustom positionSwitch = {
+    PositionSwitch, NULL, NULL, (ClientData)0,
+};
+#define POSITION_END    (-1)
+
 typedef struct {
     int mask;
 } AttachSwitches;
@@ -237,7 +243,7 @@ static Blt_SwitchCustom beforeSwitch = {
 };
 
 typedef struct {
-    Blt_TreeNode from, to;
+    long from, to;
     int flags;
 } ChildrenSwitches;
 
@@ -245,12 +251,12 @@ typedef struct {
 
 static Blt_SwitchSpec childrenSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-from",  "node", (char *)NULL,
-        Blt_Offset(ChildrenSwitches, from),  0, 0, &nodeSwitch},
+    {BLT_SWITCH_CUSTOM,  "-from",  "index", (char *)NULL,
+        Blt_Offset(ChildrenSwitches, from), 0, 0, &positionSwitch},
     {BLT_SWITCH_BITS_NOARG, "-nocomplain", "", (char *)NULL,
         Blt_Offset(ChildrenSwitches, flags), 0, CHILDREN_NOCOMPLAIN},
     {BLT_SWITCH_CUSTOM,  "-to",  "node", (char *)NULL,
-        Blt_Offset(ChildrenSwitches, to),  0, 0, &nodeSwitch},
+        Blt_Offset(ChildrenSwitches, to), 0, 0, &positionSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -799,6 +805,46 @@ IsNodeIdOrModifier(const char *string)
     return TRUE;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ChildSwitch --
+ *
+ *      Convert a Tcl_Obj representing the label of a child node into its
+ *      integer node id.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PositionSwitch(ClientData clientData, Tcl_Interp *interp,
+               const char *switchName, Tcl_Obj *objPtr, char *record,
+               int offset, int flags)
+{
+    long *positionPtr = (long *)(record + offset);
+    long position;
+    const char *string;
+    
+    string = Tcl_GetString(objPtr);
+    if (strcmp(string, "end") == 0) {
+        *positionPtr = POSITION_END;
+        return TCL_OK;
+    }
+    if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (position < 0) {
+        Tcl_AppendResult(interp, "bad position \"", string,
+                         "\": can't be negative.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *positionPtr = position;
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -4442,7 +4488,7 @@ AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ChildrenOp --
  *
- *      treeName children node ?switches...?
+ *      treeName children nodeName ?switches...?
  *---------------------------------------------------------------------------
  */
 static int
@@ -4450,12 +4496,16 @@ ChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
            Tcl_Obj *const *objv)
 {
     Blt_TreeNode parent, node;
+    long count;
     ChildrenSwitches switches;
     Tcl_Obj *listObjPtr;
     TreeCmd *cmdPtr = clientData;
 
     memset((char *)&switches, 0, sizeof(switches));
     /* Process switches  */
+    switches.from = 0;
+    switches.to = POSITION_END;
+    nodeSwitch.clientData = cmdPtr->tree;
     if (Blt_ParseSwitches(interp, childrenSwitches, objc - 3, objv + 3,
                 &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
@@ -4463,35 +4513,32 @@ ChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &parent)
         != TCL_OK) {
         if (switches.flags & CHILDREN_NOCOMPLAIN) {
+            Tcl_ResetResult(interp);
             return TCL_OK;
         }
         return TCL_ERROR;
     }
-    if (switches.from == NULL) {
-        switches.from = Blt_Tree_FirstChild(parent);
-    } else if (Blt_Tree_ParentNode(switches.from) != parent) {
-        Tcl_AppendResult(interp, "-from node is not a child of node ", 
-                         Blt_Tree_NodeIdAscii(parent), (char *)NULL);
-        return TCL_ERROR;
+    if (switches.from == POSITION_END) {
+        switches.from = Blt_Tree_NodeDegree(parent) - 1;
     }
-    if (switches.to == NULL) {
-        switches.to = Blt_Tree_LastChild(parent);
-    } else if (Blt_Tree_ParentNode(switches.to) != parent) {
-        Tcl_AppendResult(interp, "-to node is not a child of node ", 
-                         Blt_Tree_NodeIdAscii(parent), (char *)NULL);
-        return TCL_ERROR;
+    if (switches.to == POSITION_END) {
+        switches.to = Blt_Tree_NodeDegree(parent) - 1;
     }
-    if (!Blt_Tree_IsBefore(switches.from, switches.to)) {
+    if (switches.from > switches.to) {
         return TCL_OK;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (node = switches.from; node != NULL;
-         node = Blt_Tree_NextSibling(node)) {
+    
+    for (count = 0, node = Blt_Tree_FirstChild(parent); node != NULL;
+         node = Blt_Tree_NextSibling(node), count++) {
         Tcl_Obj *objPtr;
 
-        objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
+        if (count < switches.from) {
+            continue;
+        }
+        objPtr = Tcl_NewWideIntObj(Blt_Tree_NodeId(node));
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        if (node == switches.to) {
+        if (count == switches.to) {
             break;
         }
     }
@@ -5476,7 +5523,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(Blt_Tree_NodeId(child)));
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(child));
     Blt_FreeSwitches(insertSwitches, (char *)&switches, 0);
     return TCL_OK;
 
@@ -7932,7 +7979,7 @@ static Blt_OpSpec treeOps[] =
     {"append",      4, AppendOp,      4, 0, "nodeName key ?value ...?"},
     {"apply",       4, ApplyOp,       3, 0, "nodeName ?switches ...?"},
     {"attach",      2, AttachOp,      3, 0, "treeName ?switches ...?"},
-    {"children",    2, ChildrenOp,    3, 5, "nodeName ?first? ?last?"},
+    {"children",    2, ChildrenOp,    3, 0, "nodeName ?switches ...?"},
     {"copy",        2, CopyOp,        4, 0, "parentNode ?treeName? nodeName ?switches ...?"},
     {"degree",      3, DegreeOp,      3, 0, "nodeName"},
     {"delete",      3, DeleteOp,      2, 0, "?nodeName ...?"},

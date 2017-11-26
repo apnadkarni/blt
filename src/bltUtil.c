@@ -592,7 +592,8 @@ Blt_GetLongFromObj(
     if (Tcl_GetWideIntFromObj(interp, objPtr, &wideVal) != TCL_OK) {
         return TCL_ERROR;
     }
-    return (int64_t)wideVal;
+    *valuePtr = (int64_t)wideVal;
+    return TCL_OK;
 }
 
 /*
