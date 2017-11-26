@@ -3018,7 +3018,7 @@ CollectStdout(ClientData clientData, int mask)
     if (result == TCL_ERROR) {
         CloseSink(&bgPtr->errSink);
     }
-    if (bgPtr->errSink.fd == -1) {
+    if (!SINKOPEN(&bgPtr->errSink)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3071,7 +3071,7 @@ CollectStderr(ClientData clientData, int mask)
     if (result == TCL_ERROR) {
         CloseSink(&bgPtr->outSink);
     }
-    if (bgPtr->outSink.fd == -1) {
+    if (!SINKOPEN(&bgPtr->outSink)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
