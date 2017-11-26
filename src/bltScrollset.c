@@ -362,7 +362,7 @@ ObjToMode(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    unsigned long bitMask = (unsigned long)clientData;
+    uintptr_t bitMask = (uintptr_t)clientData;
     const char *string;
     char c;
     int length;
@@ -399,7 +399,7 @@ ModeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
             char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    unsigned long bitMask = (unsigned long)clientData;
+    uintptr_t bitMask = (uintptr_t)clientData;
     const char *string;
 
     string = (*flagsPtr & bitMask) ?  "static" : "auto" ;

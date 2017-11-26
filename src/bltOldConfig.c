@@ -140,7 +140,7 @@ StringToDistance(
     int offset)                 /* Offset of pixel size in record */
 {
     int *valuePtr = (int *)(widgRec + offset);
-    return Blt_GetPixels(interp, tkwin, string, (unsigned long)clientData, 
+    return Blt_GetPixels(interp, tkwin, string, (uintptr_t)clientData, 
         valuePtr);
 }
 

@@ -774,7 +774,7 @@ static int
 SetTag(Tcl_Interp *interp, Pane *panePtr, const char *tagName)
 {
     Paneset *setPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -1689,7 +1689,7 @@ GetPaneByIndex(Tcl_Interp *interp, Paneset *setPtr, const char *string,
 {
     Pane *panePtr;
     char c;
-    long pos;
+    int64_t pos;
 
     panePtr = NULL;
     c = string[0];
@@ -4614,10 +4614,10 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Paneset *setPtr = clientData;
     const char *tag;
-    long paneId;
+    int64_t dummy;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &paneId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -4665,11 +4665,11 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Paneset *setPtr = clientData;
     const char *tag;
-    long paneId;
+    int64_t dummy;
     int i;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &paneId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -4941,11 +4941,11 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&paneTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        long paneId;
+        int64_t dummy;
         const char *tag;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &paneId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
@@ -5026,10 +5026,10 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 4; i < objc; i++) {
         const char *tag;
         Pane *panePtr;
-        long paneId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &paneId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;

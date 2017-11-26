@@ -4699,11 +4699,11 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&drawerTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        long drawerId;
+        int64_t dummy;
         const char *tag;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &drawerId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
@@ -4784,10 +4784,10 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 4; i < objc; i++) {
         const char *tag;
         Drawer *drawPtr;
-        long drawerId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &drawerId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;

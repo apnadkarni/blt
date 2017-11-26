@@ -734,7 +734,7 @@ static int
 SetTag(Tcl_Interp *interp, Frame *framePtr, const char *tagName)
 {
     Filmstrip *filmPtr;
-    long dummy;
+    int64_t dummy;
     
     if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -1599,7 +1599,7 @@ GetFrameByIndex(Tcl_Interp *interp, Filmstrip *filmPtr, const char *string,
 {
     Frame *framePtr;
     char c;
-    long pos;
+    int64_t pos;
 
     framePtr = NULL;
     c = string[0];
@@ -3988,10 +3988,10 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Filmstrip *filmPtr = clientData;
     const char *tag;
-    long frameId;
+    int64_t dummy;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &frameId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -4039,11 +4039,11 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Filmstrip *filmPtr = clientData;
     const char *tag;
-    long frameId;
+    int64_t dummy;
     int i;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &frameId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -4130,10 +4130,10 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *tag;
-        long frameId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &frameId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
@@ -4315,11 +4315,11 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&frameTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        long frameId;
+        int64_t dummy;
         const char *tag;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &frameId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
@@ -4400,10 +4400,10 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 4; i < objc; i++) {
         const char *tag;
         Frame *framePtr;
-        long frameId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &frameId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
