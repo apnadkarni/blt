@@ -6370,10 +6370,8 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
         
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             int isNew;
-            unsigned long key;
 
-            key = (unsigned long)sp->u32;
-            Blt_CreateHashEntry(tablePtr, (char *)key, &isNew);
+            Blt_CreateHashEntry(tablePtr, (char *)(size_t)sp->u32, &isNew);
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }

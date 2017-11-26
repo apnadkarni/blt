@@ -1734,7 +1734,7 @@ GetCurrentColumn(TreeView *viewPtr)
     TreeViewObj *objPtr;
     ItemType type;
     
-    type = (long)Blt_GetCurrentHint(viewPtr->bindTable);
+    type = (size_t)Blt_GetCurrentHint(viewPtr->bindTable);
     objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
     if ((objPtr == NULL) || (objPtr->flags & DELETED)) {
         return NULL;
@@ -14611,9 +14611,9 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (isdigit(UCHAR(tagName[0]))) {
-        long nodeId;
+        int64_t dummy;
         
-        if (Blt_GetLongFromObj(NULL, objv[3], &nodeId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
             Tcl_AppendResult(viewPtr->interp, "invalid tag \"", tagName, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;

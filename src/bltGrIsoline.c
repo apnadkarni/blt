@@ -192,7 +192,7 @@ static int
 SetTag(Tcl_Interp *interp, Isoline *isoPtr, const char *tagName)
 {
     Graph *graphPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved

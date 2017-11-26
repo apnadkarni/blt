@@ -1219,7 +1219,7 @@ FreeTicks(ClientData clientData, Display *display, char *widgRec, int offset)
     Axis *axisPtr = (Axis *)widgRec;
     TickGrid *ptr = (TickGrid *)(widgRec + offset);
     Ticks *ticksPtr;
-    unsigned long mask = (unsigned long)clientData;
+    size_t mask = (size_t)clientData;
 
     ticksPtr = &ptr->ticks;
     if (ticksPtr->values != NULL) {
@@ -1251,7 +1251,7 @@ ObjToTicks(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Ticks *ticksPtr;
     double *values;
     int objc;
-    unsigned long mask = (unsigned long)clientData;
+    size_t mask = (size_t)clientData;
 
     ticksPtr = &ptr->ticks;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
@@ -1308,11 +1308,11 @@ TicksToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Axis *axisPtr = (Axis *)widgRec;
     Tcl_Obj *listObjPtr;
     Ticks *ticksPtr;
-    unsigned long mask;
+    size_t mask;
     TickGrid *ptr = (TickGrid *)(widgRec + offset);
 
     ticksPtr = &ptr->ticks;
-    mask = (unsigned long)clientData;
+    mask = (size_t)clientData;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if ((ticksPtr->values != NULL) && ((axisPtr->flags & mask) == 0)) {
         int i;
@@ -1616,7 +1616,7 @@ static int
 SetTag(Tcl_Interp *interp, Axis *axisPtr, const char *tagName)
 {
     Graph *graphPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved

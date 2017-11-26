@@ -1389,9 +1389,9 @@ MapActive(BarElement *elemPtr)
         count = 0;
         for (i = 0; i < elemPtr->numBars; i++) {
             Blt_HashEntry *hPtr;
-            long lindex;
+            size_t lindex;
 
-            lindex = (long)elemPtr->barToData[i];
+            lindex = (size_t)elemPtr->barToData[i];
             hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)lindex);
             if (hPtr != NULL) {
                 activeRects[count] = elemPtr->bars[i];

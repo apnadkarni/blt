@@ -1781,7 +1781,7 @@ ObjToColorPair(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj **objv;
     int state;
     int objc;
-    long longValue = (long)clientData;
+    size_t longValue = (size_t)clientData;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
@@ -2033,7 +2033,7 @@ static int
 SetTag(Tcl_Interp *interp, Marker *markerPtr, const char *tagName)
 {
     Graph *graphPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -5885,10 +5885,10 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Graph *graphPtr = clientData;
     const char *tag;
-    long markerId;
+    int64_t dummy;
 
     tag = Tcl_GetString(objv[4]);
-    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[4], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -5936,11 +5936,11 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Graph *graphPtr = clientData;
     const char *tag;
-    long markerId;
+    int64_t dummy;
     int i;
 
     tag = Tcl_GetString(objv[4]);
-    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[4], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -6028,10 +6028,10 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 4; i < objc; i++) {
         const char *tag;
-        long markerId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
@@ -6218,10 +6218,10 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 5; i < objc; i++) {
         const char *tag;
         Marker *markerPtr;
-        long markerId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;

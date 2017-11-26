@@ -753,7 +753,6 @@ ComputeGeometry(LabelItem *labelPtr)
 #endif
     labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
-        fprintf(stderr, "layoutPtr=%x\n", labelPtr->layoutPtr);
         w = h = 0;
     } else {
         TextStyle ts;

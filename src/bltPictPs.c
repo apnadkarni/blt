@@ -1002,9 +1002,7 @@ PsToPbm(
     if (numPids < 0) {
         return TCL_ERROR;
     }
-#ifndef WIN32
     Blt_DetachPids(numPids, pids);
-#endif
     Blt_Free(pids);
 #ifdef WIN32
     {

@@ -1205,7 +1205,7 @@ static int
 SetTag(Tcl_Interp *interp, Element *elemPtr, const char *tagName)
 {
     Graph *graphPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -2189,10 +2189,10 @@ ActiveIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (hPtr = Blt_FirstHashEntry(&elemPtr->activeTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
-        long lindex;
+        size_t lindex;
 
-        lindex = (long)Blt_GetHashValue(hPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(lindex));
+        lindex = (size_t)Blt_GetHashValue(hPtr);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(lindex));
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -2226,22 +2226,20 @@ ActiveSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 5; i < objc; i++) {
         int index;
-        long lindex;
         Blt_HashEntry *hPtr;
         int isNew;
 
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        lindex = (long)index;
-        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)lindex, 
+        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)(size_t)index,
                                    &isNew);
         if (hPtr == NULL) {
             Tcl_AppendResult(interp, "can't set index \"", 
                 Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_SetHashValue(hPtr, lindex);
+        Blt_SetHashValue(hPtr, (size_t)index);
     }
     elemPtr->flags |= (ACTIVE | ACTIVE_PENDING);
     elemPtr->numActiveIndices = elemPtr->activeTable.numEntries;
@@ -2278,15 +2276,13 @@ ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 5; i < objc; i++) {
         int index;
-        long lindex;
         Blt_HashEntry *hPtr;
         int isNew;
 
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        lindex = (long)index;
-        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)lindex, 
+        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)(size_t)index,
                                    &isNew);
         if (hPtr == NULL) {
             Tcl_AppendResult(interp, "can't set index \"", 
@@ -2296,7 +2292,7 @@ ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (!isNew) {
             Blt_DeleteHashEntry(&elemPtr->activeTable, hPtr);
         } else {
-            Blt_SetHashValue(hPtr, lindex);
+            Blt_SetHashValue(hPtr, (size_t)index);
         }
     }
     elemPtr->flags |= (ACTIVE | ACTIVE_PENDING);
@@ -2333,14 +2329,12 @@ ActiveUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 5; i < objc; i++) {
         int index;
-        long lindex;
         Blt_HashEntry *hPtr;
 
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        lindex = (long)index;
-        hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)lindex);
+        hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)(size_t)index);
         if (hPtr == NULL) {
             continue;
         }
@@ -2461,15 +2455,13 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (i = 4; i < objc; i++) {
             int index, isNew;
-            long lindex;
             Blt_HashEntry *hPtr;
 
             if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
                 return TCL_ERROR;
             }
-            lindex = (long)index;
-            hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)lindex, 
-                &isNew);
+            hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
+                                       (char *)(size_t)index, &isNew);
             if (hPtr == NULL) {
                 Tcl_AppendResult(interp, "can't set index \"", 
                         Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);

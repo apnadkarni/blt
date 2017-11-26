@@ -5124,7 +5124,7 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
 
     default:
         fprintf(stderr, "unknown item type (%d) %lx\n", type,
-                (unsigned long)item);
+                (size_t)item);
         break;
     }
 }
@@ -8874,7 +8874,7 @@ ColumnVarResolverProc(
     BLT_TABLE_COLUMN col;
     FindSwitches *switchesPtr;
     Tcl_Obj *valueObjPtr;
-    long index;
+    int64_t index;
     
     /* 
      * Global variables:  table, viewPtr, varTable, rowPtr.

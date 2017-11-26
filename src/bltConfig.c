@@ -942,9 +942,9 @@ DoConfig(
                 }
                 if (sp->customPtr != NULL) {
                     if (bool) {
-                        *((int *)ptr) |= (long)sp->customPtr;
+                        *((int *)ptr) |= (intptr_t)sp->customPtr;
                     } else {
-                        *((int *)ptr) &= ~(long)sp->customPtr;
+                        *((int *)ptr) &= ~(intptr_t)sp->customPtr;
                     }
                 } else {
                     *((int *)ptr) = bool;
@@ -1187,38 +1187,38 @@ DoConfig(
         case BLT_CONFIG_BITMASK: 
             {
                 int bool;
-                unsigned long mask;
-                unsigned int flags;
+                uintptr_t mask;
+                uintptr_t flags;
 
                 if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                mask = (unsigned long)sp->customPtr;
-                flags = *(unsigned int *)ptr;
+                mask = (uintptr_t)sp->customPtr;
+                flags = *(uintptr_t *)ptr;
                 flags &= ~mask;
                 if (bool) {
                     flags |= mask;
                 }
-                *(unsigned int *)ptr = flags;
+                *(uintptr_t *)ptr = flags;
             }
             break;
 
         case BLT_CONFIG_BITMASK_INVERT: 
             {
                 int bool;
-                unsigned long mask;
-                unsigned int flags;
+                uintptr_t mask;
+                uintptr_t flags;
 
                 if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                mask = (unsigned long)sp->customPtr;
-                flags = *(unsigned int *)ptr;
+                mask = (uintptr_t)sp->customPtr;
+                flags = *(uintptr_t *)ptr;
                 flags &= ~mask;
                 if (!bool) {
                     flags |= mask;
                 }
-                *(unsigned int *)ptr = flags;
+                *(uintptr_t *)ptr = flags;
             }
             break;
 
@@ -1323,7 +1323,7 @@ DoConfig(
 
         case BLT_CONFIG_LONG: 
             {
-                long value;
+                int64_t value;
                 
                 if (Blt_GetLongFromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
@@ -1547,9 +1547,9 @@ FormatConfigValue(
             int bool;
 
             if (sp->customPtr != NULL) {
-                bool = *((int *)ptr) & (long)sp->customPtr;
+                bool = *((int *)ptr) & (uintptr_t)sp->customPtr;
             } else {
-                bool = *((int *)ptr) &= ~(long)sp->customPtr;
+                bool = *((int *)ptr) &= ~(uintptr_t)sp->customPtr;
             }
             return Tcl_NewBooleanObj(bool);
         }
