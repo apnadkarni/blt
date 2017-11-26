@@ -3177,17 +3177,17 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((*bgPtr->classPtr->execProc)(interp, bgPtr, objc-i, objv+i) != TCL_OK) {
         goto error;
     }
-    if (bgPtr->outSink.fd >= 0) {
+    if (SINKOPEN(&bgPtr->outSink)) {
         if (CreateSinkHandler(&bgPtr->outSink, CollectStdout) != TCL_OK) {
             goto error;
         }
     }
-    if (bgPtr->errSink.fd >= 0) {
+    if (SINKOPEN(&bgPtr->errSink)) {
         if (CreateSinkHandler(&bgPtr->errSink, CollectStderr) != TCL_OK) {
             goto error;
         }
     }
-    if ((bgPtr->errSink.fd == -1) && (bgPtr->outSink.fd == -1)) {
+    if ((!SINKOPEN(&bgPtr->errSink)) && (!SINKOPEN(&bgPtr->outSink))) {
         /* We're not reading from either stderr and stdout, so start
          * polling for the pipeline completion.. */
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, 
