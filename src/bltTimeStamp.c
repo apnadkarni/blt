@@ -3388,6 +3388,7 @@ fprintf(stderr, "datePtr->frac = %.17g %.9g\n", datePtr->frac, datePtr->frac);
         assert((bp - buffer) < count);
 #endif
     }
+    Tcl_DStringSetLength(resultPtr, bp - buffer);
 }
 
 /*
