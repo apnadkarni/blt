@@ -809,7 +809,7 @@ IsNodeIdOrModifier(const char *string)
 /*
  *---------------------------------------------------------------------------
  *
- * ChildSwitch --
+ * PositionSwitch --
  *
  *      Convert a Tcl_Obj representing the label of a child node into its
  *      integer node id.
@@ -826,7 +826,7 @@ PositionSwitch(ClientData clientData, Tcl_Interp *interp,
                int offset, int flags)
 {
     long *positionPtr = (long *)(record + offset);
-    long position;
+    int64_t position;
     const char *string;
     
     string = Tcl_GetString(objPtr);
@@ -842,7 +842,7 @@ PositionSwitch(ClientData clientData, Tcl_Interp *interp,
                          "\": can't be negative.", (char *)NULL);
         return TCL_ERROR;
     }
-    *positionPtr = position;
+    *positionPtr = (long)position;
     return TCL_OK;
 }
 
@@ -5453,7 +5453,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* Initialize switch flags */
     memset(&switches, 0, sizeof(switches));
-    switches.position = -1;             /* Default to append node. */
+    switches.position = POSITION_END;   /* Default to append node. */
     switches.parent = parent;
     switches.inode = -1;
 

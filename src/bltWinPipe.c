@@ -2496,27 +2496,3 @@ Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t size)
     return size;
 }
 
-void
-Blt_DetachPids(int numPids, Blt_Pid *pids)
-{
-    Tcl_Pid *tclPids;
-    Tcl_Pid staticStorage[64];
-    int i, count;
-
-    if (numPids > 64) {
-        tclPids = Blt_AssertMalloc(numPids * sizeof(Tcl_Pid));
-    } else {
-        tclPids = staticStorage;
-    }
-    for (i = count = 0; i < numPids; i++) {
-        if (pids[i].hProcess != INVALID_HANDLE_VALUE) {
-            tclPids[count] = (Tcl_Pid)pids[i].pid;
-            count++;
-        }
-    }
-    Tcl_DetachPids(count, tclPids);
-    if (tclPids != staticStorage) {
-        Blt_Free(tclPids);
-    }
-}
-

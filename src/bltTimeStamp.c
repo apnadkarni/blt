@@ -1688,7 +1688,6 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
                     
                     d = pow(10.0, tokenPtr->length);
                     parserPtr->date.frac = (double)tokenPtr->lvalue / d;
-fprintf(stderr, "token lvalue=%ld frac=%.17g\n", tokenPtr->lvalue, parserPtr->date.frac);
                     tokenPtr = tokenPtr->nextPtr;
                 }
             }

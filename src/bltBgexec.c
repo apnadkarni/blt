@@ -2233,7 +2233,9 @@ KillPipeline(Bgexec *bgPtr)            /* Background info record. */
 #endif
             }
         }
+#ifdef WIN32
         Blt_DetachPids(bgPtr->numPids, bgPtr->pids);
+#endif
     }
     Tcl_ReapDetachedProcs();
 }

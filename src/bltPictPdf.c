@@ -878,7 +878,9 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if (numPids < 0) {
         return TCL_ERROR;
     }
+#ifndef WIN32
     Blt_DetachPids(numPids, pids);
+#endif
     Blt_Free(pids);
 #ifdef WIN32
     {

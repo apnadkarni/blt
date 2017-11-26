@@ -3749,8 +3749,13 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (reader.numRead != reader.size) {
+#ifdef __WIN64
+        fprintf(stderr, "invalid file read: read=%I64u wanted=%I64u\n",
+                (int64_t)reader.numRead, (int64_t)reader.size);
+#else
         fprintf(stderr, "invalid file read: read=%lu wanted=%lu\n",
-                (size_t)reader.numRead, (size_t)reader.size);
+                (int64_t)reader.numRead, (int64_t)reader.size);
+#endif
     }
     result = TCL_OK;
     fclose(reader.f);
@@ -4221,9 +4226,16 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (writer.totalBytesWritten != writer.size) {
+#ifdef __WIN64
+        fprintf(stderr, "invalid file write: written=%I64d wanted=%I64d\n",
+                (int64_t)writer.totalBytesWritten,
+                (int64_t)writer.size);
+#else
         fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
-                (size_t)writer.totalBytesWritten,
-                (size_t)writer.size);
+                (int64_t)writer.totalBytesWritten,
+                (int64_t)writer.size);
+        
+#endif
     }
     result = TCL_OK;
     fclose(writer.f);
@@ -4311,9 +4323,15 @@ ReadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = GetRemoteFile(interp, path, length, &reader);
     if (result == TCL_OK) {
         if (reader.numRead != reader.size) {
-            fprintf(stderr, "invalid file read: read=%lu wanted=%lu\n",
-                    (size_t)reader.numRead,
-                    (size_t)reader.size);
+#ifdef __WIN64
+            fprintf(stderr, "invalid file read: read=%I64d wanted=%I64d\n",
+                    (int64_t)reader.numRead,
+                    (int64_t)reader.size);
+#else
+            fprintf(stderr, "invalid file read: read=%ld wanted=%ld\n",
+                    (int64_t)reader.numRead,
+                    (int64_t)reader.size);
+#endif
         }
         Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(reader.dbuffer));
     }
@@ -4371,7 +4389,8 @@ ReadableOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (remotePtr->uid == attrs.uid) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IRUSR);
     } else if ((remotePtr->gid == attrs.gid) || 
-               (Blt_FindHashEntry(&remotePtr->gidTable, (char *)attrs.gid))) {
+               (Blt_FindHashEntry(&remotePtr->gidTable,
+                                  (char *)(size_t)attrs.gid))) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IRGRP);
     } else {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IROTH);
@@ -4769,7 +4788,8 @@ WritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (remotePtr->uid == attrs.uid) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IWUSR);
     } else if ((remotePtr->gid == attrs.gid) || 
-               (Blt_FindHashEntry(&remotePtr->gidTable, (char *)attrs.gid))) {
+               (Blt_FindHashEntry(&remotePtr->gidTable,
+                                  (char *)(size_t)attrs.gid))) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IWGRP);
     } else {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IWOTH);
@@ -4814,9 +4834,15 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = PutRemoteFile(interp, path, length, &writer);
     if (writer.totalBytesWritten != writer.size) {
-        fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
-                (size_t)writer.totalBytesWritten,
-                (size_t)writer.size);
+#ifdef __WIN64
+        fprintf(stderr, "invalid file write: written=%I64d wanted=%I64d\n",
+                (int64_t)writer.totalBytesWritten,
+                (int64_t)writer.size);
+#else
+        fprintf(stderr, "invalid file write: written=%ld wanted=%ld\n",
+                (int64_t)writer.totalBytesWritten,
+                (int64_t)writer.size);
+#endif
     }
     Blt_FreeSwitches(writeSwitches, (char *)&writer, 0);
     return result;

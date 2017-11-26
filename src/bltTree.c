@@ -2079,7 +2079,7 @@ Blt_Tree_IsBefore(Node *n1Ptr, Node *n2Ptr)
         n2Ptr = n2Ptr->parent;
     }
     if (n2Ptr == n1Ptr) {
-        return FALSE;
+        return TRUE;
     }
 
     /* 
