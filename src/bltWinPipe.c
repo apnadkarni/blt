@@ -2333,8 +2333,8 @@ Blt_CreatePipeline(
  */
 void
 Blt_CreateFileHandler(
-    int fd,                     /* Descriptor or handle of file */
-    int flags,                  /* TCL_READABLE or TCL_WRITABLE  */
+    HANDLE hFile,                       /* Descriptor or handle of file */
+    int flags,                          /* TCL_READABLE or TCL_WRITABLE  */
     Tcl_FileProc *proc,
     ClientData clientData)
 {
@@ -2346,7 +2346,7 @@ Blt_CreateFileHandler(
     if ((flags != TCL_READABLE) && (flags != TCL_WRITABLE)) {
         return;                 /* Only one of the flags can be set. */
     }
-    pipePtr = CreatePipeHandler((HANDLE) fd, flags);
+    pipePtr = CreatePipeHandler(hFile, flags);
     pipePtr->proc = proc;
     pipePtr->clientData = clientData;
 
