@@ -923,7 +923,7 @@ ObjToXID(
     int offset,                         /* Offset to field in structure */
     int flags)  
 {
-    unsigned long searchFlags = (unsigned long)clientData;
+    size_t searchFlags = (size_t)clientData;
     Container *conPtr = (Container *)widgRec;
     Window *idPtr = (Window *) (widgRec + offset);
     Tk_Window tkAdopted;

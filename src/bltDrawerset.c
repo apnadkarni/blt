@@ -1755,7 +1755,7 @@ static int
 SetTag(Tcl_Interp *interp, Drawer *drawPtr, const char *tagName)
 {
     Drawerset *setPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -2289,7 +2289,7 @@ GetDrawerByIndex(Tcl_Interp *interp, Drawerset *setPtr, const char *string,
 {
     Drawer *drawPtr;
     char c;
-    long pos;
+    int64_t pos;
 
     drawPtr = NULL;
     c = string[0];
@@ -4370,10 +4370,10 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Drawerset *setPtr = clientData;
     const char *tag;
-    long drawerId;
+    int64_t dummy;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &drawerId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -4421,11 +4421,11 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Drawerset *setPtr = clientData;
     const char *tag;
-    long drawerId;
+    int64_t dummy;
     int i;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &drawerId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -4513,10 +4513,10 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *tag;
-        long drawerId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &drawerId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;

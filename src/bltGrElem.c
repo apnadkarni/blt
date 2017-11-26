@@ -3170,10 +3170,10 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         chain = (*elemPtr->procsPtr->findProc)(graphPtr, elemPtr, x, y, r);
         for (link = Blt_Chain_FirstLink(chain); link != NULL; 
              link = Blt_Chain_NextLink(link)) {
-            long i;
+            size_t i;
 
-            i = (long)Blt_Chain_GetValue(link);
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
+            i = (size_t)Blt_Chain_GetValue(link);
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(i));
         }
         Blt_Chain_Destroy(chain);
         Tcl_SetObjResult(interp, listObjPtr);

@@ -640,7 +640,7 @@ GetProperty(Display *display, HWND hWnd)
         char buffer[MAX_PROP_SIZE + 1];
         UINT numBytes;
 
-        atom = (ATOM)((int)handle);
+        atom = (ATOM)((uintptr_t)handle);
         numBytes = GlobalGetAtomName(atom, buffer, MAX_PROP_SIZE);
         if (numBytes > 0) {
             buffer[numBytes] = '\0';
@@ -662,13 +662,13 @@ SetProperty(Tk_Window tkwin, const char *data)
         return;
     }
     handle = GetProp(hWnd, propName);
-    atom = (ATOM)((int)handle);
+    atom = (ATOM)((uintptr_t)handle);
     if (atom != (ATOM)0) {
         GlobalDeleteAtom(atom);
     }
     atom = GlobalAddAtom((char *)data);
     if (atom != (ATOM)0) {
-        handle = (HANDLE)((int)atom);
+        handle = (HANDLE)((uintptr_t)atom);
         SetProp(hWnd, propName, handle);
     }
 }
@@ -687,7 +687,7 @@ RemoveProperty(Tk_Window tkwin)
     if (handle != NULL) {
         ATOM atom;
 
-        atom = (ATOM)((int)handle);
+        atom = (ATOM)((uintptr_t)handle);
         GlobalDeleteAtom(atom);
     }
     RemoveProp(hWnd, propName);
