@@ -4756,7 +4756,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *tag;
-        int64 dummy;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
         if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
