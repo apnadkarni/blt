@@ -687,7 +687,7 @@ WriteBufferProc(void *clientData)
 
 static PdfWriter writer;
 
-static int
+static HANDLE
 WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     HANDLE hThread;
@@ -710,7 +710,7 @@ WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
         0,                              /* Creation flags */
         &id);                           /* (out) Will contain Id of new
                                          * thread. */
-    return (int)hThread;
+    return hThread;
 }
 
 
@@ -722,7 +722,6 @@ ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
     int result;
 
     Blt_DBuffer_Free(dbuffer);
-    hFile = (HANDLE)fd;
     numBytes = 0;
     for (;;) {
         DWORD numRead;
@@ -754,7 +753,7 @@ ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 
 #else  /* WIN32 */
 
-static int
+static pid_t
 WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     pid_t child;
@@ -827,7 +826,6 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     int numPids;
     Blt_Pid *pids;
     int result;
-    pid_t child;
     const char **p;
     const char *args[] = {
         "gs",                           /* Ghostscript command */
@@ -882,13 +880,27 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     Blt_DetachPids(numPids, pids);
     Blt_Free(pids);
-    child = WriteToGhostscript(interp, inPipe, dbuffer);
-    if (child == 0) {
-        return TCL_ERROR;
-    }
-    result = ReadFromGhostscript(interp, outPipe, dbuffer);
 #ifdef WIN32
-    CloseHandle((HANDLE)child);
+    {
+        HANDLE hThread;
+        
+        hThread = WriteToGhostscript(interp, inPipe, dbuffer);
+        if (hThread == NULL) {
+            return TCL_ERROR;
+        }
+        result = ReadFromGhostscript(interp, outPipe, dbuffer);
+        CloseHandle(hThread);
+    }
+#else
+    {
+        pid_t child;
+
+        child = WriteToGhostscript(interp, inPipe, dbuffer);
+        if (child == 0) {
+            return TCL_ERROR;
+        }
+        result = ReadFromGhostscript(interp, outPipe, dbuffer);
+    }
 #endif
     Tcl_ReapDetachedProcs();
 #ifdef notdef

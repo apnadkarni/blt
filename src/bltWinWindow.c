@@ -461,7 +461,7 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
         if (Tcl_GetIntFromObj(interp, objPtr, &id) != TCL_OK) {
             return TCL_ERROR;
         }
-        tkWinWindow.handle = (HWND)id;
+        tkWinWindow.handle = (HWND)(size_t)id;
         tkWinWindow.winPtr = NULL;
         tkWinWindow.type = TWD_WINDOW;
         *windowPtr = (Window)&tkWinWindow;

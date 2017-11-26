@@ -142,7 +142,7 @@ GetIdFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
         { 
             static TkWinWindow tkWinWindow;
             
-            tkWinWindow.handle = (HWND)xid;
+            tkWinWindow.handle = (HWND)(size_t)xid;
             tkWinWindow.winPtr = NULL;
             tkWinWindow.type = TWD_WINDOW;
             *windowPtr = (Window)&tkWinWindow;

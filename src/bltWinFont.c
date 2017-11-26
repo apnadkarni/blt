@@ -1698,7 +1698,7 @@ ExtFontCanRotateProc(_Blt_Font *fontPtr, float angle)
     HFONT hFont;
     ExtFontset *setPtr = fontPtr->clientData;
     int isNew;
-    long angle10;
+    size_t angle10;
 
     angle *= 10.0f;
     angle10 = ROUND(angle);
