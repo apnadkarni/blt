@@ -1578,9 +1578,9 @@ ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
     TkFont *tkFontPtr;
 
     tkFontPtr = (TkFont *)setPtr->tkFont;
-    fmPtr->ascent = tkFontPtr->ascent;
-    fmPtr->descent = tkFontPtr->descent;
-    fmPtr->linespace = tkFontPtr->linespace;
+    fmPtr->ascent = tkFontPtr->fm.ascent;
+    fmPtr->descent = tkFontPtr->fm.descent;
+    fmPtr->linespace = tkFontPtr->fm.ascent + fontPtr->fm.descent;
     fmPtr->tabWidth = tkFontPtr->tabWidth;
     fmPtr->underlinePos = tkFontPtr->underlinePos;
     fmPtr->underlineHeight = tkFontPtr->underlineHeight;
