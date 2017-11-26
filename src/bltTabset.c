@@ -5459,7 +5459,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *tag;
-        int64_t tagId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
         if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
@@ -5728,11 +5728,11 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 4; i < objc; i++) {
         const char *tag;
-        long tagId;
+        int64_t dummy;
         Tab *tabPtr;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &tagId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
