@@ -269,7 +269,7 @@ struct _Tga {
     int imageType;                      /* Image type code */
     int cmOffset;                       /* Index of first color map
                                            entry. */
-    int cmNumEntries;                   /* # of color map entries. */
+    size_t cmNumEntries;                /* # of color map entries. */
     int cmBitsPerPixel;                 /* Bits per pixel of color map
                                          * entries. */
     int xOrigin;                        /* X coordinate of the lower left
