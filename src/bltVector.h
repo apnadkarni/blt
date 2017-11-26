@@ -114,10 +114,10 @@ BLT_EXTERN const char *Blt_NameOfVector(Blt_Vector *vecPtr);
 BLT_EXTERN int Blt_VectorNotifyPending(Blt_VectorId clientId);
 
 BLT_EXTERN int Blt_CreateVector(Tcl_Interp *interp, const char *vecName, 
-        size_t size, Blt_Vector ** vecPtrPtr);
+        int size, Blt_Vector ** vecPtrPtr);
 
 BLT_EXTERN int Blt_CreateVector2(Tcl_Interp *interp, const char *vecName, 
-        const char *cmdName, const char *varName, size_t initialSize, 
+        const char *cmdName, const char *varName, int initialSize, 
         Blt_Vector **vecPtrPtr);
 
 BLT_EXTERN int Blt_GetVector(Tcl_Interp *interp, const char *vecName, 
@@ -128,10 +128,10 @@ BLT_EXTERN int Blt_GetVectorFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 
 BLT_EXTERN int Blt_VectorExists(Tcl_Interp *interp, const char *vecName);
 
-BLT_EXTERN int Blt_ResetVector(Blt_Vector *vecPtr, double *dataArr, size_t n, 
-        size_t arraySize, Tcl_FreeProc *freeProc);
+BLT_EXTERN int Blt_ResetVector(Blt_Vector *vecPtr, double *dataArr, int n, 
+        int arraySize, Tcl_FreeProc *freeProc);
 
-BLT_EXTERN int Blt_ResizeVector(Blt_Vector *vecPtr, size_t n);
+BLT_EXTERN int Blt_ResizeVector(Blt_Vector *vecPtr, int n);
 
 BLT_EXTERN int Blt_DeleteVectorByName(Tcl_Interp *interp, const char *vecName);
 

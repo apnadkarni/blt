@@ -4315,7 +4315,7 @@ AncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (node1 == node2) {
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node1));
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node1));
         return TCL_OK;
     }
     d1 = Blt_Tree_NodeDepth(node1);
@@ -4325,7 +4325,7 @@ AncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_TreeNode ancestor;
 
         ancestor = Blt_Tree_RootNode(cmdPtr->tree);
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(ancestor));
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(ancestor));
         return TCL_OK;
     }
     /* 
@@ -4336,14 +4336,14 @@ AncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         node1 = Blt_Tree_ParentNode(node1);
     }
     if (node1 == node2) {
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node2));
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node2));
         return TCL_OK;
     }
     for (i = d2; i > minDepth; i--) {
         node2 = Blt_Tree_ParentNode(node2);
     }
     if (node2 == node1) {
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node1));
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node1));
         return TCL_OK;
     }
 
@@ -4357,7 +4357,7 @@ AncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
         node1 = Blt_Tree_ParentNode(node1);
         node2 = Blt_Tree_ParentNode(node2);
         if (node1 == node2) {
-            Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node2));
+            Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node2));
             return TCL_OK;
         }
     }
@@ -4676,7 +4676,7 @@ CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (switches.label != NULL) {
             Blt_Tree_RelabelNode(switches.destTree, root, switches.label);
         }
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(root));
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(root));
     }
     return TCL_OK;
 
@@ -5134,7 +5134,7 @@ FindChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (child != NULL) {
         inode = Blt_Tree_NodeId(child);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -5165,7 +5165,7 @@ FirstChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (node != NULL) {
         inode = Blt_Tree_NodeId(node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -5379,7 +5379,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
         inode = Blt_Tree_NodeId(node);
     }
  done:
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -5735,7 +5735,7 @@ LastChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     node = Blt_Tree_LastChild(node);
     inode = (node != NULL) ? Blt_Tree_NodeId(node) : -1 ;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -5806,7 +5806,7 @@ ListLengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_ListObjLength(interp, valueObjPtr, &length) != TCL_OK) {
         return TCL_ERROR;
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), length);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), length);
     return TCL_OK;
 }
 
@@ -5994,7 +5994,7 @@ NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     node = Blt_Tree_NextNode(NULL, node);
     inode = (node != NULL) ? Blt_Tree_NodeId(node) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6023,7 +6023,7 @@ NextSiblingOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (node != NULL) {
         inode = Blt_Tree_NodeId(node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6274,7 +6274,7 @@ ParentOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (node != NULL) {
         inode = Blt_Tree_NodeId(node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6374,7 +6374,7 @@ PathCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (parent != NULL) {
         inode = Blt_Tree_NodeId(parent);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     if (listObjPtr != NULL) {
         Tcl_DecrRefCount(listObjPtr);
     }
@@ -6484,7 +6484,7 @@ PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
  done:
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     Blt_FreeSwitches(pathParseSwitches, (char *)&switches, 0);
     if (listObjPtr != NULL) {
         Tcl_DecrRefCount(listObjPtr);
@@ -6766,7 +6766,7 @@ PreviousOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     node = Blt_Tree_PrevNode(NULL, node);
     inode = (node != NULL) ? Blt_Tree_NodeId(node) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6788,7 +6788,7 @@ PrevSiblingOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (node != NULL) {
         inode = Blt_Tree_NodeId(node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), inode);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6893,7 +6893,7 @@ RootOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeCmd *cmdPtr = clientData;
 
     root = Blt_Tree_RootNode(cmdPtr->tree);
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(root));
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(root));
     return TCL_OK;
 }
 
@@ -6943,7 +6943,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         != TCL_OK) {
         return TCL_ERROR;
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_Size(node));
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), Blt_Tree_Size(node));
     return TCL_OK;
 }
 

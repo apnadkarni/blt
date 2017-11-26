@@ -178,7 +178,7 @@ Blt_Vec_FFT(
     noconstant = (flags & FFT_NO_CONSTANT) ? 1 : 0;
 
     /* Length of the original vector. */
-    length = srcPtr->last - srcPtr->first + 1;
+    length = srcPtr->last - srcPtr->first;
 
     /* New length */
     pow2len = smallest_power_of_2_not_less_than(length);
@@ -318,7 +318,7 @@ Blt_Vec_InverseFFT(Tcl_Interp *interp, Vector *srcImagPtr, Vector *destRealPtr,
                 (char *)NULL);
         return TCL_ERROR;               /* We do not do in-place FFTs */
     }
-    length = srcPtr->last - srcPtr->first + 1;
+    length = srcPtr->last - srcPtr->first;
 
     /* Minus one because of the magical middle element! */
     pow2len = smallest_power_of_2_not_less_than( (length-1)*2 );
@@ -331,7 +331,7 @@ Blt_Vec_InverseFFT(Tcl_Interp *interp, Vector *srcImagPtr, Vector *destRealPtr,
         return TCL_ERROR;
     }
 
-    if( length != (srcImagPtr->last - srcImagPtr->first + 1) ){
+    if( length != (srcImagPtr->last - srcImagPtr->first) ){
         Tcl_AppendResult(srcPtr->interp,
                 "the length of the imagPart vector must ",
                 "be the same as the real one", (char *)NULL);

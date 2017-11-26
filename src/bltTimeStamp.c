@@ -603,7 +603,7 @@ static int
 ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
 {
     const char *p;
-    long lvalue;
+    int64_t lvalue;
     int length, result;
     Tcl_Obj *objPtr;
 
@@ -3281,7 +3281,7 @@ fprintf(stderr, "datePtr->frac = %.17g %.9g\n", datePtr->frac, datePtr->frac);
         case 'N':                       /* nanoseconds (000000000..999999999) */
             Blt_DateToSeconds(datePtr, &seconds);
 #if SIZEOF_LONG == 4
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__CYGWIN__)
             numBytes = sprintf(bp, "%I64d", (int64_t)(seconds * 1e9));
 #else 
             numBytes = sprintf(bp, "%lld", (int64_t)(seconds * 1e9));

@@ -110,18 +110,18 @@ FormatSwitchValue(
     case BLT_SWITCH_BITS:
     case BLT_SWITCH_BITS_NOARG:
         {
-            unsigned long flag;
+            uintptr_t flag;
 
-            flag = (*(unsigned long *)ptr) & (unsigned long)sp->customPtr;
+            flag = (*(uintptr_t *)ptr) & (uintptr_t)sp->customPtr;
             return Tcl_NewBooleanObj((flag != 0));
         }
 
     case BLT_SWITCH_INVERT_BITS:
     case BLT_SWITCH_INVERT_BITS_NOARG:
         {
-            unsigned long flag;
+            uintptr_t flag;
 
-            flag = (*(unsigned long *)ptr) & (unsigned long)sp->customPtr;
+            flag = (*(uintptr_t *)ptr) & (uintptr_t)sp->customPtr;
             return Tcl_NewBooleanObj((flag == 0));
         }
 
@@ -366,13 +366,13 @@ DoSwitch(
         case BLT_SWITCH_BITS: 
             {
                 int bool;
-                unsigned long mask, flags;
+                uintptr_t mask, flags;
 
                 if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                mask = (unsigned long)sp->customPtr;
-                flags = *(int *)ptr;
+                mask = (uintptr_t)sp->customPtr;
+                flags = *(uintptr_t *)ptr;
                 flags &= ~mask;
                 if (bool) {
                     flags |= mask;
@@ -384,13 +384,13 @@ DoSwitch(
         case BLT_SWITCH_INVERT_BITS: 
             {
                 int bool;
-                unsigned long mask, flags;
+                uintptr_t mask, flags;
 
                 if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                mask = (unsigned long)sp->customPtr;
-                flags = *(int *)ptr;
+                mask = (uintptr_t)sp->customPtr;
+                flags = *(uintptr_t *)ptr;
                 flags &= ~mask;
                 if (!bool) {
                     flags |= mask;

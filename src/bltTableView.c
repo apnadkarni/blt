@@ -8112,7 +8112,7 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y2 = WORLDX(viewPtr, y2 - rootY);
     if ((y2 < viewPtr->inset) || 
         (y1 >= (viewPtr->inset + viewPtr->colTitleHeight))) {
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
         return TCL_OK;
     }
     /*
@@ -8128,14 +8128,14 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         colPtr = viewPtr->visibleColumns[i];
         if ((x1 < (colPtr->worldX + colPtr->width)) && 
             (x2 > colPtr->worldX)) {
-            long index;
+            size_t index;
 
             index = blt_table_column_index(viewPtr->table, colPtr->column);
-            Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+            Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
             return TCL_OK;
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
     return TCL_OK;
 }
 
@@ -8214,14 +8214,14 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     Column *colPtr;
-    long index;
+    ssize_t index;
 
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     index = (colPtr != NULL) ? 
         blt_table_column_index(viewPtr->table, colPtr->column) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -8449,7 +8449,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     int x;                         /* Screen coordinates of the test point. */
     Column *colPtr;
-    long index;
+    ssize_t index;
 
 #ifdef notdef
     int isRoot;
@@ -8475,7 +8475,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colPtr = NearestColumn(viewPtr, x, TRUE);
     index = (colPtr != NULL) ? 
         blt_table_column_index(viewPtr->table, colPtr->column) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -9224,7 +9224,7 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     filterPtr = &viewPtr->filter;
     if (objc == 3) {
-        long index;
+        ssize_t index;
 
         /* Report the column that has the filter menu posted. */
         index = -1;
@@ -9232,7 +9232,7 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
             index = blt_table_column_index(viewPtr->table, 
                                            filterPtr->postPtr->column);
         }
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
         return TCL_OK;
     }
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
@@ -10244,14 +10244,14 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Row *rowPtr;
     TableView *viewPtr = clientData;
-    long index;
+    ssize_t index;
 
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     index = (rowPtr != NULL) ? 
         blt_table_row_index(viewPtr->table, rowPtr->row) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -10480,7 +10480,6 @@ RowNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     int y;                         /* Screen coordinates of the test point. */
     Row *rowPtr;
-    long index;
 
 #ifdef notdef
     int isRoot;
@@ -10504,9 +10503,12 @@ RowNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     rowPtr = NearestRow(viewPtr, y, TRUE);
-    index = (rowPtr != NULL) ? 
-        blt_table_row_index(viewPtr->table, rowPtr->row) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    if (rowPtr != NULL) {
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+                          blt_table_row_index(viewPtr->table, rowPtr->row));
+    } else {
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
+    }
     return TCL_OK;
 }
 

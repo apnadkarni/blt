@@ -4373,7 +4373,6 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Tab *tabPtr;
     Tabset *setPtr = clientData; 
-    long index;
 
     if (objc == 3) {
         if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
@@ -4385,11 +4384,11 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
             EventuallyRedraw(setPtr);
         }
     }
-    index = -1;
     if (setPtr->focusPtr != NULL) {
-        index = setPtr->focusPtr->index;
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), setPtr->focusPtr->index);
+    } else {
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 

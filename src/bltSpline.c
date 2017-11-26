@@ -1196,7 +1196,7 @@ SplineCmd(
     double *xArr, *yArr;
     long i;
     Point2d *origPts, *intpPts;
-    size_t numOrigPts, numIntpPts;
+    int numOrigPts, numIntpPts;
     
     proc = Blt_GetOpFromObj(interp, numSplineOps, splineOps, BLT_OP_ARG1, 
         objc, objv, 0);

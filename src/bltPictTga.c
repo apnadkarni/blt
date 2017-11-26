@@ -1620,18 +1620,17 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                 tga.cmNumEntries = 0;
                 tga.cmBitsPerPixel = 0;
             } else {
-                int i;
+                size_t i;
                 Blt_HashEntry *hPtr;
                 Blt_HashSearch iter;
                 
                 /* Add indices to the colortable.  */
                 for (i = 0, hPtr = Blt_FirstHashEntry(&tga.colorTable, &iter); 
                      hPtr != NULL; hPtr = Blt_NextHashEntry(&iter), i++) {
-                    unsigned long key;
                     
-                    Blt_SetHashValue(hPtr, (unsigned long)i);
-                    key = (unsigned long)Blt_GetHashKey(&tga.colorTable, hPtr);
-                    tga.palette[i].u32 = (unsigned int)key;
+                    Blt_SetHashValue(hPtr, i);
+                    tga.palette[i].u32 =
+                        (size_t)Blt_GetHashKey(&tga.colorTable, hPtr);
                 } 
                 tga.imageType = TGA_TYPE_PSEUDOCOLOR;
                 tga.colorMapExists = TRUE;

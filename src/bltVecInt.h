@@ -93,9 +93,9 @@ typedef struct {
      */
 
     double *valueArr;                   /* Array of values (malloc-ed) */
-    size_t length;                      /* Current number of values in the
+    int length;                         /* Current number of values in the
                                          * array. */
-    size_t size;                        /* Maximum number of values that
+    int size;                           /* Maximum number of values that
                                          * can be stored in the value
                                          * array. */
     double min, max;                    /* Minimum and maximum values in
@@ -126,7 +126,7 @@ typedef struct {
                                          * any variable */
     Tcl_Namespace *nsPtr;               /* Namespace context of the vector
                                          * itself. */
-    size_t offset;                      /* Offset from zero of the vector's
+    int offset;                         /* Offset from zero of the vector's
                                          * starting index */
     Tcl_Command cmdToken;               /* Token for vector's TCL
                                          * command. */
@@ -140,7 +140,7 @@ typedef struct {
     int freeOnUnset;                    /* For backward compatibility only:
                                          * If non-zero, free the vector
                                          * when its variable is unset. */
-    size_t first, last;                 /* Selected region of vector. This
+    int first, last;                    /* Selected region of vector. This
                                          * is used mostly for the math
                                          * routines */
 } Vector;
@@ -198,13 +198,13 @@ BLT_EXTERN Vector *Blt_Vec_New(VectorCmdInterpData *dataPtr);
 BLT_EXTERN int Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr);
 
 BLT_EXTERN int Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, 
-        size_t length);
+        int length);
 
 BLT_EXTERN int Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, 
-        size_t size);
+        int size);
 
 BLT_EXTERN int Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, 
-        size_t length);
+        int length);
 
 BLT_EXTERN Vector *Blt_Vec_ParseElement(Tcl_Interp *interp, 
         VectorCmdInterpData *dataPtr, const char *start, const char **endPtr, 
@@ -230,14 +230,16 @@ BLT_EXTERN void Blt_Vec_UpdateClients(Vector *vPtr);
 BLT_EXTERN void Blt_Vec_FlushCache(Vector *vPtr);
 
 BLT_EXTERN int Blt_Vec_Reset(Vector *vPtr, double *dataArr,
-        size_t numValues, size_t arraySize, Tcl_FreeProc *freeProc);
+        int numValues, int arraySize, Tcl_FreeProc *freeProc);
+
+BLT_EXTERN int Blt_Vec_GetSpecialIndex(Tcl_Interp *interp, Vector *vPtr,
+        const char *string, Blt_VectorIndexProc **procPtrPtr);
 
 BLT_EXTERN int  Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, 
-        const char *string, long *indexPtr, int flags, 
-        Blt_VectorIndexProc **procPtrPtr);
+        const char *string, int *indexPtr);
 
-BLT_EXTERN int  Blt_Vec_GetIndexRange(Tcl_Interp *interp, Vector *vPtr, 
-        const char *string, int flags, Blt_VectorIndexProc **procPtrPtr);
+BLT_EXTERN int  Blt_Vec_GetRange(Tcl_Interp *interp, Vector *vPtr, 
+        const char *string);
 
 BLT_EXTERN int Blt_Vec_MapVariable(Tcl_Interp *interp, Vector *vPtr, 
         const char *name);
