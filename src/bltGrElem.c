@@ -262,7 +262,7 @@ static int
 FetchVectorValues(Tcl_Interp *interp, ElemValues *valuesPtr, Blt_Vector *vector)
 {
     double *array;
-    size_t size;
+    int size;
 
     size = Blt_VecLength(vector) * sizeof(double);
     if (size == 0) {
@@ -890,7 +890,7 @@ ObjToValuePairs(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Element *elemPtr = (Element *)widgRec;
     double *values;
     int numValues;
-    size_t newSize;
+    int newSize;
 
     if (ParseValues(interp, objPtr, &numValues, &values) != TCL_OK) {
         return TCL_ERROR;
@@ -2232,14 +2232,14 @@ ActiveSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)(size_t)index,
-                                   &isNew);
+        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
+                                   (char *)(intptr_t)index, &isNew);
         if (hPtr == NULL) {
             Tcl_AppendResult(interp, "can't set index \"", 
                 Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_SetHashValue(hPtr, (size_t)index);
+        Blt_SetHashValue(hPtr, (intptr_t)index);
     }
     elemPtr->flags |= (ACTIVE | ACTIVE_PENDING);
     elemPtr->numActiveIndices = elemPtr->activeTable.numEntries;
@@ -2282,8 +2282,8 @@ ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)(size_t)index,
-                                   &isNew);
+        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
+                                   (char *)(intptr_t)index, &isNew);
         if (hPtr == NULL) {
             Tcl_AppendResult(interp, "can't set index \"", 
                 Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
@@ -2292,7 +2292,7 @@ ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (!isNew) {
             Blt_DeleteHashEntry(&elemPtr->activeTable, hPtr);
         } else {
-            Blt_SetHashValue(hPtr, (size_t)index);
+            Blt_SetHashValue(hPtr, (intptr_t)index);
         }
     }
     elemPtr->flags |= (ACTIVE | ACTIVE_PENDING);
@@ -2334,7 +2334,8 @@ ActiveUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)(size_t)index);
+        hPtr = Blt_FindHashEntry(&elemPtr->activeTable,
+                                 (char *)(intptr_t)index);
         if (hPtr == NULL) {
             continue;
         }
@@ -2461,7 +2462,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 return TCL_ERROR;
             }
             hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
-                                       (char *)(size_t)index, &isNew);
+                                       (char *)(intptr_t)index, &isNew);
             if (hPtr == NULL) {
                 Tcl_AppendResult(interp, "can't set index \"", 
                         Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
