@@ -224,7 +224,6 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsInit;
 DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsSafeInit;
 
 #ifdef WIN32
-  #define close(fd)               CloseHandle((HANDLE)fd)
   #define kill                    KillProcess
   #define waitpid                 WaitProcess
 #endif  /* WIN32 */
