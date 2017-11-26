@@ -174,6 +174,7 @@ test datatable.28 {datatable0} {
   datatable0 attach tableName
   datatable0 column op args...
   datatable0 copy tableName
+  datatable0 clear 
   datatable0 dir path ?switches?
   datatable0 dump ?switches?
   datatable0 duplicate ?tableName?
@@ -191,6 +192,7 @@ test datatable.28 {datatable0} {
   datatable0 minimum ?columnName?
   datatable0 numcolumns ?numColumns?
   datatable0 numrows ?numRows?
+  datatable0 pack 
   datatable0 restore ?switches?
   datatable0 row op args...
   datatable0 set ?rowName columnName value ...?
@@ -209,6 +211,7 @@ test datatable.29 {datatable0 badOp} {
   datatable0 attach tableName
   datatable0 column op args...
   datatable0 copy tableName
+  datatable0 clear 
   datatable0 dir path ?switches?
   datatable0 dump ?switches?
   datatable0 duplicate ?tableName?
@@ -226,6 +229,7 @@ test datatable.29 {datatable0 badOp} {
   datatable0 minimum ?columnName?
   datatable0 numcolumns ?numColumns?
   datatable0 numrows ?numRows?
+  datatable0 pack 
   datatable0 restore ?switches?
   datatable0 row op args...
   datatable0 set ?rowName columnName value ...?
@@ -298,6 +302,7 @@ test datatable.33 {datatable0 row badOp} {
   datatable0 row move destRow firstRow lastRow ?switches?
   datatable0 row names ?pattern ...?
   datatable0 row nonempty rowName
+  datatable0 row reorder rowList
   datatable0 row set rowName columnName ?value...?
   datatable0 row tag op args...
   datatable0 row unset rowName ?indices...?
@@ -1924,7 +1929,7 @@ test datatable.338 {numrows} {
 
 test datatable.339 {numrows -10} {
     list [catch {datatable4 numrows -10} msg] $msg
-} {1 {bad count "-10": # columns can't be negative.}}
+} {1 {bad value "-10": can't be negative}}
 
 test datatable.340 {numrows badArg} {
     list [catch {datatable4 numrows badArg} msg] $msg
@@ -1975,6 +1980,7 @@ test datatable.347 {row -label xyz create} {
   datatable4 row move destRow firstRow lastRow ?switches?
   datatable4 row names ?pattern ...?
   datatable4 row nonempty rowName
+  datatable4 row reorder rowList
   datatable4 row set rowName columnName ?value...?
   datatable4 row tag op args...
   datatable4 row unset rowName ?indices...?
@@ -2792,12 +2798,12 @@ test datatable.497 {export csv} {
 ,,,,,
 }}
 
-test datatable.498 {datatable1 row move 0 2} {
-    list [catch {datatable1 row move 0 2} msg] $msg
+test datatable.498 {datatable1 row move 0 2 2} {
+    list [catch {datatable1 row move 0 2 2} msg] $msg
 } {0 {}}
 
-test datatable.499 {datatable1 row move 1 17} {
-    list [catch {datatable1 row move 1 17} msg] $msg
+test datatable.499 {datatable1 row move 1 17 17 } {
+    list [catch {datatable1 row move 1 17 17} msg] $msg
 } {0 {}}
 
 test datatable.500 {datatable1 trace row} {

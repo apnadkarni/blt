@@ -4,7 +4,7 @@ if {[info procs test] != "test"} {
     source defs
 }
 
-set tclsh tclsh
+set tclsh tclsh86
 
 if [file exists ../library] {
     set blt_library ../library
@@ -30,7 +30,7 @@ test bgexec.1 {set up file channel } {
 
 test bgexec.2 {bgexec (no args) } {
     list [catch {blt::bgexec} msg] $msg
-} {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}
+v} {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}
 
 test bgexec.3 {bgexec var (no args) } {
     list [catch {blt::bgexec myVar} msg] $msg

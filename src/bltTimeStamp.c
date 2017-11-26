@@ -3150,7 +3150,6 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
     if (count == 0) {
         return;
     }
-    count++;                            /* NUL byte */
 
     /* Make sure the result dynamic string has enough space to hold the
      * formatted date.  */
@@ -3389,7 +3388,6 @@ fprintf(stderr, "datePtr->frac = %.17g %.9g\n", datePtr->frac, datePtr->frac);
         assert((bp - buffer) < count);
 #endif
     }
-    *bp = '\0';    
 }
 
 /*
