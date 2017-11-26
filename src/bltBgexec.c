@@ -2189,7 +2189,7 @@ ExecutePipeline(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     }
     bgPtr->pids = pids;
     bgPtr->numPids = numPids;
-    if (bgPtr->outSink.fd == -1) {
+    if (!SINKOPEN(&bgPtr->outSink)) {
         /* 
          * If output has been redirected, start polling immediately for the
          * exit status of each process.  Normally, this is done only after
