@@ -1633,7 +1633,7 @@ Blt_EmulateXSetDashes(Display *display, GC gc, int dashOffset,
 {
     assert(n >= 0);
     gc->dashes = n;
-    gc->dash_offset = (int)dashList;
+    gc->dash_offset = (uintptr_t)dashList;
 }
 
 /*

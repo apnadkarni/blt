@@ -5316,10 +5316,10 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Tabset *setPtr = clientData; 
     const char *tag;
-    long tagId;
+    int64_t dummy;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &tagId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -5368,10 +5368,10 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tabset *setPtr = clientData; 
     const char *tag;
     int i;
-    long tagId;
+    int64_t dummy;
 
     tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &tagId) == TCL_OK) {
+    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
         Tcl_AppendResult(interp, "bad tag \"", tag, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
@@ -5459,10 +5459,10 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *tag;
-        long tagId;
+        int64_t tagId;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &tagId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
@@ -5645,10 +5645,10 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_InitHashTable(&tabTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
         const char *tag;
-        long tagId;
+        int64_t dummy;
 
         tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &tagId) == TCL_OK) {
+        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
             Tcl_AppendResult(interp, "bad tag \"", tag, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
