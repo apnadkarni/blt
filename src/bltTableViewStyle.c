@@ -253,8 +253,8 @@ static Blt_CustomOption pushButtonVarOption = {
 typedef struct {
     int refCount;                       /* Usage reference count.  A
                                          * reference count of zero
-                                         * indicates that the style is no
-                                         * longer used and may be freed. */
+                                         * indicates that the style may be
+                                         * freed. */
     unsigned int flags;                 /* Bit fields containing various
                                          * flags. */
     const char *name;                   /* Instance name. */
@@ -315,8 +315,8 @@ typedef struct {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
-    GC focusGC;                         /* Graphics context of selected
-                                         * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
@@ -357,14 +357,15 @@ typedef struct {
                                          * reference count of zero
                                          * indicates that the style may be
                                          * freed. */
-    unsigned int flags;                 /* Bit field containing both the
-                                         * style type and various flags. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
     CellStyleClass *classPtr;           /* Contains class-specific
                                          * information such as
                                          * configuration specifications and
-                                         * configure, draw, layout,
-                                         * etc. routines. */
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
                                          * table entry for the style.  A
                                          * style that's been deleted, but
@@ -416,15 +417,14 @@ typedef struct {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
-    GC focusGC;                         /* Graphics context of selected
-                                         * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
     int borderWidth;                    /* Width of outer border
                                          * surrounding the entire box. */
     int relief, activeRelief;           /* Relief of outer border. */
-
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure
                                          * called to format the style is
                                          * invoked.*/
@@ -470,14 +470,15 @@ typedef struct {
                                          * reference count of zero
                                          * indicates that the style may be
                                          * freed. */
-    unsigned int flags;                 /* Bit field containing both the
-                                         * style type and various flags. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
     CellStyleClass *classPtr;           /* Contains class-specific
                                          * information such as
                                          * configuration specifications and
-                                         * configure, draw, layout,
-                                         * etc. routines. */
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
                                          * table entry for the style.  A
                                          * style that's been deleted, but
@@ -506,12 +507,13 @@ typedef struct {
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
     XColor *focusColor;                 /* Background color of the focus. */
-    Blt_Bg normalBg;                    /* Normal background color of cell. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
                                          * is active. Textboxes are usually
                                          * never active. */
     Blt_Bg altBg;                       /* Alternative normal
-                                           background. */
+                                         * background. */
     Blt_Bg disableBg;                   /* Background color when the cell
                                          * is disabled. */
     Blt_Bg highlightBg;                 /* Background color when the cell
@@ -522,13 +524,14 @@ typedef struct {
                                          * text. */
     GC activeGC;                        /* Graphics context of active
                                          * text. */
-    GC disableGC;                       /* Graphics context of disabled text. */
+    GC disableGC;                       /* Graphics context of disabled
+                                         * text. */
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
-    GC focusGC;                         /* Graphics context of selected
-                                         * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
@@ -604,107 +607,19 @@ typedef struct {
  *      text may be above of below the image.
  */
 typedef struct {
-    int refCount;                       /* Usage reference count.  A reference
-                                         * count of zero indicates that the
-                                         * style may be freed. */
-    unsigned int flags;                 /* Bit field containing both the style
-                                         * type and various flags. */
-    const char *name;                   /* Instance name. */
-    CellStyleClass *classPtr;           /* Contains class-specific information
-                                         * such as configuration
-                                         * specifications and configure, draw,
-                                         * layout, etc. routines. */
-    Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
-                                         * table entry for the style.  A style
-                                         * that's been deleted, but still in
-                                         * use (non-zero reference count) will
-                                         * have no hash table entry. */
-    Blt_HashTable table;                /* Table of cells that have this
-                                         * style. We use this to mark the
-                                         * cells dirty when the style
-                                         * changes. */
-    TableView *viewPtr;                 /* Widget using this style. */
-    /* General style fields. */
-    Tk_Cursor cursor;                   /* X Cursor */
-    Icon icon;                          /* If non-NULL, is a Tk_Image to be
-                                         * drawn in the cell. */
-    int gap;                            /* # pixels gap between icon and
-                                         * text. */
-    Blt_Font font;
-    XColor *normalFg;                   /* Normal color of the text. */
-    XColor *activeFg;                   /* Color of the text when the cell is
-                                         * active. */
-    XColor *disableFg;                  /* Color of the text when the cell is
-                                         * disabled. */
-    XColor *highlightFg;                /* Color of the text when the cell is
-                                         * highlighted. */
-    XColor *selectFg;                   /* Color of the text when the cell is
-                                         * selected. */
-    XColor *focusColor;                 /* Background color of the focus. */
-    Blt_Bg normalBg;                    /* Normal background color of cell. */
-    Blt_Bg activeBg;                    /* Background color when the cell is
-                                         * active. Textboxes are usually never
-                                         * active. */
-    Blt_Bg altBg;                       /* Alternative normal background. */
-    Blt_Bg disableBg;                   /* Background color when the cell is
-                                         * disabled. */
-    Blt_Bg highlightBg;                 /* Background color when the cell is 
-                                         * highlighted. */
-    Blt_Bg selectBg;                    /* Background color when the cell is 
-                                         * selected. */
-    GC normalGC;                        /* Graphics context of normal text. */
-    GC activeGC;                        /* Graphics context of active text. */
-    GC disableGC;                       /* Graphics context of disabled text. */
-    GC highlightGC;                     /* Graphics context of highlighted
-                                         * text. */
-    GC selectGC;                        /* Graphics context of selected
-                                         * text. */
-    GC focusGC;                         /* Graphics context of selected
-                                         * text. */
-    Tk_Justify justify;                 /* Indicates how the text or icon is
-                                         * justified within the column. */
-    int borderWidth;                    /* Width of outer border surrounding
-                                         * the entire box. */
-    int relief, activeRelief;           /* Relief of outer border. */
-    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure called
-                                         * to format the style is invoked.*/
-    XColor *rowRuleColor;               /* Color of the row's rule. */
-    GC rowRuleGC;                       /* Graphics context of the row's
-                                         * rule. */
-    XColor *colRuleColor;               /* Color of the row's rule. */
-    GC colRuleGC;                       /* Graphics context of the row's
-                                         * rule. */
-    /* ImageBox-specific fields */
-    int side;                           /* Position the text (top or bottom)
-                                         * in relation to the image.  */
-} ImageBoxStyle;
- 
-/* 
- * PushButtonStyle --
- *
- *      Treats the cell as a check box that can possibly be edited (via a
- *      builtin check button).  The check box consists of the check
- *      indicator (a box with or without a check), an option icon, and an
- *      optional text string or image.  The icon may be to the left or
- *      right of the text.  The check is always on the left.
- *
- *      When the check button is pressed, the table value associated with
- *      the cell is toggled.  The on/off values may be specified, but
- *      default to 1/0.
- */
-typedef struct {
     int refCount;                       /* Usage reference count.  A
                                          * reference count of zero
                                          * indicates that the style may be
                                          * freed. */
-    unsigned int flags;                 /* Bit field containing both the
-                                         * style type and various flags. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
     CellStyleClass *classPtr;           /* Contains class-specific
                                          * information such as
                                          * configuration specifications and
-                                         * configure, draw, layout,
-                                         * etc. routines. */
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
                                          * table entry for the style.  A
                                          * style that's been deleted, but
@@ -756,15 +671,114 @@ typedef struct {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
-    GC focusGC;                         /* Graphics context of selected
-                                         * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
     int borderWidth;                    /* Width of outer border
                                          * surrounding the entire box. */
     int relief, activeRelief;           /* Relief of outer border. */
-
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure
+                                         * called to format the style is
+                                         * invoked.*/
+    XColor *rowRuleColor;               /* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;               /* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    /* ImageBox-specific fields */
+    int side;                           /* Position the text (top or bottom)
+                                         * in relation to the image.  */
+} ImageBoxStyle;
+ 
+/* 
+ * PushButtonStyle --
+ *
+ *      Treats the cell as a check box that can possibly be edited (via a
+ *      builtin check button).  The check box consists of the check
+ *      indicator (a box with or without a check), an option icon, and an
+ *      optional text string or image.  The icon may be to the left or
+ *      right of the text.  The check is always on the left.
+ *
+ *      When the check button is pressed, the table value associated with
+ *      the cell is toggled.  The on/off values may be specified, but
+ *      default to 1/0.
+ */
+typedef struct {
+    int refCount;                       /* Usage reference count.  A
+                                         * reference count of zero
+                                         * indicates that the style may be
+                                         * freed. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
+    const char *name;                   /* Instance name. */
+    CellStyleClass *classPtr;           /* Contains class-specific
+                                         * information such as
+                                         * configuration specifications and
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
+    Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
+                                         * table entry for the style.  A
+                                         * style that's been deleted, but
+                                         * still in use (non-zero reference
+                                         * count) will have no hash table
+                                         * entry. */
+    Blt_HashTable table;                /* Table of cells that have this
+                                         * style. We use this to mark the
+                                         * cells dirty when the style
+                                         * changes. */
+    TableView *viewPtr;                 /* Widget using this style. */
+    /* General style fields. */
+    Tk_Cursor cursor;                   /* X Cursor */
+    Icon icon;                          /* If non-NULL, is a Tk_Image to be
+                                         * drawn in the cell. */
+    int gap;                            /* # pixels gap between icon and
+                                         * text. */
+    Blt_Font font;
+    XColor *normalFg;                   /* Normal color of the text. */
+    XColor *activeFg;                   /* Color of the text when the cell
+                                         * is active. */
+    XColor *disableFg;                  /* Color of the text when the cell
+                                         * is disabled. */
+    XColor *highlightFg;                /* Color of the text when the cell
+                                         * is highlighted. */
+    XColor *selectFg;                   /* Color of the text when the cell
+                                         * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
+    Blt_Bg activeBg;                    /* Background color when the cell
+                                         * is active. Textboxes are usually
+                                         * never active. */
+    Blt_Bg altBg;                       /* Alternative normal
+                                         * background. */
+    Blt_Bg disableBg;                   /* Background color when the cell
+                                         * is disabled. */
+    Blt_Bg highlightBg;                 /* Background color when the cell
+                                         * is highlighted. */
+    Blt_Bg selectBg;                    /* Background color when the cell
+                                         * is selected. */
+    GC normalGC;                        /* Graphics context of normal
+                                         * text. */
+    GC activeGC;                        /* Graphics context of active
+                                         * text. */
+    GC disableGC;                       /* Graphics context of disabled
+                                         * text. */
+    GC highlightGC;                     /* Graphics context of highlighted
+                                         * text. */
+    GC selectGC;                        /* Graphics context of selected
+                                         * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
+    Tk_Justify justify;                 /* Indicates how the text or icon
+                                         * is justified within the
+                                         * column. */
+    int borderWidth;                    /* Width of outer border
+                                         * surrounding the entire box. */
+    int relief, activeRelief;           /* Relief of outer border. */
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure
                                          * called to format the style is
                                          * invoked.*/

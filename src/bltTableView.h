@@ -357,6 +357,7 @@ struct _CellStyle {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -380,6 +381,8 @@ struct _CellStyle {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
