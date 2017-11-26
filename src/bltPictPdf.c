@@ -216,7 +216,6 @@ typedef pid_t ProcessId;
 #endif
 
 #ifdef WIN32
-  #define close(fd)               CloseHandle((HANDLE)fd)
   #define kill                    KillProcess
   #define waitpid                 WaitProcess
 #endif  /* WIN32 */
@@ -635,7 +634,7 @@ PbmToPicture(Tcl_Interp *interp, Blt_DBuffer dbuffer)
 #ifdef WIN32
 
 typedef struct {
-    int fd;
+    HANDLE hFile;
     Blt_DBuffer dbuffer;
     int lastError;
 } PdfWriter;
@@ -666,7 +665,7 @@ WriteBufferProc(void *clientData)
     HANDLE hFile;
     DWORD count;
 
-    hFile = (HANDLE)writerPtr->fd;
+    hFile = writerPtr->hFile;
     bp = Blt_DBuffer_Bytes(writerPtr->dbuffer);
     for (bytesLeft = Blt_DBuffer_Length(writerPtr->dbuffer); bytesLeft > 0;
          bytesLeft -= count) {
@@ -689,17 +688,17 @@ WriteBufferProc(void *clientData)
 static PdfWriter writer;
 
 static int
-WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     HANDLE hThread;
     ClientData clientData;
     DWORD id;
-
+    
     writer.dbuffer = Blt_DBuffer_Create();
     Blt_DBuffer_Init(writer.dbuffer);
     /* Copy the input to a new buffer. */
     Blt_DBuffer_Concat(writer.dbuffer, dbuffer);
-    writer.fd = fd;
+    writer.hFile = filePtr;
     writer.lastError = 0;
     clientData = &writer;
     hThread = CreateThread(
@@ -716,10 +715,10 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
 
 
 static int
-ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     DWORD numBytes;
-    HANDLE hFile;
+    HANDLE hFile = filePtr;
     int result;
 
     Blt_DBuffer_Free(dbuffer);
@@ -756,10 +755,11 @@ ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
 #else  /* WIN32 */
 
 static int
-WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     pid_t child;
-
+    int fd = (int64_t)filePtr;
+    
     child = fork();
     if (child == -1) {
         Tcl_AppendResult(interp, "can't fork process: ", Tcl_PosixError(interp),
@@ -785,9 +785,10 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
 }
 
 static int
-ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     int numBytes;
+    int fd = (int64_t)filePtr;
     
     Blt_DBuffer_Free(dbuffer);
     numBytes = 0;
@@ -819,7 +820,7 @@ static int
 PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
          PdfImportSwitches *switchesPtr)
 {
-    int in, out;                        /* File descriptors for ghostscript
+    void *inPipe, *outPipe;             /* File descriptors for ghostscript
                                          * subprocess. */
     char string1[200];
     char string2[200];
@@ -870,8 +871,8 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
             objv[i] = Tcl_NewStringObj(*p, -1);
             Tcl_IncrRefCount(objv[i]);
         }
-        numPids = Blt_CreatePipeline(interp, objc, objv, &pids, &in, &out,
-                (int *)NULL, NULL);
+        numPids = Blt_CreatePipeline(interp, objc, objv, &pids, &inPipe,
+                &outPipe, (int *)NULL, NULL);
         for (i = 0; i < objc; i++) {
             Tcl_DecrRefCount(objv[i]);
         }
@@ -881,11 +882,11 @@ PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     Blt_DetachPids(numPids, pids);
     Blt_Free(pids);
-    child = WriteToGhostscript(interp, in, dbuffer);
+    child = WriteToGhostscript(interp, inPipe, dbuffer);
     if (child == 0) {
         return TCL_ERROR;
     }
-    result = ReadFromGhostscript(interp, out, dbuffer);
+    result = ReadFromGhostscript(interp, outPipe, dbuffer);
 #ifdef WIN32
     CloseHandle((HANDLE)child);
 #endif

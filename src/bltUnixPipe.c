@@ -1090,21 +1090,21 @@ Blt_CreatePipeline(
                                          * pids for processes in pipeline
                                          * (first pid is first process in
                                          * pipeline). */
-    int *stdinPipePtr,                  /* (out) If non-NULL, input to the
+    void *inPipePtr,                    /* (out) If non-NULL, input to the
                                          * pipeline comes from a pipe (unless
                                          * overridden by redirection in the
                                          * command).  The file id with which
                                          * to write to this pipe is stored at
                                          * *stdinPipePtr.  NULL means command
                                          * specified its own input source. */
-    int *stdoutPipePtr,                 /* (out) If non-NULL, output to the
+    void *outPipePtr,                   /* (out) If non-NULL, output to the
                                          * pipeline goes to a pipe, unless
                                          * overriden by redirection in the
                                          * command.  The file id with which to
                                          * read frome this pipe is stored at
                                          * *stdoutPipePtr.  NULL means command
                                          * specified its own output sink. */
-    int *stderrPipePtr,                 /* (out) If non-NULL, all stderr
+    void *errPipePtr,                   /* (out) If non-NULL, all stderr
                                          * output from the pipeline will go to
                                          * a temporary file created here, and
                                          * a descriptor to read the file will
@@ -1136,6 +1136,10 @@ Blt_CreatePipeline(
     FileInfo in, out, err;
     int pipeIn;
     char **argv;
+    int *stderrPipePtr = errPipePtr;
+    int *stdoutPipePtr = outPipePtr;
+    int *stdinPipePtr = inPipePtr;
+    
     inputLiteral = NULL;
     pipeIn = -1;
     numPids = 0;
@@ -1414,8 +1418,8 @@ Blt_CreatePipeline(
 	    err.file = out.file;
         } else if (stderrPipePtr != NULL) {
             /*
-             * Stderr from the last process in the pipeline is to go to a pipe
-             * that can be read by the caller.
+             * Stderr from the last process in the pipeline is to go to a
+             * pipe that can be read by the caller.
              */
             if (CreatePipe(interp, stderrPipePtr, &err.file) != TCL_OK) {
                 goto error;

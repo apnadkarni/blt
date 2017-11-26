@@ -528,8 +528,8 @@ BLT_EXTERN Blt_Uid	Blt_FindUid(const char *string);
 /* 88 */
 BLT_EXTERN int		Blt_CreatePipeline(Tcl_Interp *interp, int objc,
 				Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr,
-				int *stdinPipePtr, int *stdoutPipePtr,
-				int *stderrPipePtr, char *const *env);
+				void *inPipePtr, void *outPipePtr,
+				void *errPipePtr, char *const *env);
 #endif
 #ifndef Blt_DetachPids_DECLARED
 #define Blt_DetachPids_DECLARED
@@ -1015,7 +1015,7 @@ typedef struct BltTclIntProcs {
     Blt_Uid (*blt_GetUid) (const char *string); /* 85 */
     void (*blt_FreeUid) (Blt_Uid uid); /* 86 */
     Blt_Uid (*blt_FindUid) (const char *string); /* 87 */
-    int (*blt_CreatePipeline) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr, int *stdoutPipePtr, int *stderrPipePtr, char *const *env); /* 88 */
+    int (*blt_CreatePipeline) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, void *inPipePtr, void *outPipePtr, void *errPipePtr, char *const *env); /* 88 */
     void (*blt_DetachPids) (int numPids, Blt_Pid *pids); /* 89 */
     void (*blt_InitHexTable) (unsigned char *table); /* 90 */
     void (*blt_DStringAppendElements) (Tcl_DString *dsPtr, ...); /* 91 */

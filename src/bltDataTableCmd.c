@@ -37,6 +37,7 @@
 
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
+#include "bltMath.h"
 #include "tclIntDecls.h"
 
 #ifdef HAVE_STDLIB_H
@@ -56,6 +57,8 @@
 #endif /* HAVE_CTYPE_H */
 
 #include "tclIntDecls.h"
+
+#include "bltMath.h"
 
 #define TABLE_THREAD_KEY "BLT DataTable Command Interface"
 #define TABLE_FIND_KEY "BLT DataTable Find Command Interface"

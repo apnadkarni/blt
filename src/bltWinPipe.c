@@ -182,9 +182,9 @@ extern void TclWinConvertError(DWORD lastError);
 #endif
 
 typedef struct {
-    HANDLE file;
-    HANDLE currFile;
-    HANDLE pipe;
+    HANDLE hFile;
+    HANDLE hCurrFile;
+    HANDLE hPipe;
     BOOL redirected;
     BOOL mustClose;
 } FileInfo;
@@ -192,9 +192,9 @@ typedef struct {
 static void
 InitFileInfo(FileInfo *infoPtr)
 {
-    infoPtr->file = INVALID_HANDLE_VALUE;
-    infoPtr->currFile = INVALID_HANDLE_VALUE;
-    infoPtr->pipe = INVALID_HANDLE_VALUE;
+    infoPtr->hFile = INVALID_HANDLE_VALUE;
+    infoPtr->hCurrFile = INVALID_HANDLE_VALUE;
+    infoPtr->hPipe = INVALID_HANDLE_VALUE;
     infoPtr->redirected = FALSE;
     infoPtr->mustClose = FALSE;
 }
@@ -1811,19 +1811,19 @@ Blt_CreatePipeline(
                                  * address of array of pids for processes
                                  * in pipeline (first pid is first process
                                  * in pipeline). */
-    int *inPipePtr,             /* If non-NULL, input to the pipeline comes
+    void *inPipePtr,            /* If non-NULL, input to the pipeline comes
                                  * from a pipe (unless overridden by
                                  * redirection in the command).  The file
                                  * id with which to write to this pipe is
                                  * stored at *inPipePtr.  NULL means command
                                  * specified its own input source. */
-    int *outPipePtr,            /* If non-NULL, output to the pipeline goes
+    void *outPipePtr,           /* If non-NULL, output to the pipeline goes
                                  * to a pipe, unless overriden by redirection
                                  * in the command.  The file id with which to
                                  * read frome this pipe is stored at
                                  * *outPipePtr.  NULL means command specified
                                  * its own output sink. */
-    int *errPipePtr,            /* If non-NULL, all stderr output from the
+    void *errPipePtr,            /* If non-NULL, all stderr output from the
                                  * pipeline will go to a temporary file
                                  * created here, and a descriptor to read
                                  * the file will be left at *errPipePtr.
@@ -1855,19 +1855,22 @@ Blt_CreatePipeline(
     int errorToOutput;
     int pid;
     int skip, lastBar, lastArg, i, j, flags;
+    HANDLE *hInPipePtr = inPipePtr;
+    HANDLE *hOutPipePtr = outPipePtr;
+    HANDLE *hErrPipePtr = errPipePtr;
 
     InitFileInfo(&in);
     InitFileInfo(&out);
     InitFileInfo(&err);
     
-    if (inPipePtr != NULL) {
-        *inPipePtr = -1;
+    if (hInPipePtr != NULL) {
+        *hInPipePtr = NULL;
     }
-    if (outPipePtr != NULL) {
-        *outPipePtr = -1;
+    if (hOutPipePtr != NULL) {
+        *hOutPipePtr = NULL;
     }
-    if (errPipePtr != NULL) {
-        *errPipePtr = -1;
+    if (hErrPipePtr != NULL) {
+        *hErrPipePtr = NULL;
     }
     Tcl_DStringInit(&execBuffer);
     numPids = 0;
@@ -1925,10 +1928,10 @@ Blt_CreatePipeline(
             }
             if (in.mustClose) {
                 in.mustClose = FALSE;
-                CloseHandle(in.file);
+                CloseHandle(in.hFile);
             }
             if (*p == '<') {
-                in.file = INVALID_HANDLE_VALUE;
+                in.hFile = INVALID_HANDLE_VALUE;
                 inputLiteral = p + 1;
                 skip = 1;
                 if (*inputLiteral == '\0') {
@@ -1942,9 +1945,9 @@ Blt_CreatePipeline(
                 }
             } else {
                 inputLiteral = NULL;
-                in.file = FileForRedirect(interp, p, TRUE, argv[i], argv[i + 1],
+                in.hFile = FileForRedirect(interp, p, TRUE, argv[i], argv[i+1],
                         GENERIC_READ, OPEN_EXISTING, &skip, &in.mustClose);
-                if (in.file == INVALID_HANDLE_VALUE) {
+                if (in.hFile == INVALID_HANDLE_VALUE) {
                     goto error;
                 }
             }
@@ -1967,7 +1970,7 @@ Blt_CreatePipeline(
                 }
                 if (err.mustClose) {
                     err.mustClose = FALSE;
-                    CloseHandle(err.file);
+                    CloseHandle(err.hFile);
                 }
                 errorToOutput = TRUE;
                 p++;
@@ -1983,23 +1986,23 @@ Blt_CreatePipeline(
 	     */
             if (out.mustClose) {
                 out.mustClose = FALSE;
-                if (err.file == out.file) {
+                if (err.hFile == out.hFile) {
                     err.mustClose = TRUE;
                 } else {
-                    CloseHandle(out.file);
+                    CloseHandle(out.hFile);
                 }
             }
-            out.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
+            out.hFile = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
                 GENERIC_WRITE, flags, &skip, &out.mustClose);
-            if (out.file == INVALID_HANDLE_VALUE) {
+            if (out.hFile == INVALID_HANDLE_VALUE) {
                 goto error;
             }
             if (errorToOutput) {
                 if (err.mustClose) {
                     err.mustClose = FALSE;
-                    CloseHandle(err.file);
+                    CloseHandle(err.hFile);
                 }
-                err.file = out.file;
+                err.hFile = out.hFile;
                 err.redirected = TRUE;                
             }
             out.redirected = TRUE;
@@ -2024,7 +2027,7 @@ Blt_CreatePipeline(
             }
             if (err.mustClose) {
                 err.mustClose = FALSE;
-                CloseHandle(err.file);
+                CloseHandle(err.hFile);
             }
  	    if ((atOK) && (p[0] == '@') && (p[1] == '1') && (p[2] == '\0')) {
 		/*
@@ -2038,13 +2041,13 @@ Blt_CreatePipeline(
 			    "\" as last word in command", NULL);
 		    goto error;
 		}
-		err.file = out.file;
+		err.hFile = out.hFile;
 		errorToOutput = 2;
 		skip = 1;
 	    } else {
-                err.file = FileForRedirect(interp, p, atOK, argv[i], argv[i + 1],
-                    GENERIC_WRITE, flags, &skip, &err.mustClose);
-		if (err.file == INVALID_HANDLE_VALUE) {
+                err.hFile = FileForRedirect(interp, p, atOK, argv[i],
+                    argv[i + 1], GENERIC_WRITE, flags, &skip, &err.mustClose);
+		if (err.hFile == INVALID_HANDLE_VALUE) {
 		    goto error;
 		}
 	    }
@@ -2075,28 +2078,28 @@ Blt_CreatePipeline(
     }
 
 
-    if (in.file == INVALID_HANDLE_VALUE) {
+    if (in.hFile == INVALID_HANDLE_VALUE) {
         if (inputLiteral != NULL) {
             /*
              * The input for the first process is immediate data coming from
              * Tcl.  Create a temporary file for it and put the data into the
              * file.
              */
-            in.file = CreateTempFile(inputLiteral);
-            if (in.file == INVALID_HANDLE_VALUE) {
+            in.hFile = CreateTempFile(inputLiteral);
+            if (in.hFile == INVALID_HANDLE_VALUE) {
                 Tcl_AppendResult(interp,
                     "can't create input file for command: ",
                     Tcl_PosixError(interp), (char *)NULL);
                 goto error;
             }
             in.mustClose = TRUE;
-        } else if (inPipePtr != NULL) {
+        } else if (hInPipePtr != NULL) {
             /*
              * The input for the first process in the pipeline is to
              * come from a pipe that can be written from by the caller.
              */
 
-            if (!CreatePipe(&in.file, &in.pipe, NULL, 0)) {
+            if (!CreatePipe(&in.hFile, &in.hPipe, NULL, 0)) {
                 Tcl_AppendResult(interp,
                     "can't create input pipe for command: ",
                     Tcl_PosixError(interp), (char *)NULL);
@@ -2107,17 +2110,17 @@ Blt_CreatePipeline(
             /*
              * The input for the first process comes from stdin.
              */
-            in.file = GetStdHandle(STD_INPUT_HANDLE);
+            in.hFile = GetStdHandle(STD_INPUT_HANDLE);
         }
     }
-    if (out.file == INVALID_HANDLE_VALUE) {
-        if (outPipePtr != NULL) {
+    if (out.hFile == INVALID_HANDLE_VALUE) {
+        if (hOutPipePtr != NULL) {
             /*
              * Output from the last process in the pipeline is to go to a
              * pipe that can be read by the caller.
              */
 
-            if (!CreatePipe(&out.pipe, &out.file, NULL, 0)) {
+            if (!CreatePipe(&out.hPipe, &out.hFile, NULL, 0)) {
                 Tcl_AppendResult(interp,
                     "can't create output pipe for command: ",
                     Tcl_PosixError(interp), (char *)NULL);
@@ -2128,21 +2131,21 @@ Blt_CreatePipeline(
             /*
              * The output for the last process goes to stdout.
              */
-            out.file = GetStdHandle(STD_OUTPUT_HANDLE);
+            out.hFile = GetStdHandle(STD_OUTPUT_HANDLE);
         }
     }
-    if (err.file == INVALID_HANDLE_VALUE) {
+    if (err.hFile == INVALID_HANDLE_VALUE) {
     	if (errorToOutput == 2) {
 	    /*
 	     * Handle 2>@1 special case at end of cmd line.
 	     */
-	    err.file = out.file;
-        } else if (errPipePtr != NULL) {
+	    err.hFile = out.hFile;
+        } else if (hErrPipePtr != NULL) {
             /*
              * Stderr from the last process in the pipeline is to go to a
              * pipe that can be read by the caller.
              */
-            if (CreatePipe(&err.pipe, &err.file, NULL, 0) == 0) {
+            if (CreatePipe(&err.hPipe, &err.hFile, NULL, 0) == 0) { 
                 Tcl_AppendResult(interp,
                     "can't create error pipe for command: ",
                     Tcl_PosixError(interp), (char *)NULL);
@@ -2153,7 +2156,7 @@ Blt_CreatePipeline(
             /*
              * Errors from the pipeline go to stderr.
              */
-            err.file = GetStdHandle(STD_ERROR_HANDLE);
+            err.hFile = GetStdHandle(STD_ERROR_HANDLE);
         }
     }
 
@@ -2164,7 +2167,7 @@ Blt_CreatePipeline(
 
     Tcl_ReapDetachedProcs();
     pids = Blt_AssertMalloc((unsigned)((cmdCount + 1) * sizeof(Blt_Pid)));
-    in.currFile = in.file;
+    in.hCurrFile = in.hFile;
     if (objc == 0) {
         Tcl_AppendResult(interp, "invalid null command", (char *)NULL);
         goto error;
@@ -2203,19 +2206,19 @@ Blt_CreatePipeline(
          * Otherwise create an intermediate pipe.  hPipe will become the input
          * for the next segment of the pipe. */
         if (lastArg == objc) {
-            out.currFile = out.file;
+            out.hCurrFile = out.hFile;
         } else {
-            if (CreatePipe(&hPipe, &out.currFile, NULL, 0) == 0) {
+            if (CreatePipe(&hPipe, &out.hCurrFile, NULL, 0) == 0) {
                 Tcl_AppendResult(interp, "can't create pipe: ",
                     Tcl_PosixError(interp), (char *)NULL);
                 goto error;
             }
         }
 
-        err.currFile = (joinThisError) ? out.currFile : err.file;
+        err.hCurrFile = (joinThisError) ? out.hCurrFile : err.hFile;
 
-        if (StartProcess(interp, lastArg - i, argv + i, in.currFile,
-                out.currFile, err.currFile, env, &hProcess, &dw_pid)
+        if (StartProcess(interp, lastArg - i, argv + i, in.hCurrFile,
+                out.hCurrFile, err.hCurrFile, env, &hProcess, &dw_pid)
             != TCL_OK) {
             goto error;
         }
@@ -2229,29 +2232,30 @@ Blt_CreatePipeline(
         /* Close off our copies of file descriptors that were set up for this
          * child, then set up the input for the next child. */
 
-        if ((in.currFile != INVALID_HANDLE_VALUE) && (in.currFile != in.file)) {
-            CloseHandle(in.currFile);
+        if ((in.hCurrFile != INVALID_HANDLE_VALUE) &&
+            (in.hCurrFile != in.hFile)) {
+            CloseHandle(in.hCurrFile);
         }
-        in.currFile = hPipe;
+        in.hCurrFile = hPipe;
         hPipe = INVALID_HANDLE_VALUE;
 
-        if ((out.currFile != INVALID_HANDLE_VALUE) &&
-            (out.currFile != out.file)) {
-            CloseHandle(out.currFile);
+        if ((out.hCurrFile != INVALID_HANDLE_VALUE) &&
+            (out.hCurrFile != out.hFile)) {
+            CloseHandle(out.hCurrFile);
         }
-        out.currFile = INVALID_HANDLE_VALUE;
+        out.hCurrFile = INVALID_HANDLE_VALUE;
     }
 
     *pidsPtr = pids;
 
-    if (inPipePtr != NULL) {
-        *inPipePtr = (int)in.pipe;
+    if (hInPipePtr != NULL) {
+        *hInPipePtr = in.hPipe;
     }
-    if (outPipePtr != NULL) {
-        *outPipePtr = (int)out.pipe;
+    if (hOutPipePtr != NULL) {
+        *hOutPipePtr = out.hPipe;
     }
-    if (errPipePtr != NULL) {
-        *errPipePtr = (int)err.pipe;
+    if (hErrPipePtr != NULL) {
+        *hErrPipePtr = err.hPipe;
     }
     /*
      * All done.  Cleanup open files lying around and then return.
@@ -2260,13 +2264,13 @@ Blt_CreatePipeline(
     Tcl_DStringFree(&execBuffer);
 
     if (in.mustClose) {
-        CloseHandle(in.file);
+        CloseHandle(in.hFile);
     }
     if (out.mustClose) {
-        CloseHandle(out.file);
+        CloseHandle(out.hFile);
     }
     if (err.mustClose) {
-        CloseHandle(err.file);
+        CloseHandle(err.hFile);
     }
     if (argv != NULL) {
         Blt_Free(argv);
@@ -2281,25 +2285,26 @@ Blt_CreatePipeline(
         CloseHandle(hPipe);
 	hPipe = INVALID_HANDLE_VALUE;
     }
-    if ((out.currFile != INVALID_HANDLE_VALUE) && (out.currFile != out.file)) {
-        CloseHandle(out.currFile);
-	out.currFile = INVALID_HANDLE_VALUE;
+    if ((out.hCurrFile != INVALID_HANDLE_VALUE) &&
+        (out.hCurrFile != out.hFile)) {
+        CloseHandle(out.hCurrFile);
+	out.hCurrFile = INVALID_HANDLE_VALUE;
     }
-    if ((in.currFile != INVALID_HANDLE_VALUE) && (in.currFile != in.file)) {
-        CloseHandle(in.currFile);
-	in.currFile = INVALID_HANDLE_VALUE;
+    if ((in.hCurrFile != INVALID_HANDLE_VALUE) && (in.hCurrFile != in.file)) {
+        CloseHandle(in.hCurrFile);
+	in.hCurrFile = INVALID_HANDLE_VALUE;
     }
-    if (in.pipe != INVALID_HANDLE_VALUE) {
-        CloseHandle(in.pipe);
-	in.pipe = INVALID_HANDLE_VALUE;
+    if (in.hPipe != INVALID_HANDLE_VALUE) {
+        CloseHandle(in.hPipe);
+	in.hPipe = INVALID_HANDLE_VALUE;
     }
     if (out.pipe != INVALID_HANDLE_VALUE) {
-        CloseHandle(out.pipe);
-	out.pipe = INVALID_HANDLE_VALUE;
+        CloseHandle(out.hPipe);
+	out.hPipe = INVALID_HANDLE_VALUE;
     }
     if (err.pipe != INVALID_HANDLE_VALUE) {
-        CloseHandle(err.pipe);
-	err.pipe = INVALID_HANDLE_VALUE;
+        CloseHandle(err.hPipe);
+	err.hPipe = INVALID_HANDLE_VALUE;
     }
     if (pids != NULL) {
         Blt_DetachPids(numPids, pids);
@@ -2365,15 +2370,13 @@ Blt_CreateFileHandler(
  *---------------------------------------------------------------------------
  */
 void
-Blt_DeleteFileHandler(int fd)   /* Descriptor or handle of file */
+Blt_DeleteFileHandler(HANDLE hPipe)     /* Handle of file */
 {
     Blt_ChainLink link;
-    HANDLE hPipe;
 
     if (!initialized) {
         PipeInit();
     }
-    hPipe = (HANDLE) fd;
     EnterCriticalSection(&pipeCriticalSection);
 
     for (link = Blt_Chain_FirstLink(pipeChain); link != NULL;
@@ -2403,13 +2406,13 @@ Blt_DeleteFileHandler(int fd)   /* Descriptor or handle of file */
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncRead(int f, char *buffer, size_t size)
+Blt_AsyncRead(HANDLE hFile, char *buffer, size_t size)
 {
     PipeHandler *pipePtr;
     unsigned int count;
     ssize_t numBytes;
 
-    pipePtr = GetPipeHandler((HANDLE) f);
+    pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
         return -1;
@@ -2455,11 +2458,11 @@ Blt_AsyncRead(int f, char *buffer, size_t size)
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncWrite(int f, const char *buffer, size_t size)
+Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t size)
 {
     PipeHandler *pipePtr;
 
-    pipePtr = GetPipeHandler((HANDLE) f);
+    pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
         return -1;
