@@ -1646,7 +1646,7 @@ ExtFontDrawProc(
     ExtFontset *setPtr = fontPtr->clientData;
 
     if (angle != 0.0) {
-        long angle10;
+        size_t angle10;
         Blt_HashEntry *hPtr;
     
         angle *= 10.0f;
