@@ -2290,7 +2290,7 @@ Blt_CreatePipeline(
         CloseHandle(out.hCurrFile);
 	out.hCurrFile = INVALID_HANDLE_VALUE;
     }
-    if ((in.hCurrFile != INVALID_HANDLE_VALUE) && (in.hCurrFile != in.file)) {
+    if ((in.hCurrFile != INVALID_HANDLE_VALUE) && (in.hCurrFile != in.hFile)) {
         CloseHandle(in.hCurrFile);
 	in.hCurrFile = INVALID_HANDLE_VALUE;
     }
@@ -2298,11 +2298,11 @@ Blt_CreatePipeline(
         CloseHandle(in.hPipe);
 	in.hPipe = INVALID_HANDLE_VALUE;
     }
-    if (out.pipe != INVALID_HANDLE_VALUE) {
+    if (out.hPipe != INVALID_HANDLE_VALUE) {
         CloseHandle(out.hPipe);
 	out.hPipe = INVALID_HANDLE_VALUE;
     }
-    if (err.pipe != INVALID_HANDLE_VALUE) {
+    if (err.hPipe != INVALID_HANDLE_VALUE) {
         CloseHandle(err.hPipe);
 	err.hPipe = INVALID_HANDLE_VALUE;
     }
