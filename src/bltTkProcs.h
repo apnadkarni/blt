@@ -330,7 +330,8 @@ BLT_EXTERN void		Blt_CopyRegion(Blt_Picture dest, Blt_Picture src,
 #ifndef Blt_CopyPictureBits_DECLARED
 #define Blt_CopyPictureBits_DECLARED
 /* 55 */
-BLT_EXTERN void		Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src);
+BLT_EXTERN void		Blt_CopyPictureBits(Blt_Picture dest,
+				Blt_Picture src);
 #endif
 #ifndef Blt_GammaCorrectPicture_DECLARED
 #define Blt_GammaCorrectPicture_DECLARED

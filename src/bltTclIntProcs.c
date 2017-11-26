@@ -1,6 +1,9 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #define BUILD_BLT_TCL_PROCS 1
 #include <bltInt.h>
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
+#define BUILD_BLT_TCL_PROCS 1
+#include <bltInt.h>
 
 /* !BEGIN!: Do not edit below this line. */
 
@@ -143,24 +146,25 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_DateToSeconds, /* 133 */
     Blt_FormatDate, /* 134 */
     Blt_GetPositionFromObj, /* 135 */
-    Blt_GetCountFromObj, /* 136 */
-    Blt_SimplifyLine, /* 137 */
-    Blt_PointInPolygon, /* 138 */
-    Blt_PolygonInRegion, /* 139 */
-    Blt_PointInSegments, /* 140 */
-    Blt_PolyRectClip, /* 141 */
-    Blt_GetLong, /* 142 */
-    Blt_GetLongFromObj, /* 143 */
-    Blt_FormatString, /* 144 */
-    Blt_LowerCase, /* 145 */
-    Blt_UpperCase, /* 146 */
-    Blt_GetPlatformId, /* 147 */
-    Blt_LastError, /* 148 */
-    Blt_NaN, /* 149 */
-    Blt_AlmostEquals, /* 150 */
-    Blt_ConvertListToList, /* 151 */
-    Blt_GetCachedVar, /* 152 */
-    Blt_FreeCachedVars, /* 153 */
+    Blt_GetCount, /* 136 */
+    Blt_GetCountFromObj, /* 137 */
+    Blt_SimplifyLine, /* 138 */
+    Blt_PointInPolygon, /* 139 */
+    Blt_PolygonInRegion, /* 140 */
+    Blt_PointInSegments, /* 141 */
+    Blt_PolyRectClip, /* 142 */
+    Blt_GetLong, /* 143 */
+    Blt_GetLongFromObj, /* 144 */
+    Blt_FormatString, /* 145 */
+    Blt_LowerCase, /* 146 */
+    Blt_UpperCase, /* 147 */
+    Blt_GetPlatformId, /* 148 */
+    Blt_LastError, /* 149 */
+    Blt_NaN, /* 150 */
+    Blt_AlmostEquals, /* 151 */
+    Blt_ConvertListToList, /* 152 */
+    Blt_GetCachedVar, /* 153 */
+    Blt_FreeCachedVars, /* 154 */
 };
 
 /* !END!: Do not edit above this line. */

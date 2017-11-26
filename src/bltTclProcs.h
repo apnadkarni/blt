@@ -1,6 +1,8 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #include "bltAlloc.h"
 #include "bltChain.h"
+#include "bltAlloc.h"
+#include "bltChain.h"
 #include "bltHash.h"
 #include "bltTags.h"
 #include "bltList.h"
@@ -368,7 +370,8 @@ BLT_EXTERN int		Blt_Tree_MoveNode(Blt_Tree tree, Blt_TreeNode node,
 #ifndef Blt_Tree_GetNodeFromIndex_DECLARED
 #define Blt_Tree_GetNodeFromIndex_DECLARED
 /* 64 */
-BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNodeFromIndex(Blt_Tree tree, size_t inode);
+BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNodeFromIndex(Blt_Tree tree,
+				size_t inode);
 #endif
 #ifndef Blt_Tree_FindChild_DECLARED
 #define Blt_Tree_FindChild_DECLARED
@@ -1066,7 +1069,7 @@ BLT_EXTERN int		blt_table_set_double(Tcl_Interp *interp,
 #ifndef blt_table_get_long_DECLARED
 #define blt_table_get_long_DECLARED
 /* 174 */
-BLT_EXTERN int64_t		blt_table_get_long(Tcl_Interp *interp,
+BLT_EXTERN int64_t	blt_table_get_long(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, int64_t defValue);
 #endif
@@ -1500,8 +1503,8 @@ BLT_EXTERN BLT_TABLE_ROW * blt_table_sort_rows(BLT_TABLE table);
 #ifndef blt_table_sort_row_map_DECLARED
 #define blt_table_sort_row_map_DECLARED
 /* 239 */
-BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table, size_t numRows,
-                                               BLT_TABLE_ROW *rows);
+BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table,
+				size_t numRows, BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_sort_finish_DECLARED
 #define blt_table_sort_finish_DECLARED
@@ -1700,7 +1703,7 @@ BLT_EXTERN int		Blt_VectorExists(Tcl_Interp *interp,
 #define Blt_ResetVector_DECLARED
 /* 272 */
 BLT_EXTERN int		Blt_ResetVector(Blt_Vector *vecPtr, double *dataArr,
-                                int n, int arraySize, Tcl_FreeProc *freeProc);
+				int n, int arraySize, Tcl_FreeProc *freeProc);
 #endif
 #ifndef Blt_ResizeVector_DECLARED
 #define Blt_ResizeVector_DECLARED
