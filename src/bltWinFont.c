@@ -1576,26 +1576,14 @@ ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr;
-    SubFont *subFontPtr;
-    TEXTMETRIC tm;
-    HDC hDC;
-    WinFont *winFontPtr;
-    HFONT oldFont;
 
     tkFontPtr = (TkFont *)setPtr->tkFont;
-    winFontPtr = (WinFont *)tkFontPtr;
-    subFontPtr = &winFontPtr->subFontArray[0];
-    hDC = GetDC(NULL);
-    oldFont = SelectObject(hDC, subFontPtr->hFont);
-    GetTextMetrics(hDC, &tm);
-    fmPtr->ascent = tm.tmAscent;
-    fmPtr->descent = tm.tmDescent;
-    fmPtr->linespace = tm.tmHeight + tm.tmInternalLeading;
+    fmPtr->ascent = tkFontPtr->ascent;
+    fmPtr->descent = tkFontPtr->descent;
+    fmPtr->linespace = tkFontPtr->linespace;
     fmPtr->tabWidth = tkFontPtr->tabWidth;
     fmPtr->underlinePos = tkFontPtr->underlinePos;
     fmPtr->underlineHeight = tkFontPtr->underlineHeight;
-    SelectObject(hDC, oldFont);
-    ReleaseDC(NULL, hDC);
 }
 
 static int
