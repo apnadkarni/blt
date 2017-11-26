@@ -1575,13 +1575,14 @@ static void
 ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
-    TkFont *tkFontPtr = (TkFont *)setPtr->tkFont;
+    TkFont *tkFontPtr;
     SubFont *subFontPtr;
     TEXTMETRIC tm;
     HDC hDC;
     WinFont *winFontPtr;
     HFONT oldFont;
 
+    tkFontPtr = (TkFont *)setPtr->tkFont;
     winFontPtr = (WinFont *)tkFontPtr;
     subFontPtr = &winFontPtr->subFontArray[0];
     hDC = GetDC(NULL);
@@ -1646,7 +1647,7 @@ ExtFontDrawProc(
     ExtFontset *setPtr = fontPtr->clientData;
 
     if (angle != 0.0) {
-        size_t angle10;
+        intptr_t angle10;
         Blt_HashEntry *hPtr;
     
         angle *= 10.0f;
@@ -1698,7 +1699,7 @@ ExtFontCanRotateProc(_Blt_Font *fontPtr, float angle)
     HFONT hFont;
     ExtFontset *setPtr = fontPtr->clientData;
     int isNew;
-    size_t angle10;
+    intptr_t angle10;
 
     angle *= 10.0f;
     angle10 = ROUND(angle);
