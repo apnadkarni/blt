@@ -1734,7 +1734,7 @@ GetCurrentColumn(TreeView *viewPtr)
     TreeViewObj *objPtr;
     ItemType type;
     
-    type = (size_t)Blt_GetCurrentHint(viewPtr->bindTable);
+    type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
     objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
     if ((objPtr == NULL) || (objPtr->flags & DELETED)) {
         return NULL;
@@ -5270,7 +5270,7 @@ AppendTagsProc(
 {
     TreeView *viewPtr;
     TreeViewObj *objPtr;
-    ItemType type = (ItemType)hint;
+    ItemType type = (ItemType)(intptr_t)hint;
 
     objPtr = object;
     if (objPtr->flags & DELETED) {
@@ -5295,6 +5295,7 @@ AppendTagsProc(
         {
             Entry *entryPtr = object;
             
+
             /* Append pointer to entry. */
             Blt_Chain_Append(tags, MakeBindTag(viewPtr, entryPtr, type)); 
             if (entryPtr->bindTagsObjPtr != NULL) {
@@ -5383,7 +5384,7 @@ PickItem(
             }
         }
         if (hintPtr != NULL) {
-            *hintPtr = (ClientData)type;
+            *hintPtr = (ClientData)(intptr_t)type;
         }
         return entryPtr;
     }
@@ -7107,7 +7108,7 @@ ComputeTreeLayout(TreeView *viewPtr)
 
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
          entryPtr = NextEntry(entryPtr, 0)) {
-        size_t depth;
+        int depth;
 
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
             ComputeEntryGeometry(viewPtr, entryPtr);
@@ -7165,7 +7166,7 @@ ComputeTreeLayout(TreeView *viewPtr)
     {
         int maxX;
         int sum;
-        size_t i;
+        int i;
 
         sum = maxX = 0;
         i = 0;
@@ -9402,7 +9403,6 @@ CellBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) == TCL_OK) {
         if (cellPtr == NULL) {
-            fprintf(stderr, "can't find %s\n", Tcl_GetString(objv[3]));
             return TCL_OK;
         }
         tag = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
@@ -11063,9 +11063,9 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ItemType type;
     TreeView *viewPtr = clientData;
     char c;
-    Blt_TreeNode node;
     const char *string;
     int length;
+    int64_t dummy;
     
     string = Tcl_GetStringFromObj(objv[4], &length);
     c = string[0];
@@ -11078,7 +11078,7 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          (char *)NULL);
         return TCL_ERROR;
     }
-    if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
+    if ((isdigit(c)) && (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK)
         && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
         (entryPtr != NULL)) {
         tag = MakeBindTag(viewPtr, entryPtr, type);

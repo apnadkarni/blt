@@ -177,7 +177,6 @@ bind BltTreeView <KeyPress-space> {
 bind BltTreeView <KeyRelease-space> { 
     set blt::TreeView::_private(space) off
 }
-
 # Return
 #   Turn on space selection mode.
 bind BltTreeView <KeyPress-Return> {
@@ -284,6 +283,7 @@ proc blt::TreeView::Initialize { w } {
     # ButtonPress-1
     #   Save the index of the current entry (whose button was pressed).
     $w entry bind all button <ButtonPress-1> {
+        blt::TreeView::trace "ButtonPress-1 for Button"
         set blt::TreeView::_private(lastButton) [%W index current]
     }
 
@@ -308,7 +308,6 @@ proc blt::TreeView::Initialize { w } {
         blt::TreeView::trace "Leave Button"
         set blt::TreeView::_private(lastButton) -1
 	%W button activate ""
-        
     }
 
     # Entry bindings
