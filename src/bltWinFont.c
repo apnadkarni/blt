@@ -1206,7 +1206,7 @@ static HFONT
 MakeRotatedFont(
     Tk_Font tkFont,                     /* Font identifier (actually a
                                          * Tk_Font) */
-    long angle10)                       /* # of degrees to rotate font */
+    LONG angle10)                       /* # of degrees to rotate font */
 {                                       
     TkFontAttributes *faPtr;            /* Set of attributes to match. */
     HFONT hFont;
@@ -1643,8 +1643,22 @@ ExtFontDrawProc(
         hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)angle10);
         if (hPtr == NULL) { 
             HFONT hFont;
+            {
+                Blt_HashSearch iter;
 
-            hFont = MakeRotatedFont(setPtr->tkFont, angle10);
+                fprintf(stderr, "There are %d rotated entries\n",
+                        setPtr->fontTable.numEntries);
+                for (hPtr = Blt_FirstHashEntry(&setPtr->fontTable, &iter);
+                     hPtr != NULL;
+                     hPtr = Blt_NextHashEntry(&iter)) {
+                    intptr_t a;
+
+                    a = (intptr_t)Blt_GetHashKey(&setPtr->fontTable, hPtr);
+                    fprintf(stderr, "angle=%I64d\n", a);
+                }
+            }
+
+            hFont = MakeRotatedFont(setPtr->tkFont, (LONG)angle10);
             if (hFont == NULL) {
                 Blt_Warn("can't find font \"%s\" at %I64d rotated\n",
                          setPtr->name, 
@@ -1700,7 +1714,7 @@ ExtFontCanRotateProc(_Blt_Font *fontPtr, float angle)
         return TRUE;                    /* Rotated font already exists. */
     }
     /* Create the rotated font and add it to the fontset. */
-    hFont = MakeRotatedFont(setPtr->tkFont, angle10);
+    hFont = MakeRotatedFont(setPtr->tkFont, (LONG)angle10);
     if (hFont == NULL) {
         Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
         return FALSE;
