@@ -1296,6 +1296,7 @@ ConfigureProc(
         labelPtr->numBytes = strlen(labelPtr->text);
     }
     labelPtr->fontSize = Blt_Font_PointSize(labelPtr->baseFont);
+    fprintf(stderr, "base font size is %g\n", labelPtr->fontSize);
     if (labelPtr->angle != 0.0) {
         if (!Blt_Font_CanRotate(labelPtr->baseFont, labelPtr->angle)) {
             fprintf(stderr, "can't rotate font %s\n", 
