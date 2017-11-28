@@ -517,7 +517,7 @@ Blt_EmulateXWarpPointer(Display *display, Window src, Window dest, int sx,
         RECT rect;
         POINT point;
     
-        GetScreenPos(&point);
+        GetCursorPos(&point);
         hWnd = Tk_GetHWND(src);
         GetWindowRect(hWnd, &rect);
         if ((point.y < rect.top) || (point.y >= rect.bottom) ||
@@ -528,7 +528,7 @@ Blt_EmulateXWarpPointer(Display *display, Window src, Window dest, int sx,
     if (dest == None) {
         POINT point;
     
-        GetScreenPos(&point);
+        GetCursorPos(&point);
         SetCursorPos(point.x + dx, point.y + dy);
     } else {
         POINT point;
