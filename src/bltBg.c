@@ -780,9 +780,9 @@ ImageToObj(
  *
  * ObjToPosition --
  *
- *      Translate the given string to the gradient type it represents.
- *      Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
- *      and "radial"".
+ *      Translate the given string to the position it represents.
+ *      Positions are "nw", "sw", "n", "ne", "se", "s", "e", "c", w",
+ *      "bottom", "top", "center", "left", "right".
  *
  * Results:
  *      The return value is a standard TCL result.  

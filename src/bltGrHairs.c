@@ -118,11 +118,11 @@ static Blt_ConfigSpec configSpecs[] =
  *
  * ObjToPosition --
  *
- *      Convert the string representation of a legend XY position into
+ *      Convert the string representation of a screen XY position into
  *      window coordinates.  The form of the string must be "@x,y" or none.
  *
  * Results:
- *      A standard TCL result.  The symbol type is written into the widget
+ *      A standard TCL result.  The position is written into the Crosshairs
  *      record.
  *
  *---------------------------------------------------------------------------

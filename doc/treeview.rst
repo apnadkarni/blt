@@ -273,7 +273,7 @@ You can bind TCL commands to be invoked when events occur on nodes
 (much like Tk canvas items).  You can bind a node using its id or
 its *bindtags*.  Bindtags are simply names that associate a
 binding with one or more nodes.  There is a built-in tag "all"
-that all node entries automatically have.
+that all node entries automatically have.  
 
 TREEVIEW OPERATIONS
 -------------------
@@ -299,7 +299,7 @@ command.  The following operation are available for *treeview* widgets:
 *pathName* **bind** *tagName* ?\ *sequence*\? ?\ *cmdString*\ ?
   Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *sequence* occurs for a node with this tag, *cmdString* will be
-  invoked.  The syntax is similar to the **bind** command except that it
+  invoked.  The syntax is similar to the Tk **bind** command except that it
   operates on **treeview** entries, rather than widgets. See the **bind**
   manual entry for complete details on *sequence* and the substitutions
   performed on *cmdString* before invoking it.
