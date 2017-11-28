@@ -1642,12 +1642,13 @@ ExtFontDrawProc(
         angle10 = ROUND(angle);
         hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)angle10);
         if (hPtr == NULL) { 
-	   HFONT hFont;
+            HFONT hFont;
 
             hFont = MakeRotatedFont(setPtr->tkFont, angle10);
             if (hFont == NULL) {
-                Blt_Warn("can't find font %s at %g rotated\n", setPtr->name, 
-                         angle);
+                Blt_Warn("can't find font \"%s\" at %I64d rotated\n",
+                         setPtr->name, 
+                         angle10);
                 return;                 /* Can't find instance at requested
                                          * angle. */
             } 

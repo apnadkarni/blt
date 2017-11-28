@@ -1278,7 +1278,7 @@ UnmapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- *  WarpTop --
+ *  WarpToOp --
  *
  *      Warps the pointer to the given window or coordinates.
  *
