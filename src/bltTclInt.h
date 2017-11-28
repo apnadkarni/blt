@@ -274,9 +274,11 @@ BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments,
 BLT_EXTERN int Blt_PolyRectClip(Region2d *extsPtr, Point2d *inputPts,
         int numInputPts, Point2d *outputPts);
 
-BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s,
+BLT_EXTERN int Blt_ObjIsInteger(Tcl_Obj *objPtr);
+
+BLT_EXTERN int Blt_GetInt64(Tcl_Interp *interp, const char *s,
                            int64_t *valuePtr);
-BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+BLT_EXTERN int Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
                 int64_t *valuePtr);
 
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);

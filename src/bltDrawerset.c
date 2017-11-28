@@ -1775,7 +1775,7 @@ SetTag(Tcl_Interp *interp, Drawer *drawPtr, const char *tagName)
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if (Blt_GetInt64(NULL, (char *)tagName, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
                              (char *)NULL);
@@ -2293,7 +2293,7 @@ GetDrawerByIndex(Tcl_Interp *interp, Drawerset *setPtr, const char *string,
 
     drawPtr = NULL;
     c = string[0];
-    if (Blt_GetLong(NULL, string, &pos) == TCL_OK) {
+    if (Blt_GetInt64(NULL, string, &pos) == TCL_OK) {
         Blt_ChainLink link;
 
         link = Blt_Chain_GetNthLink(setPtr->drawers, pos);
@@ -4369,23 +4369,22 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
-    const char *tag;
-    int64_t dummy;
+    const char *string;
 
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[3]);
+    if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+    if (strcmp(string, "all") == 0) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
     if (objc == 4) {
         /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&setPtr->tags, tag);
+        Blt_Tags_AddTag(&setPtr->tags, string);
     } else {
         int i;
 
@@ -4398,7 +4397,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
                  drawPtr = NextTaggedDrawer(&iter)) {
-                Blt_Tags_AddItemToTag(&setPtr->tags, tag, drawPtr);
+                Blt_Tags_AddItemToTag(&setPtr->tags, string, drawPtr);
             }
         }
     }
@@ -4420,18 +4419,17 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
-    const char *tag;
-    int64_t dummy;
+    const char *string;
     int i;
 
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[3]);
+    if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+    if (strcmp(string, "all") == 0) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
@@ -4444,7 +4442,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
              drawPtr = NextTaggedDrawer(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, string, drawPtr);
         }
     }
     return TCL_OK;
@@ -4512,16 +4510,15 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 3; i < objc; i++) {
-        const char *tag;
-        int64_t dummy;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_Tags_ForgetTag(&setPtr->tags, tag);
+        Blt_Tags_ForgetTag(&setPtr->tags, string);
     }
     return TCL_OK;
 }
@@ -4699,21 +4696,20 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&drawerTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        int64_t dummy;
-        const char *tag;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
         }
-        if (strcmp(tag, "all") == 0) {
+        if (strcmp(string, "all") == 0) {
             break;
         } else {
             Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
+            chain = Blt_Tags_GetItemList(&setPtr->tags, string);
             if (chain != NULL) {
                 Blt_ChainLink link;
 
@@ -4728,7 +4724,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             continue;
         }
-        Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
+        Tcl_AppendResult(interp, "can't find a tag \"", string, "\"",
                          (char *)NULL);
         goto error;
     }
@@ -4782,24 +4778,23 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        const char *tag;
+        const char *string;
         Drawer *drawPtr;
-        int64_t dummy;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &dummy) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+        if (strcmp(string, "all") == 0) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                              (char *)NULL);     
             return TCL_ERROR;
         }
         for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
              drawPtr = NextTaggedDrawer(&iter)) {
-            Blt_Tags_AddItemToTag(&setPtr->tags, tag, drawPtr);
+            Blt_Tags_AddItemToTag(&setPtr->tags, string, drawPtr);
         }    
     }
     return TCL_OK;

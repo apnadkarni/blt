@@ -614,7 +614,7 @@ ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
     length = p - string;
     objPtr = Tcl_NewStringObj(string, length);
     Tcl_IncrRefCount(objPtr);
-    result = Blt_GetLongFromObj(interp, objPtr, &lvalue);
+    result = Blt_GetInt64FromObj(interp, objPtr, &lvalue);
     Tcl_DecrRefCount(objPtr);
     if (result != TCL_OK) {
         if (interp != NULL) {

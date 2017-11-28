@@ -228,6 +228,7 @@ Blt_Tree_GetInterpData(Tcl_Interp *interp)
     return dataPtr;
 }
 
+
 const char *
 Blt_Tree_NodeIdAscii(Node *nodePtr)
 {
@@ -3935,13 +3936,13 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_Tree_GetNodeFromObj --
+ * GetNodeFromObj --
  *
  *---------------------------------------------------------------------------
  */
-int 
-Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
-                        Blt_TreeNode *nodePtr)
+static int 
+GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
+               Blt_TreeNode *nodePtr)
 {
     Blt_TreeNode node;
     char *string;
@@ -4073,7 +4074,7 @@ Blt_Tree_GetNodeIterator(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
     iterPtr->root = Blt_Tree_RootNode(tree);
 
     /* Process strings with modifiers or digits as simple ids, not tags. */
-    if (Blt_Tree_GetNodeFromObj(NULL, tree, objPtr, &node) == TCL_OK) {
+    if (GetNodeFromObj(NULL, tree, objPtr, &node) == TCL_OK) {
         iterPtr->current = node;
         return TCL_OK;
     }
@@ -4152,3 +4153,27 @@ Blt_Tree_NextTaggedNode(Blt_TreeIterator *iterPtr)
 }
 
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_GetNodeFromObj --
+ *
+ *---------------------------------------------------------------------------
+ */
+int 
+Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
+                        Blt_TreeNode *nodePtr)
+{
+    Blt_TreeIterator iter;
+
+    if (Blt_Tree_GetNodeIterator(interp, tree, objPtr, &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    *nodePtr = Blt_Tree_FirstTaggedNode(&iter);
+    if (Blt_Tree_NextTaggedNode(&iter) != NULL) {
+        Tcl_AppendResult(interp, "tag \"", Tcl_GetString(objPtr),
+                         "\" refers to more than one node.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;                      /* Singleton tag. */
+}

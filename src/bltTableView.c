@@ -8890,7 +8890,8 @@ ColumnVarResolverProc(
     switchesPtr = Blt_GetHashValue(hPtr);
 
     /* Look up the column from the variable name given. */
-    if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
+    if ((isdigit(name[0])) &&
+        (Blt_GetInt64((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK)) {
         col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
         col = blt_table_get_column_by_label(switchesPtr->table, name);

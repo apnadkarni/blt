@@ -96,8 +96,8 @@ BLT_EXTERN int Blt_GetDate(Tcl_Interp *interp, const char *string,
 BLT_EXTERN int TclGetLong(Tcl_Interp *interp, const char *s, long *longPtr);
 #endif  /*USE_TCL_STUBS*/
 
-BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s, long *longPtr);
-BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+BLT_EXTERN int Blt_GetInt64(Tcl_Interp *interp, const char *s, long *longPtr);
+BLT_EXTERN int Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         long *longPtr);
 
 #ifndef HAVE_SPRINTF_S

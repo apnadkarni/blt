@@ -93,7 +93,7 @@ set id [.ss.c create label 300 200 \
 	    -anchor w \
 	    -textanchor c \
 	    -padx 0 \
-	    -font "Arial 13" \
+	    -font "Arial 10" \
 	    -rotate 90 \
 	    -width 150 \
 	    -height 50]
@@ -109,7 +109,7 @@ set id [.ss.c create label 300 200 \
 	    -anchor e \
 	    -textanchor c \
 	    -padx 0 \
-	    -font "Arial 13" \
+	    -font "Arial 10" \
 	    -rotate 90 \
 	    -width 150 \
 	    -height 50]
@@ -127,6 +127,7 @@ set id [.ss.c create label 300 200 \
 	    -textanchor c \
 	    -padx 0 \
 	    -font "Arial 13" \
+	    -scaletofit 1 \
 	    -rotate 0 \
 	    -width 150 \
 	    -height 50]

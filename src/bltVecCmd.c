@@ -2928,7 +2928,7 @@ OffsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
         int64_t newOffset;
 
-        if (Blt_GetLongFromObj(interp, objv[2], &newOffset) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objv[2], &newOffset) != TCL_OK) {
             return TCL_ERROR;
         }
         if (newOffset < 0) {
@@ -2963,7 +2963,7 @@ RandomOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
         int64_t seed;
 
-        if (Blt_GetLongFromObj(interp, objv[2], &seed) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objv[2], &seed) != TCL_OK) {
             return TCL_ERROR;
         }
         srand48((long)seed);

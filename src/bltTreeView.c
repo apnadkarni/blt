@@ -8967,15 +8967,17 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     BindTag tag;
-    Entry *entryPtr;
     TreeView *viewPtr = clientData;
 
-    /*
-     * Entries are selected by id only.  All other strings are interpreted as
-     * a binding tag.
-     */
-    if (GetEntry(NULL, viewPtr, objv[2], &entryPtr) == TCL_OK) {
-        if (entryPtr != NULL) {
+    /* Bind tags are either node ids (numbers) or arbitary strings (not to
+     * be confused with tree node tags). */
+    if (Blt_ObjIsInteger(objv[2])) {
+	Entry *entryPtr;
+
+	if (GetEntry(interp, viewPtr, objv[2], &entryPtr) == TCL_OK) {
+	    return TCL_ERROR;
+	}
+        if (entryPtr == NULL) {
             return TCL_OK;      /* Special id doesn't currently exist. */
         }
         tag = MakeBindTag(viewPtr, entryPtr, ITEM_ENTRY);
@@ -9149,12 +9151,18 @@ ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     BindTag tag;
     TreeView *viewPtr = clientData;
-    Entry *entryPtr;
-    Blt_TreeNode node;
     
-    if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
-        && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
-        (entryPtr != NULL)) {
+    /* Bind tags are either node ids (numbers) or arbitary strings (not to
+     * be confused with tree node tags). */
+    if (Blt_ObjIsInteger(objv[3])) {
+	Entry *entryPtr;
+
+	if (GetEntry(interp, viewPtr, objv[3], &entryPtr) == TCL_OK) {
+	    return TCL_ERROR;
+	}
+        if (entryPtr == NULL) {
+            return TCL_OK;      /* Special id doesn't currently exist. */
+        }
         tag = MakeBindTag(viewPtr, entryPtr, ITEM_BUTTON);
     } else {
         tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), ITEM_BUTTON);
@@ -11059,13 +11067,11 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     BindTag tag;
-    Entry *entryPtr;
     ItemType type;
     TreeView *viewPtr = clientData;
     char c;
     const char *string;
     int length;
-    int64_t dummy;
     
     string = Tcl_GetStringFromObj(objv[4], &length);
     c = string[0];
@@ -11078,9 +11084,15 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          (char *)NULL);
         return TCL_ERROR;
     }
-    if ((isdigit(c)) && (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK)
-        && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
-        (entryPtr != NULL)) {
+    if (Blt_ObjIsInteger(objv[3])) {
+	Entry *entryPtr;
+
+        if (GetEntryFromObj(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+        if (entryPtr != NULL) {
+	    return TCL_OK;
+	}
         tag = MakeBindTag(viewPtr, entryPtr, type);
     } else {
         tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
@@ -14597,35 +14609,33 @@ static int
 TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
-    TreeView *viewPtr = clientData;
     Entry *entryPtr;
-    int i;
-    char *tagName;
     EntryIterator iter;
+    TreeView *viewPtr = clientData;
+    char c;
+    const char *string;
+    int i;
 
-    tagName = Tcl_GetString(objv[3]);
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
     viewPtr->fromPtr = NULL;
-    if (strcmp(tagName, "root") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tagName, "\"", 
+    if ((c == 'r') && (strcmp(string, "root") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                 (char *)NULL);
         return TCL_ERROR;
     }
-    if (isdigit(UCHAR(tagName[0]))) {
-        int64_t dummy;
-        
-        if (Blt_GetLongFromObj(NULL, objv[3], &dummy) == TCL_OK) {
-            Tcl_AppendResult(viewPtr->interp, "invalid tag \"", tagName, 
-                             "\": can't be a number.", (char *)NULL);
-            return TCL_ERROR;
-        } 
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+	Tcl_AppendResult(viewPtr->interp, "invalid tag \"", string, 
+			 "\": can't be a number.", (char *)NULL);
+	return TCL_ERROR;
     }
-    if (tagName[0] == '@') {
-        Tcl_AppendResult(viewPtr->interp, "invalid tag \"", tagName, 
+    if (c == '@') {
+        Tcl_AppendResult(viewPtr->interp, "invalid tag \"", string, 
                 "\": can't start with \"@\"", (char *)NULL);
         return TCL_ERROR;
     } 
     if (GetEntryFromSpecialId(viewPtr, objv[3], &entryPtr) == TCL_OK) {
-        Tcl_AppendResult(interp, "invalid tag \"", tagName, 
+        Tcl_AppendResult(interp, "invalid tag \"", string, 
                  "\": is a special id", (char *)NULL);
         return TCL_ERROR;
     }
@@ -14656,11 +14666,11 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    char *tagName;
+    char *string;
     Blt_HashTable *tablePtr;
 
-    tagName = Tcl_GetString(objv[3]);
-    tablePtr = Blt_Tree_TagHashTable(viewPtr->tree, tagName);
+    string = Tcl_GetString(objv[3]);
+    tablePtr = Blt_Tree_TagHashTable(viewPtr->tree, string);
     if (tablePtr != NULL) {
         int i;
 

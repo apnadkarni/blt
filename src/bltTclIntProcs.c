@@ -153,8 +153,8 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_PolygonInRegion, /* 140 */
     Blt_PointInSegments, /* 141 */
     Blt_PolyRectClip, /* 142 */
-    Blt_GetLong, /* 143 */
-    Blt_GetLongFromObj, /* 144 */
+    Blt_GetInt64, /* 143 */
+    Blt_GetInt64FromObj, /* 144 */
     Blt_FormatString, /* 145 */
     Blt_LowerCase, /* 146 */
     Blt_UpperCase, /* 147 */

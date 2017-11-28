@@ -463,7 +463,7 @@ Tcl_GetVar2Ex(
 /*
  *----------------------------------------------------------------------
  *
- * Blt_GetLong --
+ * Blt_GetInt64 --
  *
  *      Given a string, produce the corresponding long integer value.  This
  *      differs from TclGetLong in that it doesn't accept octal values.
@@ -482,7 +482,7 @@ Tcl_GetVar2Ex(
  */
 
 int
-Blt_GetLong(
+Blt_GetInt64(
     Tcl_Interp *interp,                 /* Interpreter used for error
                                          * reporting if not NULL. */
     const char *string,                 /* String containing a (possibly
@@ -549,7 +549,7 @@ Blt_GetLong(
 /*
  *----------------------------------------------------------------------
  *
- * Blt_GetLongFromObj --
+ * Blt_GetInt64FromObj --
  *
  *      Given an string, produce the corresponding long integer value.
  *      This differs from TclGetLong in that it doesn't accept octal
@@ -567,7 +567,7 @@ Blt_GetLong(
  *----------------------------------------------------------------------
  */
 int
-Blt_GetLongFromObj(
+Blt_GetInt64FromObj(
     Tcl_Interp *interp,                 /* Interpreter to report back to. */
     Tcl_Obj *objPtr,                    /* Object containing a (possibly
                                          * signed) long integer in a form
@@ -586,9 +586,13 @@ Blt_GetLongFromObj(
         Tcl_DecrRefCount(objPtr);
     }
     if ((objPtr->typePtr == NULL) || (objPtr->typePtr == tclStringTypePtr)) {
-        return Blt_GetLong(interp, Tcl_GetString(objPtr), valuePtr);
+        if (Blt_GetInt64(interp, Tcl_GetString(objPtr), valuePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        return TCL_OK;
     }
-    /* It's OK to use Tcl_GetLongFromObj, since that can be no leading 0. */
+    /* It's OK to use Tcl_GetLongFromObj, since we're not converting from a
+     * string and there can be no leading 0. */
     if (Tcl_GetWideIntFromObj(interp, objPtr, &wideVal) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -683,6 +687,17 @@ Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
     }
     string = Tcl_GetString(objPtr);
     return Blt_GetDoubleFromString(interp, string, valuePtr);
+}
+
+int
+Blt_ObjIsInteger(Tcl_Obj *objPtr)
+{
+    int64_t value;
+    
+    if (Blt_GetInt64FromObj(NULL, objPtr, &value) == TCL_OK) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 /*
@@ -1130,7 +1145,7 @@ Blt_GetCount(Tcl_Interp *interp, const char *string, int check,
 {
     int64_t lvalue;
 
-    if (Blt_GetLong(interp, string, &lvalue) != TCL_OK) {
+    if (Blt_GetInt64(interp, string, &lvalue) != TCL_OK) {
         return TCL_ERROR;
     }
     if (lvalue < 0) {
@@ -1162,7 +1177,7 @@ Blt_GetCountFromObj(
 {
     int64_t lvalue;
 
-    if (Blt_GetLongFromObj(interp, objPtr, &lvalue) != TCL_OK) {
+    if (Blt_GetInt64FromObj(interp, objPtr, &lvalue) != TCL_OK) {
         return TCL_ERROR;
     }
     if (lvalue < 0) {
@@ -1226,7 +1241,7 @@ Blt_GetPosition(
     } else {
         int64_t position;
 
-        if (Blt_GetLong(interp, string, &position) != TCL_OK) {
+        if (Blt_GetInt64(interp, string, &position) != TCL_OK) {
             return TCL_ERROR;
         }
         if (position < 0) {
@@ -1284,7 +1299,7 @@ Blt_GetPositionFromObj(
     } else {
         int64_t position;
 
-        if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objPtr, &position) != TCL_OK) {
             return TCL_ERROR;
         }
         if (position < 0) {

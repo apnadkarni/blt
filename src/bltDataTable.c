@@ -910,7 +910,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
         }
         break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
-        if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.l) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objPtr, &valuePtr->datum.l) != TCL_OK) {
             return TCL_ERROR;
         }
         break;
@@ -6427,7 +6427,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
             {
                 int64_t lval;
 
-                if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
+                if (Blt_GetInt64FromObj(interp, objv[i], &lval) != TCL_OK) {
                     return TCL_ERROR;
                 }
                 hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
@@ -6698,7 +6698,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
         }
         break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
-        if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objPtr, &l) != TCL_OK) {
             Tcl_DecrRefCount(objPtr);
             return TCL_ERROR;
         }
@@ -6918,7 +6918,7 @@ blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     if (colPtr->type == TABLE_COLUMN_TYPE_LONG) {
         return valuePtr->datum.l;
     }
-    if (Blt_GetLong(interp, GetValueString(valuePtr), &l) != TCL_OK) {
+    if (Blt_GetInt64(interp, GetValueString(valuePtr), &l) != TCL_OK) {
         return TCL_ERROR;
     }
     return l;

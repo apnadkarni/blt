@@ -1356,7 +1356,7 @@ ConcatCmdArgs(
  *
  * Results:
  *      The return value is TCL_ERROR and an error message is left in
- *      the interp's result if there was a problem creating the child
+b *      the interp's result if there was a problem creating the child
  *      process.  Otherwise, the return value is TCL_OK and *pidPtr is
  *      filled with the process id of the child process.
  *

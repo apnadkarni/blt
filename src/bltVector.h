@@ -53,8 +53,8 @@ typedef void (Blt_VectorChangedProc)(Tcl_Interp *interp, ClientData clientData,
 typedef struct {
     double *valueArr;                   /* Array of values (possibly
                                          * malloc-ed) */
-    size_t numValues;                   /* Number of values in the array */
-    size_t arraySize;                      /* Size of the allocated space */
+    int numValues;                      /* Number of values in the array */
+    int arraySize;                      /* Size of the allocated space */
     double min, max;                    /* Minimum and maximum values in
                                          * the vector */
     int dirty;                          /* Indicates if the vector has been

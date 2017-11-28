@@ -88,6 +88,7 @@ set id [.ss.c create label 100 100 \
 	    -text "Hello, World" \
 	    -text "This is a tesM" \
 	    -bg $bg1 \
+	    -scaletofit 1 \
 	    -activebg red3 -activelinewidth 2 -activedashes 4 \
 	    -linewidth 2 -dashes 3 \
 	    -anchor c \

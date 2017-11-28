@@ -3148,7 +3148,7 @@ AtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 4) {
         int64_t l;
 
-        if (Blt_GetLongFromObj(interp, objv[3], &l) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objv[3], &l) != TCL_OK) {
             return TCL_ERROR;
         }
         attrs.atime = l;
@@ -4027,7 +4027,7 @@ MtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 4) {
         int64_t l;
 
-        if (Blt_GetLongFromObj(interp, objv[3], &l) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objv[3], &l) != TCL_OK) {
             return TCL_ERROR;
         }
         attrs.mtime = l;

@@ -1225,7 +1225,7 @@ SetTag(Tcl_Interp *interp, Element *elemPtr, const char *tagName)
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if (Blt_GetInt64(NULL, (char *)tagName, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
                              (char *)NULL);

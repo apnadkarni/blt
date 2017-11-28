@@ -1321,11 +1321,23 @@ DoConfig(
             }
             break;
 
+        case BLT_CONFIG_INT64: 
+            {
+                int64_t value;
+                
+                if (Blt_GetInt64FromObj(interp, objPtr, &value) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                *(int64_t *)ptr = value;
+            }
+            break;
+
+
         case BLT_CONFIG_LONG: 
             {
                 int64_t value;
                 
-                if (Blt_GetLongFromObj(interp, objPtr, &value) != TCL_OK) {
+                if (Blt_GetInt64FromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
                 }
                 *(long *)ptr = value;

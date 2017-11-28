@@ -42,6 +42,10 @@
 
 #include "bltMath.h"
 
+#ifdef HAVE_CTYPE_H
+  #include <ctype.h>
+#endif  /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
@@ -1613,38 +1617,41 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Axis *axisPtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Axis *axisPtr, Tcl_Obj *objPtr)
 {
     Graph *graphPtr;
-    int64_t dummy;
-    
-    if (strcmp(tagName, "all") == 0) {
+    const char *string;
+    char c;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tag. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     graphPtr = axisPtr->obj.graphPtr;
-    Blt_Tags_AddItemToTag(&graphPtr->axes.tags, tagName, axisPtr);
+    Blt_Tags_AddItemToTag(&graphPtr->axes.tags, string, axisPtr);
     return TCL_OK;
 }
 
@@ -1694,7 +1701,7 @@ ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, axisPtr, Tcl_GetString(objv[i]));
+        SetTag(interp, axisPtr, objv[i]);
     }
     return TCL_OK;
 }

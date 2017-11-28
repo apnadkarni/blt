@@ -834,7 +834,7 @@ PositionSwitch(ClientData clientData, Tcl_Interp *interp,
         *positionPtr = POSITION_END;
         return TCL_OK;
     }
-    if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
+    if (Blt_GetInt64FromObj(interp, objPtr, &position) != TCL_OK) {
         return TCL_ERROR;
     }
     if (position < 0) {
@@ -3289,8 +3289,8 @@ RestoreNode5(Tcl_Interp *interp, RestoreInfo *restorePtr)
      * The second and first fields respectively are the ids of the node and
      * its parent.  The parent id of the root node is always -1.
      */
-    if ((Blt_GetLong(interp, restorePtr->argv[0], &pid)!=TCL_OK) ||
-        (Blt_GetLong(interp, restorePtr->argv[1], &id)!=TCL_OK)) {
+    if ((Blt_GetInt64(interp, restorePtr->argv[0], &pid)!=TCL_OK) ||
+        (Blt_GetInt64(interp, restorePtr->argv[1], &id)!=TCL_OK)) {
         return TCL_ERROR;
     }
     names = values = tags = NULL;
@@ -3606,8 +3606,8 @@ RestoreNodeCmd(Tcl_Interp *interp, RestoreInfo *restorePtr)
         Tcl_Free((char *)cmdString);
         return TCL_ERROR;
     }
-    if ((Blt_GetLong(interp, restorePtr->argv[2], &pid) != TCL_OK) ||
-        (Blt_GetLong(interp, restorePtr->argv[3], &id) != TCL_OK)) {
+    if ((Blt_GetInt64(interp, restorePtr->argv[2], &pid) != TCL_OK) ||
+        (Blt_GetInt64(interp, restorePtr->argv[3], &id) != TCL_OK)) {
         return TCL_ERROR;
     }
     if (pid == -1) {
@@ -7009,15 +7009,17 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeCmd *cmdPtr = clientData;
     const char *string;
-    int64_t lval;
-
+    char c;
+    
     string = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &lval) == TCL_OK) {
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
         Tcl_AppendResult(interp, "bad tag \"", string, 
                          "\": can't be a number", (char *)NULL);
         return TCL_ERROR;
     }
-    if ((strcmp(string, "all") == 0) || (strcmp(string, "root") == 0)) {
+    if (((c == 'a') && (strcmp(string, "all") == 0)) ||
+        ((c == 'r') && (strcmp(string, "root") == 0))) {
         Tcl_AppendResult(cmdPtr->interp, "can't add reserved tag \"",
                          string, "\"", (char *)NULL);
         return TCL_ERROR;
@@ -7066,15 +7068,17 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_HashTable *tablePtr;
     TreeCmd *cmdPtr = clientData;
     const char *string;
-    int64_t lval;
-
+    char c;
+    
     string = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &lval) == TCL_OK) {
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
         Tcl_AppendResult(interp, "bad tag \"", string, 
                          "\": can't be a number", (char *)NULL);
         return TCL_ERROR;
     }
-    if ((strcmp(string, "all") == 0) || (strcmp(string, "root") == 0)) {
+    if (((c == 'a') && (strcmp(string, "all") == 0)) ||
+        ((c == 'r') && (strcmp(string, "root") == 0))) {
         Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
@@ -7160,10 +7164,9 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
         const char *string;
-        int64_t lval;
 
         string = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &lval) == TCL_OK) {
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
             Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number", (char *)NULL);
             return TCL_ERROR;
@@ -7386,18 +7389,19 @@ TagNodesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_InitHashTable(&nodeTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
         const char *string;
+        char c;
         int isNew;
-        int64_t lval;
 
         string = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &lval) == TCL_OK) {
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
             Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number", (char *)NULL);
             goto error;
         }
-        if (strcmp(string, "all") == 0) {
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
             break;
-        } else if (strcmp(string, "root") == 0) {
+        } else if ((c == 'r') && (strcmp(string, "root") == 0)) {
             Blt_CreateHashEntry(&nodeTable, 
                 (char *)Blt_Tree_RootNode(cmdPtr->tree), &isNew);
             continue;
@@ -7474,15 +7478,17 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 4; i < objc; i++) {
         const char *string;
-        int64_t lval;
-
+        char c;
+        
         string = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &lval) == TCL_OK) {
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
             Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number", (char *)NULL);
             return TCL_ERROR;
         }
-        if ((strcmp(string, "all") == 0) || (strcmp(string, "root") == 0)) {
+        if (((c == 'a') && (strcmp(string, "all") == 0)) ||
+            ((c == 'r') && (strcmp(string, "root") == 0))) {
             Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                  (char *)NULL); 
             return TCL_ERROR;

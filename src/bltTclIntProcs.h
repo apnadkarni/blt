@@ -865,16 +865,16 @@ BLT_EXTERN int		Blt_PolyRectClip(Region2d *extsPtr,
 				Point2d *inputPts, int numInputPts,
 				Point2d *outputPts);
 #endif
-#ifndef Blt_GetLong_DECLARED
-#define Blt_GetLong_DECLARED
+#ifndef Blt_GetInt64_DECLARED
+#define Blt_GetInt64_DECLARED
 /* 143 */
-BLT_EXTERN int		Blt_GetLong(Tcl_Interp *interp, const char *s,
+BLT_EXTERN int		Blt_GetInt64(Tcl_Interp *interp, const char *s,
 				int64_t *valuePtr);
 #endif
-#ifndef Blt_GetLongFromObj_DECLARED
-#define Blt_GetLongFromObj_DECLARED
+#ifndef Blt_GetInt64FromObj_DECLARED
+#define Blt_GetInt64FromObj_DECLARED
 /* 144 */
-BLT_EXTERN int		Blt_GetLongFromObj(Tcl_Interp *interp,
+BLT_EXTERN int		Blt_GetInt64FromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int64_t *valuePtr);
 #endif
 #ifndef Blt_FormatString_DECLARED
@@ -1077,8 +1077,8 @@ typedef struct BltTclIntProcs {
     int (*blt_PolygonInRegion) (Point2d *points, int numPoints, Region2d *extsPtr, int enclosed); /* 140 */
     int (*blt_PointInSegments) (Point2d *samplePtr, Segment2d *segments, int numSegments, double halo); /* 141 */
     int (*blt_PolyRectClip) (Region2d *extsPtr, Point2d *inputPts, int numInputPts, Point2d *outputPts); /* 142 */
-    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, int64_t *valuePtr); /* 143 */
-    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr); /* 144 */
+    int (*blt_GetInt64) (Tcl_Interp *interp, const char *s, int64_t *valuePtr); /* 143 */
+    int (*blt_GetInt64FromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr); /* 144 */
     int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 145 */
     void (*blt_LowerCase) (char *s); /* 146 */
     void (*blt_UpperCase) (char *s); /* 147 */
@@ -1674,13 +1674,13 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_PolyRectClip \
 	(bltTclIntProcsPtr->blt_PolyRectClip) /* 142 */
 #endif
-#ifndef Blt_GetLong
-#define Blt_GetLong \
-	(bltTclIntProcsPtr->blt_GetLong) /* 143 */
+#ifndef Blt_GetInt64
+#define Blt_GetInt64 \
+	(bltTclIntProcsPtr->blt_GetInt64) /* 143 */
 #endif
-#ifndef Blt_GetLongFromObj
-#define Blt_GetLongFromObj \
-	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 144 */
+#ifndef Blt_GetInt64FromObj
+#define Blt_GetInt64FromObj \
+	(bltTclIntProcsPtr->blt_GetInt64FromObj) /* 144 */
 #endif
 #ifndef Blt_FormatString
 #define Blt_FormatString \

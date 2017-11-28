@@ -249,7 +249,7 @@ test tree.31 {tree0 insert root} {
 
 test tree.32 {tree0 insert all} {
     list [catch {tree0 insert all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.33 {tree0 insert 0 -at badPosition} {
     list [catch {tree0 insert 0 -at badPosition} msg] $msg
@@ -431,7 +431,7 @@ test tree.76 {tree0 nextsibling 8)} {
 
 test tree.77 {tree0 nextsibling all)} {
     list [catch {tree0 nextsibling all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.78 {tree0 nextsibling badTag)} {
     list [catch {tree0 nextsibling badTag} msg] $msg
@@ -600,11 +600,11 @@ test tree.111 {tree0 dump 11 -version 2.0} {
 
 test tree.112 {tree0 dump all} {
     list [catch {tree0 dump all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.113 {tree0 dump all} {
     list [catch {tree0 dump all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.114 {tree0 dump 0 -file test.dump} {
     list [catch {tree0 dump 0 -file test.dump} msg] $msg
@@ -616,7 +616,7 @@ test tree.115 {tree0 get 9} {
 
 test tree.116 {tree0 get all} {
     list [catch {tree0 get all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.117 {tree0 get root} {
     list [catch {tree0 get root} msg] $msg
@@ -704,7 +704,7 @@ test tree.137 {tree0 isbefore root 0} {
 
 test tree.138 {tree0 isbefore 0 all} {
     list [catch {tree0 isbefore 0 all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.139 {tree0 isancestor} {
     list [catch {tree0 isancestor} msg] $msg
@@ -732,7 +732,7 @@ test tree.144 {tree0 isancestor root 0} {
 
 test tree.145 {tree0 isancestor 0 all} {
     list [catch {tree0 isancestor 0 all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.146 {tree0 isroot (missing arg)} {
     list [catch {tree0 isroot} msg] $msg
@@ -760,7 +760,7 @@ test tree.151 {tree0 isroot root} {
 
 test tree.152 {tree0 isroot all} {
     list [catch {tree0 isroot all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.153 {tree0 isleaf (missing arg)} {
     list [catch {tree0 isleaf} msg] $msg
@@ -788,7 +788,7 @@ test tree.158 {tree0 isleaf root} {
 
 test tree.159 {tree0 isleaf all} {
     list [catch {tree0 isleaf all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.160 {tree0 isleaf 1000} {
     list [catch {tree0 isleaf 1000} msg] $msg
@@ -977,7 +977,7 @@ test tree.187 {tree0 size 0} {
 
 test tree.188 {tree0 size all} {
     list [catch {tree0 size all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.189 {tree0 size 0 10 (extra arg)} {
     list [catch {tree0 size 0 10} msg] $msg
@@ -1075,7 +1075,7 @@ test tree.200 {tree0 apply badTag} {
 
 test tree.201 {tree0 apply all} {
     list [catch {tree0 apply all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.202 {tree0 apply myTag -precommand lappend} {
     list [catch {
@@ -1263,7 +1263,7 @@ test tree.236 {tree0 find 1 -depth 2} {
 
 test tree.237 {tree0 find all} {
     list [catch {tree0 find all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.238 {tree0 find badTag} {
     list [catch {tree0 find badTag} msg] $msg
@@ -1376,7 +1376,7 @@ test tree.261 {tree0 tag names badNode} {
 
 test tree.262 {tree0 tag names all} {
     list [catch {tree0 tag names all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.263 {tree0 tag names root} {
     list [catch {tree0 tag names root} msg] [lsort $msg]
@@ -1429,7 +1429,7 @@ test tree.274 {tree0 ancestor 8 8} {
 
 test tree.275 {tree0 ancestor 0 all} {
     list [catch {tree0 ancestor 0 all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.276 {tree0 ancestor 7 9} {
     list [catch {
@@ -1537,7 +1537,7 @@ test tree.298 {tree0 path parse } {
 
 test tree.299 {tree0 path print all} {
     list [catch {tree0 path print all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.300 {tree0 path print 0 badSwitch} {
     list [catch {tree0 path print 0 badSwitch} msg] $msg
@@ -1621,7 +1621,7 @@ test tree.314 {tree0 move 0 badNode} {
 
 test tree.315 {tree0 move 0 all} {
     list [catch {tree0 move 0 all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.316 {tree0 move 1 0 -before 2} {
     list [catch {
@@ -1824,7 +1824,7 @@ test tree.345 {tree0 sort} {
 
 test tree.346 {tree0 sort all} {
     list [catch {tree0 sort all} msg] $msg
-} {1 {more than one node tagged as "all"}}
+} {1 {tag "all" refers to more than one node.}}
 
 test tree.347 {tree0 sort -recurse} {
     list [catch {tree0 sort -recurse} msg] $msg
