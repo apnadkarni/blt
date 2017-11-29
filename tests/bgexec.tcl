@@ -30,7 +30,7 @@ test bgexec.1 {set up file channel } {
 
 test bgexec.2 {bgexec (no args) } {
     list [catch {blt::bgexec} msg] $msg
-v} {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}
+} {1 {wrong # args: should be "blt::bgexec varName ?options? command ?arg...?"}}
 
 test bgexec.3 {bgexec var (no args) } {
     list [catch {blt::bgexec myVar} msg] $msg
