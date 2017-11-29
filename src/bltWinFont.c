@@ -1485,8 +1485,10 @@ ExtFontPointSizeProc(_Blt_Font *fontPtr)
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr;
     int numPoints;
+    WinFont *winFontPtr;
     
     tkFontPtr = (TkFont *)setPtr->tkFont;
+    winFontPtr = (WinFont *)setPtr->tkFont;
     if (tkFontPtr->fa.size < 0) { 
         numPoints = PixelsToPoints(fontPtr->display, -tkFontPtr->fa.size);
     } else {
@@ -1501,8 +1503,10 @@ ExtFontPixelSizeProc(_Blt_Font *fontPtr)
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr;
     int numPixels;
-
+    WinFont *winFontPtr;
+    
     tkFontPtr = (TkFont *)setPtr->tkFont;
+    winFontPtr = (WinFont *)setPtr->tkFont;
     if (tkFontPtr->fa.size < 0) { 
         numPixels = -tkFontPtr->fa.size; 
     } else {
