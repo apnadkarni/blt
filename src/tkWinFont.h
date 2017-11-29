@@ -166,7 +166,7 @@ typedef struct SubFont {
                                  * used when displaying/measuring chars
                                  * belonging to the FontFamily. */
     FontFamily *familyPtr;      /* The FontFamily for this SubFont. */
-#if (_TCL_VERSION <  _VERSION(8,6,0)) 
+#if (_TCL_VERSION >=  _VERSION(8,6,0)) 
     HFONT hFontAngled;
     double angle;
 #endif
