@@ -1212,8 +1212,10 @@ MakeRotatedFont(
     HFONT hFont;
     LOGFONTW lf;
     TkFont *tkFontPtr = (TkFont *)tkFont;
-
+    WinFont *winFontPtr;
+    
     faPtr = &tkFontPtr->fa;
+    winFontPtr = (WinFont *)tkFont;
     ZeroMemory(&lf, sizeof(LOGFONT));
     lf.lfHeight = -faPtr->size;
     if (lf.lfHeight < 0) {
