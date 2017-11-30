@@ -150,8 +150,9 @@ typedef struct {
     DWORD lastError;                    /* Error. */
     char *buffer;                       /* Current background output
                                          * buffer. */
-    size_t start, end;                  /* Pointers into the output buffer */
-    size_t size;                        /* Size of buffer. */
+    DWORD start, end;                   /* Pointers into the output
+                                         * buffer */
+    DWORD size;                         /* Size of buffer. */
     Tcl_FileProc *proc;
     ClientData clientData;
 } PipeHandler;
@@ -325,11 +326,11 @@ GetNotifierWindow(void)
 static int
 PeekOnPipe(
     PipeHandler *pipePtr,               /* Pipe state. */
-    ssize_t *numAvailPtr)
+    DWORD *numBytesAvailPtr)
 {
     int state;
 
-    *numAvailPtr = -1;
+    *numBytesAvailPtr = -1;
     state = WaitForSingleObject(pipePtr->readyEvent, 0);
     if (state == WAIT_TIMEOUT) {
         errno = EAGAIN;
@@ -341,14 +342,14 @@ PeekOnPipe(
      * to access shared information.
      */
     if (state == WAIT_OBJECT_0) {
-        ssize_t numAvail;
+        DWORD numBytesAvail;
 
-        numAvail = pipePtr->end - pipePtr->start;
-        if ((numAvail <= 0) && !(pipePtr->flags & PIPE_EOF)) {
+        numBytesAvail = pipePtr->end - pipePtr->start;
+        if ((numBytesAvail <= 0) && !(pipePtr->flags & PIPE_EOF)) {
             TclWinConvertError(pipePtr->lastError);
-            numAvail = -1;
+            numBytesAvail = -1;
         }
-        *numAvailPtr = numAvail;
+        *numBytesAvailPtr = numBytesAvail;
     }
     return TRUE;
 }
@@ -416,7 +417,6 @@ SetupHandlers(ClientData clientData, int flags)
     Blt_Chain chain = clientData;
     Blt_ChainLink link;
     int dontBlock;
-    ssize_t numBytes;
     Tcl_Time blockTime;
 
     if (!(flags & TCL_FILE_EVENTS)) {
@@ -438,7 +438,9 @@ SetupHandlers(ClientData clientData, int flags)
                                          * freed. */
         }
         if (pipePtr->flags & TCL_READABLE) {
-            if (PeekOnPipe(pipePtr, &numBytes)) {
+            DWORD numBytesAvail;
+
+            if (PeekOnPipe(pipePtr, &numBytesAvail)) {
                 dontBlock = TRUE;
             }
         }
@@ -484,7 +486,6 @@ CheckHandlers(ClientData clientData, int flags)
         link = Blt_Chain_NextLink(link)) {
         PipeHandler *pipePtr;
         int queueEvent;
-        ssize_t numBytes;
 
         pipePtr = Blt_Chain_GetValue(link);
         if (pipePtr->flags & (PIPE_PENDING | PIPE_DELETED)) {
@@ -495,7 +496,9 @@ CheckHandlers(ClientData clientData, int flags)
         /* Queue an event if the pipe is signaled for reading or writing.  */
         queueEvent = FALSE;
         if (pipePtr->flags & TCL_READABLE) {
-            if (PeekOnPipe(pipePtr, &numBytes)) {
+            DWORD numBytesAvail;
+
+            if (PeekOnPipe(pipePtr, &numBytesAvail)) {
                 queueEvent = TRUE;
             }
         }
@@ -2406,43 +2409,43 @@ Blt_DeleteFileHandler(HANDLE hPipe)     /* Handle of file */
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncRead(HANDLE hFile, char *buffer, size_t size)
+Blt_AsyncRead(HANDLE hFile, char *buffer, size_t reqNumBytes)
 {
     PipeHandler *pipePtr;
-    unsigned int count;
-    ssize_t numBytes;
+    DWORD int length;
+    DWORD numBytesAvail;
 
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
         return -1;
     }
-    if (!PeekOnPipe(pipePtr, &numBytes)) {
+    if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
         return -1;              /* No data available. */
     }
     /*
-     * numBytes is      0       EOF found.
+     * numBytesAvail is 0       EOF found.
      *                  -1      Error occured.
-     *                  1+      Number of bytes available.
+     *                  1+      # of bytes available.
      */
-    if (numBytes == -1) {
+    if (numBytesAvail == -1) {
         return -1;
     }
-    if (numBytes == 0) {
+    if (numBytesAvail == 0) {
         return 0;
     }
-    count = pipePtr->end - pipePtr->start;
-    assert(count == (unsigned int)numBytes);
-    if (size > count) {
-        size = count;           /* Reset request to what's available. */
+    length = pipePtr->end - pipePtr->start;
+    assert(length == (unsigned int)numBytesAvail);
+    if (reqNumBytes > length) {
+        reqNumBytes = length;           /* Reset request to what's available. */
     }
-    memcpy(buffer, pipePtr->buffer + pipePtr->start, size);
-    pipePtr->start += size;
+    memcpy(buffer, pipePtr->buffer + pipePtr->start, reqNumBytes);
+    pipePtr->start += reqNumBytes;
     if (pipePtr->start == pipePtr->end) {
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
-    return size;
+    return reqNumBytes;
 }
 
 /*
@@ -2458,7 +2461,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t size)
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t size)
+Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t reqNumBytes)
 {
     PipeHandler *pipePtr;
 
@@ -2482,18 +2485,18 @@ Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t size)
         return -1;
     }
     /* Reallocate the buffer to be large enough to hold the data. */
-    if (size > pipePtr->size) {
+    if (reqNumBytes > pipePtr->size) {
         char *ptr;
 
-        ptr = Blt_AssertMalloc(size);
+        ptr = Blt_AssertMalloc(reqNumBytes);
         Blt_Free(pipePtr->buffer);
         pipePtr->buffer = ptr;
     }
-    memcpy(pipePtr->buffer, buffer, size);
-    pipePtr->end = pipePtr->size = size;
+    memcpy(pipePtr->buffer, buffer, reqNumBytes);
+    pipePtr->end = pipePtr->size = reqNumBytes;
     ResetEvent(pipePtr->readyEvent);
     SetEvent(pipePtr->idleEvent);
-    return size;
+    return reqNumBytes;
 }
 
 void

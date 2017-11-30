@@ -113,7 +113,7 @@
                                  * in the slant field. */
 typedef struct {
     Tk_Uid family;              /* Font family. The most important field. */
-#if (_TCL_VERSION >=  _VERSION(8,6,0)) 
+#if (_TCL_VERSION >=  _VERSION(8,6,7)) 
     double size;
 #else
     int size;                   /* Pointsize of font, 0 for default size, or

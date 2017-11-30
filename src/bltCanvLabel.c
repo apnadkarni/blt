@@ -1393,13 +1393,14 @@ CreateProc(
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
     labelPtr->display = Tk_Display(tkwin);
+    labelPtr->flags = DISPLAY_TEXT;
     labelPtr->interp = interp;
-    labelPtr->xScale = labelPtr->yScale = 1.0;
     labelPtr->state = TK_STATE_NORMAL;
     labelPtr->textAnchor = TK_ANCHOR_NW;
     labelPtr->tkwin  = tkwin;
     labelPtr->x = x;
     labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
+    labelPtr->xScale = labelPtr->yScale = 1.0;
     labelPtr->y = y;
     labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
     if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
