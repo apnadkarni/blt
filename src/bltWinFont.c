@@ -543,7 +543,7 @@ SplitXLFD(Tcl_Obj *objPtr, int *argcPtr, char ***argvPtr)
     }
     arraySize = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
     buf = Blt_AssertCalloc(1, arraySize + length + 1);
-    desc = buf + arrayLen;
+    desc = buf + arraySize;
     strcpy(desc, string);
     field = (char **)buf;
 
