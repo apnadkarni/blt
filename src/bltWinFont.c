@@ -534,16 +534,16 @@ SplitXLFD(Tcl_Obj *objPtr, int *argcPtr, char ***argvPtr)
     char *p, *pend, *desc, *buf;
     const char *string;
     int count, length;
-    int arraySize;
+    size_t arrayLen;
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     if (string[0] == '-') {
         string++;
         length--;
     }
-    arraySize = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
-    buf = Blt_AssertCalloc(1, arraySize + length + 1);
-    desc = buf + arraySize;
+    arrayLen = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
+    buf = Blt_AssertCalloc(1, arrayLen + length + 1);
+    desc = buf + arrayLen;
     strcpy(desc, string);
     field = (char **)buf;
 
@@ -1211,22 +1211,23 @@ MakeRotatedFont(
     HFONT hFont;
     LOGFONTW lf;
     TkFont *tkFontPtr = (TkFont *)tkFont;
-    WinFont *winFontPtr;
+    double numPixels;
     
     faPtr = &tkFontPtr->fa;
-    winFontPtr = (WinFont *)tkFont;
     ZeroMemory(&lf, sizeof(LOGFONT));
-    lf.lfHeight = -faPtr->size;
-    if (lf.lfHeight < 0) {
+    /* If size is negative, it's the number of pixels. If positive, it's
+     * the number of points. */
+    if (faPtr->size > 0) {
         HDC hDC;
-        double numPixels;
 
         hDC = GetDC(NULL);
         /* Convert from points to integral (rounded) # of pixels. */
         numPixels = faPtr->size * GetDeviceCaps(hDC, LOGPIXELSY) / 72.0;
-        lf.lfHeight = -((LONG)(numPixels + 0.5)); 
         ReleaseDC(NULL, hDC);
+    } else {
+        numPixels = -faPtr->size;
     }
+    lf.lfHeight = ((LONG)(numPixels + 0.5));
     lf.lfWidth = 0;
     lf.lfEscapement = lf.lfOrientation = angle10;
 #define TK_FW_NORMAL    0
