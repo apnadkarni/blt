@@ -2412,7 +2412,7 @@ ssize_t
 Blt_AsyncRead(HANDLE hFile, char *buffer, size_t reqNumBytes)
 {
     PipeHandler *pipePtr;
-    DWORD int length;
+    DWORD length;
     DWORD numBytesAvail;
 
     pipePtr = GetPipeHandler(hFile);
