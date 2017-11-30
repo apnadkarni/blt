@@ -326,7 +326,7 @@ GetNotifierWindow(void)
 static int
 PeekOnPipe(
     PipeHandler *pipePtr,               /* Pipe state. */
-    DWORD *numBytesAvailPtr)
+    int *numBytesAvailPtr)
 {
     int state;
 
@@ -342,7 +342,7 @@ PeekOnPipe(
      * to access shared information.
      */
     if (state == WAIT_OBJECT_0) {
-        DWORD numBytesAvail;
+        int numBytesAvail;
 
         numBytesAvail = pipePtr->end - pipePtr->start;
         if ((numBytesAvail <= 0) && !(pipePtr->flags & PIPE_EOF)) {
@@ -438,7 +438,7 @@ SetupHandlers(ClientData clientData, int flags)
                                          * freed. */
         }
         if (pipePtr->flags & TCL_READABLE) {
-            DWORD numBytesAvail;
+            int numBytesAvail;
 
             if (PeekOnPipe(pipePtr, &numBytesAvail)) {
                 dontBlock = TRUE;
@@ -496,7 +496,7 @@ CheckHandlers(ClientData clientData, int flags)
         /* Queue an event if the pipe is signaled for reading or writing.  */
         queueEvent = FALSE;
         if (pipePtr->flags & TCL_READABLE) {
-            DWORD numBytesAvail;
+            int numBytesAvail;
 
             if (PeekOnPipe(pipePtr, &numBytesAvail)) {
                 queueEvent = TRUE;
@@ -555,7 +555,7 @@ CreatePipeHandler(HANDLE hFile, int flags)
         NULL,                           /* Security attributes */
         8000,                           /* Initial stack size. */
         threadProc,                     /* Starting address of thread routine */
-        (DWORD *) pipePtr,              /* One-word of data passed to
+        (DWORD *)pipePtr,               /* One-word of data passed to
                                          * routine. */
         0,                              /* Creation flags */
         &id);                           /* (out) Will contain Id of new
@@ -775,7 +775,7 @@ static DWORD WINAPI
 PipeWriterThread(void *clientData)
 {
     PipeHandler *pipePtr = clientData;
-    DWORD count, bytesLeft;
+    int count, bytesLeft;
     char *ptr;
 
     for (;;) {
@@ -941,7 +941,8 @@ CreateTempFile(const char *data)        /* String to write into temp file, or
         goto error;
     }
     if (data != NULL) {
-        DWORD result, length;
+        DWORD result;
+        int length;
         const char *p;
         const char *string;
 
@@ -1042,7 +1043,7 @@ GetApplicationType(const char *file, char *cmdPrefix)
         unsigned int i;
 
         offset = SetFilePointer(hFile, 2, NULL, FILE_BEGIN);
-        if (offset == (DWORD) - 1) {
+        if (offset == INVALID_SET_FILE_POINTER) {
             goto done;
         }
         result = ReadFile(hFile, cmdPrefix, MAX_PATH + 1, &numBytes, NULL);
@@ -1083,7 +1084,7 @@ GetApplicationType(const char *file, char *cmdPrefix)
         goto done;
     }
     offset = SetFilePointer(hFile, imageDosHeader.e_lfanew, NULL, FILE_BEGIN);
-    if (offset == (DWORD) - 1) {
+    if (offset == INVALID_SET_FILE_POINTER) {
         goto done;
     }
     result = ReadFile(hFile, &signature, sizeof(ULONG), &numBytes, NULL);
@@ -1184,7 +1185,8 @@ GetFullPath(
          * identify a known program type.
          */
         attr = GetFileAttributesA(fullPath);
-        if ((attr == (DWORD)-1) || (attr & FILE_ATTRIBUTE_DIRECTORY)) {
+        if ((attr == INVALID_FILE_ATTRIBUTES) ||
+            (attr & FILE_ATTRIBUTE_DIRECTORY)) {
             continue;
         }
         *typePtr = GetApplicationType(fullPath, cmdPrefix);
@@ -1635,7 +1637,7 @@ StartProcess(
      *    WaitForInputIdle() call between CreateProcess() and CloseHandle(),
      *    the problem does not occur."  */
     idleResult = WaitForInputIdle(pi.hProcess, 1000);
-    if (idleResult == (DWORD) - 1) {
+    if (idleResult == WAIT_FAILED) {
     }
 #endif
     CloseHandle(pi.hThread);
@@ -2412,8 +2414,8 @@ ssize_t
 Blt_AsyncRead(HANDLE hFile, char *buffer, size_t reqNumBytes)
 {
     PipeHandler *pipePtr;
-    DWORD length;
-    DWORD numBytesAvail;
+    int numBytesRead;
+    int numBytesAvail;
 
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
@@ -2434,18 +2436,18 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t reqNumBytes)
     if (numBytesAvail == 0) {
         return 0;
     }
-    length = pipePtr->end - pipePtr->start;
-    assert(length == (unsigned int)numBytesAvail);
-    if (reqNumBytes > length) {
-        reqNumBytes = length;           /* Reset request to what's available. */
+    numBytesRead = pipePtr->end - pipePtr->start;
+    assert(numBytesRead == (unsigned int)numBytesAvail);
+    if (numBytesRead > reqNumBytes) {
+        numBytesRead = numReqBytes; 
     }
-    memcpy(buffer, pipePtr->buffer + pipePtr->start, reqNumBytes);
-    pipePtr->start += reqNumBytes;
+    memcpy(buffer, pipePtr->buffer + pipePtr->start, numBytesRead);
+    pipePtr->start += numBytesRead;
     if (pipePtr->start == pipePtr->end) {
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
-    return reqNumBytes;
+    return numBytesRead;
 }
 
 /*
