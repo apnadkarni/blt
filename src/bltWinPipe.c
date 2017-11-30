@@ -2407,7 +2407,7 @@ Blt_DeleteFileHandler(HANDLE hPipe)     /* Handle of file */
  *
  *---------------------------------------------------------------------------
  */
-ssize_t
+int
 Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
 {
     PipeHandler *pipePtr;
@@ -2459,7 +2459,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
  *
  *---------------------------------------------------------------------------
  */
-ssize_t
+int
 Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t reqNumBytes)
 {
     PipeHandler *pipePtr;
