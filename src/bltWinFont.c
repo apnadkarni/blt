@@ -1241,7 +1241,7 @@ MakeRotatedFont(
     lf.lfQuality = ANTIALIASED_QUALITY;
     lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
 
-    hFont = NULL;g
+    hFont = NULL;
     if (faPtr->family == NULL) {
         lf.lfFaceName[0] = '\0';
     } else {
