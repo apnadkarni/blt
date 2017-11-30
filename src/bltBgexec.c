@@ -408,21 +408,20 @@ typedef struct {
     unsigned char *bytes;               /* Stores pipeline output
                                          * (malloc-ed): Initially points to
                                          * static storage */
-    size_t size;                        /* Size of dynamically allocated
+    int size;                           /* Size of dynamically allocated
                                          * buffer. */
 
-    size_t fill;                        /* # of bytes read into the
+    int fill;                           /* # of bytes read into the
                                          * buffer. Marks the current fill
                                          * point of the buffer. */
 
-    size_t mark;                        /* # of bytes translated
+    int mark;                           /* # of bytes translated
                                          * (cooked). */
-    size_t lastMark;                    /* # of bytes as of the last
+    int lastMark;                       /* # of bytes as of the last
                                          * read. This indicates the start
                                          * of the new data in the buffer
                                          * since the last time the "update"
                                          * variable was set. */
-    size_t maxSize;
     unsigned char staticSpace[DEF_BUFFER_SIZE]; /* Static space */
 } Sink;
 
@@ -676,25 +675,27 @@ static int
 ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
 {
     char mesg[BUFSIZ+1];
-    ssize_t numRead, numBytes;
+    size_t totalBytes;
     
     /*
      * Read back from the error pipe to see if the pipeline started up
      * properly. The info in the pipe (if any) if the TCL error message
      * from the child process.
      */
-    numBytes = 0;
+    totalBytes = 0;
     do {
+        ssize_t numRead;
+        
         numRead = read(f, mesg, BUFSIZ);
         if (numRead == -1) {
             return TCL_ERROR;
         }
         mesg[numRead] = '\0';
         Tcl_AppendResult(interp, mesg, (char *)NULL);
-        numBytes += numRead;
+        totalBytes += numRead;
     } while (numRead > 0);
     close(f);
-    return (numBytes > 0) ? TCL_ERROR : TCL_OK;
+    return (totalBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 #endif /*!WIN32*/
 /*
@@ -1092,12 +1093,12 @@ GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, size_t *lengthPtr)
 #endif
     length = sinkPtr->mark;
     if ((sinkPtr->mark > 0) && (sinkPtr->encoding != ENCODING_BINARY)) {
-        unsigned char *last;
+        unsigned char *lastChar;
         Bgexec *bgPtr;
         
-        last = sinkPtr->bytes + (sinkPtr->mark - 1);
+        lastChar = sinkPtr->bytes + (sinkPtr->mark - 1);
         bgPtr = sinkPtr->bgPtr;
-        if (((bgPtr->flags & KEEPNEWLINE) == 0) && (*last == '\n')) {
+        if (((bgPtr->flags & KEEPNEWLINE) == 0) && (*lastChar == '\n')) {
             length--;
         }
     }
@@ -1396,14 +1397,14 @@ ReadBytes(Sink *sinkPtr)
      */
     numBytes = 0;
     for (i = 0; i < MAX_READS; i++) {
-        ssize_t bytesLeft;
+        int bytesLeft;
         char *array;
 
         /* Allocate a larger buffer when the number of remaining bytes is
          * below the threshold BLOCK_SIZE.  */
         
+        assert(sinkPtr->size >= sinkPtr->fill);
         bytesLeft = sinkPtr->size - sinkPtr->fill;
-        
         if (bytesLeft < BLOCK_SIZE) {
             bytesLeft = ExtendSinkBuffer(sinkPtr);
             if (bytesLeft < 0) {
@@ -1418,7 +1419,7 @@ ReadBytes(Sink *sinkPtr)
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
 #ifdef WIN32
-        numBytes = Blt_AsyncRead(sinkPtr->fileHandle, array, bytesLeft -1);
+        numBytes = Blt_AsyncRead(sinkPtr->fileHandle, array, bytesLeft - 1);
 #else
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
 #endif /* WIN32 */

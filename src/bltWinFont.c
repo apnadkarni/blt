@@ -534,15 +534,15 @@ SplitXLFD(Tcl_Obj *objPtr, int *argcPtr, char ***argvPtr)
     char *p, *pend, *desc, *buf;
     const char *string;
     int count, length;
-    size_t arrayLen;
+    int arraySize;
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     if (string[0] == '-') {
         string++;
         length--;
     }
-    arrayLen = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
-    buf = Blt_AssertCalloc(1, arrayLen + length + 1);
+    arraySize = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
+    buf = Blt_AssertCalloc(1, arraySize + length + 1);
     desc = buf + arrayLen;
     strcpy(desc, string);
     field = (char **)buf;

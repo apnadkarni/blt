@@ -4,7 +4,7 @@ if {[info procs test] != "test"} {
     source defs
 }
 
-set tclsh tclsh86
+set tclsh tclsh
 
 if [file exists ../library] {
     set blt_library ../library

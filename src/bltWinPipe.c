@@ -229,11 +229,7 @@ InitFileInfo(FileInfo *infoPtr)
  *---------------------------------------------------------------------------
  */
 static LRESULT CALLBACK
-NotifierWindowProc(
-    HWND hWindow,
-    UINT message,
-    WPARAM wParam,
-    LPARAM lParam)
+NotifierWindowProc(HWND hWindow, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message) {
     case WM_USER:
@@ -324,9 +320,7 @@ GetNotifierWindow(void)
  *---------------------------------------------------------------------------
  */
 static int
-PeekOnPipe(
-    PipeHandler *pipePtr,               /* Pipe state. */
-    int *numBytesAvailPtr)
+PeekOnPipe(PipeHandler *pipePtr, int *numBytesAvailPtr)
 {
     int state;
 
@@ -2413,12 +2407,13 @@ Blt_DeleteFileHandler(HANDLE hPipe)     /* Handle of file */
  *
  *---------------------------------------------------------------------------
  */
-ssize_t
+int
 Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
 {
     PipeHandler *pipePtr;
     int numBytes, numBytesAvail;
 
+    assert(count > 0);
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
@@ -2445,7 +2440,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
     }
     memcpy(buffer, pipePtr->buffer + pipePtr->start, numBytes);
     pipePtr->start += numBytes;
-    if (pipePtr->start == pipePtr->end) {
+    if (pipePtr->start >= pipePtr->end) {
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
