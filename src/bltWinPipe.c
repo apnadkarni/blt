@@ -2420,7 +2420,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
-        return -1;              /* No data available. */
+        return -1;                      /* No data available. */
     }
     /*
      * numBytesAvail is 0       EOF found.
@@ -2434,7 +2434,6 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         return 0;
     }
     numBytes = pipePtr->end - pipePtr->start;
-    assert(numBytes == (unsigned int)numBytesAvail);
     if (numBytes > count) {
         numBytes = count; 
     }
