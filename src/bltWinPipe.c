@@ -2413,7 +2413,6 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
     PipeHandler *pipePtr;
     int numBytes, numBytesAvail;
 
-    assert(count > 0);
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
