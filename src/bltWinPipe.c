@@ -775,10 +775,11 @@ static DWORD WINAPI
 PipeWriterThread(void *clientData)
 {
     PipeHandler *pipePtr = clientData;
-    int count, bytesLeft;
-    char *ptr;
 
     for (;;) {
+        int bytesLeft;
+        char *ptr;
+
         if (pipePtr->flags & PIPE_DELETED) {
             break;
         }
@@ -795,6 +796,8 @@ PipeWriterThread(void *clientData)
         /* Loop until all of the bytes are written or an error occurs.  */
 
         while (bytesLeft > 0) {
+            DWORD count;
+
             if (!WriteFile(pipePtr->hPipe, ptr, bytesLeft, &count, NULL)) {
                 pipePtr->lastError = GetLastError();
                 break;
@@ -2411,11 +2414,10 @@ Blt_DeleteFileHandler(HANDLE hPipe)     /* Handle of file */
  *---------------------------------------------------------------------------
  */
 ssize_t
-Blt_AsyncRead(HANDLE hFile, char *buffer, size_t reqNumBytes)
+Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
 {
     PipeHandler *pipePtr;
-    int numBytesRead;
-    int numBytesAvail;
+    int numBytes, numBytesAvail;
 
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
@@ -2436,18 +2438,18 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t reqNumBytes)
     if (numBytesAvail == 0) {
         return 0;
     }
-    numBytesRead = pipePtr->end - pipePtr->start;
-    assert(numBytesRead == (unsigned int)numBytesAvail);
-    if (numBytesRead > reqNumBytes) {
-        numBytesRead = numReqBytes; 
+    numBytes = pipePtr->end - pipePtr->start;
+    assert(numBytes == (unsigned int)numBytesAvail);
+    if (numBytes > count) {
+        numBytes = count; 
     }
-    memcpy(buffer, pipePtr->buffer + pipePtr->start, numBytesRead);
-    pipePtr->start += numBytesRead;
+    memcpy(buffer, pipePtr->buffer + pipePtr->start, numBytes);
+    pipePtr->start += numBytes;
     if (pipePtr->start == pipePtr->end) {
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
-    return numBytesRead;
+    return numBytes;
 }
 
 /*
