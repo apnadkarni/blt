@@ -1490,8 +1490,7 @@ BLT_EXTERN void		blt_table_delete_notifier(BLT_TABLE table,
 /* 237 */
 BLT_EXTERN void		blt_table_sort_init(BLT_TABLE table,
 				BLT_TABLE_SORT_ORDER *order,
-				long numCompares,
-				unsigned int flags);
+				long numCompares, unsigned int flags);
 #endif
 #ifndef blt_table_sort_rows_DECLARED
 #define blt_table_sort_rows_DECLARED
@@ -1501,8 +1500,8 @@ BLT_EXTERN BLT_TABLE_ROW * blt_table_sort_rows(BLT_TABLE table);
 #ifndef blt_table_sort_row_map_DECLARED
 #define blt_table_sort_row_map_DECLARED
 /* 239 */
-BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table,
-				long numRows, BLT_TABLE_ROW *rows);
+BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table, long numRows,
+				BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_sort_finish_DECLARED
 #define blt_table_sort_finish_DECLARED

@@ -8105,7 +8105,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     col = order[0].column;
     /* Create a row map, pruning out empty values if necessary. */
     if (switches.ri.numEntries > 0) {
-        size_t i;
+        long i;
         BLT_TABLE_ROW row;
 
         i = 0;
@@ -8122,7 +8122,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         numRows = i;
     } else {
-        size_t i;
+        long i;
         BLT_TABLE_ROW row;
 
         i = 0;
