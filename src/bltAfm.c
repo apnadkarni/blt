@@ -758,7 +758,7 @@ GetKernPairs(Afm *afmPtr, int c1, int c2)
     key.first = c1;
     key.second = c2;
     
-    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (char *)&key);
+    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (const char *)&key);
     if (hPtr == NULL) {
         return NULL;
     }
@@ -775,7 +775,7 @@ GetLigature(Afm *afmPtr, int c1, int c2)
     key.first = c1;
     key.second = c2;
     
-    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (char *)&key);
+    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (const char *)&key);
     if (hPtr == NULL) {
         return NULL;
     }

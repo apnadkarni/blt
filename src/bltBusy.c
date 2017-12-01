@@ -1248,7 +1248,7 @@ GetBusy(
     if (tkwin == NULL) {
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (char *)tkwin);
+    hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (const char *)tkwin);
     if (hPtr == NULL) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "can't find busy window \"", pathName, 
@@ -1459,7 +1459,7 @@ CheckOp(ClientData clientData, Tcl_Interp *interp, int objc,
     pathName = Tcl_GetString(objv[2]);
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkMain);
     do {
-        hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (char *)tkwin);
+        hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (const char *)tkwin);
         if (hPtr != NULL) {
             Busy *busyPtr;
 

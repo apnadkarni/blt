@@ -227,7 +227,7 @@ UnsetRowLabel(Rows *rowsPtr, Row *rowPtr)
         Blt_HashEntry *hPtr2;
 
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (char *)rowPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, (const char *)rowPtr);
         if (hPtr2 != NULL) {
             Blt_DeleteHashEntry(tablePtr, hPtr2);
         }
@@ -254,7 +254,7 @@ UnsetColumnLabel(Columns *columnsPtr, Column *colPtr)
         Blt_HashEntry *hPtr2;
 
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (char *)colPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, (const char *)colPtr);
         if (hPtr2 != NULL) {
             Blt_DeleteHashEntry(tablePtr, hPtr2);
         }
@@ -3049,7 +3049,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&restorePtr->rowIndices, (char *)index);
+    hPtr = Blt_FindHashEntry(&restorePtr->rowIndices, (const char *)index);
     if (hPtr == NULL) {
         RestoreError(interp, restorePtr);
         Tcl_AppendResult(interp, "bad row index \"", restorePtr->argv[1], "\"",
@@ -3061,7 +3061,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&restorePtr->colIndices, (char *)index);
+    hPtr = Blt_FindHashEntry(&restorePtr->colIndices, (const char *)index);
     if (hPtr == NULL) {
         RestoreError(interp, restorePtr);
         Tcl_AppendResult(interp, "bad column index \"", restorePtr->argv[2], 
@@ -6408,7 +6408,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Blt_GetDoubleFromObj(interp, objv[i], &dval) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)&dval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (const char *)&dval);
             }
             break;
         case TABLE_COLUMN_TYPE_BOOLEAN:
@@ -6420,7 +6420,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                     return TCL_ERROR;
                 }
                 lval = ival;
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (const char *)lval);
             }
             break;
         case TABLE_COLUMN_TYPE_LONG:
@@ -6430,7 +6430,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Blt_GetInt64FromObj(interp, objv[i], &lval) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (const char *)lval);
             }
             break;
         default:
@@ -6450,7 +6450,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
         tablePtr->masterKey[i] = Blt_GetHashValue(hPtr);
     }
     hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, 
-                (char *)tablePtr->masterKey);
+                (const char *)tablePtr->masterKey);
     if (hPtr == NULL) {
         Blt_Warn("can't find master key\n");
         return TCL_OK;

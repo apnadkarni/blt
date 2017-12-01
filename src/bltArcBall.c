@@ -485,7 +485,7 @@ GetArcBallFromObj(ArcBallCmdInterpData *dataPtr, Tcl_Interp *interp,
         return NULL;
     }
     hPtr = Blt_FindHashEntry(&dataPtr->arcballTable, 
-        (char *)(cmdInfo.objClientData));
+        (const char *)(cmdInfo.objClientData));
     if (hPtr == NULL) {
         return NULL;
     }

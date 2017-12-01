@@ -676,7 +676,8 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
 {
     char mesg[BUFSIZ+1];
     size_t totalBytes;
-    
+    ssize_t numRead;
+        
     /*
      * Read back from the error pipe to see if the pipeline started up
      * properly. The info in the pipe (if any) if the TCL error message
@@ -684,8 +685,6 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
      */
     totalBytes = 0;
     do {
-        ssize_t numRead;
-        
         numRead = read(f, mesg, BUFSIZ);
         if (numRead == -1) {
             return TCL_ERROR;

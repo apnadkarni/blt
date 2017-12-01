@@ -2849,7 +2849,7 @@ RemoveText(ComboMenu *comboPtr, Item *itemPtr)
         Blt_HashEntry *hPtr2;
         
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (char *)itemPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, (const char *)itemPtr);
         if (hPtr2 != NULL) {
             itemPtr->text = emptyString;
             Blt_DeleteHashEntry(tablePtr, hPtr2);

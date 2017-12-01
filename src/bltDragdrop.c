@@ -1314,7 +1314,7 @@ GetSourceFromObj(
     if (tkwin == NULL) {
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&dataPtr->sourceTable, (char *)tkwin);
+    hPtr = Blt_FindHashEntry(&dataPtr->sourceTable, (const char *)tkwin);
     if (hPtr == NULL) {
         Tcl_AppendResult(interp, "window \"", pathName,
              "\" has not been initialized as a drag&drop source", (char *)NULL);
@@ -1485,7 +1485,7 @@ FindTarget(
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&dataPtr->targetTable, (char *)tkwin);
+    hPtr = Blt_FindHashEntry(&dataPtr->targetTable, (const char *)tkwin);
     if (hPtr == NULL) {
         return NULL;
     }

@@ -1279,7 +1279,7 @@ NodeToEntry(ComboTree *comboPtr, Blt_TreeNode node)
     if (node == NULL) {
         return NULL;
     }
-    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (char *)node);
+    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (const char *)node);
     if (hPtr == NULL) {
         Blt_Warn("NodeToEntry: can't find node %s\n", 
                  Blt_Tree_NodeLabel(node));
@@ -1322,7 +1322,7 @@ GetEntryFromNode(ComboTree *comboPtr, Blt_TreeNode node)
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (char *)node);
+    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (const char *)node);
     if (hPtr == NULL) {
         return NULL;
     }
