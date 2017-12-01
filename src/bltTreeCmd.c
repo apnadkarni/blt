@@ -4818,7 +4818,8 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Blt_TreeNode node;
 
                 node = Blt_GetHashValue(hPtr);
-                Blt_Chain_Append(chain, (ClientData)Blt_Tree_NodeId(node));
+                Blt_Chain_Append(chain,
+                        (ClientData)(intptr_t)Blt_Tree_NodeId(node));
             }   
             /*  
              * Iterate through this list to delete the nodes.  By

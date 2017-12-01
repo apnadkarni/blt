@@ -6317,7 +6317,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
             case TABLE_COLUMN_TYPE_BOOLEAN:
             case TABLE_COLUMN_TYPE_LONG:
                 hPtr = Blt_CreateHashEntry(keyTablePtr,
-                        (const char *)valuePtr->datum.l, &isNew);
+                       (const char *)(intptr_t)valuePtr->datum.l, &isNew);
                 break;
             case TABLE_COLUMN_TYPE_STRING:
             default:
@@ -6514,11 +6514,7 @@ blt_table_set_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     valuePtr->datum.l = value;
-#ifdef __WIN64
-    valuePtr->length = sprintf(string, "%I64d", value);
-#else
     valuePtr->length = sprintf(string, "%ld", value);
-#endif
     if (strlen(string) >= TABLE_VALUE_LENGTH) {
         valuePtr->string = Blt_AssertStrdup(string);
     } else {

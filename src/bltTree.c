@@ -635,7 +635,8 @@ FreeNode(TreeObject *corePtr, Node *nodePtr)
     } 
     UnlinkNode(nodePtr);
     corePtr->numNodes--;
-    hPtr = Blt_FindHashEntry(&corePtr->nodeTable, (char *)nodePtr->inode);
+    hPtr = Blt_FindHashEntry(&corePtr->nodeTable,
+                             (const char *)(intptr_t)nodePtr->inode);
     assert(hPtr);
     Blt_DeleteHashEntry(&corePtr->nodeTable, hPtr);
     Blt_Pool_FreeItem(corePtr->nodePool, nodePtr);
@@ -768,7 +769,8 @@ NewTreeObject(TreeInterpData *dataPtr)
     Blt_InitHashTable(&corePtr->keyTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&corePtr->nodeTable, BLT_ONE_WORD_KEYS);
     /* Put root node in table. */
-    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (char *)0, &isNew);
+    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (const char *)(intptr_t)0,
+                               &isNew);
     corePtr->root = NewNode(corePtr, "", 0);
     Blt_SetHashValue(hPtr, corePtr->root);
     return corePtr;
@@ -1593,8 +1595,8 @@ Blt_Tree_CreateNode(
     /* Generate an unique serial number for this node.  */
     do {
         inode = corePtr->nextInode++;
-        hPtr = Blt_CreateHashEntry(&corePtr->nodeTable,(char *)inode, 
-                   &isNew);
+        hPtr = Blt_CreateHashEntry(&corePtr->nodeTable,
+                   (const char *)(intptr_t)inode, &isNew);
     } while (!isNew);
     nodePtr = NewNode(corePtr, name, inode);
     Blt_SetHashValue(hPtr, nodePtr);
@@ -1649,7 +1651,8 @@ Blt_Tree_CreateNodeWithId(
     int isNew;
 
     corePtr = parentPtr->corePtr;
-    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (char *)inode, &isNew);
+    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable,
+                               (const char *)(intptr_t)inode, &isNew);
     if (!isNew) {
         return NULL;
     }
@@ -1750,7 +1753,8 @@ Blt_Tree_GetNodeFromIndex(Tree *treePtr, long inode)
     TreeObject *corePtr = treePtr->corePtr;
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&corePtr->nodeTable, (char *)inode);
+    hPtr = Blt_FindHashEntry(&corePtr->nodeTable,
+                             (const char *)(intptr_t)inode);
     if (hPtr != NULL) {
         return Blt_GetHashValue(hPtr);
     }
@@ -2205,7 +2209,7 @@ CallTraces(
                 eventPtr->flags = flags;
                 eventPtr->inode = nodePtr->inode;
                 eventPtr->hashPtr = Blt_CreateHashEntry(&tracePtr->idleTable, 
-                        (char *)eventPtr, &isNew);
+                        (const char *)eventPtr, &isNew);
                 if (isNew) {
                     Blt_SetHashValue(eventPtr->hashPtr, eventPtr);
                     Tcl_DoWhenIdle(TraceIdleEventProc, eventPtr);
@@ -3688,7 +3692,7 @@ Blt_Tree_ClearTags(Tree *treePtr, Node *nodePtr)
         Blt_HashEntry *h2Ptr;
 
         tePtr = Blt_GetHashValue(hPtr);
-        h2Ptr = Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr);
+        h2Ptr = Blt_FindHashEntry(&tePtr->nodeTable, (const char *)nodePtr);
         if (h2Ptr != NULL) {
             Blt_DeleteHashEntry(&tePtr->nodeTable, h2Ptr);
         }
@@ -3758,7 +3762,7 @@ Blt_Tree_HasTag(
         return FALSE;
     }
     tePtr = Blt_GetHashValue(hPtr);
-    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr);
+    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (const char *)nodePtr);
     if (hPtr == NULL) {
         return FALSE;
     }
@@ -3778,7 +3782,8 @@ Blt_Tree_AddTag(Tree *treePtr, Node *nodePtr, const char *tagName)
         Blt_HashEntry *hPtr;
         int isNew;
 
-        hPtr = Blt_CreateHashEntry(&tePtr->nodeTable, (char *)nodePtr, &isNew);
+        hPtr = Blt_CreateHashEntry(&tePtr->nodeTable, (const char *)nodePtr,
+                                   &isNew);
         if (isNew) {
             Blt_SetHashValue(hPtr, nodePtr);
         }
@@ -3804,7 +3809,7 @@ Blt_Tree_RemoveTag(Tree *treePtr, Node *nodePtr, const char *tagName)
         return;                         /* No such tag. */
     }
     tePtr = Blt_GetHashValue(hPtr);
-    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr);
+    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (const char *)nodePtr);
     if (hPtr == NULL) {
         return;                         /* Node isn't tagged. */
     }

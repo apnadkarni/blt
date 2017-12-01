@@ -728,7 +728,7 @@ FreeInt64InternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
 }
 
 int
-Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, long *valuePtr)
+Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr)
 {
     if (objPtr->typePtr == &int64ObjType) {
         *valuePtr = (int64_t)objPtr->internalRep.wideValue;
