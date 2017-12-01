@@ -145,7 +145,7 @@ typedef struct _BLT_TABLE_VALUE Value;
 
 typedef struct {
     unsigned long numRows, numCols;
-    uint64_t mtime, ctime;
+    int64_t mtime, ctime;
     const char *fileName;
     size_t numLines;
     unsigned int flags;
@@ -6442,9 +6442,9 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
             break;
         case TABLE_COLUMN_TYPE_LONG:
             {
-                int64_t lval;
+                long lval;
 
-                if (Blt_GetInt64FromObj(interp, objv[i], &lval) != TCL_OK) {
+                if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
                     return TCL_ERROR;
                 }
                 hPtr = Blt_FindHashEntry(keyTablePtr,
@@ -6497,7 +6497,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
  */
 int
 blt_table_set_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
-                   Column *colPtr, int64_t value)
+                   Column *colPtr, long value)
 {
     Value *valuePtr;
     char string[200];
@@ -6675,7 +6675,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
                        Column *colPtr, const char *s, int length)
 {
     Value *valuePtr;
-    int64_t l;
+    long l;
     double d;
     Tcl_Obj *objPtr;
 
@@ -6716,7 +6716,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
         }
         break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
-        if (Blt_GetInt64FromObj(interp, objPtr, &l) != TCL_OK) {
+        if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
             Tcl_DecrRefCount(objPtr);
             return TCL_ERROR;
         }
@@ -6922,12 +6922,12 @@ blt_table_get_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  *---------------------------------------------------------------------------
  */
-int64_t
+long
 blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
-                   Column *colPtr, int64_t defVal)
+                   Column *colPtr, long defVal)
 {
     Value *valuePtr;
-    int64_t l;
+    long l;
 
     if (IsEmpty(rowPtr, colPtr)) {
         return defVal;
@@ -6936,7 +6936,7 @@ blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     if (colPtr->type == TABLE_COLUMN_TYPE_LONG) {
         return valuePtr->datum.l;
     }
-    if (Blt_GetInt64(interp, GetValueString(valuePtr), &l) != TCL_OK) {
+    if (Blt_GetLong(interp, GetValueString(valuePtr), &l) != TCL_OK) {
         return TCL_ERROR;
     }
     return l;
