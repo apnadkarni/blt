@@ -1365,7 +1365,7 @@ ComputeMesh(Mesh *meshPtr)
      * triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (const char *)(intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1435,7 +1435,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
      * designated or we over-allocated the initial array of triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (const char *)(intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1798,7 +1798,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     /* Compress the triangle array. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (const char *)(intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -2271,7 +2271,8 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Blt_GetCountFromObj(interp, objv[i], COUNT_NNEG, &index)!=TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_CreateHashEntry(&meshPtr->hideTable, (char *)index, &isNew);
+        hPtr = Blt_CreateHashEntry(&meshPtr->hideTable,
+                                   (const char *)(intptr_t)index, &isNew);
         Blt_SetHashValue(hPtr, index);
     }
     if (meshPtr->classPtr->type != MESH_TRIANGLE) {

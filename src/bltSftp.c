@@ -2373,7 +2373,7 @@ NewRemote(ClientData clientData, Tcl_Interp *interp)
     remotePtr->interp = interp;
     remotePtr->tablePtr = &dataPtr->sessionTable;
     remotePtr->hashPtr = Blt_CreateHashEntry(remotePtr->tablePtr, 
-        (char *)remotePtr, &isNew);
+        (const char *)remotePtr, &isNew);
     Tcl_DStringInit(&remotePtr->ds);
     Blt_SetHashValue(remotePtr->hashPtr, remotePtr);
     Blt_InitHashTable(&remotePtr->gidTable, BLT_ONE_WORD_KEYS);
@@ -3793,7 +3793,8 @@ GroupsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Blt_GetCountFromObj(interp, objv[2], COUNT_NNEG, &gid) != TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_FindHashEntry(&remotePtr->gidTable, (char *)gid);
+        hPtr = Blt_FindHashEntry(&remotePtr->gidTable,
+                                 (const char *)(intptr_t)gid);
         if (hPtr != NULL) {
             const char *name;
 
