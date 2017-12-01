@@ -960,14 +960,14 @@ BLT_EXTERN BLT_TABLE_COLUMN blt_table_create_column(Tcl_Interp *interp,
 #define blt_table_extend_rows_DECLARED
 /* 159 */
 BLT_EXTERN int		blt_table_extend_rows(Tcl_Interp *interp,
-				BLT_TABLE table, unsigned long n,
+				BLT_TABLE table, size_t n,
 				BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_extend_columns_DECLARED
 #define blt_table_extend_columns_DECLARED
 /* 160 */
 BLT_EXTERN int		blt_table_extend_columns(Tcl_Interp *interp,
-				BLT_TABLE table, unsigned long n,
+				BLT_TABLE table, size_t n,
 				BLT_TABLE_COLUMN *columms);
 #endif
 #ifndef blt_table_delete_row_DECLARED
@@ -1906,8 +1906,8 @@ typedef struct BltTclProcs {
     int (*blt_table_set_row_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 156 */
     BLT_TABLE_ROW (*blt_table_create_row) (Tcl_Interp *interp, BLT_TABLE table, const char *label); /* 157 */
     BLT_TABLE_COLUMN (*blt_table_create_column) (Tcl_Interp *interp, BLT_TABLE table, const char *label); /* 158 */
-    int (*blt_table_extend_rows) (Tcl_Interp *interp, BLT_TABLE table, unsigned long n, BLT_TABLE_ROW *rows); /* 159 */
-    int (*blt_table_extend_columns) (Tcl_Interp *interp, BLT_TABLE table, unsigned long n, BLT_TABLE_COLUMN *columms); /* 160 */
+    int (*blt_table_extend_rows) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_ROW *rows); /* 159 */
+    int (*blt_table_extend_columns) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_COLUMN *columms); /* 160 */
     int (*blt_table_delete_row) (BLT_TABLE table, BLT_TABLE_ROW row); /* 161 */
     int (*blt_table_delete_column) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 162 */
     int (*blt_table_move_rows) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW destRow, BLT_TABLE_ROW firstRow, BLT_TABLE_ROW lastRow, int after); /* 163 */

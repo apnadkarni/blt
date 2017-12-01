@@ -351,9 +351,9 @@ BLT_EXTERN BLT_TABLE_COLUMN blt_table_create_column(Tcl_Interp *interp,
         BLT_TABLE table, const char *label);
 
 BLT_EXTERN int blt_table_extend_rows(Tcl_Interp *interp, BLT_TABLE table,
-        unsigned long n, BLT_TABLE_ROW *rows);
+                                     size_t n, BLT_TABLE_ROW *rows);
 BLT_EXTERN int blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, 
-        unsigned long n, BLT_TABLE_COLUMN *columms);
+        size_t n, BLT_TABLE_COLUMN *columms);
 BLT_EXTERN int blt_table_delete_row(BLT_TABLE table, BLT_TABLE_ROW row);
 BLT_EXTERN int blt_table_delete_column(BLT_TABLE table, BLT_TABLE_COLUMN column);
 BLT_EXTERN int blt_table_move_rows(Tcl_Interp *interp, BLT_TABLE table, 
