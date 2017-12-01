@@ -1490,7 +1490,7 @@ BLT_EXTERN void		blt_table_delete_notifier(BLT_TABLE table,
 /* 237 */
 BLT_EXTERN void		blt_table_sort_init(BLT_TABLE table,
 				BLT_TABLE_SORT_ORDER *order,
-				unsigned long numCompares,
+				long numCompares,
 				unsigned int flags);
 #endif
 #ifndef blt_table_sort_rows_DECLARED
@@ -1502,7 +1502,7 @@ BLT_EXTERN BLT_TABLE_ROW * blt_table_sort_rows(BLT_TABLE table);
 #define blt_table_sort_row_map_DECLARED
 /* 239 */
 BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table,
-				unsigned long numRows, BLT_TABLE_ROW *rows);
+				long numRows, BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_sort_finish_DECLARED
 #define blt_table_sort_finish_DECLARED
@@ -1984,9 +1984,9 @@ typedef struct BltTclProcs {
     BLT_TABLE_NOTIFIER (*blt_table_create_column_notifier) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 234 */
     BLT_TABLE_NOTIFIER (*blt_table_create_column_tag_notifier) (Tcl_Interp *interp, BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 235 */
     void (*blt_table_delete_notifier) (BLT_TABLE table, BLT_TABLE_NOTIFIER notifier); /* 236 */
-    void (*blt_table_sort_init) (BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, unsigned long numCompares, unsigned int flags); /* 237 */
+    void (*blt_table_sort_init) (BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, long numCompares, unsigned int flags); /* 237 */
     BLT_TABLE_ROW * (*blt_table_sort_rows) (BLT_TABLE table); /* 238 */
-    void (*blt_table_sort_row_map) (BLT_TABLE table, unsigned long numRows, BLT_TABLE_ROW *rows); /* 239 */
+    void (*blt_table_sort_row_map) (BLT_TABLE table, long numRows, BLT_TABLE_ROW *rows); /* 239 */
     void (*blt_table_sort_finish) (void); /* 240 */
     BLT_TABLE_COMPARE_PROC * (*blt_table_get_compare_proc) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int flags); /* 241 */
     BLT_TABLE_ROW * (*blt_table_get_row_map) (BLT_TABLE table); /* 242 */

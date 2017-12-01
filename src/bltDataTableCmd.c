@@ -8054,7 +8054,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     BLT_TABLE_SORT_ORDER *sp, *order;
     SortSwitches switches;
     int result;
-    size_t numColumns, numRows;
+    long numColumns, numRows;
 
     result = TCL_ERROR;
     order = NULL;

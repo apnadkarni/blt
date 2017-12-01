@@ -133,14 +133,14 @@ typedef struct _BLT_TABLE_ROWS {
     unsigned int flags;
     struct _BLT_TABLE_ROW *headPtr, *tailPtr;
     Blt_Pool pool;                      /* Pool of rows. */
-    unsigned long numAllocated;         /* Length of allocated header array
+    long numAllocated;                  /* Length of allocated header array
                                          * below. May exceed the number of
                                          * rows used. */
-    unsigned long numUsed;
+    long numUsed;
     BLT_TABLE_ROW *map;                 /* Array of row pointers. */
     Blt_HashTable labelTable;           /* Hash table of labels. Maps
                                          * labels to table offsets. */
-    unsigned long nextRowId;            /* Used to generate default
+    long nextRowId;                     /* Used to generate default
                                          * row labels. */
     Blt_Chain freeList;                 /* List of free rows. */
 } BLT_TABLE_ROWS;
@@ -154,14 +154,14 @@ typedef struct _BLT_TABLE_COLUMNS {
     unsigned int flags;
     struct _BLT_TABLE_COLUMN *headPtr, *tailPtr;
     Blt_Pool pool;                      /* Pool of columns. */
-    unsigned long numAllocated;         /* Length of allocated map array
+    long numAllocated;                  /* Length of allocated map array
                                          * below. May exceed the number of
                                          * columns used. */
-    unsigned long numUsed;
+    long numUsed;
     BLT_TABLE_COLUMN *map;              /* Array of column pointers. */
     Blt_HashTable labelTable;           /* Hash table of labels. Maps
                                          * labels to table offsets. */
-    unsigned long nextColumnId;         /* Used to generate default
+    long nextColumnId;                  /* Used to generate default
                                          * labels. */
 } BLT_TABLE_COLUMNS;
 
@@ -175,14 +175,14 @@ typedef struct _BLT_TABLE_ROWCOLUMN {
     unsigned int flags;
     struct _BLT_TABLE_HEADER *headPtr, *tailPtr;
     Blt_Pool headerPool;
-    unsigned long numAllocated;         /* Length of allocated header array
+    long numAllocated;                  /* Length of allocated header array
                                          * below. May exceed the number of
                                          * row or column headers used. */
-    unsigned long numUsed;
+    long numUsed;
     BLT_TABLE_HEADER *map;              /* Array of row or column headers. */
     Blt_HashTable labelTable;           /* Hash table of labels. Maps
                                          * labels to table offsets. */
-    unsigned long nextId;               /* Used to generate default
+    long nextId;                        /* Used to generate default
                                          * labels. */
 } BLT_TABLE_ROWCOLUMN;
 
@@ -503,7 +503,7 @@ typedef struct _BLT_TABLE_ITERATOR {
     void *firstPtr;
     void *lastPtr;
     void *nextPtr;
-    unsigned long numEntries;
+    long numEntries;
 
     /* For tag-based searches. */
     Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
@@ -828,9 +828,9 @@ typedef struct {
 #define TABLE_SORT_DICTIONARY           (2<<3)
 
 BLT_EXTERN void blt_table_sort_init(BLT_TABLE table,
-    BLT_TABLE_SORT_ORDER *order, unsigned long numCompares, unsigned int flags);
+    BLT_TABLE_SORT_ORDER *order, long numCompares, unsigned int flags);
 BLT_EXTERN BLT_TABLE_ROW *blt_table_sort_rows(BLT_TABLE table);
-BLT_EXTERN void blt_table_sort_row_map(BLT_TABLE table, unsigned long numRows, 
+BLT_EXTERN void blt_table_sort_row_map(BLT_TABLE table, long numRows, 
         BLT_TABLE_ROW *rows);
 BLT_EXTERN void blt_table_sort_finish(void);
 BLT_EXTERN BLT_TABLE_COMPARE_PROC *blt_table_get_compare_proc(BLT_TABLE table, 
