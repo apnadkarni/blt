@@ -227,7 +227,7 @@ UnsetRowLabel(Rows *rowsPtr, Row *rowPtr)
         Blt_HashEntry *hPtr2;
 
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (const char *)rowPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, rowPtr);
         if (hPtr2 != NULL) {
             Blt_DeleteHashEntry(tablePtr, hPtr2);
         }
@@ -254,7 +254,7 @@ UnsetColumnLabel(Columns *columnsPtr, Column *colPtr)
         Blt_HashEntry *hPtr2;
 
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (const char *)colPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, colPtr);
         if (hPtr2 != NULL) {
             Blt_DeleteHashEntry(tablePtr, hPtr2);
         }
@@ -312,7 +312,7 @@ SetRowLabel(Rows *rowsPtr, Row *rowPtr, const char *newLabel)
     /* Save the label as the hash entry key.  */
     rowPtr->label = Blt_GetHashKey(&rowsPtr->labelTable, hPtr);
     /* Now look for the row in the secondary table. */
-    hPtr2 = Blt_CreateHashEntry(tablePtr, (char *)rowPtr, &isNew);
+    hPtr2 = Blt_CreateHashEntry(tablePtr, rowPtr, &isNew);
     if (!isNew) {
         return;                         /* It's already there. */
     }
@@ -366,7 +366,7 @@ SetColumnLabel(Columns *columnsPtr, Column *colPtr, const char *newLabel)
     /* Save the label as the hash entry key.  */
     colPtr->label = Blt_GetHashKey(&columnsPtr->labelTable, hPtr);
     /* Now look the column in the secondary table. */
-    hPtr = Blt_CreateHashEntry(tablePtr, (char *)colPtr, &isNew);
+    hPtr = Blt_CreateHashEntry(tablePtr, colPtr, &isNew);
     if (!isNew) {
         return;                         /* It's already there. */
     }
@@ -2941,8 +2941,7 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
             return TCL_ERROR;
         }
     }
-    hPtr = Blt_CreateHashEntry(&restorePtr->colIndices,
-         (const char *)(intptr_t)index, &isNew);
+    hPtr = Blt_CreateHashEntry(&restorePtr->colIndices,(intptr_t)index, &isNew);
     Blt_SetHashValue(hPtr, colPtr);
 
     type = blt_table_name_to_column_type(restorePtr->argv[3]);
@@ -3006,8 +3005,7 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
             return TCL_ERROR;
         }
     }
-    hPtr = Blt_CreateHashEntry(&restorePtr->rowIndices,
-           (const char *)(intptr_t)index, &isNew);
+    hPtr = Blt_CreateHashEntry(&restorePtr->rowIndices,(intptr_t)index, &isNew);
     Blt_SetHashValue(hPtr, row);
     if ((restorePtr->argc == 5) && 
         ((restorePtr->flags & TABLE_RESTORE_NO_TAGS) == 0)) {
@@ -3051,8 +3049,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&restorePtr->rowIndices,
-                             (const char *)(intptr_t)index);
+    hPtr = Blt_FindHashEntry(&restorePtr->rowIndices, (intptr_t)index);
     if (hPtr == NULL) {
         RestoreError(interp, restorePtr);
         Tcl_AppendResult(interp, "bad row index \"", restorePtr->argv[1], "\"",
@@ -3064,8 +3061,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&restorePtr->colIndices,
-                             (const char *)(intptr_t)index);
+    hPtr = Blt_FindHashEntry(&restorePtr->colIndices, (intptr_t)index);
     if (hPtr == NULL) {
         RestoreError(interp, restorePtr);
         Tcl_AppendResult(interp, "bad column index \"", restorePtr->argv[2], 
@@ -3972,7 +3968,7 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
         BLT_TABLE_COLUMN col;
 
         col = Blt_Chain_GetValue(link);
-        Blt_CreateHashEntry(&cols, (char *)col, &isNew);
+        Blt_CreateHashEntry(&cols, col, &isNew);
     }
     /* Collect the columns into a hash table. */
     for (i = 0; i < objc; i++) {
@@ -3988,7 +3984,7 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
              col = blt_table_next_tagged_column(&iter)) {
             int isNew;
 
-            Blt_CreateHashEntry(&cols, (char *)col, &isNew);
+            Blt_CreateHashEntry(&cols, col, &isNew);
             if (isNew) {
                 Blt_Chain_Append(chain, col);
             }
@@ -4014,7 +4010,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
         BLT_TABLE_ROW row;
 
         row = Blt_Chain_GetValue(link);
-        Blt_CreateHashEntry(&rows, (char *)row, &isNew);
+        Blt_CreateHashEntry(&rows, row, &isNew);
     }
     for (i = 0; i < objc; i++) {
         BLT_TABLE_ITERATOR iter;
@@ -4029,7 +4025,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
              row = blt_table_next_tagged_row(&iter)) {
             int isNew;
 
-            Blt_CreateHashEntry(&rows, (char *)row, &isNew);
+            Blt_CreateHashEntry(&rows, row, &isNew);
             if (isNew) {
                 Blt_Chain_Append(chain, row);
             }
@@ -6311,13 +6307,13 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
             switch (colPtr->type) {
             case TABLE_COLUMN_TYPE_DOUBLE:
             case TABLE_COLUMN_TYPE_TIME:
-                hPtr = Blt_CreateHashEntry(keyTablePtr,
-                        (const char *)&valuePtr->datum.d, &isNew);
+                hPtr = Blt_CreateHashEntry(keyTablePtr, &valuePtr->datum.d,
+                                           &isNew);
                 break;
             case TABLE_COLUMN_TYPE_BOOLEAN:
             case TABLE_COLUMN_TYPE_LONG:
                 hPtr = Blt_CreateHashEntry(keyTablePtr,
-                       (const char *)(intptr_t)valuePtr->datum.l, &isNew);
+                                           (intptr_t)valuePtr->datum.l, &isNew);
                 break;
             case TABLE_COLUMN_TYPE_STRING:
             default:
@@ -6337,7 +6333,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
             /* If we created all the hashkeys necessary for this row, then
              * generate an entry for the row in the master key table. */
             hPtr = Blt_CreateHashEntry(&tablePtr->masterKeyTable, 
-                (char *)tablePtr->masterKey, &isNew);
+                tablePtr->masterKey, &isNew);
             if (isNew) {
                 Blt_SetHashValue(hPtr, rowPtr);
             } else if (tablePtr->flags & TABLE_KEYS_UNIQUE) {
@@ -6426,7 +6422,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Blt_GetDoubleFromObj(interp, objv[i], &dval) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (const char *)&dval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, &dval);
             }
             break;
         case TABLE_COLUMN_TYPE_BOOLEAN:
@@ -6436,8 +6432,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Tcl_GetBooleanFromObj(interp, objv[i], &ival) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr,
-                                         (const char *)(intptr_t)ival);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (intptr_t)ival);
             }
             break;
         case TABLE_COLUMN_TYPE_LONG:
@@ -6447,8 +6442,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr,
-                                         (const char *)(intptr_t)lval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (intptr_t)lval);
             }
             break;
         default:
@@ -6467,8 +6461,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
         }
         tablePtr->masterKey[i] = Blt_GetHashValue(hPtr);
     }
-    hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, 
-                (const char *)tablePtr->masterKey);
+    hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, tablePtr->masterKey);
     if (hPtr == NULL) {
         Blt_Warn("can't find master key\n");
         return TCL_OK;

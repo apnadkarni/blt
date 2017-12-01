@@ -1933,7 +1933,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     dataPtr = GetTableCmdInterpData(interp);
     nsPtr = Tcl_GetCurrentNamespace(interp);
-    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, (char *)nsPtr, &isNew);
+    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, nsPtr, &isNew);
     assert(isNew);
     Blt_SetHashValue(hPtr, switchesPtr);
 
