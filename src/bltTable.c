@@ -4020,7 +4020,7 @@ ColumnCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableInterpData *dataPtr = clientData;
     PartitionInfo *piPtr;
     Table *tablePtr;
-    size_t colIndex;
+    long colIndex;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -4961,7 +4961,7 @@ RowCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableInterpData *dataPtr = clientData;
     PartitionInfo *piPtr;
     Table *tablePtr;
-    size_t rowIndex;
+    long rowIndex;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
         return TCL_ERROR;

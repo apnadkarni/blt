@@ -3787,7 +3787,7 @@ GroupsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Remote *remotePtr = clientData;
 
     if (objc == 3) {
-        size_t gid;
+        long gid;
         Blt_HashEntry *hPtr;
 
         if (Blt_GetCountFromObj(interp, objv[2], COUNT_NNEG, &gid) != TCL_OK) {

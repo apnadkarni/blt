@@ -1,9 +1,6 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #define BUILD_BLT_TCL_PROCS 1
 #include <bltInt.h>
-/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-#define BUILD_BLT_TCL_PROCS 1
-#include <bltInt.h>
 
 /* !BEGIN!: Do not edit below this line. */
 
@@ -153,18 +150,35 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_PolygonInRegion, /* 140 */
     Blt_PointInSegments, /* 141 */
     Blt_PolyRectClip, /* 142 */
-    Blt_GetInt64, /* 143 */
-    Blt_GetInt64FromObj, /* 144 */
-    Blt_FormatString, /* 145 */
-    Blt_LowerCase, /* 146 */
-    Blt_UpperCase, /* 147 */
-    Blt_GetPlatformId, /* 148 */
-    Blt_LastError, /* 149 */
-    Blt_NaN, /* 150 */
-    Blt_AlmostEquals, /* 151 */
-    Blt_ConvertListToList, /* 152 */
-    Blt_GetCachedVar, /* 153 */
-    Blt_FreeCachedVars, /* 154 */
+    Blt_ObjIsInteger, /* 143 */
+    Blt_GetLong, /* 144 */
+    Blt_GetLongFromObj, /* 145 */
+    Blt_SetLongObj, /* 146 */
+    Blt_NewLongObj, /* 147 */
+    Blt_IsLongObj, /* 148 */
+    Blt_RegisterLongObj, /* 149 */
+    Blt_GetUnsignedLong, /* 150 */
+    Blt_GetUnsignedLongFromObj, /* 151 */
+    Blt_SetUnsignedLongObj, /* 152 */
+    Blt_NewUnsignedLongObj, /* 153 */
+    Blt_IsUnsignedLongObj, /* 154 */
+    Blt_RegisterUnsignedLongObj, /* 155 */
+    Blt_GetInt64, /* 156 */
+    Blt_GetInt64FromObj, /* 157 */
+    Blt_SetInt64Obj, /* 158 */
+    Blt_NewInt64Obj, /* 159 */
+    Blt_IsInt64Obj, /* 160 */
+    Blt_RegisterInt64Obj, /* 161 */
+    Blt_FormatString, /* 162 */
+    Blt_LowerCase, /* 163 */
+    Blt_UpperCase, /* 164 */
+    Blt_GetPlatformId, /* 165 */
+    Blt_LastError, /* 166 */
+    Blt_NaN, /* 167 */
+    Blt_AlmostEquals, /* 168 */
+    Blt_ConvertListToList, /* 169 */
+    Blt_GetCachedVar, /* 170 */
+    Blt_FreeCachedVars, /* 171 */
 };
 
 /* !END!: Do not edit above this line. */

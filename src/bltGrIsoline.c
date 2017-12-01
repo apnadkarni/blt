@@ -1247,7 +1247,7 @@ StepsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Graph *graphPtr = clientData;
     Isoline *isoPtr;
-    size_t numSteps, i;
+    long numSteps, i;
 
     if (Blt_GetCountFromObj(interp, objv[3], COUNT_POS, &numSteps) != TCL_OK) {
         return TCL_ERROR;

@@ -284,7 +284,7 @@ NextClient(Tree *treePtr)
  * -------------------------------------------------------------- 
  */
 static Node *
-NewNode(TreeObject *corePtr, const char *name, size_t inode)
+NewNode(TreeObject *corePtr, const char *name, long inode)
 {
     Node *nodePtr;
 
@@ -356,7 +356,7 @@ ReleaseTagTable(Blt_TreeTagTable *tablePtr)
  * ---------------------------------------------------------------------- 
  */
 static void
-ResetDepths(Node *parentPtr, size_t depth)
+ResetDepths(Node *parentPtr, long depth)
 {
     Node *childPtr;
 
@@ -1585,7 +1585,7 @@ Blt_Tree_CreateNode(
     Node *beforePtr;
     Node *nodePtr;                      /* Node to be inserted. */
     TreeObject *corePtr;
-    size_t inode;
+    long inode;
     int isNew;
 
     corePtr = parentPtr->corePtr;
@@ -1635,7 +1635,7 @@ Blt_Tree_CreateNodeWithId(
     Node *parentPtr,                    /* Parent node where the new node will
                                          * be inserted. */
     const char *name,                   /* Name of node. */
-    size_t inode,                       /* Requested id of the new node. If a
+    long inode,                         /* Requested id of the new node. If a
                                          * node by this id already exists in
                                          * the tree, no node is created. */
     long position)                      /* Position in the parent's list of
@@ -1690,7 +1690,7 @@ Blt_Tree_MoveNode(Tree *treePtr, Node *nodePtr, Node *parentPtr,
                   Node *beforePtr)
 {
     TreeObject *corePtr = nodePtr->corePtr;
-    size_t newDepth;
+    long newDepth;
 
     if (nodePtr == beforePtr) {
         return TCL_ERROR;
@@ -1745,7 +1745,7 @@ Blt_Tree_DeleteNode(Tree *treePtr, Node *nodePtr)
 }
 
 Blt_TreeNode
-Blt_Tree_GetNodeFromIndex(Tree *treePtr, size_t inode)
+Blt_Tree_GetNodeFromIndex(Tree *treePtr, long inode)
 {
     TreeObject *corePtr = treePtr->corePtr;
     Blt_HashEntry *hPtr;
@@ -1928,11 +1928,11 @@ Blt_Tree_FindChild(Node *parentPtr, const char *string)
  *
  *---------------------------------------------------------------------------
  */
-size_t
+long
 Blt_Tree_NodePosition(Node *nodePtr)
 {
     Node *parentPtr;
-    size_t count;
+    long count;
 
     count = 0;
     parentPtr = nodePtr->parent;
@@ -2768,7 +2768,7 @@ Blt_Tree_SortNode(Tree *treePtr, Node *parentPtr,
                   Blt_TreeCompareNodesProc *proc)
 {
     Node **nodes, *childPtr;
-    size_t numNodes, i;
+    long numNodes, i;
 
     numNodes = parentPtr->numChildren;
     if (numNodes < 2) {
@@ -3860,7 +3860,7 @@ Blt_Tree_Depth(Tree *treePtr)
 static int
 IsNodeId(const char *string)
 {
-    size_t value;
+    long value;
 
     return (Blt_GetCount(NULL, string, COUNT_NNEG, &value) == TCL_OK);
 }
@@ -3879,7 +3879,7 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
             *token = '\0';
         }
         if (IsNodeId(p)) {
-            size_t inode;
+            long inode;
             
             if (Blt_GetCount(interp, p, COUNT_NNEG, &inode) != TCL_OK) {
                 node = NULL;
@@ -3961,7 +3961,7 @@ GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
         *p = '\0';
     }
     if (IsNodeId(string)) {
-        size_t inode;
+        long inode;
 
         if (p != NULL) {
             if (Blt_GetCount(interp, string, COUNT_NNEG, &inode) != TCL_OK) {

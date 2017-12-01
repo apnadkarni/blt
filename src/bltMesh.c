@@ -2264,7 +2264,7 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     Blt_InitHashTable(&meshPtr->hideTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        size_t index;
+        long index;
         Blt_HashEntry *hPtr;
         int isNew;
 

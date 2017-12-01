@@ -461,7 +461,7 @@ DoSwitch(
 
         case BLT_SWITCH_INT_NNEG:
             {
-                size_t value;
+                long value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
                         &value) != TCL_OK) {
@@ -473,7 +473,7 @@ DoSwitch(
 
         case BLT_SWITCH_INT_POS:
             {
-                size_t value;
+                long value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, 
                         &value) != TCL_OK) {
@@ -547,7 +547,7 @@ DoSwitch(
             break;
         case BLT_SWITCH_LONG_NNEG:
             {
-                size_t value;
+                long value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
                         &value) != TCL_OK) {
@@ -559,7 +559,7 @@ DoSwitch(
 
         case BLT_SWITCH_LONG_POS:
             {
-                size_t value;
+                long value;
                 
                 if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value)
                         != TCL_OK) {

@@ -1255,30 +1255,36 @@ DoConfig(
 
         case BLT_CONFIG_INT_NNEG: 
             {
-                size_t value;
+                int value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
-                        &value) != TCL_OK) {
+                if (Tcl_GetIntFromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                *(int *)ptr = (int)value;
+                if (value < 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" can't be negative.", (char *)NULL);
+                    return TCL_ERROR;
+                }
+                *(int *)ptr = value;
             }
             break;
 
 
         case BLT_CONFIG_INT_POS: 
             {
-                size_t value;
+                int value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value) 
-                    != TCL_OK) {
+                if (Tcl_GetIntFromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                *(int *)ptr = (int)value;
+                if (value <= 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" must be positive.", (char *)NULL);
+                    return TCL_ERROR;
+                }
+                *(int *)ptr = value;
             }
             break;
-
-
 
         case BLT_CONFIG_LIST: 
             {
@@ -1335,9 +1341,9 @@ DoConfig(
 
         case BLT_CONFIG_LONG: 
             {
-                int64_t value;
+                long value;
                 
-                if (Blt_GetInt64FromObj(interp, objPtr, &value) != TCL_OK) {
+                if (Blt_GetLongFromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
                 }
                 *(long *)ptr = value;
@@ -1346,10 +1352,15 @@ DoConfig(
 
         case BLT_CONFIG_LONG_NNEG: 
             {
-                size_t value;
+                long value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
-                        &value) != TCL_OK) {
+                if (Blt_GetLongFromObj(interp, objPtr, &value)
+                    != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (value < 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" can't be negative.", (char *)NULL);
                     return TCL_ERROR;
                 }
                 *(long *)ptr = value;
@@ -1359,10 +1370,15 @@ DoConfig(
 
         case BLT_CONFIG_LONG_POS: 
             {
-                size_t value;
+                long value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value) 
+                if (Blt_GetLongFromObj(interp, objPtr, &value)
                     != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (objPtr <= 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" must be positive.", (char *)NULL);
                     return TCL_ERROR;
                 }
                 *(long *)ptr = value;

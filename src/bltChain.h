@@ -68,7 +68,7 @@ BLT_EXTERN Blt_Chain Blt_Chain_Create(void);
 BLT_EXTERN void Blt_Chain_Destroy(Blt_Chain chain);
 BLT_EXTERN Blt_ChainLink Blt_Chain_NewLink(void);
 BLT_EXTERN Blt_ChainLink Blt_Chain_AllocLink(size_t size);
-BLT_EXTERN Blt_ChainLink Blt_Chain_Append(Blt_Chain chain, 
+BLT_EXTERN Blt_ChainLink Blt_Chain_Append(Blt_Chain chain,
         ClientData clientData);
 BLT_EXTERN Blt_ChainLink Blt_Chain_Prepend(Blt_Chain chain, 
         ClientData clientData);

@@ -3144,12 +3144,11 @@ GetItemByIndex(Tcl_Interp *interp, ComboMenu *comboPtr, const char *string,
 {
     Item *itemPtr;
     char c;
-    size_t pos;
+    long pos;
 
     itemPtr = NULL;
     c = string[0];
-    if ((isdigit(c)) && (Blt_GetCount(NULL, string, COUNT_NNEG,
-                                      &pos) == TCL_OK)) {
+    if ((isdigit(c)) && (Blt_GetLong(NULL, string, &pos) == TCL_OK)) {
         Blt_ChainLink link;
 
         link = Blt_Chain_GetNthLink(comboPtr->chain, pos);

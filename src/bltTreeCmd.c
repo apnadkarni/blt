@@ -791,7 +791,7 @@ IsTag(Blt_Tree tree, const char *string)
 static int
 IsNodeId(const char *string)
 {
-    size_t value;
+    long value;
 
     return (Blt_GetCount(NULL, string, COUNT_NNEG, &value) == TCL_OK);
 }
@@ -1471,7 +1471,7 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
             *token = '\0';
         }
         if (IsNodeId(p)) {
-            size_t inode;
+            long inode;
             
             if (Blt_GetCount(interp, p, COUNT_NNEG, &inode) != TCL_OK) {
                 node = NULL;
@@ -1551,7 +1551,7 @@ GetForeignNode(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
         *p = '\0';
     }
     if (IsNodeId(string)) {
-        size_t inode;
+        long inode;
 
         if (p != NULL) {
             if (Blt_GetCount(interp, string, COUNT_NNEG, &inode) != TCL_OK) {
@@ -4827,10 +4827,10 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             for (link = Blt_Chain_FirstLink(chain); link != NULL;
                  link = next) {
                 Blt_TreeNode node;
-                size_t inode;
+                long inode;
 
                 next = Blt_Chain_NextLink(link);
-                inode = (size_t)Blt_Chain_GetValue(link);
+                inode = (intptr_t)Blt_Chain_GetValue(link);
                 node = Blt_Tree_GetNodeFromIndex(cmdPtr->tree, inode);
                 if (node != NULL) {
                     DeleteNode(cmdPtr, node);
@@ -7590,7 +7590,7 @@ TraceCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     const char *tagName;
     int flags;
     int length;
-    size_t inode;
+    long inode;
 
     string = Tcl_GetString(objv[3]);
     tagName = NULL;

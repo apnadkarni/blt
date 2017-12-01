@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #include "bltArrayObj.h"
 #include "bltAssert.h"
 #include "bltDBuffer.h"
@@ -825,13 +824,13 @@ BLT_EXTERN int		Blt_GetPositionFromObj(Tcl_Interp *interp,
 #define Blt_GetCount_DECLARED
 /* 136 */
 BLT_EXTERN int		Blt_GetCount(Tcl_Interp *interp, const char *string,
-				int check, size_t *countPtr);
+				int check, long *countPtr);
 #endif
 #ifndef Blt_GetCountFromObj_DECLARED
 #define Blt_GetCountFromObj_DECLARED
 /* 137 */
 BLT_EXTERN int		Blt_GetCountFromObj(Tcl_Interp *interp,
-				Tcl_Obj *objPtr, int check, size_t *countPtr);
+				Tcl_Obj *objPtr, int check, long *countPtr);
 #endif
 #ifndef Blt_SimplifyLine_DECLARED
 #define Blt_SimplifyLine_DECLARED
@@ -865,68 +864,158 @@ BLT_EXTERN int		Blt_PolyRectClip(Region2d *extsPtr,
 				Point2d *inputPts, int numInputPts,
 				Point2d *outputPts);
 #endif
+#ifndef Blt_ObjIsInteger_DECLARED
+#define Blt_ObjIsInteger_DECLARED
+/* 143 */
+BLT_EXTERN int		Blt_ObjIsInteger(Tcl_Obj *objPtr);
+#endif
+#ifndef Blt_GetLong_DECLARED
+#define Blt_GetLong_DECLARED
+/* 144 */
+BLT_EXTERN int		Blt_GetLong(Tcl_Interp *interp, const char *s,
+				long *valuePtr);
+#endif
+#ifndef Blt_GetLongFromObj_DECLARED
+#define Blt_GetLongFromObj_DECLARED
+/* 145 */
+BLT_EXTERN int		Blt_GetLongFromObj(Tcl_Interp *interp,
+				Tcl_Obj *objPtr, long *valuePtr);
+#endif
+#ifndef Blt_SetLongObj_DECLARED
+#define Blt_SetLongObj_DECLARED
+/* 146 */
+BLT_EXTERN int		Blt_SetLongObj(Tcl_Obj *objPtr, long value);
+#endif
+#ifndef Blt_NewLongObj_DECLARED
+#define Blt_NewLongObj_DECLARED
+/* 147 */
+BLT_EXTERN Tcl_Obj *	Blt_NewLongObj(long value);
+#endif
+#ifndef Blt_IsLongObj_DECLARED
+#define Blt_IsLongObj_DECLARED
+/* 148 */
+BLT_EXTERN int		Blt_IsLongObj(Tcl_Obj *objPtr);
+#endif
+#ifndef Blt_RegisterLongObj_DECLARED
+#define Blt_RegisterLongObj_DECLARED
+/* 149 */
+BLT_EXTERN void		Blt_RegisterLongObj(void );
+#endif
+#ifndef Blt_GetUnsignedLong_DECLARED
+#define Blt_GetUnsignedLong_DECLARED
+/* 150 */
+BLT_EXTERN int		Blt_GetUnsignedLong(Tcl_Interp *interp,
+				const char *s, unsigned long *valuePtr);
+#endif
+#ifndef Blt_GetUnsignedLongFromObj_DECLARED
+#define Blt_GetUnsignedLongFromObj_DECLARED
+/* 151 */
+BLT_EXTERN int		Blt_GetUnsignedLongFromObj(Tcl_Interp *interp,
+				Tcl_Obj *objPtr, unsigned long *valuePtr);
+#endif
+#ifndef Blt_SetUnsignedLongObj_DECLARED
+#define Blt_SetUnsignedLongObj_DECLARED
+/* 152 */
+BLT_EXTERN int		Blt_SetUnsignedLongObj(Tcl_Obj *objPtr,
+				unsigned long value);
+#endif
+#ifndef Blt_NewUnsignedLongObj_DECLARED
+#define Blt_NewUnsignedLongObj_DECLARED
+/* 153 */
+BLT_EXTERN Tcl_Obj *	Blt_NewUnsignedLongObj(unsigned long value);
+#endif
+#ifndef Blt_IsUnsignedLongObj_DECLARED
+#define Blt_IsUnsignedLongObj_DECLARED
+/* 154 */
+BLT_EXTERN int		Blt_IsUnsignedLongObj(Tcl_Obj *objPtr);
+#endif
+#ifndef Blt_RegisterUnsignedLongObj_DECLARED
+#define Blt_RegisterUnsignedLongObj_DECLARED
+/* 155 */
+BLT_EXTERN void		Blt_RegisterUnsignedLongObj(void );
+#endif
 #ifndef Blt_GetInt64_DECLARED
 #define Blt_GetInt64_DECLARED
-/* 143 */
+/* 156 */
 BLT_EXTERN int		Blt_GetInt64(Tcl_Interp *interp, const char *s,
 				int64_t *valuePtr);
 #endif
 #ifndef Blt_GetInt64FromObj_DECLARED
 #define Blt_GetInt64FromObj_DECLARED
-/* 144 */
+/* 157 */
 BLT_EXTERN int		Blt_GetInt64FromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int64_t *valuePtr);
 #endif
+#ifndef Blt_SetInt64Obj_DECLARED
+#define Blt_SetInt64Obj_DECLARED
+/* 158 */
+BLT_EXTERN int		Blt_SetInt64Obj(Tcl_Obj *objPtr, int64_t value);
+#endif
+#ifndef Blt_NewInt64Obj_DECLARED
+#define Blt_NewInt64Obj_DECLARED
+/* 159 */
+BLT_EXTERN Tcl_Obj *	Blt_NewInt64Obj(int64_t value);
+#endif
+#ifndef Blt_IsInt64Obj_DECLARED
+#define Blt_IsInt64Obj_DECLARED
+/* 160 */
+BLT_EXTERN int		Blt_IsInt64Obj(Tcl_Obj *objPtr);
+#endif
+#ifndef Blt_RegisterInt64Obj_DECLARED
+#define Blt_RegisterInt64Obj_DECLARED
+/* 161 */
+BLT_EXTERN void		Blt_RegisterInt64Obj(void );
+#endif
 #ifndef Blt_FormatString_DECLARED
 #define Blt_FormatString_DECLARED
-/* 145 */
+/* 162 */
 BLT_EXTERN int		Blt_FormatString(char *s, size_t size,
 				const char *fmt, ...);
 #endif
 #ifndef Blt_LowerCase_DECLARED
 #define Blt_LowerCase_DECLARED
-/* 146 */
+/* 163 */
 BLT_EXTERN void		Blt_LowerCase(char *s);
 #endif
 #ifndef Blt_UpperCase_DECLARED
 #define Blt_UpperCase_DECLARED
-/* 147 */
+/* 164 */
 BLT_EXTERN void		Blt_UpperCase(char *s);
 #endif
 #ifndef Blt_GetPlatformId_DECLARED
 #define Blt_GetPlatformId_DECLARED
-/* 148 */
+/* 165 */
 BLT_EXTERN int		Blt_GetPlatformId(void );
 #endif
 #ifndef Blt_LastError_DECLARED
 #define Blt_LastError_DECLARED
-/* 149 */
+/* 166 */
 BLT_EXTERN const char *	 Blt_LastError(void );
 #endif
 #ifndef Blt_NaN_DECLARED
 #define Blt_NaN_DECLARED
-/* 150 */
+/* 167 */
 BLT_EXTERN double	Blt_NaN(void );
 #endif
 #ifndef Blt_AlmostEquals_DECLARED
 #define Blt_AlmostEquals_DECLARED
-/* 151 */
+/* 168 */
 BLT_EXTERN int		Blt_AlmostEquals(double x, double y);
 #endif
 #ifndef Blt_ConvertListToList_DECLARED
 #define Blt_ConvertListToList_DECLARED
-/* 152 */
+/* 169 */
 BLT_EXTERN const char ** Blt_ConvertListToList(int argc, const char **argv);
 #endif
 #ifndef Blt_GetCachedVar_DECLARED
 #define Blt_GetCachedVar_DECLARED
-/* 153 */
+/* 170 */
 BLT_EXTERN Tcl_Var	Blt_GetCachedVar(Blt_HashTable *tablePtr,
 				const char *label, Tcl_Obj *objPtr);
 #endif
 #ifndef Blt_FreeCachedVars_DECLARED
 #define Blt_FreeCachedVars_DECLARED
-/* 154 */
+/* 171 */
 BLT_EXTERN void		Blt_FreeCachedVars(Blt_HashTable *tablePtr);
 #endif
 
@@ -1070,25 +1159,42 @@ typedef struct BltTclIntProcs {
     void (*blt_DateToSeconds) (Blt_DateTime *datePtr, double *secondsPtr); /* 133 */
     void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 134 */
     int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 135 */
-    int (*blt_GetCount) (Tcl_Interp *interp, const char *string, int check, size_t *countPtr); /* 136 */
-    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, size_t *countPtr); /* 137 */
+    int (*blt_GetCount) (Tcl_Interp *interp, const char *string, int check, long *countPtr); /* 136 */
+    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *countPtr); /* 137 */
     long (*blt_SimplifyLine) (Point2d *origPts, long low, long high, double tolerance, long *indices); /* 138 */
     int (*blt_PointInPolygon) (Point2d *samplePtr, Point2d *points, int numPoints); /* 139 */
     int (*blt_PolygonInRegion) (Point2d *points, int numPoints, Region2d *extsPtr, int enclosed); /* 140 */
     int (*blt_PointInSegments) (Point2d *samplePtr, Segment2d *segments, int numSegments, double halo); /* 141 */
     int (*blt_PolyRectClip) (Region2d *extsPtr, Point2d *inputPts, int numInputPts, Point2d *outputPts); /* 142 */
-    int (*blt_GetInt64) (Tcl_Interp *interp, const char *s, int64_t *valuePtr); /* 143 */
-    int (*blt_GetInt64FromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr); /* 144 */
-    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 145 */
-    void (*blt_LowerCase) (char *s); /* 146 */
-    void (*blt_UpperCase) (char *s); /* 147 */
-    int (*blt_GetPlatformId) (void); /* 148 */
-    const char * (*blt_LastError) (void); /* 149 */
-    double (*blt_NaN) (void); /* 150 */
-    int (*blt_AlmostEquals) (double x, double y); /* 151 */
-    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 152 */
-    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 153 */
-    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 154 */
+    int (*blt_ObjIsInteger) (Tcl_Obj *objPtr); /* 143 */
+    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *valuePtr); /* 144 */
+    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *valuePtr); /* 145 */
+    int (*blt_SetLongObj) (Tcl_Obj *objPtr, long value); /* 146 */
+    Tcl_Obj * (*blt_NewLongObj) (long value); /* 147 */
+    int (*blt_IsLongObj) (Tcl_Obj *objPtr); /* 148 */
+    void (*blt_RegisterLongObj) (void); /* 149 */
+    int (*blt_GetUnsignedLong) (Tcl_Interp *interp, const char *s, unsigned long *valuePtr); /* 150 */
+    int (*blt_GetUnsignedLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, unsigned long *valuePtr); /* 151 */
+    int (*blt_SetUnsignedLongObj) (Tcl_Obj *objPtr, unsigned long value); /* 152 */
+    Tcl_Obj * (*blt_NewUnsignedLongObj) (unsigned long value); /* 153 */
+    int (*blt_IsUnsignedLongObj) (Tcl_Obj *objPtr); /* 154 */
+    void (*blt_RegisterUnsignedLongObj) (void); /* 155 */
+    int (*blt_GetInt64) (Tcl_Interp *interp, const char *s, int64_t *valuePtr); /* 156 */
+    int (*blt_GetInt64FromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr); /* 157 */
+    int (*blt_SetInt64Obj) (Tcl_Obj *objPtr, int64_t value); /* 158 */
+    Tcl_Obj * (*blt_NewInt64Obj) (int64_t value); /* 159 */
+    int (*blt_IsInt64Obj) (Tcl_Obj *objPtr); /* 160 */
+    void (*blt_RegisterInt64Obj) (void); /* 161 */
+    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 162 */
+    void (*blt_LowerCase) (char *s); /* 163 */
+    void (*blt_UpperCase) (char *s); /* 164 */
+    int (*blt_GetPlatformId) (void); /* 165 */
+    const char * (*blt_LastError) (void); /* 166 */
+    double (*blt_NaN) (void); /* 167 */
+    int (*blt_AlmostEquals) (double x, double y); /* 168 */
+    const char ** (*blt_ConvertListToList) (int argc, const char **argv); /* 169 */
+    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 170 */
+    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 171 */
 } BltTclIntProcs;
 
 #ifdef __cplusplus
@@ -1674,68 +1780,123 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_PolyRectClip \
 	(bltTclIntProcsPtr->blt_PolyRectClip) /* 142 */
 #endif
+#ifndef Blt_ObjIsInteger
+#define Blt_ObjIsInteger \
+	(bltTclIntProcsPtr->blt_ObjIsInteger) /* 143 */
+#endif
+#ifndef Blt_GetLong
+#define Blt_GetLong \
+	(bltTclIntProcsPtr->blt_GetLong) /* 144 */
+#endif
+#ifndef Blt_GetLongFromObj
+#define Blt_GetLongFromObj \
+	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 145 */
+#endif
+#ifndef Blt_SetLongObj
+#define Blt_SetLongObj \
+	(bltTclIntProcsPtr->blt_SetLongObj) /* 146 */
+#endif
+#ifndef Blt_NewLongObj
+#define Blt_NewLongObj \
+	(bltTclIntProcsPtr->blt_NewLongObj) /* 147 */
+#endif
+#ifndef Blt_IsLongObj
+#define Blt_IsLongObj \
+	(bltTclIntProcsPtr->blt_IsLongObj) /* 148 */
+#endif
+#ifndef Blt_RegisterLongObj
+#define Blt_RegisterLongObj \
+	(bltTclIntProcsPtr->blt_RegisterLongObj) /* 149 */
+#endif
+#ifndef Blt_GetUnsignedLong
+#define Blt_GetUnsignedLong \
+	(bltTclIntProcsPtr->blt_GetUnsignedLong) /* 150 */
+#endif
+#ifndef Blt_GetUnsignedLongFromObj
+#define Blt_GetUnsignedLongFromObj \
+	(bltTclIntProcsPtr->blt_GetUnsignedLongFromObj) /* 151 */
+#endif
+#ifndef Blt_SetUnsignedLongObj
+#define Blt_SetUnsignedLongObj \
+	(bltTclIntProcsPtr->blt_SetUnsignedLongObj) /* 152 */
+#endif
+#ifndef Blt_NewUnsignedLongObj
+#define Blt_NewUnsignedLongObj \
+	(bltTclIntProcsPtr->blt_NewUnsignedLongObj) /* 153 */
+#endif
+#ifndef Blt_IsUnsignedLongObj
+#define Blt_IsUnsignedLongObj \
+	(bltTclIntProcsPtr->blt_IsUnsignedLongObj) /* 154 */
+#endif
+#ifndef Blt_RegisterUnsignedLongObj
+#define Blt_RegisterUnsignedLongObj \
+	(bltTclIntProcsPtr->blt_RegisterUnsignedLongObj) /* 155 */
+#endif
 #ifndef Blt_GetInt64
 #define Blt_GetInt64 \
-	(bltTclIntProcsPtr->blt_GetInt64) /* 143 */
+	(bltTclIntProcsPtr->blt_GetInt64) /* 156 */
 #endif
 #ifndef Blt_GetInt64FromObj
 #define Blt_GetInt64FromObj \
-	(bltTclIntProcsPtr->blt_GetInt64FromObj) /* 144 */
+	(bltTclIntProcsPtr->blt_GetInt64FromObj) /* 157 */
+#endif
+#ifndef Blt_SetInt64Obj
+#define Blt_SetInt64Obj \
+	(bltTclIntProcsPtr->blt_SetInt64Obj) /* 158 */
+#endif
+#ifndef Blt_NewInt64Obj
+#define Blt_NewInt64Obj \
+	(bltTclIntProcsPtr->blt_NewInt64Obj) /* 159 */
+#endif
+#ifndef Blt_IsInt64Obj
+#define Blt_IsInt64Obj \
+	(bltTclIntProcsPtr->blt_IsInt64Obj) /* 160 */
+#endif
+#ifndef Blt_RegisterInt64Obj
+#define Blt_RegisterInt64Obj \
+	(bltTclIntProcsPtr->blt_RegisterInt64Obj) /* 161 */
 #endif
 #ifndef Blt_FormatString
 #define Blt_FormatString \
-	(bltTclIntProcsPtr->blt_FormatString) /* 145 */
+	(bltTclIntProcsPtr->blt_FormatString) /* 162 */
 #endif
 #ifndef Blt_LowerCase
 #define Blt_LowerCase \
-	(bltTclIntProcsPtr->blt_LowerCase) /* 146 */
+	(bltTclIntProcsPtr->blt_LowerCase) /* 163 */
 #endif
 #ifndef Blt_UpperCase
 #define Blt_UpperCase \
-	(bltTclIntProcsPtr->blt_UpperCase) /* 147 */
+	(bltTclIntProcsPtr->blt_UpperCase) /* 164 */
 #endif
 #ifndef Blt_GetPlatformId
 #define Blt_GetPlatformId \
-	(bltTclIntProcsPtr->blt_GetPlatformId) /* 148 */
+	(bltTclIntProcsPtr->blt_GetPlatformId) /* 165 */
 #endif
 #ifndef Blt_LastError
 #define Blt_LastError \
-	(bltTclIntProcsPtr->blt_LastError) /* 149 */
+	(bltTclIntProcsPtr->blt_LastError) /* 166 */
 #endif
 #ifndef Blt_NaN
 #define Blt_NaN \
-	(bltTclIntProcsPtr->blt_NaN) /* 150 */
+	(bltTclIntProcsPtr->blt_NaN) /* 167 */
 #endif
 #ifndef Blt_AlmostEquals
 #define Blt_AlmostEquals \
-	(bltTclIntProcsPtr->blt_AlmostEquals) /* 151 */
+	(bltTclIntProcsPtr->blt_AlmostEquals) /* 168 */
 #endif
 #ifndef Blt_ConvertListToList
 #define Blt_ConvertListToList \
-	(bltTclIntProcsPtr->blt_ConvertListToList) /* 152 */
+	(bltTclIntProcsPtr->blt_ConvertListToList) /* 169 */
 #endif
 #ifndef Blt_GetCachedVar
 #define Blt_GetCachedVar \
-	(bltTclIntProcsPtr->blt_GetCachedVar) /* 153 */
+	(bltTclIntProcsPtr->blt_GetCachedVar) /* 170 */
 #endif
 #ifndef Blt_FreeCachedVars
 #define Blt_FreeCachedVars \
-	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 154 */
+	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 171 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */
 
 /* !END!: Do not edit above this line. */
-#include "bltArrayObj.h"
-#include "bltAssert.h"
-#include "bltDBuffer.h"
-#include "bltInitCmd.h"
-#include "bltInt.h"
-#include "bltMath.h"
-#include "bltMesh.h"
-#include "bltNsUtil.h"
-#include "bltOp.h"
-#include "bltSpline.h"
-#include "bltSwitch.h"
-#include "bltTclInt.h"
-#include "bltVar.h"

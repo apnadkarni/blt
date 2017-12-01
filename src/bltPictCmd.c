@@ -4476,7 +4476,7 @@ SequenceLengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     numPicts = Blt_Chain_GetLength(imgPtr->chain);
     if (objc == 4) {
-        size_t count;
+        long count;
         
         if (Blt_GetCountFromObj(interp, objv[3], COUNT_NNEG, &count) != TCL_OK){
             return TCL_OK;

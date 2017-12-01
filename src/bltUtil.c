@@ -459,147 +459,6 @@ Tcl_GetVar2Ex(
 #endif
 
 
-
-/*
- *----------------------------------------------------------------------
- *
- * Blt_GetInt64 --
- *
- *      Given a string, produce the corresponding long integer value.  This
- *      differs from TclGetLong in that it doesn't accept octal values.
- *
- * Results:
-
- *      The return value is normally TCL_OK; in this case *longPtr will be
- *      set to the long integer value equivalent to string. If string is
- *      improperly formed then TCL_ERROR is returned and an error message
- *      will be left in the interp's result if interp is non-NULL.
- *
- * Side effects:
- *      None.
- *
- *----------------------------------------------------------------------
- */
-
-int
-Blt_GetInt64(
-    Tcl_Interp *interp,                 /* Interpreter used for error
-                                         * reporting if not NULL. */
-    const char *string,                 /* String containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
-    int64_t *valuePtr)                  /* Place to store converted long
-                                         * result. */
-{
-    char *end;
-    const char *p;
-    int64_t x;
-
-#if (SIZEOF_VOID_P == 8) && (SIZEOF_LONG == 4)
-#    define STRTOUL strtoull
-#else 
-#    define STRTOUL strtoul
-#endif
-    /*
-     * Note: don't depend on strtoul to handle sign characters; it won't
-     * in some implementations.
-     */
-    p = string;
-    errno = 0;
-    for ( ; isspace(UCHAR(*p)); p++) {  /* INTL: ISO space. */
-        /* Empty loop body. */
-    }
-    if (*p == '-') {
-        p++;
-        x = -(uint64_t)STRTOUL(p, &end, 10); /* INTL: TCL source. */
-    } else if (*p == '+') {
-        p++;
-        x = STRTOUL(p, &end, 10);       /* INTL: TCL source. */
-    } else {
-        x = STRTOUL(p, &end, 10);       /* INTL: TCL source. */
-    }
-    if (end == p) {
-        badInteger:
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "expected integer but got \"", string,
-                    "\"", (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    if (errno == ERANGE) {
-        if (interp != NULL) {
-            Tcl_SetResult(interp,
-                        (char *)"integer value too large to represent",
-                          TCL_STATIC);
-            Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
-                    Tcl_GetStringResult(interp), (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    while ((*end != '\0') && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-        end++;
-    }
-    if (*end != 0) {
-        goto badInteger;
-    }
-    *valuePtr = x;
-    return TCL_OK;
-}
-
-/*
- *----------------------------------------------------------------------
- *
- * Blt_GetInt64FromObj --
- *
- *      Given an string, produce the corresponding long integer value.
- *      This differs from TclGetLong in that it doesn't accept octal
- *      values.
- *
- * Results:
- *      The return value is normally TCL_OK; in this case *longPtr will be
- *      set to the long integer value equivalent to string. If string is
- *      improperly formed then TCL_ERROR is returned and an error message
- *      will be left in the interp's result if interp is non-NULL.
- *
- * Side effects:
- *      None.
- *
- *----------------------------------------------------------------------
- */
-int
-Blt_GetInt64FromObj(
-    Tcl_Interp *interp,                 /* Interpreter to report back to. */
-    Tcl_Obj *objPtr,                    /* Object containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
-    int64_t *valuePtr)                   /* Place to store converted long
-                                         * result. */
-{
-    static const Tcl_ObjType *tclStringTypePtr = NULL;
-    Tcl_WideInt wideVal;
-    
-    if (tclStringTypePtr == NULL) {
-        Tcl_Obj *objPtr;
-        
-        objPtr = Tcl_NewStringObj("", -1);
-        tclStringTypePtr = objPtr->typePtr;
-        Tcl_DecrRefCount(objPtr);
-    }
-    if ((objPtr->typePtr == NULL) || (objPtr->typePtr == tclStringTypePtr)) {
-        if (Blt_GetInt64(interp, Tcl_GetString(objPtr), valuePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        return TCL_OK;
-    }
-    /* It's OK to use Tcl_GetLongFromObj, since we're not converting from a
-     * string and there can be no leading 0. */
-    if (Tcl_GetWideIntFromObj(interp, objPtr, &wideVal) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    *valuePtr = (int64_t)wideVal;
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1141,11 +1000,11 @@ Blt_InitHexTable(unsigned char *hexTable)
 
 int
 Blt_GetCount(Tcl_Interp *interp, const char *string, int check,
-             size_t *valuePtr)
+             long *valuePtr)
 {
-    int64_t lvalue;
+    long lvalue;
 
-    if (Blt_GetInt64(interp, string, &lvalue) != TCL_OK) {
+    if (Blt_GetLong(interp, string, &lvalue) != TCL_OK) {
         return TCL_ERROR;
     }
     if (lvalue < 0) {
@@ -1164,7 +1023,7 @@ Blt_GetCount(Tcl_Interp *interp, const char *string, int check,
             return TCL_ERROR;
         }
     }
-    *valuePtr = (size_t)lvalue;
+    *valuePtr = lvalue;
     return TCL_OK;
 }
 
@@ -1173,11 +1032,11 @@ Blt_GetCountFromObj(
     Tcl_Interp *interp,
     Tcl_Obj *objPtr,
     int check,                          /* Can be COUNT_POS or COUNT_NNEG */
-    size_t *valuePtr)
+    long *valuePtr)
 {
-    int64_t lvalue;
+    long lvalue;
 
-    if (Blt_GetInt64FromObj(interp, objPtr, &lvalue) != TCL_OK) {
+    if (Blt_GetLongFromObj(interp, objPtr, &lvalue) != TCL_OK) {
         return TCL_ERROR;
     }
     if (lvalue < 0) {
@@ -1196,7 +1055,7 @@ Blt_GetCountFromObj(
             return TCL_ERROR;
         }
     }
-    *valuePtr = (size_t)lvalue;
+    *valuePtr = lvalue;
     return TCL_OK;
 }
 
