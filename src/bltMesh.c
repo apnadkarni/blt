@@ -2273,7 +2273,7 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         hPtr = Blt_CreateHashEntry(&meshPtr->hideTable,
                                    (const char *)(intptr_t)index, &isNew);
-        Blt_SetHashValue(hPtr, index);
+        Blt_SetHashValue(hPtr, (intptr_t)index);
     }
     if (meshPtr->classPtr->type != MESH_TRIANGLE) {
         ComputeMesh(meshPtr);
