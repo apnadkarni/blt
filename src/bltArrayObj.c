@@ -715,7 +715,7 @@ UpdateStringOfInt64(Tcl_Obj *objPtr)     /* Array object w/ string rep to
     size_t numBytes;
     char buffer[TCL_INTEGER_SPACE];
 
-    numBytes = sprintf(buffer, "%I64d", (int64_t)objPtr->internalRep.wideValue);
+    numBytes = sprintf(buffer, "%ld", (int64_t)objPtr->internalRep.wideValue);
     objPtr->bytes = ckalloc(numBytes + 1);
     strcpy(objPtr->bytes, buffer);
     objPtr->length = numBytes;

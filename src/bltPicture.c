@@ -195,19 +195,6 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 }
 
 void 
-Blt_ZoomVertically2(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
-{
-    (*bltPictProcsPtr->zoomVerticallyProc2)(dest, src, filter);
-}
-
-void 
-Blt_ZoomHorizontally2(Blt_Picture dest, Blt_Picture src, 
-                     Blt_ResampleFilter filter)
-{
-    (*bltPictProcsPtr->zoomHorizontallyProc2)(dest, src, filter);
-}
-
-void 
 Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
                     int h, int dx, int dy)
 {
@@ -2384,7 +2371,7 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_ResamplePicture --
+ * Blt_ResamplePicture2 --
  *
  *      Resamples a given picture using 1-D filters and returns a new
  *      picture of the designated size.
@@ -2414,8 +2401,8 @@ Blt_ResamplePicture2(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
      * It's usually faster to zoom vertically last.  This has to do with
      * the fact that pictures are stored in contiguous rows.
      */
-    Blt_ZoomHorizontally2(tmpPtr, srcPtr, hFilter);
-    Blt_ZoomVertically2(destPtr, tmpPtr, vFilter);
+    ZoomHorizontally(tmpPtr, srcPtr, hFilter);
+    ZoomVertically(destPtr, tmpPtr, vFilter);
     Blt_FreePicture(tmpPtr);
     destPtr->flags = srcPtr->flags;
     destPtr->flags |= BLT_PIC_DIRTY;
