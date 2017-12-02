@@ -125,7 +125,7 @@ typedef struct {
 struct _DataSourceResult {
     double min, max;
     double *values;
-    double numValues;
+    long numValues;
 };
 
 struct _DataSource {
@@ -147,7 +147,7 @@ typedef struct {
 
     /* List-specific fields. */
     double *values;
-    int numValues;
+    long numValues;
 } ListDataSource;
 
 typedef struct {
@@ -204,16 +204,16 @@ typedef struct _Blt_Mesh {
 
     /* Resulting mesh is a triangular grid. */
     Point2d *vertices;                  /* x */
-    int numVertices;                    /* x */
-    int *hull;                          /* x Array of indices pointing into
+    long numVertices;                   /* x */
+    long *hull;                         /* x Array of indices pointing into
                                          * the mesh representing the convex
                                          * hull of the mesh. */
-    int numHullPts;                     /* x */
+    long numHullPts;                    /* x */
     float xMin, yMin, xMax, yMax;       /* x */
     Blt_MeshTriangle *triangles;        /* Array of triangles. */
     Blt_MeshTriangle *reqTriangles;     /* User-requested triangles. */
-    int numReqTriangles;
-    int numTriangles;                   /* x # of triangles in array. */
+    long numReqTriangles;
+    long numTriangles;                  /* x # of triangles in array. */
     Blt_HashTable hideTable;
     Blt_HashTable tableTable;
     Blt_Chain notifiers;                /* List of client notifiers. */
@@ -739,7 +739,7 @@ static int
 ListDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr, 
                       DataSourceResult *resultPtr)
 {
-    size_t i;
+    long i;
     double *values;
     double min, max;
     ListDataSource *srcPtr = (ListDataSource *)basePtr;
@@ -1330,8 +1330,8 @@ static int
 ComputeMesh(Mesh *meshPtr)
 {
     Blt_MeshTriangle *triangles;
-    size_t numTriangles;
-    size_t i, count;
+    long numTriangles;
+    long i, count;
     triangles = NULL;
     numTriangles = 0;
     
@@ -1393,9 +1393,9 @@ static int
 ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
 {
     long x, y;
-    size_t i, numTriangles, numVertices, count;
+    long i, numTriangles, numVertices, count;
     Blt_MeshTriangle *t, *triangles;
-    int *hull;
+    long *hull;
 
     assert(xNum > 1);
     assert(yNum > 1);
@@ -1421,7 +1421,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
     }
     /* Compute the convex hull. */
     numVertices = 4;
-    hull = Blt_AssertMalloc(4 * sizeof(int));
+    hull = Blt_AssertMalloc(4 * sizeof(long));
     hull[0] = 0, hull[1] = xNum - 1;
     hull[2] = (yNum * xNum) - 1;
     hull[3] = xNum * (yNum - 1);
@@ -1623,7 +1623,7 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     Blt_HashTable table;
     DataSourceResult x, y;
     Point2d *vertices;
-    size_t i, numVertices, count;
+    long i, numVertices, count;
 
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
         return TCL_OK;
@@ -1669,12 +1669,12 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 
         key.x = x.values[i];
         key.y = y.values[i];
-        hPtr = Blt_CreateHashEntry(&table, (char *)&key, &isNew);
+        hPtr = Blt_CreateHashEntry(&table, &key, &isNew);
         assert(hPtr != NULL);
         if (!isNew) {
-            uintptr_t index;
+            long index;
 
-            index = (uintptr_t)Blt_GetHashValue(hPtr);
+            index = (long)(intptr_t)Blt_GetHashValue(hPtr);
 #ifdef __WIN64
             fprintf(stderr,
                     "duplicate point %I64d x=%g y=%g, old=%I64d x=%g y=%g\n",
@@ -1688,7 +1688,7 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 #endif
             continue;
         }
-        Blt_SetHashValue(hPtr, i);
+        Blt_SetHashValue(hPtr, (intptr_t)i);
         vertices[count].x = x.values[i];
         vertices[count].y = y.values[i];
         count++;
@@ -1711,7 +1711,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 {
     DataSourceResult x, y;
     Point2d *vertices;
-    size_t i, numVertices, numTriangles, count;
+    long i, numVertices, numTriangles, count;
     Blt_MeshTriangle *triangles;
 
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
@@ -2173,7 +2173,7 @@ VerticesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     MeshCmdInterpData *dataPtr = clientData;
     Mesh *meshPtr;
-    size_t i;
+    long i;
     Tcl_Obj *listObjPtr;
 
     if (GetMeshFromObj(interp, dataPtr, objv[2], &meshPtr) != TCL_OK) {
