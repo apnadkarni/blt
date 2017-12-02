@@ -1511,7 +1511,7 @@ static void
 DestroyClient(Table *tablePtr)
 {
     if (tablePtr->magic != TABLE_MAGIC) {
-        Blt_Warn("invalid table object token 0x%lx\n", (uint64_t)tablePtr);
+        Blt_Warn("invalid table object token %p\n", tablePtr);
         return;
     }
     /* Remove any traces that were set by this client. */
@@ -5140,7 +5140,7 @@ void
 blt_table_close(Table *tablePtr)
 {
     if (tablePtr->magic != TABLE_MAGIC) {
-        Blt_Warn("invalid table object token 0x%lx\n", (uint64_t)tablePtr);
+        Blt_Warn("invalid table object token %p\n", tablePtr);
         return;
     }
     if (tablePtr->link2 != NULL) {
