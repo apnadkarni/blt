@@ -125,7 +125,7 @@ typedef struct {
 struct _DataSourceResult {
     double min, max;
     double *values;
-    long numValues;
+    int numValues;
 };
 
 struct _DataSource {
@@ -147,7 +147,7 @@ typedef struct {
 
     /* List-specific fields. */
     double *values;
-    long numValues;
+    int numValues;
 } ListDataSource;
 
 typedef struct {
@@ -204,16 +204,16 @@ typedef struct _Blt_Mesh {
 
     /* Resulting mesh is a triangular grid. */
     Point2d *vertices;                  /* x */
-    long numVertices;                   /* x */
-    long *hull;                         /* x Array of indices pointing into
+    int numVertices;                    /* x */
+    int *hull;                          /* x Array of indices pointing into
                                          * the mesh representing the convex
                                          * hull of the mesh. */
-    long numHullPts;                    /* x */
+    int numHullPts;                     /* x */
     float xMin, yMin, xMax, yMax;       /* x */
     Blt_MeshTriangle *triangles;        /* Array of triangles. */
     Blt_MeshTriangle *reqTriangles;     /* User-requested triangles. */
-    long numReqTriangles;
-    long numTriangles;                  /* x # of triangles in array. */
+    int numReqTriangles;
+    int numTriangles;                   /* x # of triangles in array. */
     Blt_HashTable hideTable;
     Blt_HashTable tableTable;
     Blt_Chain notifiers;                /* List of client notifiers. */
@@ -401,20 +401,20 @@ ObjToTriangles(ClientData clientData, Tcl_Interp *interp,
     }
     t = reqTriangles;
     for (i = 0; i < objc; i += 3) {
-        int a, b, c;
+        long a, b, c;
 
         /* We assume that user-defined triangle indices start from 1. */
-        if ((Tcl_GetIntFromObj(interp, objv[i], &a) != TCL_OK) || (a <= 0)) {
+        if ((Blt_GetLongFromObj(interp, objv[i], &a) != TCL_OK) || (a <= 0)) {
             Tcl_AppendResult(interp, "bad triangle index \"", 
                 Tcl_GetString(objv[i]), "\"", (char *)NULL);
             goto error;
         }
-        if ((Tcl_GetIntFromObj(interp, objv[i+1], &b) != TCL_OK) || (b <= 0)) {
+        if ((Blt_GetLongFromObj(interp, objv[i+1], &b) != TCL_OK) || (b <= 0)) {
             Tcl_AppendResult(interp, "bad triangle index \"", 
                 Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
             goto error;
         }
-        if ((Tcl_GetIntFromObj(interp, objv[i+2], &c) != TCL_OK) || (c <= 0)) {
+        if ((Blt_GetLongFromObj(interp, objv[i+2], &c) != TCL_OK) || (c <= 0)) {
             Tcl_AppendResult(interp, "bad triangle index \"", 
                 Tcl_GetString(objv[i+2]), "\"", (char *)NULL);
             goto error;
@@ -739,7 +739,7 @@ static int
 ListDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr, 
                       DataSourceResult *resultPtr)
 {
-    long i;
+    int i;
     double *values;
     double min, max;
     ListDataSource *srcPtr = (ListDataSource *)basePtr;
@@ -898,7 +898,7 @@ TableDataSourcePrintProc(DataSource *basePtr)
     TableDataSource *srcPtr = (TableDataSource *)basePtr;
     Tcl_Obj *listObjPtr;
     const char *name;
-    long index;
+    long index;                         /* Column index. */
     Tcl_Interp *interp;
     Mesh *meshPtr;
 
@@ -910,7 +910,7 @@ TableDataSourcePrintProc(DataSource *basePtr)
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj(name, -1));
     
     index = blt_table_column_index(srcPtr->table, srcPtr->column);
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(index));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Blt_NewLongObj(index));
     return listObjPtr;
 }
 
@@ -923,7 +923,7 @@ TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr,
     TableDataSource *srcPtr = (TableDataSource *)basePtr;
     double *values;
     double minValue, maxValue;
-    long i;
+    int i;
 
     table = srcPtr->table;
     values = Blt_Malloc(sizeof(double) * blt_table_num_rows(table));
@@ -1330,11 +1330,11 @@ static int
 ComputeMesh(Mesh *meshPtr)
 {
     Blt_MeshTriangle *triangles;
-    long numTriangles;
-    long i, count;
+    int numTriangles;
+    int i, count;
+
     triangles = NULL;
     numTriangles = 0;
-    
     if (meshPtr->numVertices > 0) {
         /* Compute the convex hull first, this will provide an estimate for
          * the boundary vertices and therefore the number of triangles. */
@@ -1365,7 +1365,7 @@ ComputeMesh(Mesh *meshPtr)
      * triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (const char *)(intptr_t)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1390,12 +1390,12 @@ ComputeMesh(Mesh *meshPtr)
 }
 
 static int 
-ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
+ComputeRegularMesh(Mesh *meshPtr, int xNum, int yNum)
 {
-    long x, y;
-    long i, numTriangles, numVertices, count;
+    int x, y;
+    int i, numTriangles, numVertices, count;
     Blt_MeshTriangle *t, *triangles;
-    long *hull;
+    int *hull;
 
     assert(xNum > 1);
     assert(yNum > 1);
@@ -1408,7 +1408,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
     }
     t = triangles;
     for (y = 0; y < ((yNum - 1) * xNum); y += xNum) {
-        long upper, lower;
+        int upper, lower;
 
         upper = y;
         lower = y + xNum;
@@ -1421,7 +1421,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
     }
     /* Compute the convex hull. */
     numVertices = 4;
-    hull = Blt_AssertMalloc(4 * sizeof(long));
+    hull = Blt_AssertMalloc(4 * sizeof(int));
     hull[0] = 0, hull[1] = xNum - 1;
     hull[2] = (yNum * xNum) - 1;
     hull[3] = xNum * (yNum - 1);
@@ -1435,7 +1435,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
      * designated or we over-allocated the initial array of triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (const char *)(intptr_t)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1566,7 +1566,7 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         return TCL_ERROR;
     }
     if (x.numValues < 2) {
-        Tcl_AppendResult(interp, "wrong # of x-values (", Blt_Itoa(x.numValues),
+        Tcl_AppendResult(interp, "wrong # of x-values (", Blt_Ltoa(x.numValues),
                  ") for irregular mesh description.", (char *)NULL);
         return TCL_ERROR;
     }
@@ -1577,7 +1577,7 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         return TCL_ERROR;
     }
     if (y.numValues < 2) {
-        Tcl_AppendResult(interp, "wrong # of y-values (", Blt_Itoa(y.numValues),
+        Tcl_AppendResult(interp, "wrong # of y-values (", Blt_Ltoa(y.numValues),
                  ") for irregular mesh description.", (char *)NULL);
         return TCL_ERROR;
     }
@@ -1586,7 +1586,7 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     numVertices = x.numValues * y.numValues;
     vertices = Blt_Malloc(numVertices * sizeof(Point2d));
     if (vertices == NULL) {
-        Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(numVertices), 
+        Tcl_AppendResult(interp, "can't allocate ", Blt_Ltoa(numVertices), 
                 " vertices", (char *)NULL);
         return TCL_ERROR;
     }
@@ -1623,7 +1623,7 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     Blt_HashTable table;
     DataSourceResult x, y;
     Point2d *vertices;
-    long i, numVertices, count;
+    int i, numVertices, count;
 
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
         return TCL_OK;
@@ -1672,20 +1672,13 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         hPtr = Blt_CreateHashEntry(&table, &key, &isNew);
         assert(hPtr != NULL);
         if (!isNew) {
-            long index;
+            int index;
 
-            index = (long)(intptr_t)Blt_GetHashValue(hPtr);
-#ifdef __WIN64
+            index = (int)(intptr_t)Blt_GetHashValue(hPtr);
             fprintf(stderr,
-                    "duplicate point %I64d x=%g y=%g, old=%I64d x=%g y=%g\n",
+                    "duplicate point %d x=%g y=%g, old=%d x=%g y=%g\n",
                     i, x.values[i], y.values[i], index, x.values[index], 
                     y.values[index]);
-#else
-            fprintf(stderr,
-                    "duplicate point %ld x=%g y=%g, old=%ld x=%g y=%g\n",
-                    i, x.values[i], y.values[i], index, x.values[index], 
-                    y.values[index]);
-#endif
             continue;
         }
         Blt_SetHashValue(hPtr, (intptr_t)i);
@@ -1711,7 +1704,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 {
     DataSourceResult x, y;
     Point2d *vertices;
-    long i, numVertices, numTriangles, count;
+    int i, numVertices, numTriangles, count;
     Blt_MeshTriangle *triangles;
 
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
@@ -1798,7 +1791,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     /* Compress the triangle array. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (const char *)(intptr_t)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -2173,7 +2166,7 @@ VerticesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     MeshCmdInterpData *dataPtr = clientData;
     Mesh *meshPtr;
-    long i;
+    int i;
     Tcl_Obj *listObjPtr;
 
     if (GetMeshFromObj(interp, dataPtr, objv[2], &meshPtr) != TCL_OK) {
@@ -2271,8 +2264,7 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Blt_GetCountFromObj(interp, objv[i], COUNT_NNEG, &index)!=TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_CreateHashEntry(&meshPtr->hideTable,
-                                   (const char *)(intptr_t)index, &isNew);
+        hPtr = Blt_CreateHashEntry(&meshPtr->hideTable,(intptr_t)index, &isNew);
         Blt_SetHashValue(hPtr, (intptr_t)index);
     }
     if (meshPtr->classPtr->type != MESH_TRIANGLE) {
@@ -2682,7 +2674,7 @@ static Blt_MeshTriangle *
 RegularMeshFindProc(Mesh *meshPtr, double x, double y)
 {
     double xStep, yStep;
-    long xLoc, yLoc;
+    int xLoc, yLoc;
 
     if ((x < meshPtr->xMin) || (x > meshPtr->xMax) ||
         (y < meshPtr->yMin) || (y > meshPtr->yMax)) {

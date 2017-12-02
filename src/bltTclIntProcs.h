@@ -233,7 +233,7 @@ BLT_EXTERN int		Blt_GetMesh(Tcl_Interp *interp, const char *string,
 #ifndef Blt_Triangulate_DECLARED
 #define Blt_Triangulate_DECLARED
 /* 38 */
-BLT_EXTERN int		Blt_Triangulate(Tcl_Interp *interp, size_t numPoints,
+BLT_EXTERN int		Blt_Triangulate(Tcl_Interp *interp, int numPoints,
 				Point2d *points, int sorted,
 				Blt_MeshTriangle *triangles);
 #endif
@@ -1061,7 +1061,7 @@ typedef struct BltTclIntProcs {
     void (*blt_FreeMesh) (Blt_Mesh mesh); /* 35 */
     int (*blt_GetMeshFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Mesh *meshPtr); /* 36 */
     int (*blt_GetMesh) (Tcl_Interp *interp, const char *string, Blt_Mesh *meshPtr); /* 37 */
-    int (*blt_Triangulate) (Tcl_Interp *interp, size_t numPoints, Point2d *points, int sorted, Blt_MeshTriangle *triangles); /* 38 */
+    int (*blt_Triangulate) (Tcl_Interp *interp, int numPoints, Point2d *points, int sorted, Blt_MeshTriangle *triangles); /* 38 */
     void (*blt_Mesh_CreateNotifier) (Blt_Mesh mesh, Blt_MeshChangedProc *proc, ClientData clientData); /* 39 */
     void (*blt_Mesh_DeleteNotifier) (Blt_Mesh mesh, Blt_MeshChangedProc *proc, ClientData clientData); /* 40 */
     const char * (*blt_Mesh_Name) (Blt_Mesh mesh); /* 41 */

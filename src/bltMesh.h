@@ -60,7 +60,7 @@ BLT_EXTERN int Blt_GetMeshFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
         Blt_Mesh *meshPtr);
 BLT_EXTERN int Blt_GetMesh(Tcl_Interp *interp, const char *string, 
         Blt_Mesh *meshPtr);
-BLT_EXTERN int Blt_Triangulate(Tcl_Interp *interp, size_t numPoints, 
+BLT_EXTERN int Blt_Triangulate(Tcl_Interp *interp, int numPoints, 
         Point2d *points, int sorted, Blt_MeshTriangle *triangles);
 BLT_EXTERN void Blt_Mesh_CreateNotifier(Blt_Mesh mesh,
         Blt_MeshChangedProc *proc, ClientData clientData);
