@@ -7109,7 +7109,7 @@ blt_table_get_int64(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     if (colPtr->type == TABLE_COLUMN_TYPE_INT64) {
         return valuePtr->datum.i64;
     }
-    if (Blt_GetLong(interp, GetValueString(valuePtr), &i) != TCL_OK) {
+    if (Blt_GetInt64(interp, GetValueString(valuePtr), &i) != TCL_OK) {
         return TCL_ERROR;
     }
     return i;
