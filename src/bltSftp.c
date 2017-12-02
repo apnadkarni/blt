@@ -4224,16 +4224,9 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (writer.totalBytesWritten != writer.size) {
-#ifdef __WIN64
-        fprintf(stderr, "invalid file write: written=%I64d wanted=%I64d\n",
-                (int64_t)writer.totalBytesWritten,
-                (int64_t)writer.size);
-#else
-        fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
-                (int64_t)writer.totalBytesWritten,
-                (int64_t)writer.size);
+        fprintf(stderr, "invalid file write: written=%" PRId64 " wanted=%"
+                PRId64 "\n", writer.totalBytesWritten, writer.size);
         
-#endif
     }
     result = TCL_OK;
     fclose(writer.f);
@@ -4321,15 +4314,8 @@ ReadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = GetRemoteFile(interp, path, length, &reader);
     if (result == TCL_OK) {
         if (reader.numRead != reader.size) {
-#ifdef __WIN64
-            fprintf(stderr, "invalid file read: read=%I64d wanted=%I64d\n",
-                    (int64_t)reader.numRead,
-                    (int64_t)reader.size);
-#else
-            fprintf(stderr, "invalid file read: read=%ld wanted=%ld\n",
-                    (int64_t)reader.numRead,
-                    (int64_t)reader.size);
-#endif
+            fprintf(stderr, "invalid file read: read=%" PRId64 " wanted=%"
+                    PRId64 "\n", reader.numRead, reader.size);
         }
         Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(reader.dbuffer));
     }
@@ -4832,15 +4818,8 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = PutRemoteFile(interp, path, length, &writer);
     if (writer.totalBytesWritten != writer.size) {
-#ifdef __WIN64
-        fprintf(stderr, "invalid file write: written=%I64d wanted=%I64d\n",
-                (int64_t)writer.totalBytesWritten,
-                (int64_t)writer.size);
-#else
-        fprintf(stderr, "invalid file write: written=%ld wanted=%ld\n",
-                (int64_t)writer.totalBytesWritten,
-                (int64_t)writer.size);
-#endif
+        fprintf(stderr, "invalid file write: written=%" PRId64 " wanted=%"
+                PRId64 "\n", writer.totalBytesWritten, writer.size);
     }
     Blt_FreeSwitches(writeSwitches, (char *)&writer, 0);
     return result;
