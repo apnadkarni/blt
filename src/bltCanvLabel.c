@@ -2018,7 +2018,7 @@ PostScriptProc(
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
-                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%ld\n",
+                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%d\n",
                         x0, fragPtr->rx, xOffset, w, layoutPtr->width);
                 Blt_Ps_Format(ps, "%g %g moveto\n",
                               x0 + fragPtr->rx + xOffset, 
