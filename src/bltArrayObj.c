@@ -267,16 +267,14 @@ Blt_RegisterArrayObj(void)
 }
 
 
-static Tcl_DupInternalRepProc DupLongInternalRep;
-static Tcl_FreeInternalRepProc FreeLongInternalRep;
 static Tcl_UpdateStringProc UpdateStringOfLong;
 static Tcl_SetFromAnyProc SetLongFromAny;
 
 static Tcl_ObjType longObjType = {
     (char *)"long",
-    FreeLongInternalRep,                /* Called when an object is
+    NULL,                               /* Called when an object is
                                          * freed. */
-    DupLongInternalRep,                 /* Copies an internal
+    NULL,                               /* Copies an internal
                                          * representation from one object
                                          * to another. */
     UpdateStringOfLong,                 /* Creates string representation
@@ -356,18 +354,6 @@ SetLongFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 }
 
 static void
-DupLongInternalRep(
-    Tcl_Obj *srcPtr,                    /* Object with internal rep to
-                                         * copy. */
-    Tcl_Obj *destPtr)                   /* Object with internal rep to
-                                         * set. */
-{
-    destPtr->internalRep.longValue = srcPtr->internalRep.longValue;
-    Tcl_InvalidateStringRep(destPtr);
-    destPtr->typePtr = &longObjType;
-}
-
-static void
 UpdateStringOfLong(Tcl_Obj *objPtr)     /* Array object w/ string rep to
                                            update. */
 {
@@ -380,12 +366,6 @@ UpdateStringOfLong(Tcl_Obj *objPtr)     /* Array object w/ string rep to
     objPtr->length = numBytes;
 }
 
-static void
-FreeLongInternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
-{
-    Tcl_InvalidateStringRep(objPtr);
-}
-
 int
 Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, long *valuePtr)
 {
@@ -393,7 +373,7 @@ Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, long *valuePtr)
         *valuePtr = objPtr->internalRep.longValue;
         return TCL_OK;
     }
-    if (SetArrayFromAny(interp, objPtr) == TCL_OK) {
+    if (SetLongFromAny(interp, objPtr) == TCL_OK) {
         *valuePtr = objPtr->internalRep.longValue;
         return TCL_OK;
     }
@@ -437,16 +417,14 @@ Blt_RegisterLongObj(void)
 }
 
 
-static Tcl_DupInternalRepProc DupUnsignedLongInternalRep;
-static Tcl_FreeInternalRepProc FreeUnsignedLongInternalRep;
 static Tcl_UpdateStringProc UpdateStringOfUnsignedLong;
 static Tcl_SetFromAnyProc SetUnsignedLongFromAny;
 
 static Tcl_ObjType unsignedLongObjType = {
     (char *)"unsigned long",
-    FreeUnsignedLongInternalRep,        /* Called when an object is
+    NULL,                               /* Called when an object is
                                          * freed. */
-    DupUnsignedLongInternalRep,         /* Copies an internal
+    NULL,                               /* Copies an internal
                                          * representation from one object
                                          * to another. */
     UpdateStringOfUnsignedLong,         /* Creates string representation
@@ -519,19 +497,6 @@ SetUnsignedLongFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 }
 
 static void
-DupUnsignedLongInternalRep(
-    Tcl_Obj *srcPtr,                    /* Object with internal rep to
-                                         * copy. */
-    Tcl_Obj *destPtr)                   /* Object with internal rep to
-                                         * set. */
-{
-    destPtr->internalRep.longValue =
-        (unsigned long)srcPtr->internalRep.longValue;
-    Tcl_InvalidateStringRep(destPtr);
-    destPtr->typePtr = &unsignedLongObjType;
-}
-
-static void
 UpdateStringOfUnsignedLong(Tcl_Obj *objPtr) /* Array object w/ string rep to
                                            update. */
 {
@@ -545,12 +510,6 @@ UpdateStringOfUnsignedLong(Tcl_Obj *objPtr) /* Array object w/ string rep to
     objPtr->length = numBytes;
 }
 
-static void
-FreeUnsignedLongInternalRep(Tcl_Obj *objPtr) /* Array object to release. */
-{
-    Tcl_InvalidateStringRep(objPtr);
-}
-
 int
 Blt_GetUnsignedLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
                            unsigned long *valuePtr)
@@ -559,7 +518,7 @@ Blt_GetUnsignedLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
         *valuePtr = (unsigned long)objPtr->internalRep.longValue;
         return TCL_OK;
     }
-    if (SetArrayFromAny(interp, objPtr) == TCL_OK) {
+    if (SetUnsignedLongFromAny(interp, objPtr) == TCL_OK) {
         *valuePtr = (unsigned long)objPtr->internalRep.longValue;
         return TCL_OK;
     }
@@ -603,18 +562,16 @@ Blt_RegisterUnsignedLongObj(void)
 }
 
 
-static Tcl_DupInternalRepProc DupInt64InternalRep;
-static Tcl_FreeInternalRepProc FreeInt64InternalRep;
 static Tcl_UpdateStringProc UpdateStringOfInt64;
 static Tcl_SetFromAnyProc SetInt64FromAny;
 
 static Tcl_ObjType int64ObjType = {
     (char *)"int64",
-    FreeInt64InternalRep,                /* Called when an object is
+    NULL,                                /* Called when an object is
                                           * freed. */
-    DupInt64InternalRep,                 /* Copies an internal
+    NULL,                                /* Copies an internal
                                           * representation from one object
-                                         * to another. */
+                                          * to another. */
     UpdateStringOfInt64,                 /* Creates string representation
                                           * from an object's internal
                                           * representation. */
@@ -697,18 +654,6 @@ SetInt64FromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 }
 
 static void
-DupInt64InternalRep(
-    Tcl_Obj *srcPtr,                    /* Object with internal rep to
-                                         * copy. */
-    Tcl_Obj *destPtr)                   /* Object with internal rep to
-                                         * set. */
-{
-    destPtr->internalRep.wideValue = srcPtr->internalRep.wideValue;
-    Tcl_InvalidateStringRep(destPtr);
-    destPtr->typePtr = &int64ObjType;
-}
-
-static void
 UpdateStringOfInt64(Tcl_Obj *objPtr)     /* Array object w/ string rep to
                                            update. */
 {
@@ -722,12 +667,6 @@ UpdateStringOfInt64(Tcl_Obj *objPtr)     /* Array object w/ string rep to
     objPtr->length = numBytes;
 }
 
-static void
-FreeInt64InternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
-{
-    Tcl_InvalidateStringRep(objPtr);
-}
-
 int
 Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr)
 {
@@ -735,7 +674,7 @@ Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr)
         *valuePtr = (int64_t)objPtr->internalRep.wideValue;
         return TCL_OK;
     }
-    if (SetArrayFromAny(interp, objPtr) == TCL_OK) {
+    if (SetInt64FromAny(interp, objPtr) == TCL_OK) {
         *valuePtr = (int64_t)objPtr->internalRep.wideValue;
         return TCL_OK;
     }
