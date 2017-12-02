@@ -39,6 +39,10 @@
 #define BUILD_BLT_TCL_PROCS 1
 #include <bltInt.h>
 
+#ifdef HAVE_INTTYPES_H
+  #include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
+
 #ifdef HAVE_STDLIB_H
   #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
@@ -734,11 +738,13 @@ blt_table_name_to_column_type(const char *s)
     
     c = s[0];
     len = strlen(s);
-    if ((c == 's') && (len > 2) && (strncmp(s, "string", len) == 0)) {
+    if ((c == 's') && (strncmp(s, "string", len) == 0)) {
         return TABLE_COLUMN_TYPE_STRING;
-    } else if ((c == 'i') && (len > 2) && (strncmp(s, "integer", len) == 0)) {
+    } else if ((c == 'i') && (len > 3) && (strncmp(s, "integer", len) == 0)) {
         return TABLE_COLUMN_TYPE_LONG;
-    } else if ((c == 'n') && (len > 2) && (strncmp(s, "number", len) == 0)) {
+    } else if ((c == 'i') && (len > 3) && (strncmp(s, "int64", len) == 0)) {
+        return TABLE_COLUMN_TYPE_INT64;
+    } else if ((c == 'n') && (strncmp(s, "number", len) == 0)) {
         return TABLE_COLUMN_TYPE_DOUBLE;
     } else if ((c == 'd') && (strcmp(s, "double") == 0)) {
         return TABLE_COLUMN_TYPE_DOUBLE;
@@ -862,6 +868,9 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
     case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
         objPtr = Tcl_NewDoubleObj(valuePtr->datum.d);
         break;
+    case TABLE_COLUMN_TYPE_INT64:        /* long */
+        objPtr = Blt_NewInt64Obj(valuePtr->datum.i64);
+        break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
         objPtr = Blt_NewLongObj(valuePtr->datum.l);
         break;
@@ -911,6 +920,13 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             return TCL_ERROR;
         }
         break;
+
+    case TABLE_COLUMN_TYPE_INT64:        /* int64 */
+        if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.i64)!=TCL_OK) {
+            return TCL_ERROR;
+        }
+        break;
+
     case TABLE_COLUMN_TYPE_LONG:        /* long */
         if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.l) != TCL_OK) {
             return TCL_ERROR;
@@ -974,6 +990,18 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
                 return TCL_ERROR;
             }
             valuePtr->datum.l = l;      /* long */
+            break;
+
+        case TABLE_COLUMN_TYPE_INT64:    
+            {
+                int64_t i;
+                
+                if (Blt_GetInt64FromObj(interp, objPtr, &i) != TCL_OK) {
+                    Tcl_DecrRefCount(objPtr);
+                    return TCL_ERROR;
+                }
+                valuePtr->datum.i64 = i;      /* long */
+            }
             break;
 
         case TABLE_COLUMN_TYPE_BOOLEAN: 
@@ -2402,8 +2430,36 @@ CompareAsciiStringsIgnoreCase(ClientData clientData, Column *colPtr,
 }
 
 static int
-CompareIntegers(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-                Row *rowPtr2)
+CompareInt64s(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+              Row *rowPtr2)
+{
+    Value *valuePtr1, *valuePtr2;
+
+    valuePtr1 = valuePtr2 = NULL;
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
+            valuePtr1 = NULL;
+        }
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
+            valuePtr2 = NULL;
+        }
+    }
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
+            return 0;
+        }
+        return 1;
+    } else if (IsEmptyValue(valuePtr2)) {
+        return -1;
+    }
+    return valuePtr1->datum.i64 - valuePtr2->datum.i64;
+}
+
+static int
+CompareLongs(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+             Row *rowPtr2)
 {
     Value *valuePtr1, *valuePtr2;
 
@@ -2493,10 +2549,15 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 
     if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_AUTO) {
         switch (colPtr->type) {
+        case TABLE_COLUMN_TYPE_INT64:
+            proc = CompareInt64s;
+            break;
+
         case TABLE_COLUMN_TYPE_LONG:
         case TABLE_COLUMN_TYPE_BOOLEAN:
-            proc = CompareIntegers;
+            proc = CompareLongs;
             break;
+
         case TABLE_COLUMN_TYPE_TIME:
         case TABLE_COLUMN_TYPE_DOUBLE:
             proc = CompareDoubles;
@@ -6575,6 +6636,57 @@ blt_table_set_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 /*
  *---------------------------------------------------------------------------
  *
+ * blt_table_set_int64 --
+ *
+ *      Sets the int64_t value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "integer" or
+ *      "string", otherwise an error is returned.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ * Side Effects:
+ *      New tuples may be allocated created.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+blt_table_set_int64(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                   Column *colPtr, int64_t value)
+{
+    Value *valuePtr;
+    char string[200];
+
+    if ((colPtr->type != TABLE_COLUMN_TYPE_INT64) &&
+        (colPtr->type != TABLE_COLUMN_TYPE_STRING)) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "wrong column type \"",
+                             blt_table_column_type_to_name(colPtr->type), 
+                             "\": should be \"int64\"", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    ResetValue(valuePtr);
+    valuePtr->datum.i64 = value;
+    valuePtr->length = sprintf(string, PRId64, value);
+    if (strlen(string) >= TABLE_VALUE_LENGTH) {
+        valuePtr->string = Blt_AssertStrdup(string);
+    } else {
+        strcpy(valuePtr->store, string);
+        valuePtr->string = TABLE_VALUE_STORE;
+    }
+    /* Indicate the keytables need to be regenerated. */
+    if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
+        tablePtr->flags |= TABLE_KEYS_DIRTY;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * blt_table_set_string_rep --
  *
  *      Sets the value of the selected row, column location in the table.
@@ -6965,6 +7077,42 @@ blt_table_get_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
         return TCL_ERROR;
     }
     return state;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_get_int64 --
+ *
+ *      Retrieves the 64-bit integer value of the selected row, column
+ *      location in the table.  No checking is done the see if row and
+ *      column are valid (it's assumed they are).  If the current type of
+ *      the column isn't "int64", the int64_t value is computed.
+ *
+ * Results:
+ *      Returns a int64_t value.  If the value is empty, the default value 
+ *      is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+int64_t
+blt_table_get_int64(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                   Column *colPtr, int64_t defVal)
+{
+    Value *valuePtr;
+    int64_t i;
+
+    if (IsEmpty(rowPtr, colPtr)) {
+        return defVal;
+    }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    if (colPtr->type == TABLE_COLUMN_TYPE_INT64) {
+        return valuePtr->datum.i64;
+    }
+    if (Blt_GetLong(interp, GetValueString(valuePtr), &i) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return i;
 }
 
 void

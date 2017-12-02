@@ -48,6 +48,7 @@ typedef enum {
     TABLE_COLUMN_TYPE_STRING, 
     TABLE_COLUMN_TYPE_DOUBLE, 
     TABLE_COLUMN_TYPE_LONG, 
+    TABLE_COLUMN_TYPE_INT64, 
     TABLE_COLUMN_TYPE_TIME, 
     TABLE_COLUMN_TYPE_BOOLEAN, 
     TABLE_COLUMN_TYPE_BLOB, 
@@ -58,11 +59,11 @@ typedef enum {
 
 typedef struct _BLT_TABLE_VALUE {
     union {                             
-        int i;
-        int64_t l64;
-        long l;
-        double d;
-        void *ptr;
+        double d;                       /* 64 bits */
+        int64_t i64;                    /* 64 bits */
+        long l;                         /* 32 or 64 bits */
+        void *ptr;                      /* 32 or 64 bits */
+        int i;                          /* 32 bits */
     } datum;                            /* Internal representation of data:
                                          * used to speed comparisons,
                                          * sorting, etc. */
@@ -395,6 +396,10 @@ BLT_EXTERN int blt_table_get_boolean(Tcl_Interp *interp, BLT_TABLE table,
         BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int defValue);
 BLT_EXTERN int blt_table_set_boolean(Tcl_Interp *interp, BLT_TABLE table,
         BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int value);
+BLT_EXTERN int blt_table_set_int64(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t value);
+BLT_EXTERN int64_t blt_table_get_int64(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t defValue);
 
 BLT_EXTERN BLT_TABLE_VALUE blt_table_get_value(BLT_TABLE table, 
         BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
