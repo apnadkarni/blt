@@ -208,7 +208,7 @@ typedef struct {
 #define Blt_FindHashEntry(tablePtr, key) \
     (*((tablePtr)->findProc))(tablePtr, (const char *)key)
 #define Blt_CreateHashEntry(tablePtr, key, newPtr) \
-g    (*((tablePtr)->createProc))(tablePtr, (const char *)key, newPtr)
+    (*((tablePtr)->createProc))(tablePtr, (const char *)key, newPtr)
 
 BLT_EXTERN void Blt_InitHashTable(Blt_HashTable *tablePtr, size_t keyType);
 
