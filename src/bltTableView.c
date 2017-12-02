@@ -5123,8 +5123,7 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
         break;
 
     default:
-        fprintf(stderr, "unknown item type (%d) %lx\n", type,
-                (size_t)item);
+        fprintf(stderr, "unknown item type (%d) %p\n", type, item);
         break;
     }
 }
