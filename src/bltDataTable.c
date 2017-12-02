@@ -922,7 +922,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
         break;
 
     case TABLE_COLUMN_TYPE_INT64:        /* int64 */
-        if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.i64)!=TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objPtr, &valuePtr->datum.i64)!=TCL_OK) {
             return TCL_ERROR;
         }
         break;
@@ -6670,7 +6670,7 @@ blt_table_set_int64(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     valuePtr->datum.i64 = value;
-    valuePtr->length = sprintf(string, PRId64, value);
+    valuePtr->length = sprintf(string, "%" PRId64, value);
     if (strlen(string) >= TABLE_VALUE_LENGTH) {
         valuePtr->string = Blt_AssertStrdup(string);
     } else {

@@ -946,7 +946,7 @@ PsToPbm(
                                          * subprocess. */
     char string1[200];
     char string2[200];
-    size_t numPids;
+    int numPids;
     Blt_Pid *pids;
     int result;
     const char **p;
