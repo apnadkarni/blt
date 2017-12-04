@@ -136,10 +136,10 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
  */
 
 #ifdef WIN32
-  #define read(fd, buf, size)     Blt_AsyncRead((fd),(buf),(size))
-  #define close(fd)               CloseHandle((HANDLE)fd)
-  #define Tcl_CreateFileHandler   Blt_CreateFileHandler
-  #define Tcl_DeleteFileHandler   Blt_DeleteFileHandler
+  #define read(fd, buf, size)     xxxBlt_AsyncRead((fd),(buf),(size))
+  #define close(fd)               xxxCloseHandle((HANDLE)fd)
+  #define Tcl_CreateFileHandler   xxxBlt_CreateFileHandler
+  #define Tcl_DeleteFileHandler   xxxBlt_DeleteFileHandler
   #define kill                    KillProcess
   #define waitpid                 WaitProcess
   #define kill                    KillProcess
@@ -1436,11 +1436,15 @@ ReadBytes(Sink *sinkPtr)
          * here. */
         if (numBytes < 0) {
 
-#ifdef O_NONBLOCK
-  #define BLOCKED         EAGAIN
+#ifdef WIN32
+  #define BLOCKED           EAGAIN
 #else
-  #define BLOCKED         EWOULDBLOCK
-#endif /*O_NONBLOCK*/
+  #ifdef O_NONBLOCK
+    #define BLOCKED         EAGAIN
+  #else
+    #define BLOCKED         EWOULDBLOCK
+  #endif /*O_NONBLOCK*/
+#endif /*WIN32*/
 
             /* Either an error has occurred or no more data is currently
              * available to read.  */
@@ -1451,7 +1455,7 @@ ReadBytes(Sink *sinkPtr)
                 sinkPtr->status = READ_EOF;
                 return TCL_BREAK;
             } else {
-                ExplainError(interp, "read");
+                ExplainError(interp, "xread");
                 sinkPtr->status = READ_ERROR;
                 return TCL_ERROR;
             }
