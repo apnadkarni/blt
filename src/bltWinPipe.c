@@ -514,13 +514,19 @@ CheckHandlers(ClientData clientData, int flags)
 }
 
 static PipeHandler *
-NewPipeHandler(void)
+NewPipeHandler(HANDLE hPipe, unsigned int flags, Tcl_FileProc *proc,
+               ClientData clientData)
+
 {
     DWORD id;
     PipeHandler *pipePtr;
     LPTHREAD_START_ROUTINE threadProc;
 
     pipePtr = Blt_AssertCalloc(1, sizeof(PipeHandler));
+    pipePtr->hPipe = hPipe;
+    pipePtr->flags = flags;
+    pipePtr->proc = proc;
+    pipePtr->clientData = clientData;
     pipePtr->parentId = GetCurrentThreadId();
     pipePtr->parent = GetCurrentThread();
     pipePtr->hWindow = GetNotifierWindow();
@@ -2347,11 +2353,7 @@ Blt_CreateFileHandler(
     if ((flags != TCL_READABLE) && (flags != TCL_WRITABLE)) {
         return;                 /* Only one of the flags can be set. */
     }
-    pipePtr = NewPipeHandler();
-    pipePtr->hFile = hFile;
-    pipePtr->flags = flags;
-    pipePtr->proc = proc;
-    pipePtr->clientData = clientData;
+    pipePtr = NewPipeHandler(hPipe, flags, proc, clientData);
 
     /* Add the handler to the list of managed pipes. */
     EnterCriticalSection(&pipeCriticalSection);
