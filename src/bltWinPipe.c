@@ -591,6 +591,9 @@ DeletePipeHandler(PipeHandler * pipePtr)
 
     pipePtr->idleEvent = pipePtr->readyEvent = INVALID_HANDLE_VALUE;
     pipePtr->thread = pipePtr->hPipe = INVALID_HANDLE_VALUE;
+
+    fprintf(stderr, "deleting pipe %p (%d entries)\n", pipePtr->hPipe,
+            Blt_Chain_GetLength(pipeChain));
     pipePtr->flags |= PIPE_DELETED;     /* Mark the pipe has deleted. */
     Tcl_EventuallyFree(pipePtr, DestroyPipe);
 }
@@ -2353,7 +2356,7 @@ Blt_CreateFileHandler(
     if ((flags != TCL_READABLE) && (flags != TCL_WRITABLE)) {
         return;                 /* Only one of the flags can be set. */
     }
-    pipePtr = NewPipeHandler(hPipe, flags, proc, clientData);
+    pipePtr = NewPipeHandler(hFile, flags, proc, clientData);
 
     /* Add the handler to the list of managed pipes. */
     EnterCriticalSection(&pipeCriticalSection);
@@ -2418,6 +2421,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
 
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
+        fprintf(stderr, "pipePtr->flags=%x\n", pipePtr->flags);
         errno = EBADF;
         return -1;
     }
