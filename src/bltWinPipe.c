@@ -593,7 +593,7 @@ DeletePipeHandler(PipeHandler * pipePtr)
     CloseHandle(pipePtr->thread);
 
     pipePtr->idleEvent = pipePtr->readyEvent = INVALID_HANDLE_VALUE;
-    pipePtr->thread = pipePtr->hPipe = INVALID_HANDLE_VALUE;
+    pipePtr->thread = INVALID_HANDLE_VALUE;
 
     pipePtr->flags |= PIPE_DELETED;     /* Mark the pipe has deleted. */
     Tcl_EventuallyFree(pipePtr, DestroyPipe);
@@ -2423,7 +2423,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         fprintf(stderr, "pipePtr->flags=%x\n", pipePtr->flags);
-        errno = EBADF;
+        errno = ESRCH;
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
