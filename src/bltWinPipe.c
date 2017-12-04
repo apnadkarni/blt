@@ -514,15 +514,13 @@ CheckHandlers(ClientData clientData, int flags)
 }
 
 static PipeHandler *
-CreatePipeHandler(HANDLE hFile, int flags)
+NewPipeHandler(void)
 {
     DWORD id;
     PipeHandler *pipePtr;
     LPTHREAD_START_ROUTINE threadProc;
 
     pipePtr = Blt_AssertCalloc(1, sizeof(PipeHandler));
-    pipePtr->hPipe = hFile;
-    pipePtr->flags = flags;
     pipePtr->parentId = GetCurrentThreadId();
     pipePtr->parent = GetCurrentThread();
     pipePtr->hWindow = GetNotifierWindow();
@@ -633,6 +631,8 @@ GetPipeHandler(HANDLE hPipe)
             return pipePtr;
         }
     }
+    fprintf(stderr, "Can't find pipe for %p (%d entries)\n", hPipe,
+            Blt_Chain_GetLength(pipeChain));
     return NULL;
 }
 
@@ -2334,7 +2334,7 @@ Blt_CreatePipeline(
  */
 void
 Blt_CreateFileHandler(
-    HANDLE hFile,                       /* Descriptor or handle of file */
+    HANDLE hFile,                       /* Handle of file */
     int flags,                          /* TCL_READABLE or TCL_WRITABLE  */
     Tcl_FileProc *proc,
     ClientData clientData)
@@ -2347,7 +2347,9 @@ Blt_CreateFileHandler(
     if ((flags != TCL_READABLE) && (flags != TCL_WRITABLE)) {
         return;                 /* Only one of the flags can be set. */
     }
-    pipePtr = CreatePipeHandler(hFile, flags);
+    pipePtr = NewPipeHandler();
+    pipePtr->hFile = hFile;
+    pipePtr->flags = flags;
     pipePtr->proc = proc;
     pipePtr->clientData = clientData;
 
