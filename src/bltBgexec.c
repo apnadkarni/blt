@@ -171,9 +171,11 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
                                          * before stopping to let TCL catch
                                          * up on events */
 #ifdef WIN32
-#define SINKOPEN(sinkPtr)  ((sinkPtr)->fileHandle != NULL)
+#define SINKOPEN(sinkPtr)  ((sinkPtr)->hFile != INVALID_FILE_HANDLE)
+#define SINKCLOSED(sinkPtr)  ((sinkPtr)->hFile == INVALID_FILE_HANDLE)
 #else 
 #define SINKOPEN(sinkPtr)  ((sinkPtr)->fd != -1)
+#define SINKCLOSED(sinkPtr)  ((sinkPtr)->fd == -1)
 #endif  /* WIN32 */
 
 #ifndef NSIG
@@ -412,7 +414,7 @@ typedef struct {
     Tcl_Encoding encoding;              /* Decoding scheme to use when
                                          * translating data. */
 #ifdef WIN32
-    HANDLE fileHandle;
+    HANDLE hFile;
 #else
     int fd;                             /* File descriptor of the pipe. */
 #endif  /* WIN32 */
@@ -1252,7 +1254,7 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name, int channelNum)
     sinkPtr->bgPtr = bgPtr;
     sinkPtr->name = name;
 #ifdef WIN32
-    sinkPtr->fileHandle = NULL;
+    sinkPtr->hFile = INVALID_FILE_HANDLE;
 #else
     sinkPtr->fd = -1;
 #endif  /* WIN32 */
@@ -1321,7 +1323,7 @@ FreeSinkBuffer(Sink *sinkPtr)
         sinkPtr->bytes = sinkPtr->staticSpace;
     }
 #ifdef WIN32
-    sinkPtr->fileHandle = NULL;
+    sinkPtr->hFile = INVALID_FILE_HANDLE;
 #else 
     sinkPtr->fd = -1;
 #endif  /* WIN32 */
@@ -1432,7 +1434,7 @@ ReadBytes(Sink *sinkPtr)
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
 #ifdef WIN32
-        numBytes = Blt_AsyncRead(sinkPtr->fileHandle, array, bytesLeft - 1);
+        numBytes = Blt_AsyncRead(sinkPtr->hFile, array, bytesLeft - 1);
 #else
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
 #endif /* WIN32 */
@@ -1476,12 +1478,12 @@ CloseSink(Sink *sinkPtr)
 {
     if (SINKOPEN(sinkPtr)) {
 #ifdef WIN32
-        CloseHandle(sinkPtr->fileHandle);
-        Blt_DeleteFileHandler(sinkPtr->fileHandle);
-        sinkPtr->fileHandle = NULL;
+        Blt_DeleteFileHandler(sinkPtr->hFile);
+        CloseHandle(sinkPtr->hFile);
+        sinkPtr->hFile = INVALID_FILE_HANDLE;
 #else
-        close(sinkPtr->fd);
         Tcl_DeleteFileHandler(sinkPtr->fd);
+        close(sinkPtr->fd);
         sinkPtr->fd = -1;               /* Mark sink as closed. */
 #endif /* WIN32 */
         if (sinkPtr->doneVarObjPtr != NULL) {
@@ -1983,7 +1985,7 @@ CreateSinkHandler(Sink *sinkPtr, Tcl_FileProc *proc)
     }
 #endif /* !WIN32 */
 #ifdef WIN32
-    Blt_CreateFileHandler(sinkPtr->fileHandle, TCL_READABLE, proc, sinkPtr);
+    Blt_CreateFileHandler(sinkPtr->hFile, TCL_READABLE, proc, sinkPtr);
 #else
     Tcl_CreateFileHandler(sinkPtr->fd, TCL_READABLE, proc, sinkPtr);
 #endif  /* WIN32 */
@@ -2178,7 +2180,7 @@ ExecutePipeline(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         (bgPtr->outSink.doneVarObjPtr != NULL) || 
         (bgPtr->outSink.updateVarObjPtr != NULL) ||
         (bgPtr->outSink.cmdObjPtr != NULL)) {
-        outFdPtr = &bgPtr->outSink.fileHandle;
+        outFdPtr = &bgPtr->outSink.hFile;
     }
 #else
     outFdPtr = &bgPtr->outSink.fd;
@@ -2188,7 +2190,7 @@ ExecutePipeline(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
         (bgPtr->errSink.cmdObjPtr != NULL) ||
         (bgPtr->errSink.flags & SINK_ECHO)) {
 #ifdef WIN32
-        errFdPtr = &bgPtr->errSink.fileHandle;
+        errFdPtr = &bgPtr->errSink.hFile;
 #else
         errFdPtr = &bgPtr->errSink.fd;
 #endif

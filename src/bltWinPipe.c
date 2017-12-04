@@ -716,6 +716,9 @@ PipeReaderThread(void *clientData)
     BOOL result;
 
     for (;;) {
+        if (pipePtr->hPipe == INVALID_HANDLE_VALUE) {
+            break;
+        }
         if (pipePtr->flags & PIPE_DELETED) {
             break;
         }
@@ -2359,6 +2362,8 @@ Blt_CreateFileHandler(
     if ((flags != TCL_READABLE) && (flags != TCL_WRITABLE)) {
         return;                 /* Only one of the flags can be set. */
     }
+    assert(hFile!=INVALID_FILE_HANDLE);
+    
     pipePtr = NewPipeHandler(hFile, flags, proc, clientData);
 
     /* Add the handler to the list of managed pipes. */
