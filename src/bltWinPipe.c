@@ -313,7 +313,7 @@ GetNotifierWindow(void)
  *      On TRUE, the number of bytes returned indicates the following:
  *        0     EOF.
  *        -1    An error has occured or the thread is currently
- *              blocked reading.  In that last case, errno is set
+ *              blocked reading.  In the latter case, errno is set
  *              to EAGAIN.
  *        >0    Number of bytes of data in the buffer.
  *
@@ -338,8 +338,12 @@ PeekOnPipe(PipeHandler *pipePtr, int *numBytesAvailPtr)
     if (state == WAIT_OBJECT_0) {
         int numBytesAvail;
 
+        if (pipePtr->end < pipePtr->start) {
+            fprintf(stderr, "pipe %p (start %d > end %d)\n", pipePtr->hPipe,
+                    pipePtr->start, pipePtr->end);
+        }
         numBytesAvail = pipePtr->end - pipePtr->start;
-        if ((numBytesAvail <= 0) && !(pipePtr->flags & PIPE_EOF)) {
+        if ((numBytesAvail == 0) && !(pipePtr->flags & PIPE_EOF)) {
             TclWinConvertError(pipePtr->lastError);
             numBytesAvail = -1;
         }
@@ -724,7 +728,10 @@ PipeReaderThread(void *clientData)
         WaitForSingleObject(pipePtr->idleEvent, INFINITE);
         /* Read from the pipe. The thread will block here until some data
          * is read into its buffer. */
-        assert(pipePtr->start == pipePtr->end);
+        if (pipePtr->start != pipePtr->end) {
+            fprintf(stderr, "pipe %p (start %d != end %d)\n", pipePtr->hPipe,
+                    pipePtr->start, pipePtr->end);
+        }
         result = ReadFile(
             pipePtr->hPipe,             /* Handle to anonymous pipe. */
             pipePtr->buffer,            /* Data buffer. */
@@ -2359,7 +2366,7 @@ Blt_CreateFileHandler(
     if ((flags != TCL_READABLE) && (flags != TCL_WRITABLE)) {
         return;                 /* Only one of the flags can be set. */
     }
-    assert(hFile!=INVALID_HANDLE_VALUE);
+    assert(hFile != INVALID_HANDLE_VALUE);
     
     pipePtr = NewPipeHandler(hFile, flags, proc, clientData);
 
@@ -2426,12 +2433,11 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
 
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
-        fprintf(stderr, "pipePtr->flags=%x\n", pipePtr->flags);
         errno = EBADF;
-        errno = ESRCH;
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
+        errno = EAGAIN;
         return -1;                      /* No data available. */
     }
     /*
