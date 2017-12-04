@@ -171,8 +171,8 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
                                          * before stopping to let TCL catch
                                          * up on events */
 #ifdef WIN32
-#define SINKOPEN(sinkPtr)  ((sinkPtr)->hFile != INVALID_FILE_HANDLE)
-#define SINKCLOSED(sinkPtr)  ((sinkPtr)->hFile == INVALID_FILE_HANDLE)
+#define SINKOPEN(sinkPtr)  ((sinkPtr)->hFile != INVALID_HANDLE_VALUE)
+#define SINKCLOSED(sinkPtr)  ((sinkPtr)->hFile == INVALID_HANDLE_VALUE)
 #else 
 #define SINKOPEN(sinkPtr)  ((sinkPtr)->fd != -1)
 #define SINKCLOSED(sinkPtr)  ((sinkPtr)->fd == -1)
@@ -1254,7 +1254,7 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name, int channelNum)
     sinkPtr->bgPtr = bgPtr;
     sinkPtr->name = name;
 #ifdef WIN32
-    sinkPtr->hFile = INVALID_FILE_HANDLE;
+    sinkPtr->hFile = INVALID_HANDLE_VALUE;
 #else
     sinkPtr->fd = -1;
 #endif  /* WIN32 */
@@ -1323,7 +1323,7 @@ FreeSinkBuffer(Sink *sinkPtr)
         sinkPtr->bytes = sinkPtr->staticSpace;
     }
 #ifdef WIN32
-    sinkPtr->hFile = INVALID_FILE_HANDLE;
+    sinkPtr->hFile = INVALID_HANDLE_VALUE;
 #else 
     sinkPtr->fd = -1;
 #endif  /* WIN32 */
@@ -1480,7 +1480,7 @@ CloseSink(Sink *sinkPtr)
 #ifdef WIN32
         Blt_DeleteFileHandler(sinkPtr->hFile);
         CloseHandle(sinkPtr->hFile);
-        sinkPtr->hFile = INVALID_FILE_HANDLE;
+        sinkPtr->hFile = INVALID_HANDLE_VALUE;
 #else
         Tcl_DeleteFileHandler(sinkPtr->fd);
         close(sinkPtr->fd);
