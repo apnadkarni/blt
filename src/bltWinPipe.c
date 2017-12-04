@@ -735,7 +735,7 @@ PipeReaderThread(void *clientData)
             NULL);                      /* Overlapping I/O */
 
         if (!result) {
-            fprintf(stderr, "ReadFile failed on pipe %p errno=%d error=%s\n",
+            fprintf(stderr, "ReadFile failed on pipe %p errno=%d error=%ld\n",
                     pipePtr->hPipe, errno, GetLastError());
         }
         /*
