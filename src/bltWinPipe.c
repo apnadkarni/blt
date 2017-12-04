@@ -716,9 +716,6 @@ PipeReaderThread(void *clientData)
     BOOL result;
 
     for (;;) {
-        if (pipePtr->hPipe == INVALID_HANDLE_VALUE) {
-            break;
-        }
         if (pipePtr->flags & PIPE_DELETED) {
             break;
         }
