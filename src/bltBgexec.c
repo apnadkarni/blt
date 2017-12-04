@@ -136,6 +136,12 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
  */
 
 #ifdef WIN32
+  #define read(fd, buf, size)     Blt_AsyncRead((fd),(buf),(size))
+  #define close(fd)               CloseHandle((HANDLE)fd)
+  #define Tcl_CreateFileHandler   Blt_CreateFileHandler
+  #define Tcl_DeleteFileHandler   Blt_DeleteFileHandler
+  #define kill                    KillProcess
+  #define waitpid                 WaitProcess
   #define kill                    KillProcess
   #define waitpid                 WaitProcess
 #endif  /* WIN32 */

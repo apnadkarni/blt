@@ -1375,7 +1375,7 @@ StartProcess(
                                          * child process itself are sent to
                                          * errorFile. */
     int argc,                           /* # of arguments. */
-    const char **argv,                  /* Command line arguments. */
+    char **argv,                        /* Command line arguments. */
     HANDLE hStdin,                      /* File handle to use as input (stdin)
                                          * for the child process. If handle is
                                          * -1, no * standard input. */
