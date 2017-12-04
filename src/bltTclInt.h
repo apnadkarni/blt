@@ -283,7 +283,6 @@ BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 BLT_EXTERN int Blt_SetLongObj(Tcl_Obj *objPtr, long value);
 BLT_EXTERN Tcl_Obj *Blt_NewLongObj(long value);
 BLT_EXTERN int Blt_IsLongObj(Tcl_Obj *objPtr);
-BLT_EXTERN void Blt_RegisterLongObj(void);
 
 BLT_EXTERN int Blt_GetUnsignedLong(Tcl_Interp *interp, const char *s,
                            unsigned long *valuePtr);
@@ -292,7 +291,6 @@ BLT_EXTERN int Blt_GetUnsignedLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 BLT_EXTERN int Blt_SetUnsignedLongObj(Tcl_Obj *objPtr, unsigned long value);
 BLT_EXTERN Tcl_Obj *Blt_NewUnsignedLongObj(unsigned long value);
 BLT_EXTERN int Blt_IsUnsignedLongObj(Tcl_Obj *objPtr);
-BLT_EXTERN void Blt_RegisterUnsignedLongObj(void);
 
 BLT_EXTERN int Blt_GetInt64(Tcl_Interp *interp, const char *s,
                            int64_t *valuePtr);
@@ -301,7 +299,6 @@ BLT_EXTERN int Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 BLT_EXTERN int Blt_SetInt64Obj(Tcl_Obj *objPtr, int64_t value);
 BLT_EXTERN Tcl_Obj *Blt_NewInt64Obj(int64_t value);
 BLT_EXTERN int Blt_IsInt64Obj(Tcl_Obj *objPtr);
-BLT_EXTERN void Blt_RegisterInt64Obj(void);
 
 
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);
@@ -315,5 +312,7 @@ BLT_EXTERN double Blt_NaN(void);
 BLT_EXTERN int Blt_AlmostEquals(double x, double y);
 
 BLT_EXTERN const char **Blt_ConvertListToList(int argc, const char **argv);
+
+BLT_EXTERN void Blt_RegisterObjTypes(void);
 
 #endif /*_BLT_TCL_INT_H*/

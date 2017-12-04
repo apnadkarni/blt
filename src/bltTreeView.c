@@ -8974,7 +8974,7 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_ObjIsInteger(objv[2])) {
 	Entry *entryPtr;
 
-	if (GetEntry(interp, viewPtr, objv[2], &entryPtr) == TCL_OK) {
+	if (GetEntry(interp, viewPtr, objv[2], &entryPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
         if (entryPtr == NULL) {
@@ -9157,7 +9157,7 @@ ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_ObjIsInteger(objv[3])) {
 	Entry *entryPtr;
 
-	if (GetEntry(interp, viewPtr, objv[3], &entryPtr) == TCL_OK) {
+	if (GetEntry(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
         if (entryPtr == NULL) {

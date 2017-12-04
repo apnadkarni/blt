@@ -371,7 +371,7 @@ Blt_TclInit(Tcl_Interp *interp) /* Interpreter to add extra commands */
     args[0] = args[1] = TCL_EITHER;
     Tcl_CreateMathFunc(interp, "min", 2, args, MinMathProc, (ClientData)0);
     Tcl_CreateMathFunc(interp, "max", 2, args, MaxMathProc, (ClientData)0);
-    Blt_RegisterArrayObj();
+    Blt_RegisterObjTypes();
     bltNaN = MakeNaN();
 #ifdef USE_BLT_STUBS
     result = Tcl_PkgProvideEx(interp, "blt_tcl", BLT_VERSION, &bltTclProcs);

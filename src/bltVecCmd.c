@@ -3332,11 +3332,11 @@ CompareValues(double a, double b)
     
     if (!FINITE(a)) {
         if (!FINITE(b)) {
-            return 0;               /* Both points are empty */
+            return 0;                   /* Both points are empty */
         }
-        return 1;
+        return 1;                       /* Only 1st point is empty. */
     } else if (!FINITE(b)) {
-        return -1;
+        return -1;                      /* Only 2nd point is empty. */
     }
     d = a - b;
     if (d < 0.0) {

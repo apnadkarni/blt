@@ -206,12 +206,15 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PicturePdfSafeInit;
 
 #ifdef WIN32
 
+typedef HANDLE Pipe;
+
 typedef struct {
     DWORD pid;
     HANDLE hProcess;
 } ProcessId;
 
 #else
+typedef int Pipe;
 typedef pid_t ProcessId;
 #endif
 
@@ -715,10 +718,10 @@ WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 
 
 static int
-ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
+ReadFromGhostscript(Tcl_Interp *interp, Pipe pipe, Blt_DBuffer dbuffer)
 {
     DWORD numBytes;
-    HANDLE hFile = filePtr;
+    HANDLE hFile = pipe;
     int result;
 
     Blt_DBuffer_Free(dbuffer);
@@ -754,10 +757,10 @@ ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 #else  /* WIN32 */
 
 static pid_t
-WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
+WriteToGhostscript(Tcl_Interp *interp, Pipe pipe, Blt_DBuffer dbuffer)
 {
     pid_t child;
-    int fd = (int64_t)filePtr;
+    int fd = pipe;
     
     child = fork();
     if (child == -1) {
@@ -784,10 +787,10 @@ WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 }
 
 static int
-ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
+ReadFromGhostscript(Tcl_Interp *interp, Pipe pipe, Blt_DBuffer dbuffer)
 {
     int numBytes;
-    int fd = (int64_t)filePtr;
+    int fd = pipe;
     
     Blt_DBuffer_Free(dbuffer);
     numBytes = 0;
@@ -819,7 +822,7 @@ static int
 PdfToPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
          PdfImportSwitches *switchesPtr)
 {
-    void *inPipe, *outPipe;             /* File descriptors for ghostscript
+    Pipe inPipe, outPipe;               /* File descriptors for ghostscript
                                          * subprocess. */
     char string1[200];
     char string2[200];

@@ -1,8 +1,8 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- * bltArrayObj.c --
+ * bltObj.c --
  *
- * This file implements an array-based Tcl_Obj.
+ * This file implements various TCL objects for BLT.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -61,35 +61,99 @@
 #include "bltHash.h"
 #include "bltArrayObj.h"
 
-static Tcl_DupInternalRepProc DupArrayInternalRep;
-static Tcl_FreeInternalRepProc FreeArrayInternalRep;
-static Tcl_UpdateStringProc UpdateStringOfArray;
-static Tcl_SetFromAnyProc SetArrayFromAny;
+static Tcl_DupInternalRepProc ArrayObjDupInternalRep;
+static Tcl_FreeInternalRepProc ArrayObjFreeInternalRep;
+static Tcl_UpdateStringProc ArrayObjUpdateStringRep;
+static Tcl_SetFromAnyProc ArrayObjSetFromAny;
 
-static Tcl_ObjType arrayObjType = {
-    (char *)"array",
-    FreeArrayInternalRep,               /* Called when an object is
+static Tcl_ObjType bltArrayObjType = {
+    (char *)"blt_array",
+    ArrayObjFreeInternalRep,            /* Called when an object is
                                          * freed. */
-    DupArrayInternalRep,                /* Copies an internal
+    ArrayObjDupInternalRep,             /* Copies an internal
                                          * representation from one object
                                          * to another. */
-    UpdateStringOfArray,                /* Creates string representation
+    ArrayObjUpdateStringRep,             /* Creates string representation
                                          * from an object's internal
                                          * representation. */
-    SetArrayFromAny,                    /* Creates valid internal
+    ArrayObjSetFromAny,                 /* Creates valid internal
                                          * representation from an object's
                                          * string representation. */
 };
 
+
+static Tcl_UpdateStringProc Int64ObjUpdateStringRep;
+static Tcl_SetFromAnyProc Int64ObjSetFromAny;
+
+static Tcl_ObjType bltInt64ObjType = {
+    (char *)"blt_int64",
+    NULL,                                /* Called when an object is
+                                          * freed. */
+    NULL,                                /* Copies an internal
+                                          * representation from one object
+                                          * to another. */
+    Int64ObjUpdateStringRep,             /* Creates string representation
+                                          * from an object's internal
+                                          * representation. */
+    Int64ObjSetFromAny,                     /* Creates valid internal
+                                          * representation from an object's
+                                          * string representation. */
+};
+
+static Tcl_UpdateStringProc LongObjUpdateStringRep;
+static Tcl_SetFromAnyProc   LongObjSetFromAny;
+
+static Tcl_ObjType bltLongObjType = {
+    (char *)"blt_long",
+    NULL,                               /* Called when an object is
+                                         * freed. */
+    NULL,                               /* Copies an internal
+                                         * representation from one object
+                                         * to another. */
+    LongObjUpdateStringRep,             /* Creates string representation
+                                         * from an object's internal
+                                         * representation. */
+    LongObjSetFromAny,                  /* Creates valid internal
+                                         * representation from an object's
+                                         * string representation. */
+};
+
+static Tcl_UpdateStringProc UnsignedLongObjUpdateStringRep;
+static Tcl_SetFromAnyProc UnsignedLongObjSetFromAny;
+
+static Tcl_ObjType bltUnsignedLongObjType = {
+    (char *)"blt_unsigned_long",
+    NULL,                               /* Called when an object is
+                                         * freed. */
+    NULL,                               /* Copies an internal
+                                         * representation from one object
+                                         * to another. */
+    UnsignedLongObjUpdateStringRep,      /* Creates string representation
+                                         * from an object's internal
+                                         * representation. */
+    UnsignedLongObjSetFromAny,             /* Creates valid internal
+                                         * representation from an object's
+                                         * string representation. */
+};
+
+
+static INLINE void
+FreeInternalRep(Tcl_Obj *objPtr)
+{
+    if ((objPtr->typePtr != NULL) &&
+        (objPtr->typePtr->freeIntRepProc != NULL)) {   
+	(*objPtr->typePtr->freeIntRepProc)(objPtr);  
+    }
+}
+
 static int
-SetArrayFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
+ArrayObjSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     Blt_HashTable *tablePtr;
-    const Tcl_ObjType *oldTypePtr = objPtr->typePtr;
     Tcl_Obj **objv;
     int objc, i;
 
-    if (objPtr->typePtr == &arrayObjType) {
+    if (objPtr->typePtr == &bltArrayObjType) {
         return TCL_OK;
     }
     /* Get the string representation. Make it up-to-date if necessary. */
@@ -112,38 +176,36 @@ SetArrayFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
         /* Make sure we increment the reference count */
         Tcl_IncrRefCount(elemObjPtr);
     }
-    if ((oldTypePtr != NULL) && (oldTypePtr->freeIntRepProc != NULL)) {
-        oldTypePtr->freeIntRepProc(objPtr);
-    }
+    FreeInternalRep(objPtr);
     objPtr->internalRep.otherValuePtr = tablePtr;
-    objPtr->typePtr = &arrayObjType;
+    objPtr->typePtr = &bltArrayObjType;
     return TCL_OK;
 }
 
 static void
-DupArrayInternalRep(
+ArrayObjDupInternalRep(
     Tcl_Obj *srcPtr,                    /* Object with internal rep to
                                          * copy. */
     Tcl_Obj *destPtr)                   /* Object with internal rep to
                                          * set. */
 {
-    Blt_HashEntry *hp;
+    Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Blt_HashTable *srcTablePtr, *destTablePtr;
 
     srcTablePtr = (Blt_HashTable *)srcPtr->internalRep.otherValuePtr;
     destTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
     Blt_InitHashTable(destTablePtr, BLT_STRING_KEYS);
-    for (hp = Blt_FirstHashEntry(srcTablePtr, &iter); hp != NULL;
-         hp = Blt_NextHashEntry(&iter)) {
+    for (hPtr = Blt_FirstHashEntry(srcTablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
         Tcl_Obj *valueObjPtr;
         const char *key;
         int isNew;
 
-        key = Blt_GetHashKey(srcTablePtr, hp);
+        key = Blt_GetHashKey(srcTablePtr, hPtr);
         Blt_CreateHashEntry(destTablePtr, key, &isNew);
-        valueObjPtr = Blt_GetHashValue(hp);
-        Blt_SetHashValue(hp, valueObjPtr);
+        valueObjPtr = Blt_GetHashValue(hPtr);
+        Blt_SetHashValue(hPtr, valueObjPtr);
 
         /* Make sure we increment the reference count now that both array
          * objects are using the same elements. */
@@ -151,26 +213,26 @@ DupArrayInternalRep(
     }
     Tcl_InvalidateStringRep(destPtr);
     destPtr->internalRep.otherValuePtr = (VOID *)destTablePtr;
-    destPtr->typePtr = &arrayObjType;
+    destPtr->typePtr = &bltArrayObjType;
 }
 
 static void
-UpdateStringOfArray(Tcl_Obj *objPtr)    /* Array object w/ string rep to
+ArrayObjUpdateStringRep(Tcl_Obj *objPtr) /* Array object w/ string rep to
                                            update. */
 {
     Tcl_DString ds;
     Blt_HashTable *tablePtr;
-    Blt_HashEntry *hp;
+    Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
     tablePtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
     Tcl_DStringInit(&ds);
-    for (hp = Blt_FirstHashEntry(tablePtr, &iter); hp != NULL;
-         hp = Blt_NextHashEntry(&iter)) {
+    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
         Tcl_Obj *elemObjPtr;
 
-        elemObjPtr = Blt_GetHashValue(hp);
-        Tcl_DStringAppendElement(&ds, Blt_GetHashKey(tablePtr, hp));
+        elemObjPtr = Blt_GetHashValue(hPtr);
+        Tcl_DStringAppendElement(&ds, Blt_GetHashKey(tablePtr, hPtr));
         Tcl_DStringAppendElement(&ds, Tcl_GetString(elemObjPtr));
     }
     objPtr->bytes = (char *)Blt_AssertStrdup(Tcl_DStringValue(&ds));
@@ -179,19 +241,19 @@ UpdateStringOfArray(Tcl_Obj *objPtr)    /* Array object w/ string rep to
 }
 
 static void
-FreeArrayInternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
+ArrayObjFreeInternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
 {
-    Blt_HashEntry *hp;
+    Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Blt_HashTable *tablePtr;
     
     Tcl_InvalidateStringRep(objPtr);
     tablePtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
-    for (hp = Blt_FirstHashEntry(tablePtr, &iter); hp != NULL;
-         hp = Blt_NextHashEntry(&iter)) {
+    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
         Tcl_Obj *elemObjPtr;
 
-        elemObjPtr = Blt_GetHashValue(hp);
+        elemObjPtr = Blt_GetHashValue(hPtr);
         Tcl_DecrRefCount(elemObjPtr);
     }
     Blt_DeleteHashTable(tablePtr);
@@ -202,11 +264,11 @@ int
 Blt_GetArrayFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
                     Blt_HashTable **tablePtrPtr)
 {
-    if (objPtr->typePtr == &arrayObjType) {
+    if (objPtr->typePtr == &bltArrayObjType) {
         *tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
         return TCL_OK;
     }
-    if (SetArrayFromAny(interp, objPtr) == TCL_OK) {
+    if (ArrayObjSetFromAny(interp, objPtr) == TCL_OK) {
         *tablePtrPtr = (Blt_HashTable *)objPtr->internalRep.otherValuePtr;
         return TCL_OK;
     }
@@ -224,20 +286,20 @@ Blt_NewArrayObj(int objc, Tcl_Obj **objv)
     Blt_InitHashTable(tablePtr, BLT_STRING_KEYS);
 
     for (i = 0; i < objc; i += 2) {
-        Blt_HashEntry *hp;
+        Blt_HashEntry *hPtr;
         Tcl_Obj *objPtr;
         int isNew;
 
-        hp = Blt_CreateHashEntry(tablePtr, Tcl_GetString(objv[i]), &isNew);
+        hPtr = Blt_CreateHashEntry(tablePtr, Tcl_GetString(objv[i]), &isNew);
         objPtr = ((i + 1) == objc) ? Tcl_NewStringObj("", -1) : objv[i+1];
         Tcl_IncrRefCount(objPtr);
         if (!isNew) {
             Tcl_Obj *oldObjPtr;
 
-            oldObjPtr = Blt_GetHashValue(hp);
+            oldObjPtr = Blt_GetHashValue(hPtr);
             Tcl_DecrRefCount(oldObjPtr);
         }
-        Blt_SetHashValue(hp, objPtr);
+        Blt_SetHashValue(hPtr, objPtr);
     }
     arrayObjPtr = Tcl_NewObj(); 
     /* 
@@ -249,41 +311,15 @@ Blt_NewArrayObj(int objc, Tcl_Obj **objv)
     arrayObjPtr->internalRep.otherValuePtr = (VOID *)tablePtr;
     arrayObjPtr->bytes = NULL;
     arrayObjPtr->length = 0; 
-    arrayObjPtr->typePtr = &arrayObjType;
+    arrayObjPtr->typePtr = &bltArrayObjType;
     return arrayObjPtr;
 }
 
 int
 Blt_IsArrayObj(Tcl_Obj *objPtr)
 {
-    return (objPtr->typePtr == &arrayObjType);
+    return (objPtr->typePtr == &bltArrayObjType);
 }
-
-/*ARGSUSED*/
-void
-Blt_RegisterArrayObj(void)
-{
-    Tcl_RegisterObjType(&arrayObjType);
-}
-
-
-static Tcl_UpdateStringProc UpdateStringOfLong;
-static Tcl_SetFromAnyProc SetLongFromAny;
-
-static Tcl_ObjType longObjType = {
-    (char *)"long",
-    NULL,                               /* Called when an object is
-                                         * freed. */
-    NULL,                               /* Copies an internal
-                                         * representation from one object
-                                         * to another. */
-    UpdateStringOfLong,                 /* Creates string representation
-                                         * from an object's internal
-                                         * representation. */
-    SetLongFromAny,                     /* Creates valid internal
-                                         * representation from an object's
-                                         * string representation. */
-};
 
 int
 Blt_GetLong(Tcl_Interp *interp, const char *string, long *valuePtr)
@@ -339,23 +375,24 @@ Blt_GetLong(Tcl_Interp *interp, const char *string, long *valuePtr)
 }
 
 static int
-SetLongFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
+LongObjSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     long x;
     
-    if (objPtr->typePtr == &longObjType) {
+    if (objPtr->typePtr == &bltLongObjType) {
         return TCL_OK;
     }
     if (Blt_GetLong(interp, Tcl_GetString(objPtr), &x) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_SetLongObj(objPtr, x);
+    FreeInternalRep(objPtr);
+    objPtr->typePtr = &bltLongObjType;
+    objPtr->internalRep.longValue = x;
     return TCL_OK;
 }
 
 static void
-UpdateStringOfLong(Tcl_Obj *objPtr)     /* Array object w/ string rep to
-                                           update. */
+LongObjUpdateStringRep(Tcl_Obj *objPtr)
 {
     size_t numBytes;
     char buffer[TCL_INTEGER_SPACE];
@@ -363,17 +400,17 @@ UpdateStringOfLong(Tcl_Obj *objPtr)     /* Array object w/ string rep to
     numBytes = sprintf(buffer, "%ld", objPtr->internalRep.longValue);
     objPtr->bytes = ckalloc(numBytes + 1);
     strcpy(objPtr->bytes, buffer);
-    objPtr->length = numBytes;
+    objPtr->length = (int)numBytes;
 }
 
 int
 Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, long *valuePtr)
 {
-    if (objPtr->typePtr == &longObjType) {
+    if (objPtr->typePtr == &bltLongObjType) {
         *valuePtr = objPtr->internalRep.longValue;
         return TCL_OK;
     }
-    if (SetLongFromAny(interp, objPtr) == TCL_OK) {
+    if (LongObjSetFromAny(interp, objPtr) == TCL_OK) {
         *valuePtr = objPtr->internalRep.longValue;
         return TCL_OK;
     }
@@ -390,50 +427,28 @@ Blt_NewLongObj(long value)
     objPtr->internalRep.longValue = value;
     objPtr->bytes = NULL;
     objPtr->length = 0; 
-    objPtr->typePtr = &longObjType;
+    objPtr->typePtr = &bltLongObjType;
     return objPtr;
 }
 
 int
 Blt_SetLongObj(Tcl_Obj *objPtr, long value)
 {
+    if (Tcl_IsShared(objPtr)) {
+	Blt_Panic("Blt_SetLongObj called with shared object %p", objPtr);
+    }
     Tcl_InvalidateStringRep(objPtr);
+    FreeInternalRep(objPtr);
     objPtr->internalRep.longValue = value;
-    objPtr->typePtr = &longObjType;
+    objPtr->typePtr = &bltLongObjType;
     return TCL_OK;
 }
 
 int
 Blt_IsLongObj(Tcl_Obj *objPtr)
 {
-    return (objPtr->typePtr == &longObjType);
+    return (objPtr->typePtr == &bltLongObjType);
 }
-
-/*ARGSUSED*/
-void
-Blt_RegisterLongObj(void)
-{
-    Tcl_RegisterObjType(&longObjType);
-}
-
-
-static Tcl_UpdateStringProc UpdateStringOfUnsignedLong;
-static Tcl_SetFromAnyProc SetUnsignedLongFromAny;
-
-static Tcl_ObjType unsignedLongObjType = {
-    (char *)"unsigned long",
-    NULL,                               /* Called when an object is
-                                         * freed. */
-    NULL,                               /* Copies an internal
-                                         * representation from one object
-                                         * to another. */
-    UpdateStringOfUnsignedLong,         /* Creates string representation
-                                         * from an object's internal
-                                         * representation. */
-    SetUnsignedLongFromAny,             /* Creates valid internal
-                                         * representation from an object's
-                                         * string representation. */
-};
 
 int
 Blt_GetUnsignedLong(Tcl_Interp *interp, const char *string,
@@ -482,23 +497,24 @@ Blt_GetUnsignedLong(Tcl_Interp *interp, const char *string,
 }
 
 static int
-SetUnsignedLongFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
+UnsignedLongObjSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     unsigned long x;
     
-    if (objPtr->typePtr == &unsignedLongObjType) {
+    if (objPtr->typePtr == &bltUnsignedLongObjType) {
         return TCL_OK;
     }
     if (Blt_GetUnsignedLong(interp, Tcl_GetString(objPtr), &x) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_SetUnsignedLongObj(objPtr, x);
+    FreeInternalRep(objPtr);
+    objPtr->internalRep.longValue = x;
+    objPtr->typePtr = &bltUnsignedLongObjType;
     return TCL_OK;
 }
 
 static void
-UpdateStringOfUnsignedLong(Tcl_Obj *objPtr) /* Array object w/ string rep to
-                                           update. */
+UnsignedLongObjUpdateStringRep(Tcl_Obj *objPtr) 
 {
     size_t numBytes;
     char buffer[TCL_INTEGER_SPACE];
@@ -507,18 +523,18 @@ UpdateStringOfUnsignedLong(Tcl_Obj *objPtr) /* Array object w/ string rep to
         (unsigned long)objPtr->internalRep.longValue);
     objPtr->bytes = ckalloc(numBytes + 1);
     strcpy(objPtr->bytes, buffer);
-    objPtr->length = numBytes;
+    objPtr->length = (int)numBytes;
 }
 
 int
 Blt_GetUnsignedLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
                            unsigned long *valuePtr)
 {
-    if (objPtr->typePtr == &unsignedLongObjType) {
+    if (objPtr->typePtr == &bltUnsignedLongObjType) {
         *valuePtr = (unsigned long)objPtr->internalRep.longValue;
         return TCL_OK;
     }
-    if (SetUnsignedLongFromAny(interp, objPtr) == TCL_OK) {
+    if (UnsignedLongObjSetFromAny(interp, objPtr) == TCL_OK) {
         *valuePtr = (unsigned long)objPtr->internalRep.longValue;
         return TCL_OK;
     }
@@ -535,50 +551,27 @@ Blt_NewUnsignedLongObj(unsigned long value)
     objPtr->internalRep.longValue = value;
     objPtr->bytes = NULL;
     objPtr->length = 0; 
-    objPtr->typePtr = &unsignedLongObjType;
+    objPtr->typePtr = &bltUnsignedLongObjType;
     return objPtr;
 }
 
 int
 Blt_SetUnsignedLongObj(Tcl_Obj *objPtr, unsigned long value)
 {
+    if (Tcl_IsShared(objPtr)) {
+	Blt_Panic("Blt_SetUnsignedLongObj called with shared object %p", objPtr);
+    }
     Tcl_InvalidateStringRep(objPtr);
     objPtr->internalRep.longValue = (unsigned long)value;
-    objPtr->typePtr = &unsignedLongObjType;
+    objPtr->typePtr = &bltUnsignedLongObjType;
     return TCL_OK;
 }
 
 int
 Blt_IsUnsignedLongObj(Tcl_Obj *objPtr)
 {
-    return (objPtr->typePtr == &unsignedLongObjType);
+    return (objPtr->typePtr == &bltUnsignedLongObjType);
 }
-
-/*ARGSUSED*/
-void
-Blt_RegisterUnsignedLongObj(void)
-{
-    Tcl_RegisterObjType(&unsignedLongObjType);
-}
-
-
-static Tcl_UpdateStringProc UpdateStringOfInt64;
-static Tcl_SetFromAnyProc SetInt64FromAny;
-
-static Tcl_ObjType int64ObjType = {
-    (char *)"int64",
-    NULL,                                /* Called when an object is
-                                          * freed. */
-    NULL,                                /* Copies an internal
-                                          * representation from one object
-                                          * to another. */
-    UpdateStringOfInt64,                 /* Creates string representation
-                                          * from an object's internal
-                                          * representation. */
-    SetInt64FromAny,                     /* Creates valid internal
-                                          * representation from an object's
-                                          * string representation. */
-};
 
 int
 Blt_GetInt64(Tcl_Interp *interp, const char *string, int64_t *valuePtr)
@@ -639,23 +632,24 @@ Blt_GetInt64(Tcl_Interp *interp, const char *string, int64_t *valuePtr)
 }
 
 static int
-SetInt64FromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
+Int64ObjSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 {
     int64_t x;
     
-    if (objPtr->typePtr == &int64ObjType) {
+    if (objPtr->typePtr == &bltInt64ObjType) {
         return TCL_OK;
     }
     if (Blt_GetInt64(interp, Tcl_GetString(objPtr), &x) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_SetInt64Obj(objPtr, x);
+    FreeInternalRep(objPtr);
+    objPtr->internalRep.wideValue = x;
+    objPtr->typePtr = &bltInt64ObjType;
     return TCL_OK;
 }
 
 static void
-UpdateStringOfInt64(Tcl_Obj *objPtr)     /* Array object w/ string rep to
-                                           update. */
+Int64ObjUpdateStringRep(Tcl_Obj *objPtr) 
 {
     size_t numBytes;
     char buffer[TCL_INTEGER_SPACE];
@@ -664,17 +658,17 @@ UpdateStringOfInt64(Tcl_Obj *objPtr)     /* Array object w/ string rep to
                        (int64_t)objPtr->internalRep.wideValue);
     objPtr->bytes = ckalloc(numBytes + 1);
     strcpy(objPtr->bytes, buffer);
-    objPtr->length = numBytes;
+    objPtr->length = (int)numBytes;
 }
 
 int
 Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int64_t *valuePtr)
 {
-    if (objPtr->typePtr == &int64ObjType) {
+    if (objPtr->typePtr == &bltInt64ObjType) {
         *valuePtr = (int64_t)objPtr->internalRep.wideValue;
         return TCL_OK;
     }
-    if (SetInt64FromAny(interp, objPtr) == TCL_OK) {
+    if (Int64ObjSetFromAny(interp, objPtr) == TCL_OK) {
         *valuePtr = (int64_t)objPtr->internalRep.wideValue;
         return TCL_OK;
     }
@@ -691,29 +685,34 @@ Blt_NewInt64Obj(int64_t value)
     objPtr->internalRep.wideValue = value;
     objPtr->bytes = NULL;
     objPtr->length = 0; 
-    objPtr->typePtr = &int64ObjType;
+    objPtr->typePtr = &bltInt64ObjType;
     return objPtr;
 }
 
 int
 Blt_SetInt64Obj(Tcl_Obj *objPtr, int64_t value)
 {
+    if (Tcl_IsShared(objPtr)) {
+	Blt_Panic("Blt_SetInt64Obj called with shared object %p", objPtr);
+    }
     Tcl_InvalidateStringRep(objPtr);
     objPtr->internalRep.wideValue = value;
-    objPtr->typePtr = &int64ObjType;
+    objPtr->typePtr = &bltInt64ObjType;
     return TCL_OK;
 }
 
 int
 Blt_IsInt64Obj(Tcl_Obj *objPtr)
 {
-    return (objPtr->typePtr == &int64ObjType);
+    return (objPtr->typePtr == &bltInt64ObjType);
 }
 
-/*ARGSUSED*/
 void
-Blt_RegisterInt64Obj(void)
+Blt_RegisterObjTypes(void)
 {
-    Tcl_RegisterObjType(&int64ObjType);
+    Tcl_RegisterObjType(&bltInt64ObjType);
+    Tcl_RegisterObjType(&bltArrayObjType);
+    Tcl_RegisterObjType(&bltLongObjType);
+    Tcl_RegisterObjType(&bltUnsignedLongObjType);
 }
 
