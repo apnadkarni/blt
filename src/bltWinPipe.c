@@ -734,7 +734,9 @@ PipeReaderThread(void *clientData)
                                          * read. */
             NULL);                      /* Overlapping I/O */
 
-        if (result) {
+        if (!result) {
+            fprintf(stderr, "ReadFile failed on pipe %p errno=%d error=%s\n",
+                    pipePtr->hPipe, errno, GetLastError());
         }
         /*
          * Reset counters to indicate that the buffer has been refreshed.
@@ -2423,6 +2425,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         fprintf(stderr, "pipePtr->flags=%x\n", pipePtr->flags);
+        errno = EBADF;
         errno = ESRCH;
         return -1;
     }
@@ -2473,6 +2476,7 @@ Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t reqNumBytes)
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
+        errno = ESRCH;
         return -1;
     }
     if (WaitForSingleObject(pipePtr->readyEvent, 0) == WAIT_TIMEOUT) {
