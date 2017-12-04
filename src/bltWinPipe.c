@@ -205,17 +205,17 @@ InitFileInfo(FileInfo *infoPtr)
  *
  * NotifierWindowProc --
  *
- *      This procedure is called to goose the TCL notifier layer when service
+ *      This procedure is called to goose the TCL notifier layer to service
  *      pending events.  The notifier is built upon the Windows message
  *      system.  The Windows event loop may need to be awakened if it's
- *      blocked waiting on messages.  Our psuedo pipes (e.g.  data available
- *      on a pipe) won't do that.  While there may be events pending in the
- *      TCL queue, Windows knows nothing about TCL events and won't unblock
- *      until the next Windows message arrives.
+ *      blocked waiting on messages.  Our psuedo pipes (e.g.  data
+ *      available on a pipe) won't do that.  While there may be events
+ *      pending in the TCL queue, Windows knows nothing about TCL events
+ *      and won't unblock until the next Windows message arrives.
  *
  *      This routine sits in the main thread and is triggered by messages
  *      posted to a notifier window (we set it up earlier) from the
- *      reader/writer pipe threads.  It's purpose is two fold.
+ *      reader/writer pipe threads.  It's purpose is two fold:
  *
  *      1) unblock Windows (posting the message does that) and 
  *      2) call Tcl_ServiceAll from the main thread.
@@ -353,15 +353,15 @@ PeekOnPipe(PipeHandler *pipePtr, int *numBytesAvailPtr)
  *
  * PipeEventProc --
  *
- *      This function is invoked by Tcl_ServiceEvent when a file event reaches
- *      the front of the event queue.  This procedure calls back the handler
- *      procedure designated for this pipe.
+ *      This function is invoked by Tcl_ServiceEvent when a file event
+ *      reaches the front of the event queue.  This procedure calls back
+ *      the handler procedure designated for this pipe.
  *
  * Results:
- *      Returns 1 if the event was handled, meaning it should be removed from
- *      the queue.  Returns 0 if the event was not handled, meaning it should
- *      stay on the queue.  The only time the event isn't handled is if the
- *      TCL_FILE_EVENTS flag bit isn't set.
+ *      Returns 1 if the event was handled, meaning it should be removed
+ *      from the queue.  Returns 0 if the event was not handled, meaning it
+ *      should stay on the queue.  The only time the event isn't handled is
+ *      if the TCL_FILE_EVENTS flag bit isn't set.
  *
  * Side effects:
  *      Whatever the pipe handler callback does.
@@ -554,6 +554,7 @@ CreatePipeHandler(HANDLE hFile, int flags)
         0,                              /* Creation flags */
         &id);                           /* (out) Will contain Id of new
                                          * thread. */
+    SetThreadPriority(pipePtr->thread, THREAD_PRIORITY_HIGHEST);
     return pipePtr;
 }
 
@@ -799,7 +800,6 @@ PipeWriterThread(void *clientData)
             bytesLeft -= count;
             ptr += count;
         }
-
         /* Tell the main thread that data can be written to the pipe.
          * Remember to wake up the notifier thread.  */
         SetEvent(pipePtr->readyEvent);
@@ -1139,7 +1139,7 @@ GetFullPath(
     char *cmdPrefix,                    /* (out) If program is a script, this
                                          * contains the name of the
                                          * interpreter. */
-    ApplicationType * typePtr)
+    ApplicationType *typePtr)
 {                                       /* (out) Type of program */
     TCHAR *rest;
     DWORD attr;
@@ -1150,7 +1150,7 @@ GetFullPath(
 
     static const char *dosExts[] =
     {
-        "", ".com", ".exe", ".bat", NULL
+        "", ".com", ".exe", ".bat", ".cmd", NULL
     };
 
     *typePtr = APPL_NONE;
@@ -1375,7 +1375,7 @@ StartProcess(
                                          * child process itself are sent to
                                          * errorFile. */
     int argc,                           /* # of arguments. */
-    char **argv,                        /* Command line arguments. */
+    const char **argv,                  /* Command line arguments. */
     HANDLE hStdin,                      /* File handle to use as input (stdin)
                                          * for the child process. If handle is
                                          * -1, no * standard input. */
@@ -1618,7 +1618,7 @@ StartProcess(
         /* Force the OS to give some time to the DOS process. */
         WaitForSingleObject(hProcess, 50);
     }
-#ifdef notdef                           
+#ifndef notdef                           
     /* FIXME: I don't think this actually ever worked. WaitForInputIdle
      * usually fails with "Access is denied" (maybe the process handle isn't
      * valid yet?).  When you add a delay, WaitForInputIdle will time out
@@ -1855,7 +1855,7 @@ Blt_CreatePipeline(
     char **argv;
     char *p;
     int errorToOutput;
-    int pid;
+    DWORD pid;
     int skip, lastBar, lastArg, i, j, flags;
     HANDLE *hInPipePtr = inPipePtr;
     HANDLE *hOutPipePtr = outPipePtr;
@@ -2179,7 +2179,7 @@ Blt_CreatePipeline(
     for (i = 0; i < objc; i = lastArg + 1) {
         BOOL joinThisError;
         HANDLE hProcess;
-        DWORD dw_pid;
+
         /* Convert the program name into native form. */
         argv[i] = Tcl_TranslateFileName(interp, argv[i], &execBuffer);
         if (argv[i] == NULL) {
@@ -2220,11 +2220,10 @@ Blt_CreatePipeline(
         err.hCurrFile = (joinThisError) ? out.hCurrFile : err.hFile;
 
         if (StartProcess(interp, lastArg - i, argv + i, in.hCurrFile,
-                out.hCurrFile, err.hCurrFile, env, &hProcess, &dw_pid)
+                out.hCurrFile, err.hCurrFile, env, &hProcess, &pid)
             != TCL_OK) {
             goto error;
         }
-        pid = (int)dw_pid;
         Tcl_DStringFree(&execBuffer);
 
         pids[numPids].hProcess = hProcess;
@@ -2499,6 +2498,23 @@ Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t reqNumBytes)
 void
 Blt_DetachPids(int numPids, Blt_Pid *pids)
 {
-    /* Do nothing. */
-}
+    Tcl_Pid *tclPidArr;
+    Tcl_Pid staticStorage[64];
+    int i, count;
 
+    if (numPids > 64) {
+        tclPidArr = Blt_AssertMalloc(numPids * sizeof(Tcl_Pid));
+    } else {
+        tclPidArr = staticStorage;
+    }
+    for (i = count = 0; i < numPids; i++) {
+        if (pids[i].hProcess != INVALID_HANDLE_VALUE) {
+            tclPidArr[count] = (Tcl_Pid)(uintptr_t)pids[i].pid;
+            count++;
+        }
+    }
+    Tcl_DetachPids(count, tclPidArr);
+    if (tclPidArr != staticStorage) {
+        Blt_Free(tclPidArr);
+    }
+}
