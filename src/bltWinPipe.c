@@ -709,17 +709,17 @@ PipeReaderThread(void *clientData)
         if (pipePtr->flags & PIPE_DELETED) {
             break;
         }
-        /* Synchronize with the main thread so that we don't try to read from
-         * the pipe while it's copying to the buffer.  */
+        /* Synchronize with the main thread so that we don't try to read
+         * from the pipe while it's copying to the buffer.  */
         WaitForSingleObject(pipePtr->idleEvent, INFINITE);
-        /* Read from the pipe. The thread will block here until some data is
-         * read into its buffer.  */
+        /* Read from the pipe. The thread will block here until some data
+         * is read into its buffer. */
         assert(pipePtr->start == pipePtr->end);
         result = ReadFile(
             pipePtr->hPipe,             /* Handle to anonymous pipe. */
             pipePtr->buffer,            /* Data buffer. */
-            pipePtr->size,              /* Requested number of bytes (the size
-                                         * of the buffer) */
+            pipePtr->size,              /* Requested number of bytes (the
+                                         * size of the buffer) */
             &count,                     /* (out) Number of bytes actually
                                          * read. */
             NULL);                      /* Overlapping I/O */

@@ -119,12 +119,20 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
 #define ENCODING_BINARY         ((Tcl_Encoding)1)
 
 #ifdef WIN32 
+  #define BLOCKED           EAGAIN
   #ifndef __GNUC__
      #ifdef O_NONBLOCK
         #define O_NONBLOCK        1
      #endif
   #endif /* __GNUC__ */
-#endif /* WIN32 */
+#else
+  #ifdef O_NONBLOCK
+    #define BLOCKED         EAGAIN
+  #else
+    #define BLOCKED         EWOULDBLOCK
+  #endif /*O_NONBLOCK*/
+#endif /*WIN32*/
+
 
 /*
  *  This module creates a stand in for the old Tcl_CreatePipeline call in
@@ -1436,16 +1444,6 @@ ReadBytes(Sink *sinkPtr)
          * here. */
         if (numBytes < 0) {
 
-#ifdef WIN32
-  #define BLOCKED           EAGAIN
-#else
-  #ifdef O_NONBLOCK
-    #define BLOCKED         EAGAIN
-  #else
-    #define BLOCKED         EWOULDBLOCK
-  #endif /*O_NONBLOCK*/
-#endif /*WIN32*/
-
             /* Either an error has occurred or no more data is currently
              * available to read.  */
             if (errno == BLOCKED) {
@@ -1455,7 +1453,10 @@ ReadBytes(Sink *sinkPtr)
                 sinkPtr->status = READ_EOF;
                 return TCL_BREAK;
             } else {
-                ExplainError(interp, "xread");
+                char mesg[200];
+
+                sprintf(mesg, "Tried to read %d bytes", bytesLeft - 1);
+                ExplainError(interp, mesg);
                 sinkPtr->status = READ_ERROR;
                 return TCL_ERROR;
             }
