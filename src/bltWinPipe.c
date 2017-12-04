@@ -576,6 +576,9 @@ DestroyPipe(DestroyData data)
 static void
 DeletePipeHandler(PipeHandler * pipePtr)
 {
+    fprintf(stderr, "deleting pipe %p (%d entries)\n", pipePtr->hPipe,
+            Blt_Chain_GetLength(pipeChain));
+    
     if ((pipePtr->flags & TCL_WRITABLE) &&
         (pipePtr->hPipe != INVALID_HANDLE_VALUE)) {
         /* Wait for the writer thread to finish with the current buffer */
@@ -592,8 +595,6 @@ DeletePipeHandler(PipeHandler * pipePtr)
     pipePtr->idleEvent = pipePtr->readyEvent = INVALID_HANDLE_VALUE;
     pipePtr->thread = pipePtr->hPipe = INVALID_HANDLE_VALUE;
 
-    fprintf(stderr, "deleting pipe %p (%d entries)\n", pipePtr->hPipe,
-            Blt_Chain_GetLength(pipeChain));
     pipePtr->flags |= PIPE_DELETED;     /* Mark the pipe has deleted. */
     Tcl_EventuallyFree(pipePtr, DestroyPipe);
 }
