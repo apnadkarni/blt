@@ -1396,7 +1396,7 @@ StartProcess(
     Tcl_DString ds;                     /* Complete command line */
     char *command;
     BOOL hasConsole;
-#ifdef notdef
+#ifndef notdef
     DWORD idleResult;
 #endif
     STARTUPINFOA si;
