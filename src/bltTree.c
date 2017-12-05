@@ -4176,8 +4176,10 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
     }
     *nodePtr = Blt_Tree_FirstTaggedNode(&iter);
     if (Blt_Tree_NextTaggedNode(&iter) != NULL) {
-        Tcl_AppendResult(interp, "tag \"", Tcl_GetString(objPtr),
-                         "\" refers to more than one node.", (char *)NULL);
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "tag \"", Tcl_GetString(objPtr),
+                             "\" refers to more than one node.", (char *)NULL);
+        }
         return TCL_ERROR;
     }
     return TCL_OK;                      /* Singleton tag. */
