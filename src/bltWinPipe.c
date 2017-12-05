@@ -757,8 +757,8 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
-            fprintf(stderr, "ReadFile returned 0 lasterror is %ld\n",
-                    GetLastError());
+            fprintf(stderr, "ReadFile returned 0 lasterror is %ld flags=%x\n",
+                    GetLastError(), pipePtr->flags);
         }
         WakeupNotifier(pipePtr->hWindow);
         SetEvent(pipePtr->readyEvent);
@@ -2440,6 +2440,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
+    fprintf(stderr, "AsyncRead EAGAIN\n");
         return -1;                      /* No data available. */
     }
     /*
@@ -2448,13 +2449,16 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
      *                  1+      # of bytes available.
      */
     if (numBytesAvail == -1) {
+    fprintf(stderr, "AsyncRead ERROR\n");
         return -1;
     }
     if (numBytesAvail == 0) {
+    fprintf(stderr, "AsyncRead found EOF\n");
         return 0;
     }
     numBytes = pipePtr->end - pipePtr->start;
     if (numBytes > count) {
+        fprintf(stderr, "AsyncRead shrinking # read to %d\n", count);
         numBytes = count; 
     }
     memcpy(buffer, pipePtr->buffer + pipePtr->start, numBytes);
@@ -2463,6 +2467,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
+    fprintf(stderr, "AsyncRead read %d bytes\n", numBytes);
     return numBytes;
 }
 
