@@ -125,13 +125,16 @@ typedef enum ApplicationTypes {
 
 #define PIPE_BUFSIZ     (BUFSIZ*2)      /* Size of pipe read buffer. */
 
-#define PIPE_PENDING    (1<<13)         /* Message is pending in the queue. */
-#define PIPE_EOF        (1<<14)         /* Pipe has reached EOF. */
-#define PIPE_DELETED    (1<<15)         /* Indicates if the pipe has been
-                                         * deleted but its memory hasn't been
-                                         * freed yet. */
+/* TCL_READABLE (1<<1) */
+/* TCL_WRITEABLE (1<<2) */
+/* TCL_EXCEPTION (1<<3) */
+#define PIPE_PENDING    (1<<4)         /* Message is pending in the queue. */
+#define PIPE_EOF        (1<<5)         /* Pipe has reached EOF. */
+#define PIPE_DELETED    (1<<6)         /* Indicates if the pipe has been
+                                        * deleted but its memory hasn't been
+                                        * freed yet. */
 typedef struct {
-    int flags;                          /* State flags, see above for a
+    unsigned int flags;                 /* State flags, see above for a
                                          * list. */
     HANDLE hPipe;                       /* Pipe handle */
     HANDLE thread;                      /* Thread watching I/O on this
