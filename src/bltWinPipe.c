@@ -757,6 +757,8 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
+            fprintf(stderr, "ReadFile returned 0 lasterror is %ld\n",
+                    GetLastError());
         }
         WakeupNotifier(pipePtr->hWindow);
         SetEvent(pipePtr->readyEvent);
@@ -802,7 +804,7 @@ PipeWriterThread(void *clientData)
          * Synchronize with the main thread so that we don't test the pipe
          * until its done writing.
          */
-        WaitForSingleObject(pipePtr->idleEvent, INFINITE);
+g        WaitForSingleObject(pipePtr->idleEvent, INFINITE);
 
         ptr = pipePtr->buffer;
         bytesLeft = pipePtr->end;
@@ -819,6 +821,7 @@ PipeWriterThread(void *clientData)
             bytesLeft -= count;
             ptr += count;
         }
+        CloseHandle(pipePtr->hPipe);
         /* Tell the main thread that data can be written to the pipe.
          * Remember to wake up the notifier thread.  */
         SetEvent(pipePtr->readyEvent);
