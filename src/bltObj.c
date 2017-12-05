@@ -61,6 +61,13 @@
 #include "bltHash.h"
 #include "bltArrayObj.h"
 
+/* 
+ * bltArrayObjType --
+ *
+ *      Array object used by blt::tree.  Tcl_Obj contains a pointer to
+ *      a BLT hash table. The string representation of the array is a
+ *      name-value TCL list. 
+ */
 static Tcl_DupInternalRepProc ArrayObjDupInternalRep;
 static Tcl_FreeInternalRepProc ArrayObjFreeInternalRep;
 static Tcl_UpdateStringProc ArrayObjUpdateStringRep;
@@ -82,6 +89,15 @@ static Tcl_ObjType bltArrayObjType = {
 };
 
 
+/* 
+ * bltInt64ObjType --
+ *
+ *      64-bit integer object.  Used by blt::sftp, blt::datatable to parse
+ *      64-bit integer numbers.  This biggest difference from the
+ *      Tcl_WideIntObj is that leading 0 values are *not* treated as octal.
+ *      Many data files contain values with leading zeros. The only base
+ *      allowed is 10. No hexidecimal strings.
+ */
 static Tcl_UpdateStringProc Int64ObjUpdateStringRep;
 static Tcl_SetFromAnyProc Int64ObjSetFromAny;
 
@@ -100,6 +116,14 @@ static Tcl_ObjType bltInt64ObjType = {
                                           * string representation. */
 };
 
+/* 
+ * bltLongObjType --
+ *
+ *      32 or 64-bit integer object depending upon machine architecture.  
+ *      Used by blt::datatable, blt::tree to parse integer numbers.  
+ *      This biggest difference from the Tcl_IntObj or Tcl_LongObj is that
+ *      is that leading 0 values are *not* treated as octal.
+ */
 static Tcl_UpdateStringProc LongObjUpdateStringRep;
 static Tcl_SetFromAnyProc   LongObjSetFromAny;
 
@@ -118,6 +142,16 @@ static Tcl_ObjType bltLongObjType = {
                                          * string representation. */
 };
 
+/* 
+ * bltUnsignedLongObjType --
+ *
+ *      32 or 64-bit integer object depending upon machine architecture.  
+ *      Used by blt::datatable, blt::tree to parse integer numbers.  
+ *      This biggest difference from the Tcl_IntObj or Tcl_LongObj is that
+ *      is that leading 0 values are *not* treated as octal.
+ *
+ *      Not currently used.
+ */
 static Tcl_UpdateStringProc UnsignedLongObjUpdateStringRep;
 static Tcl_SetFromAnyProc UnsignedLongObjSetFromAny;
 
