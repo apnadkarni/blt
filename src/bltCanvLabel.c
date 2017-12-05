@@ -703,8 +703,7 @@ ScaleToFit(LabelItem *labelPtr, double xScale, double yScale)
     double newFontSize;
     Blt_Font font;
 
-    newFontSize = (int)(MIN(xScale, yScale) *
-                        Blt_Font_PointSize(labelPtr->baseFont));
+    newFontSize = MIN(xScale, yScale) * Blt_Font_PointSize(labelPtr->baseFont);
     labelPtr->flags |= DISPLAY_TEXT;
     /* Create a scaled font and replace the base font with it. */
     font = Blt_Font_Duplicate(labelPtr->tkwin, labelPtr->baseFont,
@@ -753,7 +752,6 @@ ComputeGeometry(LabelItem *labelPtr)
 #endif
     labelPtr->flags &= ~CLIP;
     if (labelPtr->numBytes == 0) {
-        fprintf(stderr, "layoutPtr=%x\n", labelPtr->layoutPtr);
         w = h = 0;
     } else {
         TextStyle ts;
@@ -1297,6 +1295,7 @@ ConfigureProc(
         labelPtr->numBytes = strlen(labelPtr->text);
     }
     labelPtr->fontSize = Blt_Font_PointSize(labelPtr->baseFont);
+    fprintf(stderr, "base font size is %g\n", labelPtr->fontSize);
     if (labelPtr->angle != 0.0) {
         if (!Blt_Font_CanRotate(labelPtr->baseFont, labelPtr->angle)) {
             fprintf(stderr, "can't rotate font %s\n", 
@@ -1394,13 +1393,14 @@ CreateProc(
     labelPtr->anchor = TK_ANCHOR_NW;
     labelPtr->canvas = canvas;
     labelPtr->display = Tk_Display(tkwin);
+    labelPtr->flags = DISPLAY_TEXT;
     labelPtr->interp = interp;
-    labelPtr->xScale = labelPtr->yScale = 1.0;
     labelPtr->state = TK_STATE_NORMAL;
     labelPtr->textAnchor = TK_ANCHOR_NW;
     labelPtr->tkwin  = tkwin;
     labelPtr->x = x;
     labelPtr->xPad.side1 = labelPtr->xPad.side2 = 2;
+    labelPtr->xScale = labelPtr->yScale = 1.0;
     labelPtr->y = y;
     labelPtr->yPad.side1 = labelPtr->yPad.side2 = 2;
     if (ConfigureProc(interp, canvas, itemPtr, argc - 2, argv + 2, 0) 
@@ -2018,7 +2018,7 @@ PostScriptProc(
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
-                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%ld\n",
+                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%d\n",
                         x0, fragPtr->rx, xOffset, w, layoutPtr->width);
                 Blt_Ps_Format(ps, "%g %g moveto\n",
                               x0 + fragPtr->rx + xOffset, 

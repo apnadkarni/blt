@@ -288,6 +288,8 @@ BLT_EXTERN Blt_Picture Blt_QuantizePicture (Blt_Picture picture, int numColors);
 
 BLT_EXTERN void Blt_ResamplePicture (Blt_Picture dest, Blt_Picture src, 
         Blt_ResampleFilter hFilter, Blt_ResampleFilter vFilter);
+BLT_EXTERN void Blt_ResamplePicture2 (Blt_Picture dest, Blt_Picture src, 
+        Blt_ResampleFilter hFilter, Blt_ResampleFilter vFilter);
 
 BLT_EXTERN Blt_Picture Blt_ScalePicture(Blt_Picture picture, int x, int y, 
         int w, int h, int dw, int dh);

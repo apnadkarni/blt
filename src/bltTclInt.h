@@ -111,8 +111,8 @@ typedef struct {
 } Blt_DateTime;
 
 BLT_EXTERN int Blt_CreatePipeline(Tcl_Interp *interp, int objc, 
-        Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr,
-        int *stdoutPipePtr, int *stderrPipePtr, char *const *env);
+        Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, void *inPipePtr,
+        void *outPipePtr, void *errPipePtr, char *const *env);
 
 BLT_EXTERN void Blt_DetachPids(int numPids, Blt_Pid *pids);
 
@@ -253,8 +253,11 @@ BLT_EXTERN void Blt_FormatDate(Blt_DateTime *datePtr, const char *format,
 BLT_EXTERN int Blt_GetPositionFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         long *indexPtr);
 
+BLT_EXTERN int Blt_GetCount(Tcl_Interp *interp, const char *string, 
+        int check, long *countPtr);
+
 BLT_EXTERN int Blt_GetCountFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int check, long *valuePtr);
+        int check, long *countPtr);
 
 BLT_EXTERN long Blt_SimplifyLine (Point2d *origPts, long low, long high, 
         double tolerance, long *indices);
@@ -271,9 +274,32 @@ BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments,
 BLT_EXTERN int Blt_PolyRectClip(Region2d *extsPtr, Point2d *inputPts,
         int numInputPts, Point2d *outputPts);
 
-BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s, long *longPtr);
+BLT_EXTERN int Blt_ObjIsInteger(Tcl_Obj *objPtr);
+
+BLT_EXTERN int Blt_GetLong(Tcl_Interp *interp, const char *s,
+                           long *valuePtr);
 BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        long *longPtr);
+                                  long *valuePtr);
+BLT_EXTERN int Blt_SetLongObj(Tcl_Obj *objPtr, long value);
+BLT_EXTERN Tcl_Obj *Blt_NewLongObj(long value);
+BLT_EXTERN int Blt_IsLongObj(Tcl_Obj *objPtr);
+
+BLT_EXTERN int Blt_GetUnsignedLong(Tcl_Interp *interp, const char *s,
+                           unsigned long *valuePtr);
+BLT_EXTERN int Blt_GetUnsignedLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+                                  unsigned long *valuePtr);
+BLT_EXTERN int Blt_SetUnsignedLongObj(Tcl_Obj *objPtr, unsigned long value);
+BLT_EXTERN Tcl_Obj *Blt_NewUnsignedLongObj(unsigned long value);
+BLT_EXTERN int Blt_IsUnsignedLongObj(Tcl_Obj *objPtr);
+
+BLT_EXTERN int Blt_GetInt64(Tcl_Interp *interp, const char *s,
+                           int64_t *valuePtr);
+BLT_EXTERN int Blt_GetInt64FromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+                                  int64_t *valuePtr);
+BLT_EXTERN int Blt_SetInt64Obj(Tcl_Obj *objPtr, int64_t value);
+BLT_EXTERN Tcl_Obj *Blt_NewInt64Obj(int64_t value);
+BLT_EXTERN int Blt_IsInt64Obj(Tcl_Obj *objPtr);
+
 
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);
 BLT_EXTERN void Blt_LowerCase(char *s);
@@ -286,5 +312,7 @@ BLT_EXTERN double Blt_NaN(void);
 BLT_EXTERN int Blt_AlmostEquals(double x, double y);
 
 BLT_EXTERN const char **Blt_ConvertListToList(int argc, const char **argv);
+
+BLT_EXTERN void Blt_RegisterObjTypes(void);
 
 #endif /*_BLT_TCL_INT_H*/

@@ -1279,7 +1279,7 @@ NodeToEntry(ComboTree *comboPtr, Blt_TreeNode node)
     if (node == NULL) {
         return NULL;
     }
-    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (char *)node);
+    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (const char *)node);
     if (hPtr == NULL) {
         Blt_Warn("NodeToEntry: can't find node %s\n", 
                  Blt_Tree_NodeLabel(node));
@@ -1322,7 +1322,7 @@ GetEntryFromNode(ComboTree *comboPtr, Blt_TreeNode node)
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (char *)node);
+    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (const char *)node);
     if (hPtr == NULL) {
         return NULL;
     }
@@ -6503,14 +6503,14 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboTree *comboPtr = clientData;
     Entry *entryPtr;
-    long nodeId;
+    int64_t inode;
 
-    nodeId = -1;
+    inode = -1;
     if ((GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) == TCL_OK) && 
         (entryPtr != NULL)) {
-        nodeId = Blt_Tree_NodeId(entryPtr->node);
+        inode = Blt_Tree_NodeId(entryPtr->node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), nodeId);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6676,7 +6676,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(entryPtr->node));
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+                      Blt_Tree_NodeId(entryPtr->node));
     return TCL_OK;
 }
 

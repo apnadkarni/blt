@@ -85,9 +85,6 @@ blt::scrollset .ss \
 blt::tk::scrollbar .ss.x
 blt::tk::scrollbar .ss.y
 
-option add *BltTreeView.Entry.RuleHeight 1
-option add *BltTreeView.Column.ruleWidth 1
-
 blt::treeview $view \
     -width 0 \
     -height 4i \
@@ -120,7 +117,7 @@ blt::table . \
 set count 0
 Find $tree root $top
 puts "$count entries"
-
+$tree set all uid 123456789
 $view style checkbox check \
     -onvalue "file" -offvalue "directory" \
     -showvalue yes
@@ -141,8 +138,7 @@ blt::tk::scrollbar $view.menu.ybar
 $view.menu add -text directory -value directory
 $view.menu add -text file -value file
 
-$view column configure uid -style combo 
-$view column configure type -style check
+$view column configure type -style combo
 
 $view style create textbox textbox \
     -editor $view.editor -edit yes -fg red

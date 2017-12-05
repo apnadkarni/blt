@@ -357,6 +357,7 @@ struct _CellStyle {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -380,6 +381,8 @@ struct _CellStyle {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
@@ -436,8 +439,8 @@ struct _Row {
     int min, max, nom;                  /* Min/Max/Nominal space allowed for
                                          * column. */
     int ruleHeight;
-    long index;
-    long visibleIndex;
+    size_t index;
+    size_t visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
     Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
@@ -494,8 +497,8 @@ struct _Column {
     int min, max, nom;                  /* Min/Max/Nominal space allowed for
                                          * column. */
     int ruleWidth;
-    long index;
-    long visibleIndex;
+    size_t index;
+    size_t visibleIndex;
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */

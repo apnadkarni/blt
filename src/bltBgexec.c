@@ -119,12 +119,20 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
 #define ENCODING_BINARY         ((Tcl_Encoding)1)
 
 #ifdef WIN32 
+  #define BLOCKED           EAGAIN
   #ifndef __GNUC__
      #ifdef O_NONBLOCK
         #define O_NONBLOCK        1
      #endif
   #endif /* __GNUC__ */
-#endif /* WIN32 */
+#else
+  #ifdef O_NONBLOCK
+    #define BLOCKED         EAGAIN
+  #else
+    #define BLOCKED         EWOULDBLOCK
+  #endif /*O_NONBLOCK*/
+#endif /*WIN32*/
+
 
 /*
  *  This module creates a stand in for the old Tcl_CreatePipeline call in
@@ -136,10 +144,12 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
  */
 
 #ifdef WIN32
-  #define read(fd, buf, size)     Blt_AsyncRead((fd),(buf),(size))
-  #define close(fd)               CloseHandle((HANDLE)fd)
-  #define Tcl_CreateFileHandler   Blt_CreateFileHandler
-  #define Tcl_DeleteFileHandler   Blt_DeleteFileHandler
+  #define read(fd, buf, size)     xxxBlt_AsyncRead((fd),(buf),(size))
+  #define close(fd)               xxxCloseHandle((HANDLE)fd)
+  #define Tcl_CreateFileHandler   xxxBlt_CreateFileHandler
+  #define Tcl_DeleteFileHandler   xxxBlt_DeleteFileHandler
+  #define kill                    KillProcess
+  #define waitpid                 WaitProcess
   #define kill                    KillProcess
   #define waitpid                 WaitProcess
 #endif  /* WIN32 */
@@ -160,7 +170,13 @@ typedef void *Tcl_Encoding;             /* Make up dummy type for
 #define MAX_READS       100             /* Maximum # of successful reads
                                          * before stopping to let TCL catch
                                          * up on events */
+#ifdef WIN32
+#define SINKOPEN(sinkPtr)  ((sinkPtr)->hFile != INVALID_HANDLE_VALUE)
+#define SINKCLOSED(sinkPtr)  ((sinkPtr)->hFile == INVALID_HANDLE_VALUE)
+#else 
 #define SINKOPEN(sinkPtr)  ((sinkPtr)->fd != -1)
+#define SINKCLOSED(sinkPtr)  ((sinkPtr)->fd == -1)
+#endif  /* WIN32 */
 
 #ifndef NSIG
 #define NSIG            32              /* # of signals available */
@@ -397,27 +413,31 @@ typedef struct {
     int channelNum;                     /* Number of channel to echo data. */
     Tcl_Encoding encoding;              /* Decoding scheme to use when
                                          * translating data. */
+#ifdef WIN32
+    HANDLE hFile;
+#else
     int fd;                             /* File descriptor of the pipe. */
+#endif  /* WIN32 */
+
     int status;
 
     unsigned char *bytes;               /* Stores pipeline output
                                          * (malloc-ed): Initially points to
                                          * static storage */
-    size_t size;                        /* Size of dynamically allocated
+    int size;                           /* Size of dynamically allocated
                                          * buffer. */
 
-    size_t fill;                        /* # of bytes read into the
+    int fill;                           /* # of bytes read into the
                                          * buffer. Marks the current fill
                                          * point of the buffer. */
 
-    size_t mark;                        /* # of bytes translated
+    int mark;                           /* # of bytes translated
                                          * (cooked). */
-    size_t lastMark;                    /* # of bytes as of the last
+    int lastMark;                       /* # of bytes as of the last
                                          * read. This indicates the start
                                          * of the new data in the buffer
                                          * since the last time the "update"
                                          * variable was set. */
-    size_t maxSize;
     unsigned char staticSpace[DEF_BUFFER_SIZE]; /* Static space */
 } Sink;
 
@@ -657,7 +677,7 @@ WriteErrorMesgToParent(Tcl_Interp *interp, int f)
  * ReadErrorMesgFromChild --
  *
  *      Reads back the error message sent by the child process to see if
- *      the pipeline started up properly. The informaation in the pipe (if
+ *      the pipeline started up properly. The information in the pipe (if
  *      any) is the TCL error message from the child process.
  *
  * Results:
@@ -671,14 +691,15 @@ static int
 ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
 {
     char mesg[BUFSIZ+1];
-    ssize_t numRead, numBytes;
-    
+    size_t totalBytes;
+    ssize_t numRead;
+        
     /*
      * Read back from the error pipe to see if the pipeline started up
      * properly. The info in the pipe (if any) if the TCL error message
      * from the child process.
      */
-    numBytes = 0;
+    totalBytes = 0;
     do {
         numRead = read(f, mesg, BUFSIZ);
         if (numRead == -1) {
@@ -686,10 +707,10 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
         }
         mesg[numRead] = '\0';
         Tcl_AppendResult(interp, mesg, (char *)NULL);
-        numBytes += numRead;
+        totalBytes += numRead;
     } while (numRead > 0);
     close(f);
-    return (numBytes > 0) ? TCL_ERROR : TCL_OK;
+    return (totalBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 #endif /*!WIN32*/
 /*
@@ -839,7 +860,7 @@ CreateEnviron(Tcl_Interp *interp, int objc, Tcl_Obj **objv,
         *p++='\0';
         Blt_DeleteHashTable(&envTable);
         *envPtrPtr = (char **)array;
-#endif
+#endif  /* WIN32 */
     }
     return TCL_OK;
 }  
@@ -1087,12 +1108,12 @@ GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, size_t *lengthPtr)
 #endif
     length = sinkPtr->mark;
     if ((sinkPtr->mark > 0) && (sinkPtr->encoding != ENCODING_BINARY)) {
-        unsigned char *last;
+        unsigned char *lastChar;
         Bgexec *bgPtr;
         
-        last = sinkPtr->bytes + (sinkPtr->mark - 1);
+        lastChar = sinkPtr->bytes + (sinkPtr->mark - 1);
         bgPtr = sinkPtr->bgPtr;
-        if (((bgPtr->flags & KEEPNEWLINE) == 0) && (*last == '\n')) {
+        if (((bgPtr->flags & KEEPNEWLINE) == 0) && (*lastChar == '\n')) {
             length--;
         }
     }
@@ -1232,7 +1253,11 @@ InitSink(Bgexec *bgPtr, Sink *sinkPtr, const char *name, int channelNum)
 {
     sinkPtr->bgPtr = bgPtr;
     sinkPtr->name = name;
+#ifdef WIN32
+    sinkPtr->hFile = INVALID_HANDLE_VALUE;
+#else
     sinkPtr->fd = -1;
+#endif  /* WIN32 */
     sinkPtr->flags = 0;
     sinkPtr->bytes = sinkPtr->staticSpace;
     sinkPtr->size = DEF_BUFFER_SIZE;
@@ -1297,7 +1322,11 @@ FreeSinkBuffer(Sink *sinkPtr)
         Blt_Free(sinkPtr->bytes);
         sinkPtr->bytes = sinkPtr->staticSpace;
     }
+#ifdef WIN32
+    sinkPtr->hFile = INVALID_HANDLE_VALUE;
+#else 
     sinkPtr->fd = -1;
+#endif  /* WIN32 */
 }
 
 
@@ -1383,14 +1412,14 @@ ReadBytes(Sink *sinkPtr)
      */
     numBytes = 0;
     for (i = 0; i < MAX_READS; i++) {
-        ssize_t bytesLeft;
+        int bytesLeft;
         char *array;
 
         /* Allocate a larger buffer when the number of remaining bytes is
          * below the threshold BLOCK_SIZE.  */
         
+        assert(sinkPtr->size >= sinkPtr->fill);
         bytesLeft = sinkPtr->size - sinkPtr->fill;
-        
         if (bytesLeft < BLOCK_SIZE) {
             bytesLeft = ExtendSinkBuffer(sinkPtr);
             if (bytesLeft < 0) {
@@ -1404,7 +1433,11 @@ ReadBytes(Sink *sinkPtr)
 
         /* Read into a buffer but make sure we leave room for a trailing
          * NUL byte. */
+#ifdef WIN32
+        numBytes = Blt_AsyncRead(sinkPtr->hFile, array, bytesLeft - 1);
+#else
         numBytes = read(sinkPtr->fd, array, bytesLeft - 1);
+#endif /* WIN32 */
         if (numBytes == 0) {            /* EOF: break out of loop. */
             sinkPtr->status = READ_EOF;
             return TCL_BREAK;
@@ -1412,12 +1445,6 @@ ReadBytes(Sink *sinkPtr)
         /* This is really weird. Closing the slave generates an I/O error
          * here. */
         if (numBytes < 0) {
-
-#ifdef O_NONBLOCK
-  #define BLOCKED         EAGAIN
-#else
-  #define BLOCKED         EWOULDBLOCK
-#endif /*O_NONBLOCK*/
 
             /* Either an error has occurred or no more data is currently
              * available to read.  */
@@ -1428,7 +1455,11 @@ ReadBytes(Sink *sinkPtr)
                 sinkPtr->status = READ_EOF;
                 return TCL_BREAK;
             } else {
-                ExplainError(interp, "read");
+                char mesg[200];
+
+                sprintf(mesg, "Read %d, tried to read %d bytes: errno=%d", numBytes,
+                        bytesLeft - 1, errno);
+                ExplainError(interp, mesg);
                 sinkPtr->status = READ_ERROR;
                 return TCL_ERROR;
             }
@@ -1446,10 +1477,16 @@ ReadBytes(Sink *sinkPtr)
 static void
 CloseSink(Sink *sinkPtr)
 {
-    if (sinkPtr->fd >= 0) {
-        close(sinkPtr->fd);
+    if (SINKOPEN(sinkPtr)) {
+#ifdef WIN32
+        Blt_DeleteFileHandler(sinkPtr->hFile);
+        CloseHandle(sinkPtr->hFile);
+        sinkPtr->hFile = INVALID_HANDLE_VALUE;
+#else
         Tcl_DeleteFileHandler(sinkPtr->fd);
+        close(sinkPtr->fd);
         sinkPtr->fd = -1;               /* Mark sink as closed. */
+#endif /* WIN32 */
         if (sinkPtr->doneVarObjPtr != NULL) {
             Tcl_Interp *interp;
             unsigned char *data;
@@ -1590,7 +1627,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
     crlf = TRUE;
 #else
     crlf = (sinkPtr->bgPtr->flags & PTY);
-#endif
+#endif  /* WIN32 */
     /* 
      * Translate CRLF character sequences to LF characters.  We have to do
      * this after converting the string to UTF from UNICODE.
@@ -1947,8 +1984,12 @@ CreateSinkHandler(Sink *sinkPtr, Tcl_FileProc *proc)
                 (char *)NULL);
         return TCL_ERROR;
     }
-#endif /* WIN32 */
+#endif /* !WIN32 */
+#ifdef WIN32
+    Blt_CreateFileHandler(sinkPtr->hFile, TCL_READABLE, proc, sinkPtr);
+#else
     Tcl_CreateFileHandler(sinkPtr->fd, TCL_READABLE, proc, sinkPtr);
+#endif  /* WIN32 */
     return TCL_OK;
 }
 
@@ -2066,7 +2107,7 @@ CheckPipeline(Bgexec *bgPtr)
         pid = WaitProcess(bgPtr->pids[i], (int *)&waitStatus, WNOHANG);
 #else
         pid = waitpid(bgPtr->pids[i].pid, (int *)&waitStatus, WNOHANG);
-#endif
+#endif  /* WIN32 */
         if (pid == 0) {                 /* Process has not terminated yet */
             if (numPidsLeft < i) {
                 bgPtr->pids[numPidsLeft] = bgPtr->pids[i];
@@ -2118,7 +2159,7 @@ ReportPipeline(Tcl_Interp *interp, Bgexec *bgPtr)
         objPtr = Tcl_NewLongObj((unsigned long)bgPtr->pids[i].pid);
 #else 
         objPtr = Tcl_NewLongObj(bgPtr->pids[i].pid);
-#endif
+#endif  /* WIN32 */
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -2130,35 +2171,39 @@ static int
 ExecutePipeline(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
                 Tcl_Obj *const *objv)
 {
-    int *outFdPtr, *errFdPtr;
+    void *outFdPtr, *errFdPtr;
     int numPids;
     Blt_Pid *pids;                      /* Array of process Ids. */
 
-    outFdPtr = errFdPtr = (int *)NULL;
+    outFdPtr = errFdPtr = NULL;
 #ifdef WIN32
     if ((bgPtr->flags & FOREGROUND) ||
         (bgPtr->outSink.doneVarObjPtr != NULL) || 
         (bgPtr->outSink.updateVarObjPtr != NULL) ||
         (bgPtr->outSink.cmdObjPtr != NULL)) {
-        outFdPtr = &bgPtr->outSink.fd;
+        outFdPtr = &bgPtr->outSink.hFile;
     }
 #else
     outFdPtr = &bgPtr->outSink.fd;
-#endif
+#endif  /* WIN32 */
     if ((bgPtr->errSink.doneVarObjPtr != NULL) ||
         (bgPtr->errSink.updateVarObjPtr != NULL) ||
         (bgPtr->errSink.cmdObjPtr != NULL) ||
         (bgPtr->errSink.flags & SINK_ECHO)) {
+#ifdef WIN32
+        errFdPtr = &bgPtr->errSink.hFile;
+#else
         errFdPtr = &bgPtr->errSink.fd;
+#endif
     }
     numPids = Blt_CreatePipeline(interp, objc, objv, &pids, 
-        (int *)NULL, outFdPtr, errFdPtr, bgPtr->env);
+        NULL, outFdPtr, errFdPtr, bgPtr->env);
     if (numPids < 0) {
         return TCL_ERROR;
     }
     bgPtr->pids = pids;
     bgPtr->numPids = numPids;
-    if (bgPtr->outSink.fd == -1) {
+    if (!SINKOPEN(&bgPtr->outSink)) {
         /* 
          * If output has been redirected, start polling immediately for the
          * exit status of each process.  Normally, this is done only after
@@ -2360,8 +2405,8 @@ ExecutePipelineWithSession(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
     }
     /* Always collect characters from the sinks. Display to the screen or
      * not. */
-    numPids = Blt_CreatePipeline(interp, objc, objv, &pids, (int *)NULL,
-        (int *)NULL, (int *)NULL, bgPtr->env);
+    numPids = Blt_CreatePipeline(interp, objc, objv, &pids, NULL, NULL, NULL,
+          bgPtr->env);
     if (numPids <= 0) {
         goto error;
     }
@@ -2745,8 +2790,8 @@ ExecutePipelineWithPty(Tcl_Interp *interp, Bgexec *bgPtr, int objc,
 
     /* Always collect characters from the sinks. Display to the screen or
      * not. */
-    numPids = Blt_CreatePipeline(interp, objc, objv, &pids, (int *)NULL,
-        (int *)NULL, (int *)NULL, bgPtr->env);
+    numPids = Blt_CreatePipeline(interp, objc, objv, &pids, NULL, NULL, NULL,
+                bgPtr->env);
     if (numPids <= 0) {
         goto error;
     }
@@ -2987,7 +3032,7 @@ CollectStdout(ClientData clientData, int mask)
     if (result == TCL_ERROR) {
         CloseSink(&bgPtr->errSink);
     }
-    if (bgPtr->errSink.fd == -1) {
+    if (!SINKOPEN(&bgPtr->errSink)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3040,7 +3085,7 @@ CollectStderr(ClientData clientData, int mask)
     if (result == TCL_ERROR) {
         CloseSink(&bgPtr->outSink);
     }
-    if (bgPtr->outSink.fd == -1) {
+    if (!SINKOPEN(&bgPtr->outSink)) {
         bgPtr->timerToken = Tcl_CreateTimerHandler(0, TimerProc, bgPtr);
     }
 }
@@ -3146,17 +3191,17 @@ BgexecCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((*bgPtr->classPtr->execProc)(interp, bgPtr, objc-i, objv+i) != TCL_OK) {
         goto error;
     }
-    if (bgPtr->outSink.fd >= 0) {
+    if (SINKOPEN(&bgPtr->outSink)) {
         if (CreateSinkHandler(&bgPtr->outSink, CollectStdout) != TCL_OK) {
             goto error;
         }
     }
-    if (bgPtr->errSink.fd >= 0) {
+    if (SINKOPEN(&bgPtr->errSink)) {
         if (CreateSinkHandler(&bgPtr->errSink, CollectStderr) != TCL_OK) {
             goto error;
         }
     }
-    if ((bgPtr->errSink.fd == -1) && (bgPtr->outSink.fd == -1)) {
+    if ((!SINKOPEN(&bgPtr->errSink)) && (!SINKOPEN(&bgPtr->outSink))) {
         /* We're not reading from either stderr and stdout, so start
          * polling for the pipeline completion.. */
         bgPtr->timerToken = Tcl_CreateTimerHandler(bgPtr->interval, 

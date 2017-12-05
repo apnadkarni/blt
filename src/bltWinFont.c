@@ -169,7 +169,7 @@ typedef struct {
     const char *slant;
     const char *width;
     const char *spacing;
-    int numPoints;                      
+    double numPoints;                      
 } FontPattern;
 
 typedef struct {
@@ -296,18 +296,18 @@ static Blt_HashTable fontSetTable;
 static void GetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr);
 
 static int
-PointsToPixels(Display *display, int numPoints)
+PointsToPixels(Display *display, double numPoints)
 {
     double d;
 
-    assert (numPoints > 0);
+    assert (numPoints > 0.0);
     d = numPoints * 25.4 / 72.0;
     d *= WidthOfScreen(DefaultScreenOfDisplay(display));
     d /= WidthMMOfScreen(DefaultScreenOfDisplay(display));
     return ROUND(d);
 }
 
-static int
+static double
 PixelsToPoints(Display *display, int numPixels)               
 {
     double d;
@@ -316,7 +316,7 @@ PixelsToPoints(Display *display, int numPixels)
     d = numPixels * 72.0 / 25.4;
     d *= WidthMMOfScreen(DefaultScreenOfDisplay(display));
     d /= WidthOfScreen(DefaultScreenOfDisplay(display));
-    return ROUND(d);
+    return d;
 }
 
 /*
@@ -530,26 +530,25 @@ GetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
 static void
 SplitXLFD(Tcl_Obj *objPtr, int *argcPtr, char ***argvPtr)
 {
-    char *p, *pend, *desc, *buf;
-    size_t arrayLen;
-    int count;
     char **field;
-    const char *fontName;
-    int stringLen;
+    char *p, *pend, *desc, *buf;
+    const char *string;
+    int count, length;
+    size_t arrayLen;
 
-    fontName = Tcl_GetStringFromObj(objPtr, &stringLen);
-    if (fontName[0] == '-') {
-        fontName++;
-        stringLen--;
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    if (string[0] == '-') {
+        string++;
+        length--;
     }
     arrayLen = (sizeof(char *) * (XLFD_NUMFIELDS + 1));
-    buf = Blt_AssertCalloc(1, arrayLen + stringLen + 1);
+    buf = Blt_AssertCalloc(1, arrayLen + length + 1);
     desc = buf + arrayLen;
-    strcpy(desc, fontName);
+    strcpy(desc, string);
     field = (char **)buf;
 
     count = 0;
-    for (p = desc, pend = p + stringLen; p < pend; p++, count++) {
+    for (p = desc, pend = p + length; p < pend; p++, count++) {
         char *word;
 
         field[count] = NULL;
@@ -608,7 +607,7 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
     FontSpec *specPtr;
     int argc;
     char **argv;
-    int numPoints;
+    double numPoints;
     
     SplitXLFD(objPtr, &argc, &argv);
     patternPtr = NewFontPattern();
@@ -639,7 +638,7 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         }
         patternPtr->width = specPtr->oldvalue;
     }
-    numPoints = 12;
+    numPoints = 12.0;
     if (argv[XLFD_PIXEL_SIZE] != NULL) {
         int value;
         if (argv[XLFD_PIXEL_SIZE][0] == '[') {
@@ -680,12 +679,12 @@ ParseXLFDDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
     }
     Blt_Free((char *)argv);
 #if DEBUG_FONT_SELECTION
-    fprintf(stderr, "parsed XLFD font \"%s\"\n", fontName);
+    fprintf(stderr, "parsed XLFD font \"%s\"\n", string);
 #endif
     return patternPtr;
  error:
 #if DEBUG_FONT_SELECTION
-    fprintf(stderr, "can't open font \"%s\" as XLFD\n", fontName);
+    fprintf(stderr, "can't open font \"%s\" as XLFD\n", string);
 #endif
     Blt_Free((char *)argv);
     FreeFontPattern(patternPtr);
@@ -737,7 +736,7 @@ ParseTkDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
             if (size < 0) {
                 patternPtr->numPoints = PixelsToPoints(Tk_Display(tkwin),-size);
             } else {
-                patternPtr->numPoints = size;
+                patternPtr->numPoints = (double)size;
             }
         }
         if (dash != NULL) {
@@ -756,7 +755,7 @@ ParseTkDesc(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
             if (size < 0) {
                 patternPtr->numPoints = PixelsToPoints(Tk_Display(tkwin),-size);
             } else {
-                patternPtr->numPoints = size;
+                patternPtr->numPoints = (double)size;
             }
             objv++, objc--;
         }
@@ -857,7 +856,7 @@ ParseNameValuePairs(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
             if (size < 0) {
                 patternPtr->numPoints = PixelsToPoints(Tk_Display(tkwin),-size);
             } else {
-                patternPtr->numPoints = size;
+                patternPtr->numPoints = (double)size;
             }
         } else if (strcmp(key, "-weight") == 0) {
             FontSpec *specPtr;
@@ -1047,7 +1046,7 @@ GetPatternFromFont(Display *display, Tk_Font tkFont)
     if (tkFontPtr->fa.size < 0) {
         patternPtr->numPoints = PixelsToPoints(display, -tkFontPtr->fa.size);
     } else {
-        patternPtr->numPoints = tkFontPtr->fa.size;
+        patternPtr->numPoints = (double)tkFontPtr->fa.size;
     }
     patternPtr->spacing = "*";
     return patternPtr;
@@ -1075,7 +1074,7 @@ FontPatternToDString(Tk_Window tkwin, FontPattern *patternPtr,
     }
     /* Size */
     Tcl_DStringAppendElement(resultPtr, "-size");
-    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(patternPtr->numPoints));
+    Tcl_DStringAppendElement(resultPtr, Blt_Itoa(ROUND(patternPtr->numPoints)));
 }
 
 /* 
@@ -1206,26 +1205,29 @@ static HFONT
 MakeRotatedFont(
     Tk_Font tkFont,                     /* Font identifier (actually a
                                          * Tk_Font) */
-    long angle10)                       /* # of degrees to rotate font */
+    LONG angle10)                       /* # of degrees to rotate font */
 {                                       
     TkFontAttributes *faPtr;            /* Set of attributes to match. */
     HFONT hFont;
     LOGFONTW lf;
     TkFont *tkFontPtr = (TkFont *)tkFont;
-
+    double numPixels;
+    
     faPtr = &tkFontPtr->fa;
     ZeroMemory(&lf, sizeof(LOGFONT));
-    lf.lfHeight = -faPtr->size;
-    if (lf.lfHeight < 0) {
+    /* If size is negative, it's the number of pixels. If positive, it's
+     * the number of points. */
+    if (faPtr->size > 0) {
         HDC hDC;
-        double numPixels;
 
         hDC = GetDC(NULL);
         /* Convert from points to integral (rounded) # of pixels. */
         numPixels = faPtr->size * GetDeviceCaps(hDC, LOGPIXELSY) / 72.0;
-        lf.lfHeight = -((LONG)(numPixels + 0.5)); 
         ReleaseDC(NULL, hDC);
+    } else {
+        numPixels = -faPtr->size;
     }
+    lf.lfHeight = ((LONG)(numPixels + 0.5));
     lf.lfWidth = 0;
     lf.lfEscapement = lf.lfOrientation = angle10;
 #define TK_FW_NORMAL    0
@@ -1484,13 +1486,13 @@ ExtFontPointSizeProc(_Blt_Font *fontPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr;
-    int numPoints;
+    double numPoints;
     
     tkFontPtr = (TkFont *)setPtr->tkFont;
-    if (tkFontPtr->fa.size < 0) { 
+    if (tkFontPtr->fa.size < 0.0) { 
         numPoints = PixelsToPoints(fontPtr->display, -tkFontPtr->fa.size);
     } else {
-        numPoints = tkFontPtr->fa.size;
+        numPoints = (double)tkFontPtr->fa.size;
     }
     return numPoints;
 }
@@ -1500,13 +1502,13 @@ ExtFontPixelSizeProc(_Blt_Font *fontPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
     TkFont *tkFontPtr;
-    int numPixels;
-
+    double numPixels;
+    
     tkFontPtr = (TkFont *)setPtr->tkFont;
-    if (tkFontPtr->fa.size < 0) { 
+    if (tkFontPtr->fa.size < 0.0) { 
         numPixels = -tkFontPtr->fa.size; 
     } else {
-        numPixels = PointsToPixels(fontPtr->display, tkFontPtr->fa.size); 
+        numPixels = (double)PointsToPixels(fontPtr->display,tkFontPtr->fa.size);
     }
     return numPixels;
 }
@@ -1575,26 +1577,15 @@ static void
 ExtFontGetMetricsProc(_Blt_Font *fontPtr, Blt_FontMetrics *fmPtr)
 {
     ExtFontset *setPtr = fontPtr->clientData;
-    TkFont *tkFontPtr = (TkFont *)setPtr->tkFont;
-    SubFont *subFontPtr;
-    TEXTMETRIC tm;
-    HDC hDC;
-    WinFont *winFontPtr;
-    HFONT oldFont;
+    TkFont *tkFontPtr;
 
-    winFontPtr = (WinFont *)tkFontPtr;
-    subFontPtr = &winFontPtr->subFontArray[0];
-    hDC = GetDC(NULL);
-    oldFont = SelectObject(hDC, subFontPtr->hFont);
-    GetTextMetrics(hDC, &tm);
-    fmPtr->ascent = tm.tmAscent;
-    fmPtr->descent = tm.tmDescent;
-    fmPtr->linespace = tm.tmHeight + tm.tmInternalLeading;
+    tkFontPtr = (TkFont *)setPtr->tkFont;
+    fmPtr->ascent = tkFontPtr->fm.ascent;
+    fmPtr->descent = tkFontPtr->fm.descent;
+    fmPtr->linespace = tkFontPtr->fm.ascent + tkFontPtr->fm.descent;
     fmPtr->tabWidth = tkFontPtr->tabWidth;
     fmPtr->underlinePos = tkFontPtr->underlinePos;
     fmPtr->underlineHeight = tkFontPtr->underlineHeight;
-    SelectObject(hDC, oldFont);
-    ReleaseDC(NULL, hDC);
 }
 
 static int
@@ -1646,19 +1637,19 @@ ExtFontDrawProc(
     ExtFontset *setPtr = fontPtr->clientData;
 
     if (angle != 0.0) {
-        long angle10;
+        LONG angle10;
         Blt_HashEntry *hPtr;
     
         angle *= 10.0f;
         angle10 = ROUND(angle);
-        hPtr = Blt_FindHashEntry(&setPtr->fontTable, (char *)angle10);
+        hPtr = Blt_FindHashEntry(&setPtr->fontTable, (intptr_t)angle10);
         if (hPtr == NULL) { 
-	   HFONT hFont;
+            HFONT hFont;
 
             hFont = MakeRotatedFont(setPtr->tkFont, angle10);
             if (hFont == NULL) {
-                Blt_Warn("can't find font %s at %g rotated\n", setPtr->name, 
-                         angle);
+                Blt_Warn("can't find font \"%s\" at %ld rotated\n",
+                         setPtr->name, angle10);
                 return;                 /* Can't find instance at requested
                                          * angle. */
             } 
@@ -1698,7 +1689,7 @@ ExtFontCanRotateProc(_Blt_Font *fontPtr, float angle)
     HFONT hFont;
     ExtFontset *setPtr = fontPtr->clientData;
     int isNew;
-    long angle10;
+    intptr_t angle10;
 
     angle *= 10.0f;
     angle10 = ROUND(angle);
@@ -1710,7 +1701,7 @@ ExtFontCanRotateProc(_Blt_Font *fontPtr, float angle)
         return TRUE;                    /* Rotated font already exists. */
     }
     /* Create the rotated font and add it to the fontset. */
-    hFont = MakeRotatedFont(setPtr->tkFont, angle10);
+    hFont = MakeRotatedFont(setPtr->tkFont, (LONG)angle10);
     if (hFont == NULL) {
         Blt_DeleteHashEntry(&setPtr->fontTable, hPtr);
         return FALSE;

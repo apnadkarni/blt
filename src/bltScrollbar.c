@@ -361,7 +361,7 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(Scrollbar, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-diabledarrowcolor", "disabledArrowColor", 
+    {BLT_CONFIG_COLOR, "-disabledarrowcolor", "disabledArrowColor", 
         "DisabledArrowColor", DEF_DISABLED_ARROW_COLOR, 
         Blt_Offset(Scrollbar, disabledArrowColor), 0},
     {BLT_CONFIG_PIXELS, "-elementborderwidth", "elementBorderWidth",

@@ -252,7 +252,7 @@ test vector.36 {myVec length 10} {
 
 test vector.37 {myVec length -20} {
     list [catch {myVec length -20} msg] $msg
-} {1 {bad vector size "-20"}}
+} {1 {invalid length "-20": can't be negative.}}
 
 test vector.38 {myVec length 0} {
     list [catch {myVec length 0} msg] $msg
@@ -804,8 +804,12 @@ test vector.170 {myVec3 length} {
     list [catch {myVec3 length} msg] $msg
 } {0 10}
 
-test vector.171 {myVec3 value set 0:++end 2.0} {
-    list [catch {myVec3 value set 0:++end 2.0} msg] $msg
+test vector.171 {myVec3 value set ++end 2.0} {
+    list [catch {myVec3 value set ++end 2.0} msg] $msg
+} {0 2.0}
+
+test vector.171 {myVec3 value set 0:end 2.0} {
+    list [catch {myVec3 value set 0:end 2.0} msg] $msg
 } {0 2.0}
 
 test vector.172 {myVec3 length} {
@@ -1004,11 +1008,11 @@ test vector.215 {myVec3 value get ++end} {
 
 test vector.216 {myVec3 value get min} {
     list [catch {myVec3 value get min} msg] $msg
-} {1 {bad index "min"}}
+} {0 1.0}
 
 test vector.217 {myVec3 value get max} {
     list [catch {myVec3 value get max} msg] $msg
-} {1 {bad index "max"}}
+} {0 10.0}
 
 test vector.218 {myVec3 value get 0} {
     list [catch {myVec3 value get 0} msg] $msg

@@ -459,133 +459,6 @@ Tcl_GetVar2Ex(
 #endif
 
 
-
-/*
- *----------------------------------------------------------------------
- *
- * Blt_GetLongFromString --
- *
- *      Given a string, produce the corresponding long integer value.  This
- *      differs from TclGetLong in that it doesn't accept octal values.
- *
- * Results:
-
- *      The return value is normally TCL_OK; in this case *longPtr will be
- *      set to the long integer value equivalent to string. If string is
- *      improperly formed then TCL_ERROR is returned and an error message
- *      will be left in the interp's result if interp is non-NULL.
- *
- * Side effects:
- *      None.
- *
- *----------------------------------------------------------------------
- */
-
-int
-Blt_GetLong(interp, string, longPtr)
-    Tcl_Interp *interp;                 /* Interpreter used for error
-                                         * reporting if not NULL. */
-    const char *string;                 /* String containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
-    long *longPtr;                      /* Place to store converted long
-                                         * result. */
-{
-    char *end;
-    const char *p;
-    long i;
-
-    /*
-     * Note: don't depend on strtoul to handle sign characters; it won't
-     * in some implementations.
-     */
-    p = string;
-    errno = 0;
-    for ( ; isspace(UCHAR(*p)); p++) {  /* INTL: ISO space. */
-        /* Empty loop body. */
-    }
-    if (*p == '-') {
-        p++;
-        i = -(long)strtoul(p, &end, 10); /* INTL: TCL source. */
-    } else if (*p == '+') {
-        p++;
-        i = strtoul(p, &end, 10);       /* INTL: TCL source. */
-    } else {
-        i = strtoul(p, &end, 10);       /* INTL: TCL source. */
-    }
-    if (end == p) {
-        badInteger:
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "expected integer but got \"", string,
-                    "\"", (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    if (errno == ERANGE) {
-        if (interp != NULL) {
-            Tcl_SetResult(interp,
-                        (char *)"integer value too large to represent",
-                          TCL_STATIC);
-            Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
-                    Tcl_GetStringResult(interp), (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    while ((*end != '\0') && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-        end++;
-    }
-    if (*end != 0) {
-        goto badInteger;
-    }
-    *longPtr = i;
-    return TCL_OK;
-}
-
-/*
- *----------------------------------------------------------------------
- *
- * Blt_GetLongFromObj --
- *
- *      Given an string, produce the corresponding long integer value.
- *      This differs from TclGetLong in that it doesn't accept octal
- *      values.
- *
- * Results:
- *      The return value is normally TCL_OK; in this case *longPtr will be
- *      set to the long integer value equivalent to string. If string is
- *      improperly formed then TCL_ERROR is returned and an error message
- *      will be left in the interp's result if interp is non-NULL.
- *
- * Side effects:
- *      None.
- *
- *----------------------------------------------------------------------
- */
-int
-Blt_GetLongFromObj(interp, objPtr, longPtr)
-    Tcl_Interp *interp;                 /* Interpreter to report back to. */
-    Tcl_Obj *objPtr;                    /* Object containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
-    long *longPtr;                      /* Place to store converted long
-                                         * result. */
-{
-    static const Tcl_ObjType *tclStringTypePtr = NULL;
-
-    if (tclStringTypePtr == NULL) {
-        Tcl_Obj *objPtr;
-        
-        objPtr = Tcl_NewStringObj("", -1);
-        tclStringTypePtr = objPtr->typePtr;
-        Tcl_DecrRefCount(objPtr);
-    }
-    if ((objPtr->typePtr == NULL) || (objPtr->typePtr == tclStringTypePtr)) {
-        return Blt_GetLong(interp, Tcl_GetString(objPtr), longPtr);
-    }
-    /* It's OK to use Tcl_GetLongFromObj, since that can be no leading 0. */
-    return Tcl_GetLongFromObj(interp, objPtr, longPtr);
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -673,6 +546,17 @@ Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
     }
     string = Tcl_GetString(objPtr);
     return Blt_GetDoubleFromString(interp, string, valuePtr);
+}
+
+int
+Blt_ObjIsInteger(Tcl_Obj *objPtr)
+{
+    int64_t value;
+    
+    if (Blt_GetInt64FromObj(NULL, objPtr, &value) == TCL_OK) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 /*
@@ -1115,41 +999,63 @@ Blt_InitHexTable(unsigned char *hexTable)
 }
 
 int
-Blt_GetCountFromObj(
-    Tcl_Interp *interp,
-    Tcl_Obj *objPtr,
-    int check,                          /* Can be COUNT_POS, COUNT_NNEG,
-                                         * or COUNT_ANY, */
-    long *valuePtr)
+Blt_GetCount(Tcl_Interp *interp, const char *string, int check,
+             long *valuePtr)
 {
-    long count;
+    long lvalue;
 
-    if (Blt_GetLongFromObj(interp, objPtr, &count) != TCL_OK) {
+    if (Blt_GetLong(interp, string, &lvalue) != TCL_OK) {
         return TCL_ERROR;
     }
-    switch (check) {
-    case COUNT_NNEG:
-        if (count < 0) {
+    if (lvalue < 0) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad value \"", string, 
+                             "\": can't be negative", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (check == COUNT_POS) {
+        if (lvalue <= 0) {
             if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
-                                 "\": can't be negative", (char *)NULL);
+                Tcl_AppendResult(interp, "bad value \"", string, 
+                                 "\": must be positive", (char *)NULL);
             }
             return TCL_ERROR;
         }
-        break;
-    case COUNT_POS:
-        if (count <= 0) {
+    }
+    *valuePtr = lvalue;
+    return TCL_OK;
+}
+
+int
+Blt_GetCountFromObj(
+    Tcl_Interp *interp,
+    Tcl_Obj *objPtr,
+    int check,                          /* Can be COUNT_POS or COUNT_NNEG */
+    long *valuePtr)
+{
+    long lvalue;
+
+    if (Blt_GetLongFromObj(interp, objPtr, &lvalue) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (lvalue < 0) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
+                             "\": can't be negative", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (check == COUNT_POS) {
+        if (lvalue <= 0) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
                                  "\": must be positive", (char *)NULL);
             }
             return TCL_ERROR;
         }
-        break;
-    case COUNT_ANY:
-        break;
     }
-    *valuePtr = count;
+    *valuePtr = lvalue;
     return TCL_OK;
 }
 
@@ -1186,15 +1092,15 @@ Blt_GetPosition(
                                          * index.  Can be an integer or
                                          * "end" to refer to the last
                                          * index. */
-    long *indexPtr)                     /* Holds the converted index. */
+    size_t *indexPtr)                   /* Holds the converted index. */
 {
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
         *indexPtr = -1;                 /* Indicates last position in
                                          * hierarchy. */
     } else {
-        long position;
+        int64_t position;
 
-        if (Blt_GetLong(interp, string, &position) != TCL_OK) {
+        if (Blt_GetInt64(interp, string, &position) != TCL_OK) {
             return TCL_ERROR;
         }
         if (position < 0) {
@@ -1204,7 +1110,7 @@ Blt_GetPosition(
             }
             return TCL_ERROR;
         }
-        *indexPtr = position;
+        *indexPtr = (size_t)position;
     }
     return TCL_OK;
 }
@@ -1250,9 +1156,9 @@ Blt_GetPositionFromObj(
         *indexPtr = -1;                 /* Indicates last position in
                                          * hierarchy. */
     } else {
-        long position;
+        int64_t position;
 
-        if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objPtr, &position) != TCL_OK) {
             return TCL_ERROR;
         }
         if (position < 0) {
@@ -1740,10 +1646,10 @@ Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath,
  */
 
 #define MAXULPS 4
-#define SIGNBITMASK     0x8000000000000000UL
-#define FRACBITMASK     0x007FFFFFFFFFFFFFUL
-#define EXPBITMASK      0x7F80000000000000UL
-#define INFBITMASK      0x7ff0000000000000UL
+#define SIGNBITMASK     0x8000000000000000ULL
+#define FRACBITMASK     0x007FFFFFFFFFFFFFULL
+#define EXPBITMASK      0x7F80000000000000ULL
+#define INFBITMASK      0x7ff0000000000000ULL
 
 typedef uint64_t Bits;
 

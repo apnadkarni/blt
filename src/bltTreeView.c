@@ -204,9 +204,9 @@
 #define DEF_DASHES              "dot"
 #define DEF_EXPORT_SELECTION    "no"
 #define DEF_FLAT                "no"
-#define DEF_FOCUS_DASHES        "dot"
-#define DEF_FOCUS_FOREGROUND    STD_ACTIVE_FOREGROUND
+#define DEF_FOCUS_DASHES        "0"
 #define DEF_FOCUS_FG_MONO       STD_ACTIVE_FG_MONO
+#define DEF_FOCUS_FOREGROUND    RGB_SKYBLUE1
 #define DEF_FONT                STD_FONT_NORMAL
 #define DEF_HEIGHT              "400"
 #define DEF_HIDE_LEAVES         "no"
@@ -1734,7 +1734,7 @@ GetCurrentColumn(TreeView *viewPtr)
     TreeViewObj *objPtr;
     ItemType type;
     
-    type = (long)Blt_GetCurrentHint(viewPtr->bindTable);
+    type = (ItemType)Blt_GetCurrentHint(viewPtr->bindTable);
     objPtr = Blt_GetCurrentItem(viewPtr->bindTable);
     if ((objPtr == NULL) || (objPtr->flags & DELETED)) {
         return NULL;
@@ -5270,7 +5270,7 @@ AppendTagsProc(
 {
     TreeView *viewPtr;
     TreeViewObj *objPtr;
-    ItemType type = (ItemType)hint;
+    ItemType type = (ItemType)(intptr_t)hint;
 
     objPtr = object;
     if (objPtr->flags & DELETED) {
@@ -5295,6 +5295,7 @@ AppendTagsProc(
         {
             Entry *entryPtr = object;
             
+
             /* Append pointer to entry. */
             Blt_Chain_Append(tags, MakeBindTag(viewPtr, entryPtr, type)); 
             if (entryPtr->bindTagsObjPtr != NULL) {
@@ -5383,7 +5384,7 @@ PickItem(
             }
         }
         if (hintPtr != NULL) {
-            *hintPtr = (ClientData)type;
+            *hintPtr = (ClientData)(intptr_t)type;
         }
         return entryPtr;
     }
@@ -7107,7 +7108,7 @@ ComputeTreeLayout(TreeView *viewPtr)
 
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
          entryPtr = NextEntry(entryPtr, 0)) {
-        size_t depth;
+        int depth;
 
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
             ComputeEntryGeometry(viewPtr, entryPtr);
@@ -7165,7 +7166,7 @@ ComputeTreeLayout(TreeView *viewPtr)
     {
         int maxX;
         int sum;
-        size_t i;
+        int i;
 
         sum = maxX = 0;
         i = 0;
@@ -7868,8 +7869,6 @@ static void
 DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w, 
                    int h, int maxLength, int isSelected, TkRegion rgn)
 {
-    XSegment segments[4];
-
     if (isSelected) {
         XColor *color;
         
@@ -7877,9 +7876,7 @@ DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w,
         XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
     }
     if (w > maxLength) {
-        w = maxLength | 0x1;            /* Width has to be odd for the dots
-                                         * in the focus rectangle to
-                                         * align. */
+        w = maxLength;		
     }
     if (rgn != NULL) {
         TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
@@ -7889,24 +7886,8 @@ DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w,
      *  3         1
      *  +----2----+
      */
-    /*y0 += 2,*/ x -= 1, w -= 2; h -= 4;
-    segments[0].x1 = x | 0x1;
-    segments[0].x2 = (x + w)| 0x1;
-    segments[0].y1 = segments[0].y2 = y | 0x1;
-
-    segments[1].x1 = x | 0x1;
-    segments[1].x2 = (x + w)| 0x1;
-    segments[1].y1 = segments[1].y2 = (y + h) | 0x1;
-
-    segments[2].x1 = segments[2].x2 = x | 0x1;
-    segments[2].y1 = y | 0x1;
-    segments[2].y2 = (y + h) | 0x1;
-
-    segments[3].x1 = segments[3].x2 = (x + w) | 0x1;
-    segments[3].y1 = y | 0x1;
-    segments[3].y2 = (y + h) | 0x1;
-
-    XDrawSegments(viewPtr->display, drawable, viewPtr->focusGC, segments,4);
+    /*y0 += 2,*/ x -= 1, w += 2, h -= 4;
+    XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, x, y, w, h);
     if (isSelected) {
         XSetForeground(viewPtr->display, viewPtr->focusGC, 
                        viewPtr->focusColor->pixel);
@@ -8986,15 +8967,17 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     BindTag tag;
-    Entry *entryPtr;
     TreeView *viewPtr = clientData;
 
-    /*
-     * Entries are selected by id only.  All other strings are interpreted as
-     * a binding tag.
-     */
-    if (GetEntry(NULL, viewPtr, objv[2], &entryPtr) == TCL_OK) {
-        if (entryPtr != NULL) {
+    /* Bind tags are either node ids (numbers) or arbitary strings (not to
+     * be confused with tree node tags). */
+    if (Blt_ObjIsInteger(objv[2])) {
+	Entry *entryPtr;
+
+	if (GetEntry(interp, viewPtr, objv[2], &entryPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+        if (entryPtr == NULL) {
             return TCL_OK;      /* Special id doesn't currently exist. */
         }
         tag = MakeBindTag(viewPtr, entryPtr, ITEM_ENTRY);
@@ -9168,12 +9151,18 @@ ButtonBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     BindTag tag;
     TreeView *viewPtr = clientData;
-    Entry *entryPtr;
-    Blt_TreeNode node;
     
-    if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
-        && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
-        (entryPtr != NULL)) {
+    /* Bind tags are either node ids (numbers) or arbitary strings (not to
+     * be confused with tree node tags). */
+    if (Blt_ObjIsInteger(objv[3])) {
+	Entry *entryPtr;
+
+	if (GetEntry(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+        if (entryPtr == NULL) {
+            return TCL_OK;      /* Special id doesn't currently exist. */
+        }
         tag = MakeBindTag(viewPtr, entryPtr, ITEM_BUTTON);
     } else {
         tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), ITEM_BUTTON);
@@ -9422,7 +9411,6 @@ CellBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) == TCL_OK) {
         if (cellPtr == NULL) {
-            fprintf(stderr, "can't find %s\n", Tcl_GetString(objv[3]));
             return TCL_OK;
         }
         tag = MakeBindTag(viewPtr, cellPtr, ITEM_CELL);
@@ -11079,11 +11067,9 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     BindTag tag;
-    Entry *entryPtr;
     ItemType type;
     TreeView *viewPtr = clientData;
     char c;
-    Blt_TreeNode node;
     const char *string;
     int length;
     
@@ -11098,9 +11084,15 @@ EntryBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          (char *)NULL);
         return TCL_ERROR;
     }
-    if ((Blt_Tree_GetNodeFromObj(NULL, viewPtr->tree, objv[3], &node) == TCL_OK)
-        && (GetEntryFromObj(NULL, viewPtr, objv[3], &entryPtr) == TCL_OK) &&
-        (entryPtr != NULL)) {
+    if (Blt_ObjIsInteger(objv[3])) {
+	Entry *entryPtr;
+
+        if (GetEntryFromObj(interp, viewPtr, objv[3], &entryPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+        if (entryPtr != NULL) {
+	    return TCL_OK;
+	}
         tag = MakeBindTag(viewPtr, entryPtr, type);
     } else {
         tag = MakeStringBindTag(viewPtr, Tcl_GetString(objv[3]), type);
@@ -14617,35 +14609,33 @@ static int
 TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
          Tcl_Obj *const *objv)
 {
-    TreeView *viewPtr = clientData;
     Entry *entryPtr;
-    int i;
-    char *tagName;
     EntryIterator iter;
+    TreeView *viewPtr = clientData;
+    char c;
+    const char *string;
+    int i;
 
-    tagName = Tcl_GetString(objv[3]);
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
     viewPtr->fromPtr = NULL;
-    if (strcmp(tagName, "root") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tagName, "\"", 
+    if ((c == 'r') && (strcmp(string, "root") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                 (char *)NULL);
         return TCL_ERROR;
     }
-    if (isdigit(UCHAR(tagName[0]))) {
-        long nodeId;
-        
-        if (Blt_GetLongFromObj(NULL, objv[3], &nodeId) == TCL_OK) {
-            Tcl_AppendResult(viewPtr->interp, "invalid tag \"", tagName, 
-                             "\": can't be a number.", (char *)NULL);
-            return TCL_ERROR;
-        } 
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+	Tcl_AppendResult(viewPtr->interp, "invalid tag \"", string, 
+			 "\": can't be a number.", (char *)NULL);
+	return TCL_ERROR;
     }
-    if (tagName[0] == '@') {
-        Tcl_AppendResult(viewPtr->interp, "invalid tag \"", tagName, 
+    if (c == '@') {
+        Tcl_AppendResult(viewPtr->interp, "invalid tag \"", string, 
                 "\": can't start with \"@\"", (char *)NULL);
         return TCL_ERROR;
     } 
     if (GetEntryFromSpecialId(viewPtr, objv[3], &entryPtr) == TCL_OK) {
-        Tcl_AppendResult(interp, "invalid tag \"", tagName, 
+        Tcl_AppendResult(interp, "invalid tag \"", string, 
                  "\": is a special id", (char *)NULL);
         return TCL_ERROR;
     }
@@ -14676,11 +14666,11 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    char *tagName;
+    char *string;
     Blt_HashTable *tablePtr;
 
-    tagName = Tcl_GetString(objv[3]);
-    tablePtr = Blt_Tree_TagHashTable(viewPtr->tree, tagName);
+    string = Tcl_GetString(objv[3]);
+    tablePtr = Blt_Tree_TagHashTable(viewPtr->tree, string);
     if (tablePtr != NULL) {
         int i;
 

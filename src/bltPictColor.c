@@ -879,7 +879,7 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
         pixelPtr->u32 = value;
         return TCL_OK;
     } else if (string[0] == '#') {
-        char fmt[16];
+        char fmt[200];
         int n, r, g, b;
 
         n = strlen(string + 1);

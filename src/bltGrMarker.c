@@ -40,6 +40,10 @@
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 
+#ifdef HAVE_CTYPE_H
+  #include <ctype.h>
+#endif  /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
@@ -1781,7 +1785,7 @@ ObjToColorPair(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj **objv;
     int state;
     int objc;
-    long longValue = (long)clientData;
+    size_t longValue = (size_t)clientData;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
@@ -2030,38 +2034,41 @@ IsElementHidden(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Marker *markerPtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Marker *markerPtr, Tcl_Obj *objPtr)
 {
     Graph *graphPtr;
-    long dummy;
+    const char *string;
+    char c;
     
-    if (strcmp(tagName, "all") == 0) {
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tag. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     graphPtr = markerPtr->obj.graphPtr;
-    Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tagName, markerPtr);
+    Blt_Tags_AddItemToTag(&graphPtr->markers.tags, string, markerPtr);
     return TCL_OK;
 }
 
@@ -2111,7 +2118,7 @@ ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, markerPtr, Tcl_GetString(objv[i]));
+        SetTag(interp, markerPtr, objv[i]);
     }
     return TCL_OK;
 }
@@ -5884,23 +5891,24 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    const char *tag;
-    long markerId;
+    const char *string;
+    char c;
 
-    tag = Tcl_GetString(objv[4]);
-    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[4]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[4]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
     if (objc == 5) {
         /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&graphPtr->markers.tags, tag);
+        Blt_Tags_AddTag(&graphPtr->markers.tags, string);
     } else {
         int i;
 
@@ -5913,7 +5921,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
                  markerPtr = NextTaggedMarker(&iter)) {
-                Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tag, markerPtr);
+                Blt_Tags_AddItemToTag(&graphPtr->markers.tags, string, markerPtr);
             }
         }
     }
@@ -5935,18 +5943,19 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    const char *tag;
-    long markerId;
+    const char *string;
+    char c;
     int i;
 
-    tag = Tcl_GetString(objv[4]);
-    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[4]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[4]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
@@ -5959,7 +5968,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
              markerPtr = NextTaggedMarker(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&graphPtr->markers.tags, tag, markerPtr);
+            Blt_Tags_RemoveItemFromTag(&graphPtr->markers.tags, string, markerPtr);
         }
     }
     return TCL_OK;
@@ -6027,16 +6036,17 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 4; i < objc; i++) {
-        const char *tag;
-        long markerId;
-
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        const char *string;
+        char c;
+        
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_Tags_ForgetTag(&graphPtr->markers.tags, tag);
+        Blt_Tags_ForgetTag(&graphPtr->markers.tags, string);
     }
     return TCL_OK;
 }
@@ -6216,24 +6226,25 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
-        const char *tag;
         Marker *markerPtr;
-        long markerId;
+        char c;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                              (char *)NULL);     
             return TCL_ERROR;
         }
         for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
              markerPtr = NextTaggedMarker(&iter)) {
-            Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tag, markerPtr);
+            Blt_Tags_AddItemToTag(&graphPtr->markers.tags, string, markerPtr);
         }    
     }
     return TCL_OK;

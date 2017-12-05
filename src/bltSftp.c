@@ -223,20 +223,23 @@ typedef struct {
     Tcl_Obj *progCmdObjPtr;             /* TCL command to be invoked when new
                                          * data has been read from the
                                          * server. */
-    int timeout;                        /* If non-zero, timeout reading after
+    long timeout;                       /* If non-zero, timeout reading after
                                          * this many seconds. */
-    long startTime;
+    long startTime;                     /* # seconds, read from Tcl_GetTime */
     /* Reader-specific fields. */
-    size_t maxSize;                     /* If non-zero, stop reading the file
+    int64_t maxSize;                    /* If non-zero, stop reading the file
                                          * after we've retrieved this many
                                          * bytes. */
     Blt_DBuffer dbuffer;                /* If non-NULL, buffer where remote
                                          * file's contents are saved. */
-    size_t size;                        /* Size in bytes of the remote file. */
-    size_t numRead;                     /* The current number of bytes read. */
-    size_t offset;                      /* If > 0, this is number of bytes in
-                                         * the local file.  Seek this many
-                                         * bytes to resume reading. */
+    int64_t size;                       /* Size in bytes of the remote
+                                         * file. This is the same at the
+                                         * filesize in the attributes
+                                         * structure. */
+    int64_t numRead;                    /* Current # of bytes read. */
+    off_t offset;                       /* If > 0, this is number of bytes
+                                         * in the local file.  Seek this
+                                         * many bytes to resume reading. */
 } FileReader;
 
 typedef struct {
@@ -266,14 +269,14 @@ typedef struct {
                                          * this many seconds. */
     long startTime;
     /* Writer-specific fields. */
-    unsigned long mode;
+    size_t mode;
     char *string;                       /* If non-NULL, buffer where remote
                                          * file's contents are saved. */
-    size_t size;                        /* Size of the remote file. */
-    size_t totalBytesWritten;           /* Total bytes read. */
+    int64_t size;                       /* Size of the remote file. */
+    int64_t totalBytesWritten;          /* Total bytes written. */
 
-    ssize_t numBytesRead;               /* Current number of bytes in the read
-                                         * buffer. */
+    int numBytesRead;                   /* Current number of bytes in the
+                                         * read buffer. */
     char buffer[1<<15];
     char *bp;
 
@@ -403,7 +406,7 @@ static Blt_SwitchSpec getSwitches[] =
 {
     {BLT_SWITCH_STRING,    "-cancel",  "varName",   (char *)NULL,
         Blt_Offset(FileReader, cancelVarName), 0},
-    {BLT_SWITCH_LONG_NNEG, "-maxsize",  "number",   (char *)NULL,
+    {BLT_SWITCH_INT64, "-maxsize",  "number",   (char *)NULL,
         Blt_Offset(FileReader, maxSize),       0},
     {BLT_SWITCH_OBJ,       "-progress", "command",  (char *)NULL,
         Blt_Offset(FileReader, progCmdObjPtr), 0},
@@ -448,7 +451,7 @@ static Blt_SwitchSpec readSwitches[] =
         Blt_Offset(FileReader, cancelVarName), 0},
     {BLT_SWITCH_OBJ,      "-progress", "command",  (char *)NULL,
         Blt_Offset(FileReader, progCmdObjPtr), 0},
-    {BLT_SWITCH_LONG_NNEG,"-maxsize",  "size",     (char *)NULL,
+    {BLT_SWITCH_INT64,    "-maxsize",  "size",     (char *)NULL,
         Blt_Offset(FileReader, maxSize),       0},
     {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
         Blt_Offset(FileReader, timeout),       0},
@@ -1325,7 +1328,7 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     /* size */
     if ((writerPtr->flags & DIR_SIZE) &&
         (attrs.flags & LIBSSH2_SFTP_ATTR_SIZE)) {
-        objPtr = Tcl_NewLongObj(attrs.filesize);
+        objPtr = Blt_NewInt64Obj(attrs.filesize);
         if (Blt_Tree_SetValue(interp, tree, node, "size", objPtr) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -1333,7 +1336,7 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     /* uid */
     if ((writerPtr->flags & DIR_UID) &&
         (attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
-        objPtr = Tcl_NewLongObj(attrs.uid);
+        objPtr = Tcl_NewIntObj(attrs.uid);
         if (Blt_Tree_SetValue(interp, tree, node, "uid", objPtr) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -1341,7 +1344,7 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     /* gid */
     if ((writerPtr->flags & DIR_GID) && 
         (attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
-        objPtr = Tcl_NewLongObj(attrs.gid);
+        objPtr = Tcl_NewIntObj(attrs.gid);
         if (Blt_Tree_SetValue(interp, tree, node, "gid", objPtr) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -1349,7 +1352,7 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     /* atime */
     if ((writerPtr->flags & DIR_ATIME) && 
         (attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
-        objPtr = Tcl_NewLongObj(attrs.atime);
+        objPtr = Blt_NewInt64Obj(attrs.atime);
         if (Blt_Tree_SetValue(interp, tree, node, "atime", objPtr) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -1357,7 +1360,7 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     /* mtime */
     if ((writerPtr->flags & DIR_MTIME) && 
         (attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
-        objPtr = Tcl_NewLongObj(attrs.mtime);
+        objPtr = Blt_NewInt64Obj(attrs.mtime);
         if (Blt_Tree_SetValue(interp, tree, node, "mtime", objPtr) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -1365,7 +1368,7 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     /* mode */
     if ((writerPtr->flags & DIR_MODE) && 
         (attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
-        objPtr = Tcl_NewLongObj(attrs.permissions & 07777);
+        objPtr = Tcl_NewIntObj(attrs.permissions & 07777);
         if (Blt_Tree_SetValue(interp, tree, node, "mode", objPtr) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -1837,7 +1840,7 @@ ParseGroups(Tcl_Interp *interp, Remote *remotePtr, char *groups)
         Blt_HashEntry *hPtr;
         int isNew;
         char *q, *name;
-        unsigned long id;
+        size_t id;
 
         /* Each group entry is in the form "id(name)". */
         q = NULL;
@@ -2373,7 +2376,7 @@ NewRemote(ClientData clientData, Tcl_Interp *interp)
     remotePtr->interp = interp;
     remotePtr->tablePtr = &dataPtr->sessionTable;
     remotePtr->hashPtr = Blt_CreateHashEntry(remotePtr->tablePtr, 
-        (char *)remotePtr, &isNew);
+        (const char *)remotePtr, &isNew);
     Tcl_DStringInit(&remotePtr->ds);
     Blt_SetHashValue(remotePtr->hashPtr, remotePtr);
     Blt_InitHashTable(&remotePtr->gidTable, BLT_ONE_WORD_KEYS);
@@ -2429,9 +2432,9 @@ ReadFileContents(FileReader *readerPtr)
 
         cmdObjPtr = Tcl_DuplicateObj(readerPtr->progCmdObjPtr);
         Tcl_ListObjAppendElement(readerPtr->interp, cmdObjPtr, 
-                                 Tcl_NewLongObj(readerPtr->numRead));
+                                 Blt_NewInt64Obj(readerPtr->numRead));
         Tcl_ListObjAppendElement(readerPtr->interp, cmdObjPtr, 
-                                 Tcl_NewLongObj(readerPtr->size));
+                                 Blt_NewInt64Obj(readerPtr->size));
         Tcl_IncrRefCount(cmdObjPtr);
         result = Tcl_EvalObjEx(readerPtr->interp, cmdObjPtr, TCL_EVAL_GLOBAL);
         Tcl_DecrRefCount(cmdObjPtr);
@@ -2439,7 +2442,7 @@ ReadFileContents(FileReader *readerPtr)
             Tcl_BackgroundError(readerPtr->interp);
         }
     }
-    if ((readerPtr->maxSize > 0) && (numBytes > readerPtr->maxSize)) {
+    if ((readerPtr->maxSize > 0) && (readerPtr->numRead > readerPtr->maxSize)) {
         *readerPtr->donePtr = 1;        /* Maximum number of bytes to read
                                          * reached. */
     }
@@ -2497,7 +2500,7 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
                 TABLE_COLUMN_TYPE_LONG);
         }
         if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE) {
-            blt_table_set_long(interp, table, row, col, attrsPtr->filesize);
+            blt_table_set_int64(interp, table, row, col, attrsPtr->filesize);
         }
     }
     /* uid */
@@ -2627,7 +2630,7 @@ ExportToList(DirectoryReader *readerPtr, const char *bytes,
             objPtr = Tcl_NewStringObj("atime", -1);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-                objPtr = Tcl_NewLongObj(attrsPtr->atime);
+                objPtr = Blt_NewInt64Obj(attrsPtr->atime);
             } else {
                 objPtr = Tcl_NewStringObj("???", -1);
             }
@@ -2638,7 +2641,7 @@ ExportToList(DirectoryReader *readerPtr, const char *bytes,
             objPtr = Tcl_NewStringObj("mtime", -1);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-                objPtr = Tcl_NewLongObj(attrsPtr->mtime);
+                objPtr = Blt_NewInt64Obj(attrsPtr->mtime);
             } else {
                 objPtr = Tcl_NewStringObj("???", -1);
             }
@@ -2648,7 +2651,7 @@ ExportToList(DirectoryReader *readerPtr, const char *bytes,
             objPtr = Tcl_NewStringObj("size", -1);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-                objPtr = Tcl_NewLongObj(attrsPtr->filesize);
+                objPtr = Blt_NewInt64Obj(attrsPtr->filesize);
             } else {
                 objPtr = Tcl_NewStringObj("???", -1);
             }
@@ -2842,8 +2845,8 @@ ChmodRemoteFile(Tcl_Interp *interp, Remote *remotePtr, const char *path,
               ClientData clientData)
 {
     ChmodSwitches *switchesPtr = clientData;
+    size_t newPerms;
 
-    unsigned int long newPerms;
     newPerms = (attrsPtr->permissions & 07777);
     newPerms &= ~switchesPtr->clearFlags;
     newPerms |= switchesPtr->setFlags;
@@ -2867,7 +2870,7 @@ RemoveRemoteDirectory(Tcl_Interp *interp, Remote *remotePtr, const char *path,
                     ClientData clientData)
 {
     if (libssh2_sftp_rmdir_ex(remotePtr->sftp, path, length) < 0) {
-        unsigned long flags = (unsigned long)clientData;
+        size_t flags = (size_t)clientData;
         if ((flags & FORCE) == 0) {
             Tcl_AppendResult(interp, "can't delete directory \"", path, "\": ", 
                 RemoteError(remotePtr), (char *)NULL);
@@ -2883,7 +2886,7 @@ RemoveRemoteFile(Tcl_Interp *interp, Remote *remotePtr, const char *path,
                ClientData clientData)
 {
     if (libssh2_sftp_unlink_ex(remotePtr->sftp, path, length) < 0) {
-        unsigned long flags = (unsigned long)clientData;
+        size_t flags = (size_t)clientData;
         if ((flags & FORCE) == 0) {
             Tcl_AppendResult(interp, "can't delete file \"", path, "\": ", 
                          RemoteError(remotePtr), (char *)NULL);
@@ -3130,7 +3133,7 @@ AtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Remote *remotePtr = clientData;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    unsigned long atime;
+    size_t atime;
     const char *path;
     int length;
 
@@ -3146,12 +3149,12 @@ AtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (objc == 4) {
-        long l;
+        int64_t l;
 
-        if (Tcl_GetLongFromObj(interp, objv[3], &l) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objv[3], &l) != TCL_OK) {
             return TCL_ERROR;
         }
-        attrs.atime = (unsigned long)l;
+        attrs.atime = l;
         attrs.flags = LIBSSH2_SFTP_ATTR_ACMODTIME;
         if (SetRemoteAttributes(remotePtr, path, length, &attrs) != TCL_OK) {
             Tcl_AppendResult(interp, "can't set access time for \"", 
@@ -3161,7 +3164,7 @@ AtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     atime = (attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME) ? attrs.atime : 0L;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), atime);
+    Blt_SetInt64Obj(Tcl_GetObjResult(interp), atime);
     return TCL_OK;
 }
 
@@ -3276,7 +3279,7 @@ ChgrpOp(ClientData clientData, Tcl_Interp *interp, int objc,
     const char *path;
     int id;
     int length;
-    unsigned long gid;
+    size_t gid;
 
     if (remotePtr->sftp == NULL) {
         if (ConnectToRemote(interp, remotePtr) != TCL_OK) {
@@ -3291,7 +3294,7 @@ ChgrpOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     gid = (attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID) ? attrs.gid : 0L;
     if (objc == 3) {
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), gid);
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), gid);
         return TCL_OK;
     }
     if (Tcl_GetIntFromObj(interp, objv[3], &id) != TCL_OK) {
@@ -3461,7 +3464,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     data.fileProc = RemoveRemoteFile;
     data.dirProc = RemoveRemoteDirectory;
-    data.clientData = (void *)((unsigned long)switches.flags & FORCE);
+    data.clientData = (void *)((size_t)switches.flags & FORCE);
     if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
         Blt_Chain entries;
 
@@ -3749,8 +3752,8 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (reader.numRead != reader.size) {
-        fprintf(stderr, "invalid file read: read=%lu wanted=%lu\n",
-                (unsigned long)reader.numRead, (unsigned long)reader.size);
+        fprintf(stderr, "invalid file read: read=%" PRId64 " wanted=%"
+                PRId64 "\n", reader.numRead, reader.size);
     }
     result = TCL_OK;
     fclose(reader.f);
@@ -3785,10 +3788,11 @@ GroupsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         long gid;
         Blt_HashEntry *hPtr;
 
-        if (Tcl_GetLongFromObj(interp, objv[2], &gid) != TCL_OK) {
+        if (Blt_GetCountFromObj(interp, objv[2], COUNT_NNEG, &gid) != TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_FindHashEntry(&remotePtr->gidTable, (char *)gid);
+        hPtr = Blt_FindHashEntry(&remotePtr->gidTable,
+                                 (const char *)(intptr_t)gid);
         if (hPtr != NULL) {
             const char *name;
 
@@ -3807,9 +3811,9 @@ GroupsOp(ClientData clientData, Tcl_Interp *interp, int objc,
             long gid;
             const char *name;
 
-            gid = (long)Blt_GetHashKey(&remotePtr->gidTable, hPtr);
+            gid = (long)(intptr_t)Blt_GetHashKey(&remotePtr->gidTable, hPtr);
             name = Blt_GetHashValue(hPtr);
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(gid));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Blt_NewLongObj(gid));
             Tcl_ListObjAppendElement(interp, listObjPtr, 
                 Tcl_NewStringObj(name, -1));
         }
@@ -3934,9 +3938,9 @@ LstatOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          path, "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    Tcl_SetVar2Ex(interp, varName, "atime", Tcl_NewLongObj(attrs.atime), 0);
-    Tcl_SetVar2Ex(interp, varName, "mtime", Tcl_NewLongObj(attrs.mtime), 0);
-    Tcl_SetVar2Ex(interp, varName, "size", Tcl_NewLongObj(attrs.filesize), 0);
+    Tcl_SetVar2Ex(interp, varName, "atime", Blt_NewInt64Obj(attrs.atime), 0);
+    Tcl_SetVar2Ex(interp, varName, "mtime", Blt_NewInt64Obj(attrs.mtime), 0);
+    Tcl_SetVar2Ex(interp, varName, "size", Blt_NewInt64Obj(attrs.filesize),0);
     Tcl_SetVar2Ex(interp, varName, "gid", Tcl_NewIntObj(attrs.gid), 0);
     Tcl_SetVar2Ex(interp, varName, "uid", Tcl_NewIntObj(attrs.uid), 0);
     type = GetFileTypeFromAttributes(&attrs);
@@ -4003,7 +4007,7 @@ MtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Remote *remotePtr = clientData;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    unsigned long mtime;
+    size_t mtime;
     const char *path;
     int length;
 
@@ -4019,12 +4023,12 @@ MtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (objc == 4) {
-        long l;
+        int64_t l;
 
-        if (Tcl_GetLongFromObj(interp, objv[3], &l) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objv[3], &l) != TCL_OK) {
             return TCL_ERROR;
         }
-        attrs.mtime = (unsigned long)l;
+        attrs.mtime = l;
         attrs.flags = LIBSSH2_SFTP_ATTR_ACMODTIME;
         if (SetRemoteAttributes(remotePtr, path, length, &attrs) != TCL_OK) {
             Tcl_AppendResult(interp, "can't set access time for \"", 
@@ -4034,7 +4038,7 @@ MtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     mtime = (attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME) ? attrs.mtime : 0L;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), mtime);
+    Blt_SetInt64Obj(Tcl_GetObjResult(interp), mtime);
     return TCL_OK;
 }
 
@@ -4220,9 +4224,9 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     if (writer.totalBytesWritten != writer.size) {
-        fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
-                (unsigned long)writer.totalBytesWritten,
-                (unsigned long)writer.size);
+        fprintf(stderr, "invalid file write: written=%" PRId64 " wanted=%"
+                PRId64 "\n", writer.totalBytesWritten, writer.size);
+        
     }
     result = TCL_OK;
     fclose(writer.f);
@@ -4310,9 +4314,8 @@ ReadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = GetRemoteFile(interp, path, length, &reader);
     if (result == TCL_OK) {
         if (reader.numRead != reader.size) {
-            fprintf(stderr, "invalid file read: read=%lu wanted=%lu\n",
-                    (unsigned long)reader.numRead,
-                    (unsigned long)reader.size);
+            fprintf(stderr, "invalid file read: read=%" PRId64 " wanted=%"
+                    PRId64 "\n", reader.numRead, reader.size);
         }
         Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(reader.dbuffer));
     }
@@ -4370,7 +4373,8 @@ ReadableOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (remotePtr->uid == attrs.uid) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IRUSR);
     } else if ((remotePtr->gid == attrs.gid) || 
-               (Blt_FindHashEntry(&remotePtr->gidTable, (char *)attrs.gid))) {
+               (Blt_FindHashEntry(&remotePtr->gidTable,
+                                  (char *)(size_t)attrs.gid))) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IRGRP);
     } else {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IROTH);
@@ -4578,7 +4582,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         return TCL_ERROR;
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), attrs.filesize);
+    Blt_SetInt64Obj(Tcl_GetObjResult(interp), attrs.filesize);
     return TCL_OK;
 }
 
@@ -4669,9 +4673,9 @@ StatOp(ClientData clientData, Tcl_Interp *interp, int objc,
                          path, "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    Tcl_SetVar2Ex(interp, varName, "atime", Tcl_NewLongObj(attrs.atime), 0);
-    Tcl_SetVar2Ex(interp, varName, "mtime", Tcl_NewLongObj(attrs.mtime), 0);
-    Tcl_SetVar2Ex(interp, varName, "size", Tcl_NewLongObj(attrs.filesize), 0);
+    Tcl_SetVar2Ex(interp, varName, "atime", Blt_NewInt64Obj(attrs.atime), 0);
+    Tcl_SetVar2Ex(interp, varName, "mtime", Blt_NewInt64Obj(attrs.mtime), 0);
+    Tcl_SetVar2Ex(interp, varName, "size", Blt_NewInt64Obj(attrs.filesize),0);
     Tcl_SetVar2Ex(interp, varName, "gid", Tcl_NewIntObj(attrs.gid), 0);
     Tcl_SetVar2Ex(interp, varName, "uid", Tcl_NewIntObj(attrs.uid), 0);
     type = GetFileTypeFromAttributes(&attrs);
@@ -4768,7 +4772,8 @@ WritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (remotePtr->uid == attrs.uid) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IWUSR);
     } else if ((remotePtr->gid == attrs.gid) || 
-               (Blt_FindHashEntry(&remotePtr->gidTable, (char *)attrs.gid))) {
+               (Blt_FindHashEntry(&remotePtr->gidTable,
+                                  (char *)(size_t)attrs.gid))) {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IWGRP);
     } else {
         state = (attrs.permissions & LIBSSH2_SFTP_S_IWOTH);
@@ -4813,9 +4818,8 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = PutRemoteFile(interp, path, length, &writer);
     if (writer.totalBytesWritten != writer.size) {
-        fprintf(stderr, "invalid file write: written=%lu wanted=%lu\n",
-                (unsigned long)writer.totalBytesWritten,
-                (unsigned long)writer.size);
+        fprintf(stderr, "invalid file write: written=%" PRId64 " wanted=%"
+                PRId64 "\n", writer.totalBytesWritten, writer.size);
     }
     Blt_FreeSwitches(writeSwitches, (char *)&writer, 0);
     return result;

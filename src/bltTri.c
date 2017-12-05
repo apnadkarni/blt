@@ -761,7 +761,7 @@ CompareSites(const void *a, const void *b)
 }
 
 int
-Blt_Triangulate(Tcl_Interp *interp, size_t numPoints, Point2d *points, 
+Blt_Triangulate(Tcl_Interp *interp, int numPoints, Point2d *points, 
                 int sorted, Blt_MeshTriangle *triangles)
 {
     int i, n;

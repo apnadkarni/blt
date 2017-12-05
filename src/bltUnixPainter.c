@@ -102,8 +102,10 @@
 #endif  /* HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
 #ifdef HAVE_X11_EXTENSIONS_XSHM_H
 #include <X11/extensions/XShm.h>
-#include <X11/extensions/shmproto.h>
 #endif  /* HAVE_X11_EXTENSIONS_XSHM_H */
+#ifdef HAVE_X11_EXTENSIONS_SHMPROTO_H
+#include <X11/extensions/shmproto.h>
+#endif  /* HAVE_X11_EXTENSIONS_SHMPROTO_H */
 
 #include "bltAlloc.h"
 #include "bltMath.h"

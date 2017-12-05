@@ -96,7 +96,7 @@ typedef struct {
  */
 typedef struct {
     const char *text;                   /* Text string to be displayed */
-    size_t numBytes;                    /* Number of bytes in text. The
+    int numBytes;                       /* Number of bytes in text. The
                                          * actual character count may
                                          * differ because of multi-byte UTF
                                          * encodings. */
@@ -120,8 +120,9 @@ typedef struct {
 typedef struct {
     TextFragment *underlinePtr;
     int underline;
-    size_t width, height;               /* Dimensions of text bounding box */
-    size_t numFragments;                /* # fragments of text */
+    int width, height;                  /* Dimensions of text bounding
+                                         * box */
+    int numFragments;                   /* # fragments of text */
     TextFragment fragments[1];          /* Information about each fragment of
                                          * text */
 } TextLayout;

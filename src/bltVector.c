@@ -134,8 +134,8 @@ typedef struct {
     const char *cmdName;                /* Requested command name. */
     int flush;                          /* Flush */
     int watchUnset;                     /* Watch when variable is unset. */
-    long size;
-    long first, last;
+    int size;
+    int first, last;
 } CreateSwitches;
 
 static Blt_SwitchSpec createSwitches[] = 
@@ -227,7 +227,7 @@ Blt_Vec_UpdateRange(Vector *vPtr)
     vp = vPtr->valueArr + vPtr->first;
     vend = vPtr->valueArr + vPtr->last;
     min = max = *vp++;
-    for (/* empty */; vp <= vend; vp++) {
+    for (/* empty */; vp < vend; vp++) {
         if (min > *vp) {
             min = *vp; 
         } else if (max < *vp) { 
@@ -237,6 +237,40 @@ Blt_Vec_UpdateRange(Vector *vPtr)
     vPtr->min = min;
     vPtr->max = max;
     vPtr->notifyFlags &= ~UPDATE_RANGE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Vec_GetSpecialIndex --
+ *
+ *      Converts the string representing an index in the vector, to its
+ *      numeric value.  A valid index may be an numeric string of the
+ *      string "end" (indicating the last element in the string).
+ *
+ * Results:
+ *      A standard TCL result.  If the string is a valid index, TCL_OK is
+ *      returned.  Otherwise TCL_ERROR is returned and interp->result will
+ *      contain an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+Blt_Vec_GetSpecialIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
+                        Blt_VectorIndexProc **procPtrPtr)
+{
+    Blt_HashEntry *hPtr;
+    
+    hPtr = Blt_FindHashEntry(&vPtr->dataPtr->indexProcTable, string);
+    if (hPtr == NULL) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad index \"", string, "\"", 
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    *procPtrPtr = Blt_GetHashValue(hPtr);
+    return TCL_OK;
 }
 
 /*
@@ -257,17 +291,17 @@ Blt_Vec_UpdateRange(Vector *vPtr)
  */
 int
 Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
-                 long *indexPtr, int flags, Blt_VectorIndexProc **procPtrPtr)
+                 int *indexPtr)
 {
     char c;
-    long index;
-
+    int index;
+    
     c = string[0];
 
     /* Treat the index "end" like a numeric index.  */
 
     if ((c == 'e') && (strcmp(string, "end") == 0)) {
-        if ((flags & INDEX_CHECK) && (vPtr->length < 1)) {
+        if (vPtr->length == 0) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad index \"end\": vector is empty", 
                                  (char *)NULL);
@@ -276,27 +310,18 @@ Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
         }
         *indexPtr = vPtr->length - 1;
         return TCL_OK;
-    } else if ((c == '+') && (strcmp(string, "++end") == 0)) {
-        *indexPtr = vPtr->length;
-        return TCL_OK;
     }
-    if (procPtrPtr != NULL) {
-        Blt_HashEntry *hPtr;
-
-        hPtr = Blt_FindHashEntry(&vPtr->dataPtr->indexProcTable, string);
-        if (hPtr != NULL) {
-            *indexPtr = SPECIAL_INDEX;
-            *procPtrPtr = Blt_GetHashValue(hPtr);
-            return TCL_OK;
-        }
-    }
-    if (Blt_GetLong(interp, (char *)string, &index) != TCL_OK) {
+    /* Try to process the index as a number. May be negative. */
+    if (Tcl_GetInt(interp, string, &index) != TCL_OK) {
+        long lval;
         /*   
+         * Try to process the index as a numeric expression. 
+         *
          * Unlike Tcl_GetInt, Tcl_ExprLong needs a valid interpreter, but
          * the interp passed in may be NULL.  So we have to use
          * vPtr->interp and then reset the result.
          */
-        if (Tcl_ExprLong(vPtr->interp, (char *)string, &index) != TCL_OK) {
+        if (Tcl_ExprLong(vPtr->interp, (char *)string, &lval) != TCL_OK) {
             Tcl_ResetResult(vPtr->interp);
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad index \"", string, "\"", 
@@ -304,32 +329,35 @@ Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
             }
             return TCL_ERROR;
         }
+        index = lval;
     }
     /*
      * Correct the index by the current value of the offset. This makes all
-     * the numeric indices non-negative, which is how we distinguish the
-     * special non-numeric indices.
+     * the numeric indices non-negative.
      */
-    index -= vPtr->offset;
-    if ((flags & INDEX_CHECK) && ((index < 0) || (index >= vPtr->length))) {
+    if ((vPtr->offset > index) || ((index - vPtr->offset) >= vPtr->length))  {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "index \"", string, "\" is out of range", 
                          (char *)NULL);
         }
         return TCL_ERROR;
     }
-    *indexPtr = (int)index;
+    *indexPtr = index - vPtr->offset;
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_Vec_GetIndexRange --
+ * Blt_Vec_GetRange --
  *
  *      Converts the string representing an index in the vector, to its
  *      numeric value.  A valid index may be an numeric string of the
  *      string "end" (indicating the last element in the string).
+ *
+ *      "all"
+ *      "end"
+ *      n:m, n:"end"
  *
  * Results:
  *      A standard TCL result.  If the string is a valid index, TCL_OK is
@@ -339,63 +367,60 @@ Blt_Vec_GetIndex(Tcl_Interp *interp, Vector *vPtr, const char *string,
  *---------------------------------------------------------------------------
  */
 int
-Blt_Vec_GetIndexRange(
-    Tcl_Interp *interp,
-    Vector *vPtr,
-    const char *string,
-    int flags,
-    Blt_VectorIndexProc **procPtrPtr)
+Blt_Vec_GetRange(Tcl_Interp *interp, Vector *vPtr, const char *string)
 {
-    long ielem;
     char *colon;
     char c;
 
     colon = NULL;
     c = string[0];
-    if (flags & INDEX_COLON) {
-        colon = strchr(string, ':');
-    }
+
+    colon = strchr(string, ':');
     if (colon != NULL) {
         if (string == colon) {
-            vPtr->first = 0;            /* Default to the first index */
+            vPtr->first = 0;            /* Colon is first character.  First
+                                         * index is defaults to 0. */
         } else {
             int result;
+            int index;
 
             *colon = '\0';
-            result = Blt_Vec_GetIndex(interp, vPtr, string, &ielem, flags,
-                (Blt_VectorIndexProc **) NULL);
+            result = Blt_Vec_GetIndex(interp, vPtr, string, &index);
             *colon = ':';
             if (result != TCL_OK) {
                 return TCL_ERROR;
             }
-            vPtr->first = ielem;
+            vPtr->first = index;
         }
         if (*(colon + 1) == '\0') {
             /* Default to the last index */
-            vPtr->last = (vPtr->length > 0) ? vPtr->length - 1 : 0;
+            vPtr->last = vPtr->length;
         } else {
-            if (Blt_Vec_GetIndex(interp, vPtr, colon + 1, &ielem, flags,
-                    (Blt_VectorIndexProc **) NULL) != TCL_OK) {
+            int index;
+
+            if (Blt_Vec_GetIndex(interp, vPtr, colon + 1, &index) != TCL_OK) {
                 return TCL_ERROR;
             }
-            vPtr->last = ielem;
+            vPtr->last = index + 1;
         }
-        if (vPtr->first > vPtr->last) {
+        if (vPtr->first >= vPtr->last) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad range \"", string,
-                         "\" (first > last)", (char *)NULL);
+                         "\" (first >= last)", (char *)NULL);
             }
             return TCL_ERROR;
         }
     } else if ((c == 'a') && (strcmp(string, "all") == 0)) {
         vPtr->first = 0;
-        vPtr->last = (vPtr->length > 0) ? vPtr->length - 1 : 0;
+        vPtr->last = vPtr->length;
     } else {
-        if (Blt_Vec_GetIndex(interp, vPtr, string, &ielem, flags, 
-                       procPtrPtr) != TCL_OK) {
+        int index;
+
+        if (Blt_Vec_GetIndex(interp, vPtr, string, &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        vPtr->last = vPtr->first = ielem;
+        vPtr->first = index;
+        vPtr->last = index + 1;
     }
     return TCL_OK;
 }
@@ -431,7 +456,7 @@ Blt_Vec_ParseElement(
     }
     *p = saved;
     vPtr->first = 0;
-    vPtr->last = vPtr->length - 1;
+    vPtr->last = vPtr->length;
     if (*p == '(') {
         int count, result;
 
@@ -459,8 +484,7 @@ Blt_Vec_ParseElement(
             return NULL;
         }
         *p = '\0';
-        result = Blt_Vec_GetIndexRange(interp, vPtr, start, 
-                (INDEX_COLON | INDEX_CHECK), (Blt_VectorIndexProc **) NULL);
+        result = Blt_Vec_GetRange(interp, vPtr, start);
         *p = ')';
         if (result != TCL_OK) {
             return NULL;
@@ -654,16 +678,16 @@ Blt_Vec_Min(Vector *vPtr)
     long i;
     double min;
 
-    for (i = vPtr->first; i <= vPtr->last; i++) {
+    for (i = vPtr->first; i < vPtr->last; i++) {
         if (FINITE(vPtr->valueArr[i])) {
             break;
         }
     }
-    if (i > vPtr->last) {
+    if (i == vPtr->last) {
         return Blt_NaN();
     }
     min = vPtr->valueArr[i];
-    for (/* empty */; i <= vPtr->last; i++) {
+    for (/* empty */; i < vPtr->last; i++) {
         if (!FINITE(vPtr->valueArr[i])) {
             continue;
         }
@@ -681,16 +705,16 @@ Blt_Vec_Max(Vector *vPtr)
     long i;
     double max;
 
-    for (i = vPtr->first; i <= vPtr->last; i++) {
+    for (i = vPtr->first; i < vPtr->last; i++) {
         if (FINITE(vPtr->valueArr[i])) {
             break;
         }
     }
-    if (i > vPtr->last) {
+    if (i == vPtr->last) {
         return Blt_NaN();
     }
     max = vPtr->valueArr[i];
-    for (/* empty */; i <= vPtr->last; i++) {
+    for (/* empty */; i < vPtr->last; i++) {
         if (!FINITE(vPtr->valueArr[i])) {
             continue;
         }
@@ -879,7 +903,7 @@ Blt_Vec_MapVariable(
  *---------------------------------------------------------------------------
  */
 int
-Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, size_t newSize)
+Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, int newSize)
 {
     if (newSize == 0) {
         newSize = DEF_ARRAY_SIZE;
@@ -922,7 +946,7 @@ Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, size_t newSize)
             return TCL_ERROR;
         }
         {
-            size_t used, wanted;
+            int used, wanted;
             
             /* Copy the contents of the old memory into the new. */
             used = vPtr->length;
@@ -979,7 +1003,7 @@ Blt_Vec_SetSize(Tcl_Interp *interp, Vector *vPtr, size_t newSize)
  *---------------------------------------------------------------------------
  */
 int
-Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
+Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, int newLength)
 {
     if (vPtr->size < newLength) {
         if (Blt_Vec_SetSize(interp, vPtr, newLength) != TCL_OK) {
@@ -997,7 +1021,7 @@ Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
     }
     vPtr->length = newLength;
     vPtr->first = 0;
-    vPtr->last = (long)newLength - 1;
+    vPtr->last = newLength;
     return TCL_OK;
 }
 
@@ -1031,7 +1055,7 @@ Blt_Vec_SetLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
  */
 
 int
-Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
+Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, int newLength)
 {
     double emptyValue;
     long i;
@@ -1057,7 +1081,7 @@ Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr, size_t newLength)
     }
     vPtr->length = newLength;
     vPtr->first = 0;
-    vPtr->last = (long)newLength - 1;
+    vPtr->last = newLength;
     return TCL_OK;
     
 }
@@ -1090,9 +1114,9 @@ Blt_Vec_Reset(
                                          * the vector. If NULL, indicates
                                          * to reset the vector size to the
                                          * default. */
-    size_t length,                      /* # of elements that the vector
+    int length,                         /* # of elements that the vector
                                          * currently holds. */
-    size_t size,                        /* The # of elements that the
+    int size,                           /* The # of elements that the
                                          * array can hold. */
     Tcl_FreeProc *freeProc)             /* Address of memory deallocation
                                          * routine for the array of values.
@@ -1417,7 +1441,7 @@ Blt_Vec_Create(
 int
 Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr)
 {
-    size_t numBytes;
+    int numBytes;
 
     if (destPtr == srcPtr) {
         /* Copying the same vector. */
@@ -1562,7 +1586,7 @@ OldVectorCreate(ClientData clientData, Tcl_Interp *interp, int argStart,
         char *leftParen, *rightParen;
         char *string;
         int isNew;
-        long size, first, last;
+        int size, first, last;
 
         size = first = last = 0;
         string = Tcl_GetString(objv[i + argStart]);
@@ -1585,28 +1609,23 @@ OldVectorCreate(ClientData clientData, Tcl_Interp *interp, int argStart,
 
                 /* Specification is in the form vecName(first:last) */
                 *colon = '\0';
-                result = Blt_GetLong(interp, leftParen + 1, &first);
+                result = Tcl_GetInt(interp, leftParen+1, &first);
                 if ((*(colon + 1) != '\0') && (result == TCL_OK)) {
-                    result = Blt_GetLong(interp, colon + 1, &last);
-                    if (first > last) {
+                    result = Tcl_GetInt(interp, colon + 1, &last);
+                    if (first >= last) {
                         Tcl_AppendResult(interp, "bad vector range \"",
                             string, "\"", (char *)NULL);
                         result = TCL_ERROR;
                     }
-                    size = (last - first) + 1;
+                    size = last - first;
                 }
                 *colon = ':';
             } else {
                 /* Specification is in the form vecName(size) */
-                result = Blt_GetLong(interp, leftParen + 1, &size);
+                result = Tcl_GetInt(interp, leftParen + 1, &size);
             }
             *rightParen = ')';
             if (result != TCL_OK) {
-                goto error;
-            }
-            if (size < 0) {
-                Tcl_AppendResult(interp, "bad vector size \"", string, "\"",
-                    (char *)NULL);
                 goto error;
             }
         }
@@ -2187,7 +2206,7 @@ int
 Blt_CreateVector2(
     Tcl_Interp *interp,
     const char *vecName, const char *cmdName, const char *varName,
-    size_t initialSize,
+    int initialSize,
     Blt_Vector **vecPtrPtr)
 {
     VectorCmdInterpData *dataPtr;       /* Interpreter-specific data. */
@@ -2216,7 +2235,7 @@ Blt_CreateVector2(
 }
 
 int
-Blt_CreateVector(Tcl_Interp *interp, const char *name, size_t size,
+Blt_CreateVector(Tcl_Interp *interp, const char *name, int size,
                  Blt_Vector **vecPtrPtr)
 {
     return Blt_CreateVector2(interp, name, name, name, size, vecPtrPtr);
@@ -2450,9 +2469,9 @@ Blt_ResetVector(
     double *valueArr,                   /* Array containing the elements of
                                          * the vector. If NULL, indicates
                                          * to reset the vector.*/
-    size_t length,                      /* The number of elements that the
+    int length,                         /* The number of elements that the
                                          * vector currently holds. */
-    size_t size,                        /* The maximum number of elements
+    int size,                           /* The maximum number of elements
                                          * that the array can hold. */
     Tcl_FreeProc *freeProc)             /* Address of memory deallocation
                                          * routine for the array of values.
@@ -2483,7 +2502,7 @@ Blt_ResetVector(
  *---------------------------------------------------------------------------
  */
 int
-Blt_ResizeVector(Blt_Vector *vecPtr, size_t length)
+Blt_ResizeVector(Blt_Vector *vecPtr, int length)
 {
     Vector *vPtr = (Vector *)vecPtr;
 

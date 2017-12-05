@@ -1605,10 +1605,10 @@ CompareItems(Blt_ChainLink *link1Ptr, Blt_ChainLink *link2Ptr)
         break;
     case SORT_INTEGER:
         {
-            long l1, l2;
+            int64_t l1, l2;
 
-            if ((Blt_GetLong(NULL, s1, &l1) != TCL_OK) ||
-                (Blt_GetLong(NULL, s2, &l2) != TCL_OK)) {
+            if ((Blt_GetInt64(NULL, s1, &l1) != TCL_OK) ||
+                (Blt_GetInt64(NULL, s2, &l2) != TCL_OK)) {
                 return 0;
             }
             result = l1 - l2;
@@ -2625,7 +2625,7 @@ static int
 SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 {
     ComboMenu *comboPtr;
-    long dummy;
+    int64_t dummy;
     
     if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -2645,7 +2645,7 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if (Blt_GetInt64(NULL, (char *)tagName, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
                              (char *)NULL);
@@ -2849,7 +2849,7 @@ RemoveText(ComboMenu *comboPtr, Item *itemPtr)
         Blt_HashEntry *hPtr2;
         
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (char *)itemPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, (const char *)itemPtr);
         if (hPtr2 != NULL) {
             itemPtr->text = emptyString;
             Blt_DeleteHashEntry(tablePtr, hPtr2);

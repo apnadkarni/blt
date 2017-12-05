@@ -138,7 +138,7 @@ static Blt_Hash HashOneWord(uint64_t mask, unsigned int downshift,
  * buckets.  The hash function was taken from a random-number generator.
  */
 #define RANDOM_INDEX(i) \
-    (((((long) (i))*1103515245) >> downshift) & mask)
+    (((((size_t) (i))*1103515245) >> downshift) & mask)
 #define BITSPERWORD             32
 #endif /* SIZEOF_VOID_P == 8 */
 
@@ -190,7 +190,7 @@ typedef struct {
     Tcl_Interp *interp;                 /* Source interpreter. */
     Blt_TreeKey key;                    /* Key that matched. */
     int flags;                          /* Flags that matched. */
-    long inode;                         /* Node that matched. */
+    int64_t inode;                      /* Node that matched. */
     Blt_HashEntry *hashPtr;             /* Pointer to this entry in the
                                          * trace's idle event table. */
 } TraceIdleEvent;
@@ -227,6 +227,7 @@ Blt_Tree_GetInterpData(Tcl_Interp *interp)
     }
     return dataPtr;
 }
+
 
 const char *
 Blt_Tree_NodeIdAscii(Node *nodePtr)
@@ -389,9 +390,9 @@ RebuildNodeTable(Node *parentPtr)       /* Table to enlarge. */
 {
     Node **bp, **bend;
     unsigned int downshift;
-    unsigned long mask;
+    size_t mask;
     Node **buckets;
-    long numBuckets;
+    size_t numBuckets;
 
     numBuckets = (1 << parentPtr->nodeTableSize2);
     bend = parentPtr->nodeTable + numBuckets;
@@ -446,8 +447,8 @@ MakeNodeTable(Node *parentPtr)
     Node **buckets;
     Node *childPtr, *nextPtr;
     int downshift;
-    unsigned int mask;
-    unsigned int numBuckets;
+    size_t mask;
+    size_t numBuckets;
 
     assert(parentPtr->nodeTable == NULL);
     parentPtr->nodeTableSize2 = START_LOGSIZE;
@@ -514,9 +515,9 @@ LinkBefore(
         }
     } else {
         Node **bucketPtr;
-        long numBuckets;
+        size_t numBuckets;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         numBuckets = (1 << parentPtr->nodeTableSize2);
         mask = numBuckets - 1;
@@ -579,7 +580,7 @@ UnlinkNode(Node *nodePtr)
     if (parentPtr->nodeTable != NULL) {
         Node **bucketPtr;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         mask = (1 << parentPtr->nodeTableSize2) - 1;
         downshift = DOWNSHIFT_START - parentPtr->nodeTableSize2;
@@ -634,7 +635,8 @@ FreeNode(TreeObject *corePtr, Node *nodePtr)
     } 
     UnlinkNode(nodePtr);
     corePtr->numNodes--;
-    hPtr = Blt_FindHashEntry(&corePtr->nodeTable, (char *)nodePtr->inode);
+    hPtr = Blt_FindHashEntry(&corePtr->nodeTable,
+                             (const char *)(intptr_t)nodePtr->inode);
     assert(hPtr);
     Blt_DeleteHashEntry(&corePtr->nodeTable, hPtr);
     Blt_Pool_FreeItem(corePtr->nodePool, nodePtr);
@@ -767,7 +769,8 @@ NewTreeObject(TreeInterpData *dataPtr)
     Blt_InitHashTable(&corePtr->keyTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&corePtr->nodeTable, BLT_ONE_WORD_KEYS);
     /* Put root node in table. */
-    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (char *)0, &isNew);
+    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (const char *)(intptr_t)0,
+                               &isNew);
     corePtr->root = NewNode(corePtr, "", 0);
     Blt_SetHashValue(hPtr, corePtr->root);
     return corePtr;
@@ -1150,7 +1153,7 @@ RebuildValueTable(Node *nodePtr)        /* Table to enlarge. */
     Value **bp, **bend, **buckets, **oldBuckets;
     size_t numBuckets;
     unsigned int downshift;
-    unsigned long mask;
+    size_t mask;
 
     oldBuckets = nodePtr->valueTable;
     numBuckets = (1 << nodePtr->valueTableSize2);
@@ -1239,7 +1242,7 @@ TreeDeleteValue(Node *nodePtr, Blt_TreeValue value)
     if (nodePtr->valueTable != NULL) {
         Value **bucketPtr;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         mask = (1 << nodePtr->valueTableSize2) - 1;
         downshift = DOWNSHIFT_START - nodePtr->valueTableSize2;
@@ -1411,7 +1414,7 @@ TreeFindValue(Node *nodePtr, Blt_TreeKey key)
 
     if (nodePtr->valueTable != NULL) {
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
         Value *bucket;
 
         mask = (1 << nodePtr->valueTableSize2) - 1;
@@ -1494,7 +1497,7 @@ TreeCreateValue(
         Value **bucketPtr;
         size_t numBuckets;
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
 
         numBuckets = (1 << nodePtr->valueTableSize2);
         mask = numBuckets - 1;
@@ -1592,8 +1595,8 @@ Blt_Tree_CreateNode(
     /* Generate an unique serial number for this node.  */
     do {
         inode = corePtr->nextInode++;
-        hPtr = Blt_CreateHashEntry(&corePtr->nodeTable,(char *)inode, 
-                   &isNew);
+        hPtr = Blt_CreateHashEntry(&corePtr->nodeTable,
+                   (const char *)(intptr_t)inode, &isNew);
     } while (!isNew);
     nodePtr = NewNode(corePtr, name, inode);
     Blt_SetHashValue(hPtr, nodePtr);
@@ -1648,7 +1651,8 @@ Blt_Tree_CreateNodeWithId(
     int isNew;
 
     corePtr = parentPtr->corePtr;
-    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable, (char *)inode, &isNew);
+    hPtr = Blt_CreateHashEntry(&corePtr->nodeTable,
+                               (const char *)(intptr_t)inode, &isNew);
     if (!isNew) {
         return NULL;
     }
@@ -1749,7 +1753,8 @@ Blt_Tree_GetNodeFromIndex(Tree *treePtr, long inode)
     TreeObject *corePtr = treePtr->corePtr;
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&corePtr->nodeTable, (char *)inode);
+    hPtr = Blt_FindHashEntry(&corePtr->nodeTable,
+                             (const char *)(intptr_t)inode);
     if (hPtr != NULL) {
         return Blt_GetHashValue(hPtr);
     }
@@ -1828,7 +1833,7 @@ Blt_Tree_RelabelNodeWithoutNotify(Node *nodePtr, const char *string)
     Node **bucketPtr;
     Node *parentPtr;
     unsigned int downshift;
-    unsigned long mask;
+    size_t mask;
 
     oldLabel = nodePtr->label;
     nodePtr->label = Blt_Tree_GetKeyFromNode(nodePtr, string);
@@ -1890,7 +1895,7 @@ Blt_Tree_FindChild(Node *parentPtr, const char *string)
     key = Blt_Tree_GetKeyFromNode(parentPtr, string);
     if (parentPtr->nodeTable != NULL) {
         unsigned int downshift;
-        unsigned long mask;
+        size_t mask;
         Node *bucketPtr;
         Node *nodePtr;
 
@@ -2204,7 +2209,7 @@ CallTraces(
                 eventPtr->flags = flags;
                 eventPtr->inode = nodePtr->inode;
                 eventPtr->hashPtr = Blt_CreateHashEntry(&tracePtr->idleTable, 
-                        (char *)eventPtr, &isNew);
+                        (const char *)eventPtr, &isNew);
                 if (isNew) {
                     Blt_SetHashValue(eventPtr->hashPtr, eventPtr);
                     Tcl_DoWhenIdle(TraceIdleEventProc, eventPtr);
@@ -3117,7 +3122,7 @@ void
 Blt_Tree_Close(Tree *treePtr)
 {
     if (treePtr->magic != TREE_MAGIC) {
-        Blt_Warn("invalid tree object token 0x%lx\n", (unsigned long)treePtr);
+        Blt_Warn("invalid tree object token 0x%llx\n", (size_t)treePtr);
         return;
     }
     DestroyTree(treePtr);
@@ -3687,7 +3692,7 @@ Blt_Tree_ClearTags(Tree *treePtr, Node *nodePtr)
         Blt_HashEntry *h2Ptr;
 
         tePtr = Blt_GetHashValue(hPtr);
-        h2Ptr = Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr);
+        h2Ptr = Blt_FindHashEntry(&tePtr->nodeTable, (const char *)nodePtr);
         if (h2Ptr != NULL) {
             Blt_DeleteHashEntry(&tePtr->nodeTable, h2Ptr);
         }
@@ -3757,7 +3762,7 @@ Blt_Tree_HasTag(
         return FALSE;
     }
     tePtr = Blt_GetHashValue(hPtr);
-    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr);
+    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (const char *)nodePtr);
     if (hPtr == NULL) {
         return FALSE;
     }
@@ -3777,7 +3782,8 @@ Blt_Tree_AddTag(Tree *treePtr, Node *nodePtr, const char *tagName)
         Blt_HashEntry *hPtr;
         int isNew;
 
-        hPtr = Blt_CreateHashEntry(&tePtr->nodeTable, (char *)nodePtr, &isNew);
+        hPtr = Blt_CreateHashEntry(&tePtr->nodeTable, (const char *)nodePtr,
+                                   &isNew);
         if (isNew) {
             Blt_SetHashValue(hPtr, nodePtr);
         }
@@ -3803,7 +3809,7 @@ Blt_Tree_RemoveTag(Tree *treePtr, Node *nodePtr, const char *tagName)
         return;                         /* No such tag. */
     }
     tePtr = Blt_GetHashValue(hPtr);
-    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (char *)nodePtr);
+    hPtr = Blt_FindHashEntry(&tePtr->nodeTable, (const char *)nodePtr);
     if (hPtr == NULL) {
         return;                         /* Node isn't tagged. */
     }
@@ -3861,7 +3867,7 @@ IsNodeId(const char *string)
 {
     long value;
 
-    return (Blt_GetLong(NULL, string, &value) == TCL_OK);
+    return (Blt_GetCount(NULL, string, COUNT_NNEG, &value) == TCL_OK);
 }
 
 static Blt_TreeNode 
@@ -3880,7 +3886,7 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
         if (IsNodeId(p)) {
             long inode;
             
-            if (Blt_GetLong(interp, p, &inode) != TCL_OK) {
+            if (Blt_GetCount(interp, p, COUNT_NNEG, &inode) != TCL_OK) {
                 node = NULL;
             } else {
                 node = Blt_Tree_GetNodeFromIndex(tree, inode);
@@ -3935,13 +3941,13 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_Tree_GetNodeFromObj --
+ * GetNodeFromObj --
  *
  *---------------------------------------------------------------------------
  */
-int 
-Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
-                        Blt_TreeNode *nodePtr)
+static int 
+GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
+               Blt_TreeNode *nodePtr)
 {
     Blt_TreeNode node;
     char *string;
@@ -3963,17 +3969,16 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
         long inode;
 
         if (p != NULL) {
-            if (Blt_GetLong(interp, string, &inode) != TCL_OK) {
+            if (Blt_GetCount(interp, string, COUNT_NNEG, &inode) != TCL_OK) {
                 goto error;
             }
         } else {
-            if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
+            if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, &inode) != TCL_OK) {
                 goto error;
             }
         }
         node = Blt_Tree_GetNodeFromIndex(tree, inode);
     }  else if (tree != NULL) {
-#ifdef notdef
         if (strcmp(string, "all") == 0) {
             if (Blt_Tree_Size(Blt_Tree_RootNode(tree)) > 1) {
                 if (interp != NULL) {
@@ -3984,15 +3989,14 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
             }
             node = Blt_Tree_RootNode(tree);
         } else
-#endif
             if (strcmp(string, "root") == 0) {
             node = Blt_Tree_RootNode(tree);
         } else {
             Blt_HashTable *tablePtr;
-            Blt_HashSearch cursor;
-            Blt_HashEntry *hPtr;
 
             node = NULL;
+
+            /* Lookup the string as a tag. */
             tablePtr = Blt_Tree_TagHashTable(tree, string);
             if (tablePtr == NULL) {
                 if (interp != NULL) {
@@ -4000,14 +4004,19 @@ Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
                         "\" in ", Blt_Tree_Name(tree), (char *)NULL);
                 }
                 goto error;
-            } else if (tablePtr->numEntries > 1) {
+            } 
+            if (tablePtr->numEntries > 1) {
                 if (interp != NULL) {
                     Tcl_AppendResult(interp, "more than one node tagged as \"", 
-                         string, "\"", (char *)NULL);
+                                     string, "\"", (char *)NULL);
                 }
                 goto error;
-            } else if (tablePtr->numEntries > 0) {
-                hPtr = Blt_FirstHashEntry(tablePtr, &cursor);
+            }
+            if (tablePtr->numEntries == 1) {
+                Blt_HashSearch iter;
+                Blt_HashEntry *hPtr;
+                
+                hPtr = Blt_FirstHashEntry(tablePtr, &iter);
                 node = Blt_GetHashValue(hPtr);
                 if (p != NULL) {
                     *p = save;
@@ -4070,7 +4079,7 @@ Blt_Tree_GetNodeIterator(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
     iterPtr->root = Blt_Tree_RootNode(tree);
 
     /* Process strings with modifiers or digits as simple ids, not tags. */
-    if (Blt_Tree_GetNodeFromObj(NULL, tree, objPtr, &node) == TCL_OK) {
+    if (GetNodeFromObj(NULL, tree, objPtr, &node) == TCL_OK) {
         iterPtr->current = node;
         return TCL_OK;
     }
@@ -4149,3 +4158,27 @@ Blt_Tree_NextTaggedNode(Blt_TreeIterator *iterPtr)
 }
 
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_GetNodeFromObj --
+ *
+ *---------------------------------------------------------------------------
+ */
+int 
+Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
+                        Blt_TreeNode *nodePtr)
+{
+    Blt_TreeIterator iter;
+
+    if (Blt_Tree_GetNodeIterator(interp, tree, objPtr, &iter) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    *nodePtr = Blt_Tree_FirstTaggedNode(&iter);
+    if (Blt_Tree_NextTaggedNode(&iter) != NULL) {
+        Tcl_AppendResult(interp, "tag \"", Tcl_GetString(objPtr),
+                         "\" refers to more than one node.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;                      /* Singleton tag. */
+}

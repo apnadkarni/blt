@@ -372,7 +372,6 @@ DATATABLE_PKG_OBJS =	bltDataTableCsv.o \
 BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			$(TREE_OBJS) \
 			bltAlloc.o \
-			bltArrayObj.o \
 			bltBase64.o \
 			bltBgexec.o \
 			bltChain.o \
@@ -386,6 +385,7 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltList.o \
 			bltMesh.o \
 			bltNsUtil.o \
+			bltObj.o \
 			bltParse.o \
 			bltPool.o \
 			bltSpline.o \

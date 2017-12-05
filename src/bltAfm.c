@@ -678,14 +678,14 @@ ParseEndSection(Parser *parserPtr, char *record, int offset)
     return TCL_CONTINUE;                /* Indicates end of section. */
 }
 
-static long
+static int
 LookupSymbol(Afm *afmPtr, const char *symbol)
 {
     Blt_HashEntry *hPtr;
 
     hPtr = Blt_FindHashEntry(&afmPtr->symbolTable, symbol);
     if (hPtr != NULL) {
-        return (long)Blt_GetHashValue(hPtr);
+        return (intptr_t)Blt_GetHashValue(hPtr);
     }
     /*Blt_Warn("unknown symbol \"%s\"\n", symbol);*/
     return -1;
@@ -702,12 +702,12 @@ InitSymbolTable(Afm *afmPtr)
         int isNew;
         
         hPtr = Blt_CreateHashEntry(&afmPtr->symbolTable, symPtr->name, &isNew);
-        Blt_SetHashValue(hPtr, (ClientData)(long)symPtr->code);
+        Blt_SetHashValue(hPtr, (ClientData)(intptr_t)symPtr->code);
     }
 }
 
 static void
-UpdateSymbol(Afm *afmPtr, long code, const char *symbol)
+UpdateSymbol(Afm *afmPtr, int code, const char *symbol)
 {
     Blt_HashEntry *hPtr;
     int isNew;
@@ -724,7 +724,7 @@ UpdateSymbol(Afm *afmPtr, long code, const char *symbol)
         }
     }
 #endif
-    Blt_SetHashValue(hPtr, (ClientData)code);
+    Blt_SetHashValue(hPtr, (ClientData)(intptr_t)code);
 }
 
 static void
@@ -758,7 +758,7 @@ GetKernPairs(Afm *afmPtr, int c1, int c2)
     key.first = c1;
     key.second = c2;
     
-    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (char *)&key);
+    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (const char *)&key);
     if (hPtr == NULL) {
         return NULL;
     }
@@ -775,7 +775,7 @@ GetLigature(Afm *afmPtr, int c1, int c2)
     key.first = c1;
     key.second = c2;
     
-    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (char *)&key);
+    hPtr = Blt_FindHashEntry(&afmPtr->kernPairsTable, (const char *)&key);
     if (hPtr == NULL) {
         return NULL;
     }

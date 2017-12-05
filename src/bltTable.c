@@ -2144,7 +2144,7 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
     Blt_ListNode node;
     Blt_List list;
     Blt_Chain chain;
-    long key;
+    size_t key;
 
     /*
      * Remove the entry from both row and column lists.  It will be
@@ -2162,7 +2162,7 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
     for (node = Blt_List_FirstNode(list); node != NULL;
         node = Blt_List_NextNode(node)) {
 
-        key = (long)Blt_List_GetKey(node);
+        key = (size_t)Blt_List_GetKey(node);
         if (entryPtr->row.span <= key) {
             break;
         }
@@ -2174,7 +2174,7 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
          * Create a new list (bucket) to hold entries of that size span and
          * and link it into the list of buckets.
          */
-        newNode = Blt_List_CreateNode(list, (char *)entryPtr->row.span);
+        newNode = Blt_List_CreateNode(list, (char *)(uintptr_t)entryPtr->row.span);
         Blt_List_SetValue(newNode, (char *)Blt_Chain_Create());
         Blt_List_LinkBefore(list, newNode, node);
         node = newNode;
@@ -2191,7 +2191,7 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
     key = 0;
     for (node = Blt_List_FirstNode(list); node != NULL;
         node = Blt_List_NextNode(node)) {
-        key = (long)Blt_List_GetKey(node);
+        key = (size_t)Blt_List_GetKey(node);
         if (entryPtr->column.span <= key) {
             break;
         }
@@ -2203,7 +2203,8 @@ BinEntry(Table *tablePtr, TableEntry *entryPtr)
          * Create a new list (bucket) to hold entries of that size span and
          * and link it into the list of buckets.
          */
-        newNode = Blt_List_CreateNode(list, (char *)entryPtr->column.span);
+        newNode = Blt_List_CreateNode(list,
+                     (char *)(intptr_t)entryPtr->column.span);
         Blt_List_SetValue(newNode, (char *)Blt_Chain_Create());
         Blt_List_LinkBefore(list, newNode, node);
         node = newNode;

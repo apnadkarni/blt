@@ -3081,7 +3081,7 @@ FindProc(Graph *graphPtr, Element *basePtr, int x, int y, int r)
             dy = (double)(y - p->y);
             d = hypot(dx, dy);
             if (d < r) {
-                Blt_Chain_Append(chain, (ClientData)((long)p->index));
+                Blt_Chain_Append(chain, (ClientData)((size_t)p->index));
             }
         }
     }
@@ -3539,11 +3539,10 @@ MapActiveSymbols(LineElement *elemPtr)
         tracePtr = Blt_Chain_GetValue(link);
         for (p = tracePtr->head; p != NULL; p = p->next) {
             Blt_HashEntry *hPtr;
-            long lindex;
 
             p->flags &= ~ACTIVE_POINT;
-            lindex = (long)p->index;
-            hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)lindex);
+            hPtr = Blt_FindHashEntry(&elemPtr->activeTable,
+                                     (char *)(size_t)p->index);
             if (hPtr != NULL) {
                 p->flags |= ACTIVE_POINT;
             }

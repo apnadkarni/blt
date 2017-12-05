@@ -2658,38 +2658,42 @@ GetStyleFromObj(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Item *itemPtr, Tcl_Obj *objPtr)
 {
     ListView *viewPtr;
-    long dummy;
-    
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    const char *string;
+    char c;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if (((c == 'a') && (strcmp(string, "all") == 0)) ||
+        ((c == 'e') && (strcmp(string, "end") == 0))) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tags. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     viewPtr = itemPtr->viewPtr;
-    Blt_Tags_AddItemToTag(&viewPtr->tags, tagName, itemPtr);
+    Blt_Tags_AddItemToTag(&viewPtr->tags, string, itemPtr);
     return TCL_OK;
 }
 
@@ -2986,11 +2990,11 @@ GetItemByIndex(Tcl_Interp *interp, ListView *viewPtr, const char *string,
 {
     Item *itemPtr;
     char c;
-    long pos;
+    int64_t pos;
 
     itemPtr = NULL;
     c = string[0];
-    if ((isdigit(c)) && (Blt_GetLong(NULL, string, &pos) == TCL_OK)) {
+    if ((isdigit(c)) && (Blt_GetInt64(NULL, string, &pos) == TCL_OK)) {
         Blt_ChainLink link;
 
         link = Blt_Chain_GetNthLink(viewPtr->items, pos);
@@ -3604,7 +3608,7 @@ ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, itemPtr, Tcl_GetString(objv[i]));
+        SetTag(interp, itemPtr, objv[i]);
     }
     return TCL_OK;
 }
@@ -5902,23 +5906,24 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
-    const char *tag;
-    long index;
-
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &index) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
     if (objc == 4) {
         /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&viewPtr->tags, tag);
+        Blt_Tags_AddTag(&viewPtr->tags, string);
     } else {
         int i;
 
@@ -5931,7 +5936,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
                  itemPtr = NextTaggedItem(&iter)) {
-                Blt_Tags_AddItemToTag(&viewPtr->tags, tag, itemPtr);
+                Blt_Tags_AddItemToTag(&viewPtr->tags, string, itemPtr);
             }
         }
     }
@@ -5953,18 +5958,19 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
-    const char *tag;
-    long index;
+    const char *string;
+    char c;
     int i;
 
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &index) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
@@ -5977,7 +5983,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
              itemPtr = NextTaggedItem(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&viewPtr->tags, tag, itemPtr);
+            Blt_Tags_RemoveItemFromTag(&viewPtr->tags, string, itemPtr);
         }
     }
     return TCL_OK;
@@ -6045,16 +6051,15 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 3; i < objc; i++) {
-        const char *tag;
-        long index;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_Tags_ForgetTag(&viewPtr->tags, tag);
+        Blt_Tags_ForgetTag(&viewPtr->tags, string);
     }
     return TCL_OK;
 }
@@ -6232,21 +6237,22 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&itemTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        long index;
-        const char *tag;
+        const char *string;
+        char c;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
         }
-        if (strcmp(tag, "all") == 0) {
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
             break;
         } else {
             Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&viewPtr->tags, tag);
+            chain = Blt_Tags_GetItemList(&viewPtr->tags, string);
             if (chain != NULL) {
                 Blt_ChainLink link;
 
@@ -6261,7 +6267,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             continue;
         }
-        Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
+        Tcl_AppendResult(interp, "can't find a tag \"", string, "\"",
                          (char *)NULL);
         goto error;
     }
@@ -6315,24 +6321,25 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        const char *tag;
+        const char *string;
+        char c;
         Item *itemPtr;
-        long index;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                              (char *)NULL);     
             return TCL_ERROR;
         }
         for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
              itemPtr = NextTaggedItem(&iter)) {
-            Blt_Tags_AddItemToTag(&viewPtr->tags, tag, itemPtr);
+            Blt_Tags_AddItemToTag(&viewPtr->tags, string, itemPtr);
         }    
     }
     return TCL_OK;

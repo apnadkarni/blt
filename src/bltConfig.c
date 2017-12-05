@@ -942,9 +942,9 @@ DoConfig(
                 }
                 if (sp->customPtr != NULL) {
                     if (bool) {
-                        *((int *)ptr) |= (long)sp->customPtr;
+                        *((int *)ptr) |= (intptr_t)sp->customPtr;
                     } else {
-                        *((int *)ptr) &= ~(long)sp->customPtr;
+                        *((int *)ptr) &= ~(intptr_t)sp->customPtr;
                     }
                 } else {
                     *((int *)ptr) = bool;
@@ -1187,38 +1187,38 @@ DoConfig(
         case BLT_CONFIG_BITMASK: 
             {
                 int bool;
-                unsigned long mask;
-                unsigned int flags;
+                uintptr_t mask;
+                uintptr_t flags;
 
                 if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                mask = (unsigned long)sp->customPtr;
-                flags = *(unsigned int *)ptr;
+                mask = (uintptr_t)sp->customPtr;
+                flags = *(uintptr_t *)ptr;
                 flags &= ~mask;
                 if (bool) {
                     flags |= mask;
                 }
-                *(unsigned int *)ptr = flags;
+                *(uintptr_t *)ptr = flags;
             }
             break;
 
         case BLT_CONFIG_BITMASK_INVERT: 
             {
                 int bool;
-                unsigned long mask;
-                unsigned int flags;
+                uintptr_t mask;
+                uintptr_t flags;
 
                 if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                mask = (unsigned long)sp->customPtr;
-                flags = *(unsigned int *)ptr;
+                mask = (uintptr_t)sp->customPtr;
+                flags = *(uintptr_t *)ptr;
                 flags &= ~mask;
                 if (!bool) {
                     flags |= mask;
                 }
-                *(unsigned int *)ptr = flags;
+                *(uintptr_t *)ptr = flags;
             }
             break;
 
@@ -1255,30 +1255,36 @@ DoConfig(
 
         case BLT_CONFIG_INT_NNEG: 
             {
-                long value;
+                int value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
-                        &value) != TCL_OK) {
+                if (Tcl_GetIntFromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                *(int *)ptr = (int)value;
+                if (value < 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" can't be negative.", (char *)NULL);
+                    return TCL_ERROR;
+                }
+                *(int *)ptr = value;
             }
             break;
 
 
         case BLT_CONFIG_INT_POS: 
             {
-                long value;
+                int value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value) 
-                    != TCL_OK) {
+                if (Tcl_GetIntFromObj(interp, objPtr, &value) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                *(int *)ptr = (int)value;
+                if (value <= 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" must be positive.", (char *)NULL);
+                    return TCL_ERROR;
+                }
+                *(int *)ptr = value;
             }
             break;
-
-
 
         case BLT_CONFIG_LIST: 
             {
@@ -1321,6 +1327,18 @@ DoConfig(
             }
             break;
 
+        case BLT_CONFIG_INT64: 
+            {
+                int64_t value;
+                
+                if (Blt_GetInt64FromObj(interp, objPtr, &value) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                *(int64_t *)ptr = value;
+            }
+            break;
+
+
         case BLT_CONFIG_LONG: 
             {
                 long value;
@@ -1336,8 +1354,13 @@ DoConfig(
             {
                 long value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_NNEG, 
-                        &value) != TCL_OK) {
+                if (Blt_GetLongFromObj(interp, objPtr, &value)
+                    != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (value < 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" can't be negative.", (char *)NULL);
                     return TCL_ERROR;
                 }
                 *(long *)ptr = value;
@@ -1349,8 +1372,13 @@ DoConfig(
             {
                 long value;
                 
-                if (Blt_GetCountFromObj(interp, objPtr, COUNT_POS, &value) 
+                if (Blt_GetLongFromObj(interp, objPtr, &value)
                     != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (objPtr <= 0) {
+                    Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
+                                     "\" must be positive.", (char *)NULL);
                     return TCL_ERROR;
                 }
                 *(long *)ptr = value;
@@ -1547,9 +1575,9 @@ FormatConfigValue(
             int bool;
 
             if (sp->customPtr != NULL) {
-                bool = *((int *)ptr) & (long)sp->customPtr;
+                bool = *((int *)ptr) & (uintptr_t)sp->customPtr;
             } else {
-                bool = *((int *)ptr) &= ~(long)sp->customPtr;
+                bool = *((int *)ptr) &= ~(uintptr_t)sp->customPtr;
             }
             return Tcl_NewBooleanObj(bool);
         }
@@ -1631,21 +1659,21 @@ FormatConfigValue(
 
     case BLT_CONFIG_BITMASK:
         {
-            unsigned long flags;
-            unsigned int mask;
+            uintptr_t flags;
+            uintptr_t mask;
 
-            flags = (unsigned long)sp->customPtr;
-            mask = (*(unsigned int *)ptr);
+            flags = (uintptr_t)sp->customPtr;
+            mask = (*(uintptr_t *)ptr);
             return Tcl_NewBooleanObj((mask & flags));
         }
 
     case BLT_CONFIG_BITMASK_INVERT:
         {
-            unsigned long flags;
-            unsigned int mask;
+            uintptr_t flags;
+            uintptr_t mask;
 
-            flags = (unsigned long)sp->customPtr;
-            mask = (*(unsigned int *)ptr);
+            flags = (uintptr_t)sp->customPtr;
+            mask = (*(uintptr_t *)ptr);
             return Tcl_NewBooleanObj((mask & flags) == 0);
         }
 

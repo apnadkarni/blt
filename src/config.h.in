@@ -364,6 +364,9 @@
 /* Define to 1 if you have the <X11/extensions/randr.h> header file. */
 #undef HAVE_X11_EXTENSIONS_RANDR_H
 
+/* Define to 1 if you have the <X11/extensions/shmproto.h> header file. */
+#undef HAVE_X11_EXTENSIONS_SHMPROTO_H
+
 /* Define to 1 if you have the <X11/extensions/Xcomposite.h> header file. */
 #undef HAVE_X11_EXTENSIONS_XCOMPOSITE_H
 

@@ -603,7 +603,7 @@ static int
 ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
 {
     const char *p;
-    long lvalue;
+    int64_t lvalue;
     int length, result;
     Tcl_Obj *objPtr;
 
@@ -614,7 +614,7 @@ ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
     length = p - string;
     objPtr = Tcl_NewStringObj(string, length);
     Tcl_IncrRefCount(objPtr);
-    result = Blt_GetLongFromObj(interp, objPtr, &lvalue);
+    result = Blt_GetInt64FromObj(interp, objPtr, &lvalue);
     Tcl_DecrRefCount(objPtr);
     if (result != TCL_OK) {
         if (interp != NULL) {
@@ -1688,7 +1688,6 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
                     
                     d = pow(10.0, tokenPtr->length);
                     parserPtr->date.frac = (double)tokenPtr->lvalue / d;
-fprintf(stderr, "token lvalue=%ld frac=%.17g\n", tokenPtr->lvalue, parserPtr->date.frac);
                     tokenPtr = tokenPtr->nextPtr;
                 }
             }
@@ -3151,7 +3150,6 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
     if (count == 0) {
         return;
     }
-    count++;                            /* NUL byte */
 
     /* Make sure the result dynamic string has enough space to hold the
      * formatted date.  */
@@ -3281,7 +3279,7 @@ fprintf(stderr, "datePtr->frac = %.17g %.9g\n", datePtr->frac, datePtr->frac);
         case 'N':                       /* nanoseconds (000000000..999999999) */
             Blt_DateToSeconds(datePtr, &seconds);
 #if SIZEOF_LONG == 4
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__CYGWIN__)
             numBytes = sprintf(bp, "%I64d", (int64_t)(seconds * 1e9));
 #else 
             numBytes = sprintf(bp, "%lld", (int64_t)(seconds * 1e9));
@@ -3390,7 +3388,7 @@ fprintf(stderr, "datePtr->frac = %.17g %.9g\n", datePtr->frac, datePtr->frac);
         assert((bp - buffer) < count);
 #endif
     }
-    *bp = '\0';    
+    Tcl_DStringSetLength(resultPtr, bp - buffer);
 }
 
 /*

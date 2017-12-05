@@ -401,13 +401,13 @@ static Blt_ConfigSpec tableSpecs[] =
         DEF_SORT_DOWN_ICON, Blt_Offset(TableView, sort.down), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_BACKGROUND, "-disabledcolumntitlebackground", 
-        "diabledColumnTitleBackground", "DisabledTitleBackground", 
+        "disabledColumnTitleBackground", "DisabledTitleBackground", 
         DEF_DISABLED_TITLE_BG, Blt_Offset(TableView, colDisabledTitleBg), 0},
     {BLT_CONFIG_COLOR, "-disabledcolumntitleforeground", 
         "disabledColumnTitleForeground", "DisabledTitleForeground", 
         DEF_DISABLED_TITLE_FG, Blt_Offset(TableView, colDisabledTitleFg), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledrowtitlebackground", 
-        "diabledRowTitleBackground", "DisabledTitleBackground", 
+        "disabledRowTitleBackground", "DisabledTitleBackground", 
         DEF_DISABLED_TITLE_BG, Blt_Offset(TableView, rowDisabledTitleBg), 0},
     {BLT_CONFIG_COLOR, "-disabledrowtitleforeground", 
         "disabledRowTitleForeground", "DisabledTitleForeground", 
@@ -415,7 +415,6 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
         "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(TableView, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
         Blt_Offset(TableView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
@@ -662,7 +661,7 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(TableView, filter.borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "diabledBackground", 
+    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground", 
         "DisabledBackground", DEF_FILTER_DISABLED_BG, 
         Blt_Offset(TableView, filter.disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
@@ -5124,8 +5123,7 @@ AppendTagsProc(Blt_BindTable table, ClientData item, ClientData hint,
         break;
 
     default:
-        fprintf(stderr, "unknown item type (%d) %lx\n", type,
-                (unsigned long)item);
+        fprintf(stderr, "unknown item type (%d) %p\n", type, item);
         break;
     }
 }
@@ -7259,7 +7257,7 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellIdentifyOp --
  *
- *      pathName cell identify cell x y 
+ *      pathName cell identify cellName x y 
  *
  *---------------------------------------------------------------------------
  */
@@ -8113,7 +8111,7 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y2 = WORLDX(viewPtr, y2 - rootY);
     if ((y2 < viewPtr->inset) || 
         (y1 >= (viewPtr->inset + viewPtr->colTitleHeight))) {
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
         return TCL_OK;
     }
     /*
@@ -8129,14 +8127,14 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         colPtr = viewPtr->visibleColumns[i];
         if ((x1 < (colPtr->worldX + colPtr->width)) && 
             (x2 > colPtr->worldX)) {
-            long index;
+            size_t index;
 
             index = blt_table_column_index(viewPtr->table, colPtr->column);
-            Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+            Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
             return TCL_OK;
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), -1);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
     return TCL_OK;
 }
 
@@ -8215,14 +8213,14 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     Column *colPtr;
-    long index;
+    ssize_t index;
 
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     index = (colPtr != NULL) ? 
         blt_table_column_index(viewPtr->table, colPtr->column) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -8450,7 +8448,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     int x;                         /* Screen coordinates of the test point. */
     Column *colPtr;
-    long index;
+    ssize_t index;
 
 #ifdef notdef
     int isRoot;
@@ -8476,7 +8474,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colPtr = NearestColumn(viewPtr, x, TRUE);
     index = (colPtr != NULL) ? 
         blt_table_column_index(viewPtr->table, colPtr->column) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -8875,7 +8873,7 @@ ColumnVarResolverProc(
     BLT_TABLE_COLUMN col;
     FindSwitches *switchesPtr;
     Tcl_Obj *valueObjPtr;
-    long index;
+    int64_t index;
     
     /* 
      * Global variables:  table, viewPtr, varTable, rowPtr.
@@ -8891,7 +8889,8 @@ ColumnVarResolverProc(
     switchesPtr = Blt_GetHashValue(hPtr);
 
     /* Look up the column from the variable name given. */
-    if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
+    if ((isdigit(name[0])) &&
+        (Blt_GetInt64((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK)) {
         col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
         col = blt_table_get_column_by_label(switchesPtr->table, name);
@@ -9225,7 +9224,7 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     filterPtr = &viewPtr->filter;
     if (objc == 3) {
-        long index;
+        ssize_t index;
 
         /* Report the column that has the filter menu posted. */
         index = -1;
@@ -9233,7 +9232,7 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
             index = blt_table_column_index(viewPtr->table, 
                                            filterPtr->postPtr->column);
         }
-        Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
         return TCL_OK;
     }
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
@@ -10245,14 +10244,14 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Row *rowPtr;
     TableView *viewPtr = clientData;
-    long index;
+    ssize_t index;
 
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
     }
     index = (rowPtr != NULL) ? 
         blt_table_row_index(viewPtr->table, rowPtr->row) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -10481,7 +10480,6 @@ RowNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     int y;                         /* Screen coordinates of the test point. */
     Row *rowPtr;
-    long index;
 
 #ifdef notdef
     int isRoot;
@@ -10505,9 +10503,12 @@ RowNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     } 
     rowPtr = NearestRow(viewPtr, y, TRUE);
-    index = (rowPtr != NULL) ? 
-        blt_table_row_index(viewPtr->table, rowPtr->row) : -1;
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    if (rowPtr != NULL) {
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+                          blt_table_row_index(viewPtr->table, rowPtr->row));
+    } else {
+        Tcl_SetWideIntObj(Tcl_GetObjResult(interp), -1);
+    }
     return TCL_OK;
 }
 
@@ -12422,7 +12423,7 @@ ComputeLayout(TableView *viewPtr)
 static void
 ReorderVisibleIndices(TableView *viewPtr)
 {
-    long count;
+    size_t count;
     Row *rowPtr;
 
     /* Reorder visible indices. */

@@ -107,7 +107,7 @@ typedef struct {
 
 typedef struct {
     Blt_TreeNode node;                  /* Node being searched. */
-    unsigned long nextIndex;            /* Index of next bucket to be
+    long nextIndex;                     /* Index of next bucket to be
                                          * enumerated after present one. */
     Blt_TreeValue nextValue;            /* Next entry to be enumerated in the
                                          * the current bucket. */
@@ -304,7 +304,7 @@ typedef struct {
  */
 struct _Blt_TreeKeyIterator {
     Blt_TreeNode node;                  /* Table being searched. */
-    unsigned long nextIndex;            /* Index of next bucket to be
+    long nextIndex;                     /* Index of next bucket to be
                                          * enumerated after present one. */
     Blt_TreeValue nextValue;            /* Next entry to be enumerated in the
                                          * the current bucket. */

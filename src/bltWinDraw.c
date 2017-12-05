@@ -439,9 +439,7 @@ Blt_EmulateXMaxRequestSize(Display *display)
  *---------------------------------------------------------------------------
  */
 void
-Blt_EmulateXLowerWindow(
-    Display *display, 
-    Window window)
+Blt_EmulateXLowerWindow(Display *display, Window window)
 {
     HWND hWnd;
 
@@ -510,24 +508,36 @@ Blt_EmulateXUnmapWindow(
  *---------------------------------------------------------------------------
  */
 void
-Blt_EmulateXWarpPointer(
-    Display *display,
-    Window srcWindow,
-    Window destWindow,
-    int srcX,
-    int srcY,
-    unsigned int srcWidth,
-    unsigned int srcHeight,
-    int destX,
-    int destY)
+Blt_EmulateXWarpPointer(Display *display, Window src, Window dest, int sx,
+                        int sy, unsigned int srcWidth, unsigned int srcHeight,
+                        int dx, int dy)
 {
-    HWND hWnd;
-    POINT point;
+    if (src != None) {
+        HWND hWnd;
+        RECT rect;
+        POINT point;
+    
+        GetCursorPos(&point);
+        hWnd = Tk_GetHWND(src);
+        GetWindowRect(hWnd, &rect);
+        if ((point.y < rect.top) || (point.y >= rect.bottom) ||
+            (point.x < rect.left) || (point.x >= rect.right)) {
+            return;
+        }
+    }
+    if (dest == None) {
+        POINT point;
+    
+        GetCursorPos(&point);
+        SetCursorPos(point.x + dx, point.y + dy);
+    } else {
+        POINT point;
+        HWND hWnd;
 
-    hWnd = Tk_GetHWND(destWindow);
-    point.x = destX, point.y = destY;
-    if (ClientToScreen(hWnd, &point)) {
-        SetCursorPos(point.x, point.y);
+        hWnd = Tk_GetHWND(dest);
+        if (ClientToScreen(hWnd, &point)) {
+            SetCursorPos(point.x + dx, point.y + dy);
+        }
     }
 }
 
@@ -649,11 +659,8 @@ CreateGC()
  *---------------------------------------------------------------------------
  */
 GC
-Blt_EmulateXCreateGC(
-    Display *display,
-    Drawable drawable,
-    unsigned long mask,
-    XGCValues *srcPtr)
+Blt_EmulateXCreateGC(Display *display, Drawable drawable, unsigned long mask,
+                     XGCValues *srcPtr)
 {
     XGCValuesEx *destPtr;
 
@@ -1635,7 +1642,7 @@ Blt_EmulateXSetDashes(Display *display, GC gc, int dashOffset,
 {
     assert(n >= 0);
     gc->dashes = n;
-    gc->dash_offset = (int)dashList;
+    gc->dash_offset = (uintptr_t)dashList;
 }
 
 /*

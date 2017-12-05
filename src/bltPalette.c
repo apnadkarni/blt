@@ -423,7 +423,6 @@ GetStepFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *stepPtr)
     const char *string;
     char *end;
     double value;
-    extern int errno;
     
     string = Tcl_GetString(objPtr);
     errno = 0;

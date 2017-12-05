@@ -142,7 +142,7 @@ GetIdFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
         { 
             static TkWinWindow tkWinWindow;
             
-            tkWinWindow.handle = (HWND)xid;
+            tkWinWindow.handle = (HWND)(size_t)xid;
             tkWinWindow.winPtr = NULL;
             tkWinWindow.type = TWD_WINDOW;
             *windowPtr = (Window)&tkWinWindow;
@@ -1278,7 +1278,7 @@ UnmapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- *  WarpTop --
+ *  WarpToOp --
  *
  *      Warps the pointer to the given window or coordinates.
  *

@@ -1765,22 +1765,17 @@ LzwOutputCurrent(LzwCompressor *lzwPtr)
 static void
 GifWriteGlobalColorTable(Blt_HashTable *colorTablePtr, unsigned char *bp)
 {
-    unsigned long index;
+    size_t index;
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
     
     index = 0;
     for (hPtr = Blt_FirstHashEntry(colorTablePtr, &cursor); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&cursor)) {
-        union {
-            unsigned long index;
-            char *key;
-        } value;
         Blt_Pixel pixel;
         
         Blt_SetHashValue(hPtr, index);
-        value.key = Blt_GetHashKey(colorTablePtr, hPtr);
-        pixel.u32 = (unsigned int)value.index;
+        pixel.u32 = (size_t)Blt_GetHashKey(colorTablePtr, hPtr);
         bp[0] = pixel.Red;
         bp[1] = pixel.Green;
         bp[2] = pixel.Blue;
@@ -1794,27 +1789,22 @@ GetColorIndex(Blt_HashTable *colorTablePtr, Blt_Pixel *colorPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_Pixel pixel;
-    int index;
-    int numColors;
-    union {
-        unsigned long pixel;
-        char *key;
-    } value;
+    size_t index;
+    size_t numColors;
 
     numColors = colorTablePtr->numEntries;
     pixel.u32 = colorPtr->u32;
     pixel.Alpha = 0xFF;
-    value.pixel = pixel.u32;
-    hPtr = Blt_FindHashEntry(colorTablePtr, value.key);
+    hPtr = Blt_FindHashEntry(colorTablePtr, (char *)(size_t)pixel.u32);
     if (hPtr == NULL) {
         GifError("can't find color %x,%x,%x,%x in color table\n", 
                  colorPtr->Red, colorPtr->Blue, colorPtr->Green, 
                 colorPtr->Alpha);
     }
     if (colorPtr->Alpha == 0x00) {
-        index = (int)numColors;
+        index = numColors;
     } else {
-        index = (unsigned long)Blt_GetHashValue(hPtr);
+        index = (size_t)Blt_GetHashValue(hPtr);
     }
     return index;
 }
