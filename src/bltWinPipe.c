@@ -899,6 +899,9 @@ OpenRedirectFile(const char *path, DWORD accessFlags, DWORD createFlags)
         DWORD lastError;
 
         lastError = GetLastError();
+        fprintf(stderr, "can't open %s: error=%d,%x\n", path,
+                lastError, lastError & 0xffffL);
+        
         if ((lastError & 0xffffL) == ERROR_OPEN_FAILED) {
             lastError = (createFlags & (TRUNCATE_EXISTING | OPEN_EXISTING)) 
                 ? ERROR_FILE_NOT_FOUND : ERROR_FILE_EXISTS;
@@ -2497,7 +2500,6 @@ Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t reqNumBytes)
     pipePtr = GetPipeHandler(hFile);
     if ((pipePtr == NULL) || (pipePtr->flags & PIPE_DELETED)) {
         errno = EBADF;
-        errno = ESRCH;
         return -1;
     }
     if (WaitForSingleObject(pipePtr->readyEvent, 0) == WAIT_TIMEOUT) {
