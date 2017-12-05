@@ -7000,8 +7000,7 @@ blt_table_get_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
         (colPtr->type == TABLE_COLUMN_TYPE_TIME)) {
         return valuePtr->datum.d;
     }
-    if (Blt_GetDoubleFromString(interp, GetValueString(valuePtr), &d)
-        != TCL_OK) {
+    if (Blt_GetDouble(interp, GetValueString(valuePtr), &d) != TCL_OK) {
         return Blt_NaN();
     }
     return d;
