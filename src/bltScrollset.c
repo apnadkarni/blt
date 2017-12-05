@@ -1500,7 +1500,7 @@ ConfigureScrollset(Tcl_Interp *interp, Scrollset *setPtr, int objc,
  * ScrollsetEventProc --
  *
  *      This procedure is invoked by the Tk dispatcher for various events on
- *      comboentry widgets.
+ *      scrollset widgets.
  *
  * Results:
  *      None.
@@ -1574,6 +1574,7 @@ WindowEventProc(
             EventuallyRedraw(setPtr);
         }
     } else if (eventPtr->type == ConfigureNotify) {
+        setPtr->flags |= GEOMETRY;
         EventuallyRedraw(setPtr);
     } else if (eventPtr->type == DestroyNotify) {
         if ((setPtr->yScrollbar != NULL) && 
@@ -1765,11 +1766,13 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (Tcl_GetDoubleFromObj(interp, objv[3], &last) != TCL_OK) {
         return TCL_ERROR;
     }
+#ifdef notdef
     if ((Tk_Width(setPtr->tkwin) <= 1) || (Tk_Height(setPtr->tkwin) <= 1)) {
         /* The first and last values are not reliable when the size of the
          * viewport is 1x1. */
         return TCL_OK;
     }
+#endif
     first = FCLAMP(first);
     last = FCLAMP(last);
 #ifdef notdef
