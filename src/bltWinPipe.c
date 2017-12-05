@@ -323,33 +323,33 @@ static int
 PeekOnPipe(PipeHandler *pipePtr, int *numBytesAvailPtr)
 {
     int state;
+    int numBytesAvail;
 
     *numBytesAvailPtr = -1;
     state = WaitForSingleObject(pipePtr->readyEvent, 0);
-    if (state == WAIT_TIMEOUT) {
+    switch(state) {
+    case WAIT_TIMEOUT:
         errno = EAGAIN;
         return FALSE;                   /* Reader thread is currently
                                          * blocked. */
-    }
-    /*
-     * At this point the two threads are synchronized. So it's safe
-     * to access shared information.
-     */
-    if (state == WAIT_OBJECT_0) {
-        int numBytesAvail;
-
+    case WAIT_OBJECT_0:
         if (pipePtr->end < pipePtr->start) {
             fprintf(stderr, "pipe %p (start %d > end %d)\n", pipePtr->hPipe,
                     pipePtr->start, pipePtr->end);
         }
         numBytesAvail = pipePtr->end - pipePtr->start;
-        if ((numBytesAvail == 0) && !(pipePtr->flags & PIPE_EOF)) {
+        if ((numBytesAvail < 0) && !(pipePtr->flags & PIPE_EOF)) {
             TclWinConvertError(pipePtr->lastError);
             numBytesAvail = -1;
         }
         *numBytesAvailPtr = numBytesAvail;
+        return TRUE;
+
+    case WAIT_FAILED:
+    case WAIT_ABANDONED:
+        *numBytesAvailPtr = -1;
+        return TRUE;
     }
-    return TRUE;
 }
 
 /*
