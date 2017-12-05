@@ -170,6 +170,35 @@ static Tcl_ObjType bltUnsignedLongObjType = {
                                          * string representation. */
 };
 
+/* 
+ * bltDoubleObjType --
+ *
+ *      64-bit floating point object.  Used by blt::datatable, blt::tree to
+ *      parse double numbers.  This biggest difference from the
+ *      Tcl_DoubleObj is that is that -inf, +inf, and NaN are *not* treated
+ *      as errors.
+ */
+static Tcl_UpdateStringProc DoubleObjUpdateStringRep;
+static Tcl_SetFromAnyProc   DoubleObjSetFromAny;
+
+static Tcl_ObjType bltDoubleObjType = {
+    (char *)"blt_double",
+    NULL,                               /* Called when an object is
+                                         * freed. */
+    NULL,                               /* Copies an internal
+                                         * representation from one object *
+                                         * to another. */
+    DoubleObjUpdateStringRep,           /* Creates string representation
+                                         * from an object's internal
+                                         * representation. */
+    DoubleObjSetFromAny,                /* Creates valid internal
+                                         * representation from an object's
+                                         * string representation. */
+};
+
+static Tcl_ObjType *tclIntObjTypePtr;
+static Tcl_ObjType *tclDoubleObjTypePtr;
+static Tcl_ObjType *tclWideIntObjTypePtr;
 
 static INLINE void
 FreeInternalRep(Tcl_Obj *objPtr)
@@ -741,12 +770,174 @@ Blt_IsInt64Obj(Tcl_Obj *objPtr)
     return (objPtr->typePtr == &bltInt64ObjType);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetDouble --
+ *
+ *      Converts a string into a double precision number.  This differs
+ *      from Tcl's version in that it also allows NaN and +/-Inf.  There
+ *      are cases where NaNs are used to indicate holes in the data.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+Blt_GetDouble(Tcl_Interp *interp, const char *s, double *valuePtr)
+{
+    char *end;
+    double d;
+    
+    errno = 0;
+    d = strtod(s, &end); /* INTL: TCL source. */
+    if (end == s) {
+        badDouble:
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "expected floating-point number "
+                "but got \"", s, "\"", (char *) NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (errno != 0 && (d == HUGE_VAL || d == -HUGE_VAL || d == 0)) {
+        if (interp != NULL) {
+            char msg[64 + TCL_INTEGER_SPACE];
+        
+            sprintf(msg, "unknown floating-point error, errno = %d", errno);
+            Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
+            Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
+        }
+        return TCL_ERROR;
+    }
+    while ((*end != 0) && isspace(UCHAR(*end))) { /* INTL: ISO space. */
+        end++;
+    }
+    if (*end != 0) {
+        goto badDouble;
+    }
+    *valuePtr = d;
+    return TCL_OK;
+}
+
+static int
+DoubleObjSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
+{
+    double x;
+    
+    if (objPtr->typePtr == &bltDoubleObjType) {
+        return TCL_OK;
+    }
+    if (objPtr->typePtr == &bltLongObjType) {
+        objPtr->internalRep.doubleValue = objPtr->internalRep.longValue;
+        objPtr->typePtr = &bltDoubleObjType;
+        return TCL_OK;
+    }
+    if (objPtr->typePtr == &bltInt64ObjType) {
+        objPtr->internalRep.doubleValue = objPtr->internalRep.wideValue;
+        objPtr->typePtr = &bltDoubleObjType;
+        return TCL_OK;
+    }
+    if (Blt_GetDouble(interp, Tcl_GetString(objPtr), &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    FreeInternalRep(objPtr);
+    objPtr->internalRep.doubleValue = x;
+    objPtr->typePtr = &bltDoubleObjType;
+    return TCL_OK;
+}
+
+static void
+DoubleObjUpdateStringRep(Tcl_Obj *objPtr) 
+{
+    size_t numBytes;
+    char buffer[TCL_DOUBLE_SPACE];
+
+    Tcl_PrintDouble(NULL, objPtr->internalRep.doubleValue, buffer);
+    numBytes = strlen(buffer);
+    strcpy(objPtr->bytes, buffer);
+    objPtr->length = (int)numBytes;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetDoubleFromObj --
+ *
+ *      Converts a Tcl_Obj into a double precision number.  This differs
+ *      from Tcl's version in that it also allows NaN and +/-Inf.  There
+ *      are cases where NaNs are used to indicate holes in the data.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ * Side Effects:
+ *      tclDoubleType is no longer available (in 8.5) as a global variable.
+ *      We have to get a double obj and save its type pointer.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
+{
+    if (objPtr->typePtr == &bltDoubleObjType) {
+        *valuePtr = objPtr->internalRep.doubleValue;
+        return TCL_OK;
+    }
+    if (objPtr->typePtr == tclDoubleObjTypePtr) {
+        *valuePtr = objPtr->internalRep.doubleValue;
+        return TCL_OK;
+    }
+    if (DoubleObjSetFromAny(interp, objPtr) == TCL_OK) {
+        *valuePtr = objPtr->internalRep.doubleValue;
+        return TCL_OK;
+    }
+    return TCL_ERROR;
+}
+
+Tcl_Obj *
+Blt_NewDoubleObj(double value)
+{
+    Tcl_Obj *objPtr;
+
+    objPtr = Tcl_NewObj(); 
+    objPtr->refCount = 0;  
+    objPtr->internalRep.doubleValue = value;
+    objPtr->bytes = NULL;
+    objPtr->length = 0; 
+    objPtr->typePtr = &bltDoubleObjType;
+    return objPtr;
+}
+
+int
+Blt_SetDoubleObj(Tcl_Obj *objPtr, double value)
+{
+    if (Tcl_IsShared(objPtr)) {
+	Blt_Panic("Blt_SetDoubleObj called with shared object %p", objPtr);
+    }
+    Tcl_InvalidateStringRep(objPtr);
+    objPtr->internalRep.doubleValue = value;
+    objPtr->typePtr = &bltDoubleObjType;
+    return TCL_OK;
+}
+
+int
+Blt_IsDouble64Obj(Tcl_Obj *objPtr)
+{
+    return (objPtr->typePtr == &bltDoubleObjType);
+}
+
 void
 Blt_RegisterObjTypes(void)
 {
+    tclIntObjTypePtr = Tcl_GetObjType("int");
+    tclDoubleObjTypePtr = Tcl_GetObjType("double");
+    tclWideIntObjTypePtr = Tcl_GetObjType("wideInt");
     Tcl_RegisterObjType(&bltInt64ObjType);
     Tcl_RegisterObjType(&bltArrayObjType);
     Tcl_RegisterObjType(&bltLongObjType);
+    Tcl_RegisterObjType(&bltDoubleObjType);
     Tcl_RegisterObjType(&bltUnsignedLongObjType);
 }
+
 
