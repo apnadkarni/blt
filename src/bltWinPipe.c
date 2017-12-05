@@ -338,13 +338,13 @@ PeekOnPipe(PipeHandler *pipePtr, int *numBytesAvailPtr)
                     pipePtr->start, pipePtr->end);
         }
         numBytesAvail = pipePtr->end - pipePtr->start;
-        if ((numBytesAvail < 0) && !(pipePtr->flags & PIPE_EOF)) {
-            TclWinConvertError(pipePtr->lastError);
-            numBytesAvail = -1;
+        if ((numBytesAvail == 0) && !(pipePtr->flags & PIPE_EOF)) {
+            return FALSE;
         }
         *numBytesAvailPtr = numBytesAvail;
         return TRUE;
 
+    default:
     case WAIT_FAILED:
     case WAIT_ABANDONED:
         *numBytesAvailPtr = -1;
