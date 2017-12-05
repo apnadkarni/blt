@@ -235,11 +235,6 @@ BLT_EXTERN size_t Blt_Ascii85EncodeBufferSize(size_t numChars,
 
 BLT_EXTERN int Blt_IsBase64(const char *buf, size_t length);
 
-BLT_EXTERN int Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, 
-        double *valuePtr);
-BLT_EXTERN int Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        double *valuePtr);
-
 BLT_EXTERN int Blt_GetTimeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         double *secondsPtr);
 BLT_EXTERN int Blt_GetTime(Tcl_Interp *interp, const char *string, 
@@ -300,6 +295,13 @@ BLT_EXTERN int Blt_SetInt64Obj(Tcl_Obj *objPtr, int64_t value);
 BLT_EXTERN Tcl_Obj *Blt_NewInt64Obj(int64_t value);
 BLT_EXTERN int Blt_IsInt64Obj(Tcl_Obj *objPtr);
 
+BLT_EXTERN int Blt_GetDouble(Tcl_Interp *interp, const char *s, 
+        double *valuePtr);
+BLT_EXTERN int Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        double *valuePtr);
+BLT_EXTERN int Blt_SetDoubleObj(Tcl_Obj *objPtr, double value);
+BLT_EXTERN Tcl_Obj *Blt_NewDoubleObj(double value);
+BLT_EXTERN int Blt_IsDoubleObj(Tcl_Obj *objPtr);
 
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);
 BLT_EXTERN void Blt_LowerCase(char *s);
