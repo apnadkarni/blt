@@ -822,7 +822,6 @@ PipeWriterThread(void *clientData)
             bytesLeft -= count;
             ptr += count;
         }
-        CloseHandle(pipePtr->hPipe);
         /* Tell the main thread that data can be written to the pipe.
          * Remember to wake up the notifier thread.  */
         SetEvent(pipePtr->readyEvent);
