@@ -761,7 +761,8 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
-            fprintf(stderr, "ReadFile returned 0 lasterror is %ld flags=%x,%x\n",
+            fprintf(stderr,
+                    "ReadFile returned 0 lasterror is %ld,%ld flags=%x\n",
                     pipePtr->lastError, GetLastError(), pipePtr->flags);
         }
         WakeupNotifier(pipePtr->hWindow);
