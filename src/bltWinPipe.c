@@ -337,10 +337,6 @@ PeekOnPipe(PipeHandler *pipePtr, int *numBytesAvailPtr)
         return FALSE;                   /* Reader thread is currently
                                          * blocked. */
     case WAIT_OBJECT_0:
-        if (pipePtr->end < pipePtr->start) {
-            fprintf(stderr, "pipe %p (start %d > end %d)\n", pipePtr->hPipe,
-                    pipePtr->start, pipePtr->end);
-        }
         numBytesAvail = pipePtr->end - pipePtr->start;
         if ((numBytesAvail == 0) && !(pipePtr->flags & PIPE_EOF)) {
             return FALSE;
@@ -584,9 +580,6 @@ DestroyPipe(DestroyData data)
 static void
 DeletePipeHandler(PipeHandler * pipePtr)
 {
-    fprintf(stderr, "deleting pipe %p (%d entries)\n", pipePtr->hPipe,
-            Blt_Chain_GetLength(pipeChain));
-    
     if ((pipePtr->flags & TCL_WRITABLE) &&
         (pipePtr->hPipe != INVALID_HANDLE_VALUE)) {
         /* Wait for the writer thread to finish with the current buffer */
@@ -649,8 +642,6 @@ GetPipeHandler(HANDLE hPipe)
             return pipePtr;
         }
     }
-    fprintf(stderr, "Can't find pipe for %p (%d entries)\n", hPipe,
-            Blt_Chain_GetLength(pipeChain));
     return NULL;
 }
 
