@@ -580,6 +580,9 @@ DestroyPipe(DestroyData data)
 static void
 DeletePipeHandler(PipeHandler * pipePtr)
 {
+    fprintf(stderr, "deleting pipe %p (%d entries)\n", pipePtr->hPipe,
+            Blt_Chain_GetLength(pipeChain));
+    
     if ((pipePtr->flags & TCL_WRITABLE) &&
         (pipePtr->hPipe != INVALID_HANDLE_VALUE)) {
         /* Wait for the writer thread to finish with the current buffer */
@@ -642,6 +645,8 @@ GetPipeHandler(HANDLE hPipe)
             return pipePtr;
         }
     }
+    fprintf(stderr, "Can't find pipe for %p (%d entries)\n", hPipe,
+            Blt_Chain_GetLength(pipeChain));
     return NULL;
 }
 
@@ -752,6 +757,8 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
+            fprintf(stderr, "ReadFile returned 0 lasterror is %ld\n",
+                    GetLastError());
         }
         WakeupNotifier(pipePtr->hWindow);
         SetEvent(pipePtr->readyEvent);
