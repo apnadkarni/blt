@@ -804,7 +804,7 @@ PipeWriterThread(void *clientData)
          * Synchronize with the main thread so that we don't test the pipe
          * until its done writing.
          */
-g        WaitForSingleObject(pipePtr->idleEvent, INFINITE);
+        WaitForSingleObject(pipePtr->idleEvent, INFINITE);
 
         ptr = pipePtr->buffer;
         bytesLeft = pipePtr->end;
