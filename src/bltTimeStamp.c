@@ -256,6 +256,7 @@ static Blt_SwitchSpec formatSwitches[] =
     {BLT_SWITCH_END}
 };
 
+static int initialized = FALSE;
 static Tcl_ObjCmdProc TimeStampCmd;
 
 /*
@@ -420,6 +421,22 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
     } else {
         copy = Blt_Strndup(string, length);
     }
+    if (!initialized) {
+        /*
+         * Source in the file contains the blt::timezones array. This array
+         * contains the names of timezones and their offset.  We do it now
+         * so that the user can change entries if he/she wants.
+         */
+        if (Tcl_GlobalEval(interp,
+                "source [file join $blt_library bltTimeStamp.tcl]") != TCL_OK) {
+            const char *errmsg =
+                "\n    (while loading timezones for timestamp command)";
+            Tcl_AddErrorInfo(interp, errmsg);
+            return TCL_ERROR;
+        }
+        initialized = TRUE;
+    }
+
     /* Don't leave an error message if you don't find the timezone. */
     objPtr = Tcl_GetVar2Ex(interp, "blt::timezones", copy, 0);
     if (objPtr == NULL) {
@@ -3412,18 +3429,6 @@ Blt_TimeStampCmdInitProc(Tcl_Interp *interp)
     static Blt_CmdSpec cmdSpec = { 
         "timestamp", TimeStampCmd
     };
-    /*
-     * Source in the file contains the blt::timezones array. This array
-     * contains the names of timezones and their offset.  We do it now so
-     * that the user can change entries if he/she wants.
-     */
-    if (Tcl_GlobalEval(interp,
-                "source [file join $blt_library bltTimeStamp.tcl]") != TCL_OK) {
-        const char *errmsg =
-            "\n    (while loading timezones for timestamp command)";
-        Tcl_AddErrorInfo(interp, errmsg);
-        return TCL_ERROR;
-    }
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
 
