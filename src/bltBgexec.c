@@ -1457,7 +1457,8 @@ ReadBytes(Sink *sinkPtr)
             } else {
                 char mesg[200];
 
-                sprintf(mesg, "Tried to read %d bytes", bytesLeft - 1);
+                sprintf(mesg, "Read %d, tried to read %d bytes: errno=%d", numBytes,
+                        bytesLeft - 1, errno);
                 ExplainError(interp, mesg);
                 sinkPtr->status = READ_ERROR;
                 return TCL_ERROR;

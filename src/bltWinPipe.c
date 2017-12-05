@@ -2437,7 +2437,6 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
-        errno = EAGAIN;
         return -1;                      /* No data available. */
     }
     /*
