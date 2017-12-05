@@ -732,7 +732,7 @@ PipeReaderThread(void *clientData)
         WaitForSingleObject(pipePtr->idleEvent, INFINITE);
         /* Read from the pipe. The thread will block here until some data
          * is read into its buffer. */
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
         if (pipePtr->start != pipePtr->end) {
             fprintf(stderr, "pipe %p (start %d != end %d)\n", pipePtr->hPipe,
                     pipePtr->start, pipePtr->end);
@@ -759,7 +759,7 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
             fprintf(stderr,
                     "ReadFile returned 0 lasterror is %ld,%ld flags=%x\n",
                     pipePtr->lastError, GetLastError(), pipePtr->flags);
@@ -2445,7 +2445,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         return -1;
     }
     if (!PeekOnPipe(pipePtr, &numBytesAvail)) {
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
     fprintf(stderr, "AsyncRead EAGAIN\n");
 #endif
         return -1;                      /* No data available. */
@@ -2456,20 +2456,20 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
      *                  1+      # of bytes available.
      */
     if (numBytesAvail == -1) {
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
     fprintf(stderr, "AsyncRead ERROR\n");
 #endif
         return -1;
     }
     if (numBytesAvail == 0) {
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
     fprintf(stderr, "AsyncRead found EOF\n");
 #endif
         return 0;
     }
     numBytes = pipePtr->end - pipePtr->start;
     if (numBytes > count) {
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
         fprintf(stderr, "AsyncRead shrinking # read to %d\n", count);
 #endif
         numBytes = count; 
@@ -2480,7 +2480,7 @@ Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count)
         ResetEvent(pipePtr->readyEvent);
         SetEvent(pipePtr->idleEvent);
     }
-#if PIPE_DEBUG
+#if ASYNC_DEBUG
     fprintf(stderr, "AsyncRead read %d bytes\n", numBytes);
 #endif
     return numBytes;
