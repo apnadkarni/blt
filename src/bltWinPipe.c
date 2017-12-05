@@ -126,13 +126,14 @@ typedef enum ApplicationTypes {
 #define PIPE_BUFSIZ     (BUFSIZ*2)      /* Size of pipe read buffer. */
 
 /* TCL_READABLE (1<<1) */
-/* TCL_WRITEABLE (1<<2) */
+/* TCL_WRITABLE (1<<2) */
 /* TCL_EXCEPTION (1<<3) */
 #define PIPE_PENDING    (1<<4)         /* Message is pending in the queue. */
 #define PIPE_EOF        (1<<5)         /* Pipe has reached EOF. */
 #define PIPE_DELETED    (1<<6)         /* Indicates if the pipe has been
                                         * deleted but its memory hasn't been
                                         * freed yet. */
+
 typedef struct {
     unsigned int flags;                 /* State flags, see above for a
                                          * list. */
@@ -760,8 +761,8 @@ PipeReaderThread(void *clientData)
                 (pipePtr->lastError == ERROR_HANDLE_EOF)) {
                 pipePtr->flags |= PIPE_EOF;
             }
-            fprintf(stderr, "ReadFile returned 0 lasterror is %ld flags=%x\n",
-                    GetLastError(), pipePtr->flags);
+            fprintf(stderr, "ReadFile returned 0 lasterror is %ld flags=%x,%x\n",
+                    pipePtr->lastError, GetLastError(), pipePtr->flags);
         }
         WakeupNotifier(pipePtr->hWindow);
         SetEvent(pipePtr->readyEvent);
