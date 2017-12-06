@@ -20,15 +20,14 @@ if { [file exists ../library] } {
     set blt_library ../library
 }
 
-#    -postcommand {.e.m configure -width [winfo width .e] ; update} \
 set myIcon ""
-blt::comboentry .e \
+blt::comboentry .entry \
     -image $image \
-    -textvariable myText1 \
-    -iconvariable myIcon1 \
+    -textvariable myTextVar \
+    -iconvariable myIconVar \
     -arrowrelief flat \
     -textwidth 0 \
-    -menu .e.m \
+    -menu .entry.menu1 \
     -exportselection yes \
     -xscrollcommand { .s set }  \
     -arrowbackground white \
@@ -36,16 +35,18 @@ blt::comboentry .e \
 	
 #    -bg $bg 
 
-blt::combomenu .e.m  \
+blt::combomenu .entry.menu1  \
     -restrictwidth min \
     -height 200 \
-    -textvariable myText1 \
-    -iconvariable myIcon1 \
-    -yscrollbar .e.m.ybar \
-    -xscrollbar .e.m.xbar
-blt::tk::scrollbar .e.m.xbar -style tk
-blt::tk::scrollbar .e.m.ybar -style xp -arrowcolor grey20
-.e.m sort configure -auto 1
+    -textvariable myTextVar \
+    -iconvariable myIconVar \
+    -yscrollbar .entry.menu1.ybar \
+    -xscrollbar .entry.menu1.xbar
+
+blt::tk::scrollbar .entry.menu1.xbar -style tk
+blt::tk::scrollbar .entry.menu1.ybar -style xp -arrowcolor grey20
+
+.entry.menu1 sort configure -auto 1
 
 set onOff 1
 set wwho ""
@@ -67,44 +68,44 @@ foreach {item type } {
     Replace	checkbutton
 } {
     set char [string range $item 0 0] 
-    .e.m add \
+    .entry.menu1 add \
 	-type $type \
 	-text $item \
 	-accel "Ctrl+$char" \
 	-underline 0 \
 	-tag "$type [string tolower $char]" \
 	-icon $icon \
-	-variable x$item 
+	-variable $item 
     if { $type == "radiobutton" } {
-	.e.m item configure $item -value $item 
+	.entry.menu1 item configure $item -value $item 
     }
 }
 set X1 1
 set Redo 1
 
-.e.m item configure Find -menu .e.m.m
+.entry.menu1 item configure Find -menu .entry.menu1.menu2
 #-state disabled
-.e.m item configure x -state disabled 
-.e.m item configure radiobutton -variable wwho 
-.e.m item configure Y1 -state disabled
+.entry.menu1 item configure x -state disabled 
+.entry.menu1 item configure radiobutton -variable wwho 
+.entry.menu1 item configure Y1 -state disabled
 set wwho Y1
-blt::combomenu .e.m.m  \
+blt::combomenu .entry.menu1.menu2  \
     -bg $bg \
-    -textvariable myText1 \
-    -iconvariable myIcon1 \
+    -textvariable myTextVar \
+    -iconvariable myIconVar \
     -height { 0 500 } \
-    -yscrollbar .e.m.m.ybar \
-    -xscrollbar .e.m.m.xbar 
+    -yscrollbar .entry.menu1.menu2.ybar \
+    -xscrollbar .entry.menu1.menu2.xbar 
 
-blt::tk::scrollbar .e.m.m.xbar 
-blt::tk::scrollbar .e.m.m.ybar 
+blt::tk::scrollbar .entry.menu1.menu2.xbar 
+blt::tk::scrollbar .entry.menu1.menu2.ybar 
 
 set onOff 0
 foreach item { 
     Undo X1 Y1 Redo Cut Copy X2 Y2 Paste "Select All" X3 Y3 Find Replace 
 } {
     set char [string range $item 0 0] 
-    .e.m.m add \
+    .entry.menu1.menu2 add \
 	-type checkbutton \
 	-text "$item" \
 	-accel "Ctrl+$char" \
@@ -116,15 +117,15 @@ foreach item {
 
 }
 set wwho2 ""
-.e.m.m item configure Undo -type command
-.e.m.m item configure Cut -type command 
-.e.m.m item configure Find -type cascade -menu .e.m.m.m
+.entry.menu1.menu2 item configure Undo -type command
+.entry.menu1.menu2 item configure Cut -type command 
+.entry.menu1.menu2 item configure Find -type cascade -menu .entry.menu1.menu2.menu3
 #-state disabled
-.e.m.m item configure Y3 -type command -image $icon2
-.e.m.m item configure Undo -type command 
-.e.m.m item configure Paste -type separator 
-.e.m.m item configure x -state disabled 
-.e.m.m item configure y -type radiobutton -variable wwho2
+.entry.menu1.menu2 item configure Y3 -type command -image $icon2
+.entry.menu1.menu2 item configure Undo -type command 
+.entry.menu1.menu2 item configure Paste -type separator 
+.entry.menu1.menu2 item configure x -state disabled 
+.entry.menu1.menu2 item configure y -type radiobutton -variable wwho2
 
 set labels { 
     Aarhus Aaron Ababa aback abaft abandon abandoned abandoning
@@ -213,29 +214,29 @@ set labels {
     acquiring acquisition acquisitions
 }
 
-blt::combomenu .e.m.m.m \
+blt::combomenu .entry.menu1.menu2.menu3 \
     -bg $bg \
-    -textvariable myText1 \
-    -iconvariable myIcon1 \
+    -textvariable myTextVar \
+    -iconvariable myIconVar \
     -width  { 0 400 } \
     -height { 0 500 } \
-    -yscrollbar .e.m.m.m.ybar \
-    -xscrollbar .e.m.m.m.xbar
+    -yscrollbar .entry.menu1.menu2.menu3.ybar \
+    -xscrollbar .entry.menu1.menu2.menu3.xbar
 
-.e.m.m.m listadd $labels \
+.entry.menu1.menu2.menu3 listadd $labels \
     -icon $icon 
 
-blt::tk::scrollbar .e.m.m.m.xbar
-blt::tk::scrollbar .e.m.m.m.ybar 
+blt::tk::scrollbar .entry.menu1.menu2.menu3.xbar
+blt::tk::scrollbar .entry.menu1.menu2.menu3.ybar 
 
-blt::tk::scrollbar .s -orient vertical -command { .e xview } 
+blt::tk::scrollbar .s -orient vertical -command { .entry xview } 
 
 bind BltComboEntry <3> {
     grab release [grab current]
 }
 
 blt::table . \
-    0,0 .e -fill x -anchor n 
+    0,0 .entry -fill x -anchor n 
 
 #blt::table configure . r0 -resize none
 #blt::table configure . r1 -resize both

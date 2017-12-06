@@ -2457,8 +2457,6 @@ ComputeComboGeometry(ComboMenu *comboPtr)
      * the parent (combobutton/comboentry) width is greater than the normal
      * size of the menu.  */
     comboPtr->menuWidth = w;
-    fprintf(stderr, "ComputeComboGeometry(%s) menuWidth is set to %d\n",
-            Tk_PathName(comboPtr->tkwin), w);
     comboPtr->menuHeight = h;
     if ((Blt_Chain_GetLength(comboPtr->chain) == 0) && (h < 20)) {
         h = 20;
@@ -3354,20 +3352,22 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * CheckVariable --
+ * CheckItemVariable --
  *
- *      Checks the variable associated with the item to establish its
- *      state.  This called whenever the item is configured and when the
- *      trace on its variable is triggered.
+ *      Checks the variable associated with the item to determine its
+ *      state.  This is called whenever the item is configured or the
+ *      item's variable (-variable option) is set.
  *
  *---------------------------------------------------------------------------
  */
 static int
-CheckVariable(Tcl_Interp *interp, Item *itemPtr)
+CheckItemVariable(Tcl_Interp *interp, Item *itemPtr)
 {
+    ComboMenu *comboPtr;
     Tcl_Obj *objPtr;
     int bool;
 
+    comboPtr = itemPtr->comboPtr;
     if ((itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON))==0) {
         return FALSE;                  /* Not a radiobutton or checkbutton. */
     }
@@ -3404,21 +3404,8 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
         }
     }
     if (bool) {
-        ComboMenu *comboPtr;
-
         if (itemPtr->flags & ITEM_INDICATOR_ON) {
             return FALSE;                       /* Already selected. */
-        }
-        comboPtr = itemPtr->comboPtr;
-        if ((comboPtr->textVarObjPtr != NULL) && 
-            (itemPtr->text != emptyString)) {
-            Tcl_Obj *objPtr;
-            
-            objPtr = Tcl_NewStringObj(itemPtr->text, -1);
-            if (Tcl_ObjSetVar2(interp, comboPtr->textVarObjPtr, NULL, objPtr, 
-                               TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
-                return FALSE;
-            }
         }
         if (comboPtr->valueVarObjPtr != NULL) {
             Tcl_Obj *objPtr;
@@ -3457,7 +3444,7 @@ ConfigureItem(Tcl_Interp *interp, Item *itemPtr, int objc,
     if (itemPtr->varNameObjPtr != NULL) {
         if (Blt_ConfigModified(itemConfigSpecs, "-variable", "-*value", 
                                (char *)NULL)) {
-            CheckVariable(interp, itemPtr);
+            CheckItemVariable(interp, itemPtr);
         }
     }
     itemPtr->flags |= ITEM_GEOMETRY;
@@ -3856,11 +3843,14 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
         }
         goto done;
     }
-
     if ((itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON))==0) {
         return NULL;                   /* Not a radiobutton or checkbutton. */
     }
-    if (!CheckVariable(interp, itemPtr)) {
+    if (!CheckItemVariable(interp, itemPtr)) {
+        return NULL;
+    }
+    /* Setting the item's variable, implicitly selects the variable. */
+    if (SelectItem(interp, itemPtr->comboPtr, itemPtr) != TCL_OK) {
         return NULL;
     }
  done:
@@ -4825,7 +4815,6 @@ PostBoxSwitchProc(ClientData clientData, Tcl_Interp *interp,
     ComboMenu *comboPtr = (ComboMenu *)record;
     Box2d box;
     
-    fprintf(stderr, "-box %s\n", Tcl_GetString(objPtr));
     if (GetBoxFromObj(interp, objPtr, &box) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -5912,8 +5901,6 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     memset(&comboPtr->post, 0, sizeof(PostInfo));
     comboPtr->post.tkwin = Tk_Parent(comboPtr->tkwin);
     comboPtr->post.parentWidth = comboPtr->menuWidth;
-    fprintf(stderr, "PostOp(%s) parentWidth=%d\n", 
-            Tk_PathName(comboPtr->tkwin), comboPtr->menuWidth);
     /* Process switches  */
     if (Blt_ParseSwitches(interp, postSwitches, objc - 2, objv + 2, comboPtr,
         BLT_SWITCH_DEFAULTS) < 0) {
@@ -5957,9 +5944,6 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (comboPtr->flags & LAYOUT_PENDING)) {
         ComputeComboGeometry(comboPtr);
     }
-    fprintf(stderr, "postop %s parentWidth=%d menuWidth=%d, mode=%d\n", 
-            Tk_PathName(comboPtr->tkwin), comboPtr->post.parentWidth,
-            comboPtr->menuWidth, comboPtr->post.mode);
     comboPtr->post.lastParentWidth = comboPtr->post.parentWidth;
     x = 0;                              /* Suppress compiler warning; */
     y = comboPtr->post.y2;
@@ -5983,11 +5967,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         break;
     }
-    fprintf(stderr, "postop %s before fix x=%d y=%d\n", 
-            Tk_PathName(comboPtr->tkwin),x, y);
     FixMenuCoords(comboPtr, &x, &y);
-    fprintf(stderr, "postop %s after fix x=%d y=%d\n", 
-            Tk_PathName(comboPtr->tkwin),x, y);
     /*
      * If there is a post command for the menu, execute it.  This may
      * change the size of the menu, so be sure to recompute the menu's

@@ -3297,11 +3297,6 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
             x2 = Tk_Width(comboPtr->tkwin) + rootX;
             y1 = comboPtr->inset + 1 + rootY;
             y2 = Tk_Height(comboPtr->tkwin) + rootY;
-            fprintf(stderr, "%s w=%d rw=%d cw=%d\n", 
-                    Tk_PathName(comboPtr->tkwin),
-                    Tk_Width(comboPtr->tkwin),
-                    Tk_ReqWidth(comboPtr->tkwin),
-                    comboPtr->width);
 
             objPtr = Tcl_NewStringObj("-box", 4);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
