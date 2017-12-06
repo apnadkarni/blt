@@ -100,9 +100,7 @@ typedef struct {
 #ifdef __GNUC__ 
 #include <wingdi.h>
 #include <windowsx.h>
-#undef Status
 #include <winspool.h>
-#define Status int
 /*
  * Add definitions missing from windgi.h, windowsx.h, and winspool.h
  */

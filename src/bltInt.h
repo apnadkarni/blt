@@ -40,11 +40,15 @@
 
 #undef SIZEOF_LONG
 #include "config.h"
+
 #ifdef _MSC_VER
 #  define _CRT_SECURE_NO_DEPRECATE
 #  define _CRT_NONSTDC_NO_DEPRECATE
 #endif
 #ifdef WIN32
+#  if (SIZEOF_VOID_P == 8)
+#    define __WIN64 1
+#  endif
 #  define STRICT
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
@@ -57,6 +61,11 @@
 #ifdef HAVE_SYS_TYPES_H
   #include <sys/types.h>
 #endif  /* HAVE_SYS_TYPES_H */
+
+/* Need __stat64 defined before including tcl.h (mingw64) */
+#ifdef HAVE_SYS_STAT_H
+  #include <sys/stat.h>
+#endif  /* HAVE_SYS_STAT_H */
 
 #ifndef __STDC_VERSION__
 #  define __STDC_VERSION__ 0L

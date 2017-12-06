@@ -38,11 +38,11 @@
 #ifndef _BLT_WIN_H
 #define _BLT_WIN_H
 
-#if (SIZEOF_VOID_P == 8)
-# define __WIN64 1
-#endif
-
 #define _CRT_SECURE_NO_DEPRECATE
+
+#if (SIZEOF_VOID_P == 8)
+#  define __WIN64 1
+#endif
 
 #define STRICT
 #define WIN32_LEAN_AND_MEAN

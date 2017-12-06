@@ -922,7 +922,7 @@ Blt_SetDoubleObj(Tcl_Obj *objPtr, double value)
 }
 
 int
-Blt_IsDouble64Obj(Tcl_Obj *objPtr)
+Blt_IsDoubleObj(Tcl_Obj *objPtr)
 {
     return (objPtr->typePtr == &bltDoubleObjType);
 }

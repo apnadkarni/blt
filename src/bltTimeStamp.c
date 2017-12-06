@@ -432,7 +432,7 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
             const char *errmsg =
                 "\n    (while loading timezones for timestamp command)";
             Tcl_AddErrorInfo(interp, errmsg);
-            return TCL_ERROR;
+            return NULL;
         }
         initialized = TRUE;
     }
