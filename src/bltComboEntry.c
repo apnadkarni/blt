@@ -3288,20 +3288,21 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         objPtr = Tcl_NewStringObj("right", 5);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        if (comboPtr->flags & ARROW) {
+        {
             int x1, y1, x2, y2, rootX, rootY;
             Tcl_Obj *listObjPtr;
             
             Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
-            x1 = Tk_Width(comboPtr->tkwin) - 
-                (comboPtr->inset + comboPtr->arrowWidth);
-            if (x1 < 0) {
-                x1 = comboPtr->inset;
-            }
             x1 = rootX;
             x2 = Tk_Width(comboPtr->tkwin) + rootX;
             y1 = comboPtr->inset + 1 + rootY;
             y2 = Tk_Height(comboPtr->tkwin) + rootY;
+            fprintf(stderr, "%s w=%d rw=%d cw=%d\n", 
+                    Tk_PathName(comboPtr->tkwin),
+                    Tk_Width(comboPtr->tkwin),
+                    Tk_ReqWidth(comboPtr->tkwin),
+                    comboPtr->width);
+
             objPtr = Tcl_NewStringObj("-box", 4);
             Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
             listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);

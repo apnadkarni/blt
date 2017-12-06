@@ -110,7 +110,7 @@ static const char emptyString[] = "";
 #define SORT_DECREASING         (1<<14)
 #define SORT_PENDING            (1<<15)         
 #define SORTED                  (1<<17) /* The menu is currently sorted.
-                                         * This flag is used to determine
+                                         * This fla g is used to determine
                                          * if we can simply reverse the
                                          * menu when the sort -decreasing
                                          * flag is changed. */
@@ -555,14 +555,14 @@ static Blt_ConfigSpec itemConfigSpecs[] =
 };
 
 typedef struct {
-    unsigned int flags;                 /* Various flags: see below. */
+    int mode;                           /* How to post the menu: see below. */
     int x1, y1, x2, y2;                 /* Coordinates of area representing
                                          * the parent that posted this
                                          * menu.  */
     Tk_Window tkwin;                    /* Parent window that posted this
                                          * menu. */
-    int menuWidth, menuHeight;
-    int lastMenuWidth;
+    int parentWidth, parentHeight;
+    int lastParentWidth;
     int align;
 } PostInfo;
 
@@ -631,7 +631,7 @@ struct _ComboMenu {
 
     SortInfo sort;
 
-    int normalWidth, normalHeight;
+    int menuWidth, menuHeight;
     
     int xScrollUnits, yScrollUnits;
 
@@ -952,15 +952,6 @@ static Blt_SwitchParseProc PostWindowSwitchProc;
 static Blt_SwitchCustom postWindowSwitch = {
     PostWindowSwitchProc, NULL, NULL, 0, 
 };
-
-typedef struct {
-    unsigned int flags;                 /* Various flags: see below. */
-    int x1, y1, x2, y2;                 /* Coordinates of area representing
-                                         * the parent that posted this
-                                         * menu.  */
-    Tk_Window tkwin;                    /* Parent window that posted this
-                                         * menu. */
-} PostSwitches;
 
 #define ALIGN_LEFT      (0)             /* Menu is aligned to the center of
                                          * the parent. */
@@ -1759,12 +1750,12 @@ GetBoundedWidth(ComboMenu *comboPtr, int w)
     if ((comboPtr->flags & DROPDOWN) && 
         (comboPtr->flags & (RESTRICT_MIN|RESTRICT_MAX))) {
         if ((comboPtr->flags & RESTRICT_MIN) &&
-            (w < comboPtr->post.menuWidth)) {
-            w = comboPtr->post.menuWidth;
+            (w < comboPtr->post.parentWidth)) {
+            w = comboPtr->post.parentWidth;
         }
         if ((comboPtr->flags & RESTRICT_MAX) &&
-            (w > comboPtr->post.menuWidth)) {
-            w = comboPtr->post.menuWidth;
+            (w > comboPtr->post.parentWidth)) {
+            w = comboPtr->post.parentWidth;
         }
     }
     {
@@ -1829,7 +1820,7 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
         y -= h;                         /* Shift the menu up by the height
                                          * of the menu. */
         if (comboPtr->flags & DROPDOWN) {
-            y -= comboPtr->post.menuHeight;
+            y -= comboPtr->post.parentHeight;
                                         /* Add the height of the parent if
                                          * this is a dropdown menu.  */
         }
@@ -1839,7 +1830,7 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
     }
     if ((x + w) > sw) {
         if (comboPtr->flags & DROPDOWN) {
-            x = x + comboPtr->post.menuWidth - w;
+            x = x + comboPtr->post.parentWidth - w;
                                         /* Flip the menu anchor to the
                                          * other end of the menu
                                          * button/entry */
@@ -2465,13 +2456,15 @@ ComputeComboGeometry(ComboMenu *comboPtr)
     /* Save the computed width so that we only override the menu width if
      * the parent (combobutton/comboentry) width is greater than the normal
      * size of the menu.  */
-    comboPtr->normalWidth = w;
-    comboPtr->normalHeight = h;
+    comboPtr->menuWidth = w;
+    fprintf(stderr, "ComputeComboGeometry(%s) menuWidth is set to %d\n",
+            Tk_PathName(comboPtr->tkwin), w);
+    comboPtr->menuHeight = h;
     if ((Blt_Chain_GetLength(comboPtr->chain) == 0) && (h < 20)) {
         h = 20;
     }
-    if ((comboPtr->flags & DROPDOWN) && (w < comboPtr->post.menuWidth)) {
-        w = comboPtr->post.menuWidth;
+    if ((comboPtr->flags & DROPDOWN) && (w < comboPtr->post.parentWidth)) {
+        w = comboPtr->post.parentWidth;
     }
     comboPtr->width = w;
     comboPtr->height = h;
@@ -4707,7 +4700,7 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
             return TCL_ERROR;
         }
     }
-    comboPtr->post.flags = POST_WINDOW;
+    comboPtr->post.mode = POST_WINDOW;
     comboPtr->post.tkwin = tkwin;
     return TCL_OK;
 }
@@ -4772,7 +4765,7 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
     }
     comboPtr->post.x1 = comboPtr->post.x2 = x;
     comboPtr->post.y1 = comboPtr->post.y2 = y;
-    comboPtr->post.flags = POST_POPUP;
+    comboPtr->post.mode = POST_POPUP;
     return TCL_OK;
 }
 
@@ -4805,7 +4798,7 @@ PostCascadeSwitchProc(ClientData clientData, Tcl_Interp *interp,
     }
     comboPtr->post.x1 = comboPtr->post.x2 = x;
     comboPtr->post.y1 = comboPtr->post.y2 = y;
-    comboPtr->post.flags = POST_CASCADE;
+    comboPtr->post.mode = POST_CASCADE;
     return TCL_OK;
 }
 
@@ -4832,6 +4825,7 @@ PostBoxSwitchProc(ClientData clientData, Tcl_Interp *interp,
     ComboMenu *comboPtr = (ComboMenu *)record;
     Box2d box;
     
+    fprintf(stderr, "-box %s\n", Tcl_GetString(objPtr));
     if (GetBoxFromObj(interp, objPtr, &box) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -4839,7 +4833,7 @@ PostBoxSwitchProc(ClientData clientData, Tcl_Interp *interp,
     comboPtr->post.y1 = box.y1;
     comboPtr->post.x2 = box.x2;
     comboPtr->post.y2 = box.y2;
-    comboPtr->post.flags = POST_REGION;
+    comboPtr->post.mode = POST_REGION;
     return TCL_OK;
 }
 
@@ -5876,7 +5870,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     state = FALSE;
-    switch (comboPtr->post.flags) {
+    switch (comboPtr->post.mode) {
     case POST_POPUP:
     case POST_CASCADE:
         break;
@@ -5917,14 +5911,16 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     memset(&comboPtr->post, 0, sizeof(PostInfo));
     comboPtr->post.tkwin = Tk_Parent(comboPtr->tkwin);
-    comboPtr->post.menuWidth = comboPtr->normalWidth;
+    comboPtr->post.parentWidth = comboPtr->menuWidth;
+    fprintf(stderr, "PostOp(%s) parentWidth=%d\n", 
+            Tk_PathName(comboPtr->tkwin), comboPtr->menuWidth);
     /* Process switches  */
     if (Blt_ParseSwitches(interp, postSwitches, objc - 2, objv + 2, comboPtr,
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
     comboPtr->flags |= DROPDOWN;
-    switch (comboPtr->post.flags) {
+    switch (comboPtr->post.mode) {
     case POST_PARENT:
     case POST_WINDOW:
         {
@@ -5955,13 +5951,16 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         comboPtr->flags &= ~DROPDOWN;
         break;
     }
-    comboPtr->post.menuWidth = comboPtr->post.x2 - comboPtr->post.x1;
-    comboPtr->post.menuHeight = comboPtr->post.y2 - comboPtr->post.y1;
-    if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth) ||
+    comboPtr->post.parentWidth = comboPtr->post.x2 - comboPtr->post.x1;
+    comboPtr->post.parentHeight = comboPtr->post.y2 - comboPtr->post.y1;
+    if ((comboPtr->post.parentWidth != comboPtr->post.lastParentWidth) ||
         (comboPtr->flags & LAYOUT_PENDING)) {
         ComputeComboGeometry(comboPtr);
     }
-    comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
+    fprintf(stderr, "postop %s parentWidth=%d menuWidth=%d, mode=%d\n", 
+            Tk_PathName(comboPtr->tkwin), comboPtr->post.parentWidth,
+            comboPtr->menuWidth, comboPtr->post.mode);
+    comboPtr->post.lastParentWidth = comboPtr->post.parentWidth;
     x = 0;                              /* Suppress compiler warning; */
     y = comboPtr->post.y2;
     switch (comboPtr->post.align) {
@@ -5973,18 +5972,22 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
             int w;
 
             w = comboPtr->post.x2 - comboPtr->post.x1;
-            x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
+            x = comboPtr->post.x1 + (w - comboPtr->menuWidth) / 2; 
         }
         break;
     case ALIGN_RIGHT:
-        if (comboPtr->post.menuWidth > comboPtr->normalWidth) {
-            x = comboPtr->post.x2 - comboPtr->post.menuWidth;
+        if (comboPtr->post.parentWidth > comboPtr->menuWidth) {
+            x = comboPtr->post.x2 - comboPtr->post.parentWidth;
         } else {
-            x = comboPtr->post.x2 - comboPtr->normalWidth;
+            x = comboPtr->post.x2 - comboPtr->menuWidth;
         }
         break;
     }
+    fprintf(stderr, "postop %s before fix x=%d y=%d\n", 
+            Tk_PathName(comboPtr->tkwin),x, y);
     FixMenuCoords(comboPtr, &x, &y);
+    fprintf(stderr, "postop %s after fix x=%d y=%d\n", 
+            Tk_PathName(comboPtr->tkwin),x, y);
     /*
      * If there is a post command for the menu, execute it.  This may
      * change the size of the menu, so be sure to recompute the menu's

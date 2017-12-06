@@ -1303,8 +1303,6 @@ blt::combobutton .mbar.file \
     -font { Arial 9 } -justify left \
     -menu .mbar.file.m
 
-
-
 blt::combomenu .mbar.file.m \
     -width { 0 400 }  -font "Arial 9" -acceleratorfont "Arial 9" \
     -bg grey85 -relief raised -bd 1
