@@ -1,5 +1,5 @@
 package require BLT
-set colors {
+set rgbNames {
     000000 black
     000000 gray0
     000000 grey0
@@ -843,8 +843,8 @@ $bg blank 0x0000000
 $bg draw rectangle 5 5 -width 13 -height 25 -color 0xFF00000
 $bg blur $bg 4
 
-if 0 {
-foreach {rgb name} $colors {
+if 1 {
+foreach {rgb name} $rgbNames {
     set icon [image create picture -width 27 -height 27]
     $icon blank 0x0
     $icon draw circle 12 12 11 -color black \
