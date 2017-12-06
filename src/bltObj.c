@@ -196,9 +196,9 @@ static Tcl_ObjType bltDoubleObjType = {
                                          * string representation. */
 };
 
-static Tcl_ObjType *tclIntObjTypePtr;
-static Tcl_ObjType *tclDoubleObjTypePtr;
-static Tcl_ObjType *tclWideIntObjTypePtr;
+static const Tcl_ObjType *tclIntObjTypePtr;
+static const Tcl_ObjType *tclDoubleObjTypePtr;
+static const Tcl_ObjType *tclWideIntObjTypePtr;
 
 static INLINE void
 FreeInternalRep(Tcl_Obj *objPtr)

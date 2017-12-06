@@ -1455,11 +1455,7 @@ ReadBytes(Sink *sinkPtr)
                 sinkPtr->status = READ_EOF;
                 return TCL_BREAK;
             } else {
-                char mesg[200];
-
-                sprintf(mesg, "Read %d, tried to read %d bytes: errno=%d", numBytes,
-                        bytesLeft - 1, errno);
-                ExplainError(interp, mesg);
+                ExplainError(interp, "reading from pipe");
                 sinkPtr->status = READ_ERROR;
                 return TCL_ERROR;
             }
