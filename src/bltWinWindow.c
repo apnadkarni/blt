@@ -220,30 +220,34 @@ Blt_MakeTransparentWindowExist(
  */
 /*ARGSUSED*/
 int
-Blt_GetWindowRegion(
-    Display *display,           /* Not used. */
-    Window window,
-    int *xPtr, int *yPtr, int *widthPtr, int *heightPtr)
+Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr, 
+                    int *widthPtr, int *heightPtr)
 {
     int result;
-    RECT region;
+    RECT r;
     TkWinWindow *winPtr = (TkWinWindow *)window;
+    HWND hWnd;
 
-    result = GetWindowRect(winPtr->handle, &region);
+    /* Root window in Tk has a NULL handle.  Have to handle it specially. */
+    hWnd = winPtr->handle;
+    if (winPtr->handle == NULL) {
+       hWnd = WindowFromDC(GetDC(NULL));
+    }
+    result = GetWindowRect(hWnd, &region);
     if (!result) {
         return TCL_ERROR;
     }
     if (xPtr != NULL) {
-        *xPtr = region.left;
+        *xPtr = r.left;
     }
     if (yPtr != NULL) {
-        *yPtr = region.top;
+        *yPtr = r.top;
     }
     if (widthPtr != NULL) {
-        *widthPtr = region.right - region.left;
+        *widthPtr = r.right - r.left;
     }
     if (heightPtr != NULL) {
-        *heightPtr = region.bottom - region.top;
+        *heightPtr = r.bottom - r.top;
     }
     return TCL_OK;
 }
@@ -265,24 +269,24 @@ Blt_GetRootCoords(Display *display, Window window, int *xPtr, int *yPtr,
                   int *widthPtr, int *heightPtr)
 {
     int result;
-    RECT region;
+    RECT r;
     TkWinWindow *winPtr = (TkWinWindow *)window;
 
-    result = GetWindowRect(winPtr->handle, &region);
+    result = GetWindowRect(winPtr->handle, &r);
     if (!result) {
         return TCL_ERROR;
     }
     if (xPtr != NULL) {
-        *xPtr = region.left;
+        *xPtr = r.left;
     }
     if (yPtr != NULL) {
-        *yPtr = region.top;
+        *yPtr = r.top;
     }
     if (widthPtr != NULL) {
-        *widthPtr = region.right - region.left;
+        *widthPtr = r.right - r.left;
     }
     if (heightPtr != NULL) {
-        *heightPtr = region.bottom - region.top;
+        *heightPtr = r.bottom - r.top;
     }
     return TCL_OK;
 }
