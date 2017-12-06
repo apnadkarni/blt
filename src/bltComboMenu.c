@@ -66,7 +66,7 @@ static const char emptyString[] = "";
 
 #define CASCADE_EVENT_MASK (ExposureMask|StructureNotifyMask)
 
-#define MAXSCROLLBARTHICKNESS   100
+#define MAX_SCROLLBAR_THICKNESS   100
 
 #define REDRAW_PENDING          (1<<0)  /* Indicates that the widget will
                                          * be redisplayed at the next idle
@@ -2006,36 +2006,38 @@ ComputeVisibleItems(ComboMenu *comboPtr)
     comboPtr->xScrollbarHeight = comboPtr->yScrollbarWidth = 0;
     if ((comboPtr->xScrollbar != NULL) && (comboPtr->worldWidth > cavityWidth)){
         comboPtr->xScrollbarHeight = Tk_ReqHeight(comboPtr->xScrollbar);
-        if (comboPtr->xScrollbarHeight > MAXSCROLLBARTHICKNESS) {
-            comboPtr->xScrollbarHeight = MAXSCROLLBARTHICKNESS;
+        if (comboPtr->xScrollbarHeight > MAX_SCROLLBAR_THICKNESS) {
+            comboPtr->xScrollbarHeight = MAX_SCROLLBAR_THICKNESS;
         }
         cavityHeight -= comboPtr->xScrollbarHeight;
     } 
     if ((comboPtr->yScrollbar != NULL) && (comboPtr->worldHeight>cavityHeight)){
         comboPtr->yScrollbarWidth = Tk_ReqWidth(comboPtr->yScrollbar);
-        if (comboPtr->yScrollbarWidth > MAXSCROLLBARTHICKNESS) {
-            comboPtr->yScrollbarWidth = MAXSCROLLBARTHICKNESS;
+        if (comboPtr->yScrollbarWidth > MAX_SCROLLBAR_THICKNESS) {
+            comboPtr->yScrollbarWidth = MAX_SCROLLBAR_THICKNESS;
         }
         cavityWidth -= comboPtr->yScrollbarWidth;
     }
     if ((comboPtr->xScrollbar != NULL) && (comboPtr->xScrollbarHeight == 0) && 
         (comboPtr->worldWidth > cavityWidth)) {
         comboPtr->xScrollbarHeight = Tk_ReqHeight(comboPtr->xScrollbar);
-        if (comboPtr->xScrollbarHeight > MAXSCROLLBARTHICKNESS) {
-            comboPtr->xScrollbarHeight = MAXSCROLLBARTHICKNESS;
+        if (comboPtr->xScrollbarHeight > MAX_SCROLLBAR_THICKNESS) {
+            comboPtr->xScrollbarHeight = MAX_SCROLLBAR_THICKNESS;
         }
         cavityHeight -= comboPtr->xScrollbarHeight;
     }
     if ((comboPtr->yScrollbar != NULL) && (comboPtr->yScrollbarWidth == 0) && 
         (comboPtr->worldHeight > cavityHeight)) {
         comboPtr->yScrollbarWidth = Tk_ReqWidth(comboPtr->yScrollbar);
-        if (comboPtr->yScrollbarWidth > MAXSCROLLBARTHICKNESS) {
-            comboPtr->yScrollbarWidth = MAXSCROLLBARTHICKNESS;
+        if (comboPtr->yScrollbarWidth > MAX_SCROLLBAR_THICKNESS) {
+            comboPtr->yScrollbarWidth = MAX_SCROLLBAR_THICKNESS;
         }
         cavityWidth -= comboPtr->yScrollbarWidth;
     }
     comboPtr->width = cavityWidth;
     comboPtr->height = cavityHeight;
+
+    /* Find the first visible item.  Begins at the y-offset. */
     itemPtr = SearchForItem(comboPtr, NULL, NULL, comboPtr->yOffset);
     if (itemPtr == NULL) {
         Blt_ChainLink link;
@@ -2046,6 +2048,8 @@ ComputeVisibleItems(ComboMenu *comboPtr)
     }
     comboPtr->firstPtr = itemPtr;
 
+    /* Find the last visible item.  Ends at the y-offset + viewport
+     * height. */
     itemPtr = SearchForItem(comboPtr, comboPtr->firstPtr, NULL, 
                             comboPtr->yOffset + VPORTHEIGHT(comboPtr)); 
     if (itemPtr == NULL) {
@@ -3407,18 +3411,6 @@ CheckItemVariable(Tcl_Interp *interp, Item *itemPtr)
         if (itemPtr->flags & ITEM_INDICATOR_ON) {
             return FALSE;                       /* Already selected. */
         }
-        if (comboPtr->valueVarObjPtr != NULL) {
-            Tcl_Obj *objPtr;
-            
-            objPtr = itemPtr->valueObjPtr;
-            if (objPtr == NULL) {
-                objPtr = Tcl_NewStringObj(itemPtr->text, -1);
-            }
-            if (Tcl_ObjSetVar2(interp, comboPtr->valueVarObjPtr, NULL, objPtr, 
-                               TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
-                return FALSE;
-            }
-        }
         itemPtr->flags |= ITEM_INDICATOR_ON;
     } else if (itemPtr->flags & ITEM_INDICATOR_ON) {
         itemPtr->flags &= ~ITEM_INDICATOR_ON;
@@ -3841,20 +3833,21 @@ ItemVarTraceProc(ClientData clientData, Tcl_Interp *interp, const char *name1,
             Tcl_TraceVar(interp, varName, VAR_FLAGS, ItemVarTraceProc, 
                 clientData);
         }
-        goto done;
-    }
-    if ((itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON))==0) {
-        return NULL;                   /* Not a radiobutton or checkbutton. */
-    }
-    if (!CheckItemVariable(interp, itemPtr)) {
+        EventuallyRedraw(itemPtr->comboPtr);
         return NULL;
+    } 
+    if (itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON)) {
+        CheckItemVariable(interp, itemPtr);
+        if ((itemPtr->flags & ITEM_CHECKBUTTON) ||
+            (itemPtr->flags & ITEM_INDICATOR_ON)) {
+            /* Setting the item's variable only if it matches, implicitly
+               selects the variable. */
+            if (SelectItem(interp, itemPtr->comboPtr, itemPtr) != TCL_OK) {
+                return NULL;
+            }
+            EventuallyRedraw(itemPtr->comboPtr);
+        }
     }
-    /* Setting the item's variable, implicitly selects the variable. */
-    if (SelectItem(interp, itemPtr->comboPtr, itemPtr) != TCL_OK) {
-        return NULL;
-    }
- done:
-    EventuallyRedraw(itemPtr->comboPtr);
     return NULL;                        /* Done. */
 }
 
@@ -7787,8 +7780,8 @@ DisplayProc(ClientData clientData)
     if (comboPtr->flags & SCROLL_PENDING) {
         int vw, vh;                     /* Viewport width and height. */
         /* 
-         * The view port has changed. The visible items need to be recomputed
-         * and the scrollbars updated.
+         * The view port has changed. The visible items need to be
+         * recomputed and the scrollbars updated.
          */
         ComputeVisibleItems(comboPtr);
         vw = VPORTWIDTH(comboPtr);
