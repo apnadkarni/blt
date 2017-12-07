@@ -223,18 +223,16 @@ int
 Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr, 
                     int *widthPtr, int *heightPtr)
 {
-    int result;
+    HWND hWnd;
     RECT r;
     TkWinWindow *winPtr = (TkWinWindow *)window;
-    HWND hWnd;
 
     /* Root window in Tk has a NULL handle.  Have to handle it specially. */
     hWnd = winPtr->handle;
     if (winPtr->handle == NULL) {
        hWnd = WindowFromDC(GetDC(NULL));
     }
-    result = GetWindowRect(hWnd, &region);
-    if (!result) {
+    if (!GetWindowRect(hWnd, &r)) {
         return TCL_ERROR;
     }
     if (xPtr != NULL) {
