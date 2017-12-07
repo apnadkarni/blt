@@ -47,12 +47,15 @@
 /*
  *---------------------------------------------------------------------------
  *
- * WindowToHandle --
+ * GetHWND --
+ *
+ *      Like Tk_GetHWND expect that if the tkwin is a toplevel, we return
+ *      its parent.  
  *
  *---------------------------------------------------------------------------
  */
 static HWND
-WindowToHandle(Tk_Window tkwin)
+GetHWND(Tk_Window tkwin)
 {
     HWND hWnd;
     Window window;
@@ -214,27 +217,25 @@ Blt_MakeTransparentWindowExist(
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_GetWindowRegion --
+ * Blt_GetWindowExtents --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 int
-Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr, 
+Blt_GetWindowExtents(Display *display, Window window, int *xPtr, int *yPtr, 
                     int *widthPtr, int *heightPtr)
 {
-    int result;
+    HWND hWnd;
     RECT r;
     TkWinWindow *winPtr = (TkWinWindow *)window;
-    HWND hWnd;
 
-    /* Root window in Tk has a NULL handle.  Have to handle it specially. */
     hWnd = winPtr->handle;
+    /* Root window in Tk has a NULL handle.  Have to handle it specially. */
     if (winPtr->handle == NULL) {
        hWnd = WindowFromDC(GetDC(NULL));
     }
-    result = GetWindowRect(hWnd, &region);
-    if (!result) {
+    if (!GetWindowRect(hWnd, &r)) {
         return TCL_ERROR;
     }
     if (xPtr != NULL) {
@@ -263,55 +264,19 @@ Blt_GetWindowName(Display *display, Window window)
     return name;
 }
 
-#ifdef notdef
-int
-Blt_GetRootCoords(Display *display, Window window, int *xPtr, int *yPtr, 
-                  int *widthPtr, int *heightPtr)
-{
-    int result;
-    RECT r;
-    TkWinWindow *winPtr = (TkWinWindow *)window;
-
-    result = GetWindowRect(winPtr->handle, &r);
-    if (!result) {
-        return TCL_ERROR;
-    }
-    if (xPtr != NULL) {
-        *xPtr = r.left;
-    }
-    if (yPtr != NULL) {
-        *yPtr = r.top;
-    }
-    if (widthPtr != NULL) {
-        *widthPtr = r.right - r.left;
-    }
-    if (heightPtr != NULL) {
-        *heightPtr = r.bottom - r.top;
-    }
-    return TCL_OK;
-}
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *
  * Blt_GetWindowId --
  *
- *      Returns the XID for the Tk_Window given.  Starting in Tk 8.0, the
- *      toplevel widgets are wrapped by another window.  Currently there's no
- *      way to get at that window, other than what is done here: query the X
- *      window hierarchy and grab the parent.
- *
- * Results:
- *      Returns the X Window ID of the widget.  If it's a toplevel, then * the
- *      XID of the wrapper is returned.
+ *      Returns the XID (HWND) for the Tk_Window given.  
  *
  *---------------------------------------------------------------------------
  */
 Window
 Blt_GetWindowId(Tk_Window tkwin)
 {
-    return (Window) WindowToHandle(tkwin);
+    return (Window) GetHWND(tkwin);
 }
 
 /*
@@ -327,7 +292,7 @@ Blt_GetWindowId(Tk_Window tkwin)
 void
 Blt_RaiseToplevelWindow(Tk_Window tkwin)
 {
-    SetWindowPos(WindowToHandle(tkwin), HWND_TOP, 0, 0, 0, 0,
+    SetWindowPos(GetHWND(tkwin), HWND_TOP, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE);
 }
 
@@ -344,7 +309,7 @@ Blt_RaiseToplevelWindow(Tk_Window tkwin)
 void
 Blt_LowerToplevelWindow(Tk_Window tkwin)
 {
-    SetWindowPos(WindowToHandle(tkwin), HWND_BOTTOM, 0, 0, 0, 0,
+    SetWindowPos(GetHWND(tkwin), HWND_BOTTOM, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE);
 }
 
@@ -361,7 +326,7 @@ Blt_LowerToplevelWindow(Tk_Window tkwin)
 void
 Blt_MapToplevelWindow(Tk_Window tkwin)
 {
-    ShowWindow(WindowToHandle(tkwin), SW_SHOWNORMAL);
+    ShowWindow(GetHWND(tkwin), SW_SHOWNORMAL);
 }
 
 /*
@@ -377,7 +342,7 @@ Blt_MapToplevelWindow(Tk_Window tkwin)
 void
 Blt_UnmapToplevelWindow(Tk_Window tkwin)
 {
-    ShowWindow(WindowToHandle(tkwin), SW_HIDE);
+    ShowWindow(GetHWND(tkwin), SW_HIDE);
 }
 
 /*
@@ -393,7 +358,7 @@ Blt_UnmapToplevelWindow(Tk_Window tkwin)
 void
 Blt_MoveResizeToplevelWindow(Tk_Window tkwin, int x, int y, int w, int h)
 {
-    SetWindowPos(WindowToHandle(tkwin), HWND_TOP, x, y, w, h, 0);
+    SetWindowPos(GetHWND(tkwin), HWND_TOP, x, y, w, h, 0);
 }
 
 /*
@@ -409,7 +374,7 @@ Blt_MoveResizeToplevelWindow(Tk_Window tkwin, int x, int y, int w, int h)
 void
 Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y)
 {
-    SetWindowPos(WindowToHandle(tkwin), HWND_TOP, x, y, 0, 0, 
+    SetWindowPos(GetHWND(tkwin), HWND_TOP, x, y, 0, 0, 
                  SWP_NOSIZE | SWP_NOZORDER);
 }
 
@@ -426,7 +391,7 @@ Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y)
 void
 Blt_ResizeToplevelWindow(Tk_Window tkwin, int w, int h)
 {
-    SetWindowPos(WindowToHandle(tkwin), HWND_TOP, 0, 0, w, h, 
+    SetWindowPos(GetHWND(tkwin), HWND_TOP, 0, 0, w, h, 
         SWP_NOMOVE | SWP_NOZORDER);
 }
 

@@ -7869,12 +7869,14 @@ static void
 DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w, 
                    int h, int maxLength, int isSelected, TkRegion rgn)
 {
+#ifdef notdef
     if (isSelected) {
         XColor *color;
         
         color = viewPtr->selectedFg;
         XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
     }
+#endif
     if (w > maxLength) {
         w = maxLength;		
     }
@@ -7886,12 +7888,14 @@ DrawFocusRectangle(TreeView *viewPtr, Drawable drawable, int x, int y, int w,
      *  3         1
      *  +----2----+
      */
-    /*y0 += 2,*/ x -= 1, w += 2, h -= 4;
+    y += 2, x -= 1, w += 2, h -= 4;
     XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, x, y, w, h);
+#ifdef notdef
     if (isSelected) {
         XSetForeground(viewPtr->display, viewPtr->focusGC, 
                        viewPtr->focusColor->pixel);
     }
+#endif
     if (rgn != NULL) {
         XSetClipMask(viewPtr->display, viewPtr->focusGC, None);
     }       
@@ -7924,7 +7928,7 @@ DrawEntryLabel(
         y += (entryPtr->height - h) / 2;
     }
     /* Focus outline */
-    if (isFocused) {                    
+    if ((isFocused) && (viewPtr->sel.mode != SELECT_MODE_SINGLE)) {
         DrawFocusRectangle(viewPtr, drawable, x, y, w, h, 
                 maxLength, isSelected, rgn);
     }

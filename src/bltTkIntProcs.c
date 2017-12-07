@@ -52,7 +52,7 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_ResizeToplevelWindow, /* 42 */
     Blt_MoveToplevelWindow, /* 43 */
     Blt_MoveResizeToplevelWindow, /* 44 */
-    Blt_GetWindowRegion, /* 45 */
+    Blt_GetWindowExtents, /* 45 */
     Blt_GetWindowInstanceData, /* 46 */
     Blt_SetWindowInstanceData, /* 47 */
     Blt_DeleteWindowInstanceData, /* 48 */

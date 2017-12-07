@@ -504,7 +504,7 @@ XTranslateCoordsErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
 
 
 int
-Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr, 
+Blt_GetWindowExtents(Display *display, Window window, int *xPtr, int *yPtr, 
                     int *widthPtr, int *heightPtr)
 {
     Tk_ErrorHandler handler;
