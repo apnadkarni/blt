@@ -1372,8 +1372,8 @@ WindowToPicture(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr)
     if (Blt_GetWindowFromObj(interp, objPtr, &window) != TCL_OK) {
         return TCL_ERROR;
     }
-    if (Blt_GetWindowRegion(imgPtr->display, window, (int *)NULL, (int *)NULL,
-                &w, &h) != TCL_OK) {
+    if (Blt_GetWindowExtents(imgPtr->display, window, NULL, NULL, &w, &h) 
+        != TCL_OK) {
         Tcl_AppendResult(interp, "can't get dimensions of window \"", 
                 Tcl_GetString(objPtr), "\"", (char *)NULL);
         return TCL_ERROR;
@@ -5433,7 +5433,7 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Blt_GetWindowFromObj(interp, objv[2], &window) != TCL_OK) {
             return TCL_ERROR;
         }
-        if (Blt_GetWindowRegion(imgPtr->display, window, NULL, NULL, &w, &h) 
+        if (Blt_GetWindowExtents(imgPtr->display, window, NULL, NULL, &w, &h) 
             != TCL_OK) {
             Tcl_AppendResult(interp, "can't get dimensions of window \"", 
                 Tcl_GetString(objv[2]), "\"", (char *)NULL);

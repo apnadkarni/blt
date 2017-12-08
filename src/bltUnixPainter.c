@@ -1678,7 +1678,7 @@ DrawableToPicture(
          * requested area.  Try it again, after fixing the area with the
          * dimensions of the drawable.
          */
-        if (Blt_GetWindowRegion(p->display, drawable, NULL, NULL, &dw, &dh)
+        if (Blt_GetWindowExtents(p->display, drawable, NULL, NULL, &dw, &dh)
             == TCL_OK) {
             if ((x >= dw) || (y >= dh)) {
                 return NULL;            /* Region starts outside of

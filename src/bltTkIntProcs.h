@@ -275,10 +275,10 @@ BLT_EXTERN void		Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y);
 BLT_EXTERN void		Blt_MoveResizeToplevelWindow(Tk_Window tkwin, int x,
 				int y, int w, int h);
 #endif
-#ifndef Blt_GetWindowRegion_DECLARED
-#define Blt_GetWindowRegion_DECLARED
+#ifndef Blt_GetWindowExtents_DECLARED
+#define Blt_GetWindowExtents_DECLARED
 /* 45 */
-BLT_EXTERN int		Blt_GetWindowRegion(Display *display, Window window,
+BLT_EXTERN int		Blt_GetWindowExtents(Display *display, Window window,
 				int *xPtr, int *yPtr, int *widthPtr,
 				int *heightPtr);
 #endif
@@ -1568,7 +1568,7 @@ typedef struct BltTkIntProcs {
     void (*blt_ResizeToplevelWindow) (Tk_Window tkwin, int w, int h); /* 42 */
     void (*blt_MoveToplevelWindow) (Tk_Window tkwin, int x, int y); /* 43 */
     void (*blt_MoveResizeToplevelWindow) (Tk_Window tkwin, int x, int y, int w, int h); /* 44 */
-    int (*blt_GetWindowRegion) (Display *display, Window window, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 45 */
+    int (*blt_GetWindowExtents) (Display *display, Window window, int *xPtr, int *yPtr, int *widthPtr, int *heightPtr); /* 45 */
     ClientData (*blt_GetWindowInstanceData) (Tk_Window tkwin); /* 46 */
     void (*blt_SetWindowInstanceData) (Tk_Window tkwin, ClientData instanceData); /* 47 */
     void (*blt_DeleteWindowInstanceData) (Tk_Window tkwin); /* 48 */
@@ -1968,9 +1968,9 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_MoveResizeToplevelWindow \
 	(bltTkIntProcsPtr->blt_MoveResizeToplevelWindow) /* 44 */
 #endif
-#ifndef Blt_GetWindowRegion
-#define Blt_GetWindowRegion \
-	(bltTkIntProcsPtr->blt_GetWindowRegion) /* 45 */
+#ifndef Blt_GetWindowExtents
+#define Blt_GetWindowExtents \
+	(bltTkIntProcsPtr->blt_GetWindowExtents) /* 45 */
 #endif
 #ifndef Blt_GetWindowInstanceData
 #define Blt_GetWindowInstanceData \

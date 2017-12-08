@@ -157,7 +157,7 @@ GetIdFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- *  GetWindowRegion --
+ *  GetWindowNodeRegion --
  *
  *      Queries for the upper-left and lower-right corners of the given
  *      window.
@@ -173,7 +173,7 @@ GetWindowNodeRegion(Display *display, WindowNode *nodePtr)
 {
     int x, y, w, h;
 
-    if (Blt_GetWindowRegion(display, nodePtr->window, &x, &y, &w, &h) 
+    if (Blt_GetWindowExtents(display, nodePtr->window, &x, &y, &w, &h) 
         != TCL_OK) {
         return TCL_ERROR;
     }
@@ -649,7 +649,7 @@ GeometryOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetIdFromObj(interp, objv[2], &id) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_GetWindowRegion(Tk_Display(tkMain), id, &x, &y, &w, &h);
+    Blt_GetWindowExtents(Tk_Display(tkMain), id, &x, &y, &w, &h);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y));
@@ -745,7 +745,7 @@ InsideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tcl_GetIntFromObj(interp, objv[4], &rootY) != TCL_OK)) {
         return TCL_ERROR;
     }
-    if (Blt_GetWindowRegion(Tk_Display(tkMain), id, &x, &y, &w, &h) != TCL_OK) {
+    if (Blt_GetWindowExtents(Tk_Display(tkMain), id, &x, &y, &w, &h) != TCL_OK){
         return TCL_ERROR;
     }
     state = FALSE;

@@ -280,11 +280,8 @@ XGeometryErrorProc(clientData, errEventPtr)
 }
 
 int
-Blt_GetWindowRegion(
-    Display *display,
-    Window window,
-    int *xPtr, int *yPtr, 
-    int *widthPtr, int *heightPtr)
+Blt_GetWindowExtents(Display *display, Window window, int *xPtr, int *yPtr, 
+                     int *widthPtr, int *heightPtr)
 {
     Tk_ErrorHandler handler;
     Window root;

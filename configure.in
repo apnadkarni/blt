@@ -1781,6 +1781,9 @@ fi
 
 if test "${blt_platform_win32}" = "yes" ; then
   AC_DEFINE_UNQUOTED([WIN32], [1], [Define if building for Win32.])
+  if test "${ac_cv_sizeof_void_p}" = "8" ; then 
+    AC_DEFINE_UNQUOTED([__WIN64], [1], [Define if building for Win64.])
+  fi  
 fi
 WIN32=${blt_platform_win32}
 AC_SUBST(WIN32)

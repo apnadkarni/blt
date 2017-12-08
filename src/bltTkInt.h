@@ -290,7 +290,7 @@ BLT_EXTERN void Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y);
 BLT_EXTERN void Blt_MoveResizeToplevelWindow(Tk_Window tkwin, int x, int y, 
         int w, int h);
 
-BLT_EXTERN int Blt_GetWindowRegion(Display *display, Window window, int *xPtr,
+BLT_EXTERN int Blt_GetWindowExtents(Display *display, Window window, int *xPtr,
         int *yPtr, int *widthPtr, int *heightPtr);
 
 BLT_EXTERN ClientData Blt_GetWindowInstanceData (Tk_Window tkwin);

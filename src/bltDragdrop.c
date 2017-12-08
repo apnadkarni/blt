@@ -696,13 +696,13 @@ RemoveProperty(Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * GetWindowRegion --
+ * GetWindowExtents --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-GetWindowRegion(
+GetWindowExtents(
     Display *display,           /* Not used. */
     HWND hWnd,
     int *x1Ptr,
@@ -803,7 +803,7 @@ SetProperty(Tk_Window tkwin, char *data)
 }
 
 static int
-GetWindowRegion(
+GetWindowExtents(
     Display *display,
     Window window,
     int *x1Ptr, int *y1Ptr, 
@@ -1960,7 +1960,7 @@ QueryWindow(
     /*
      *  Query for the window coordinates.
      */
-    visible = GetWindowRegion(display, winPtr->nativeWindow, 
+    visible = GetWindowExtents(display, winPtr->nativeWindow, 
         &winPtr->x1, &winPtr->y1, &winPtr->x2, &winPtr->y2);
     if (visible) {
         Blt_ChainLink link;
