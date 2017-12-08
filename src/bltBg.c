@@ -3322,20 +3322,45 @@ void
 Blt_Bg_SetClipRegion(Tk_Window tkwin, Bg *bgPtr, TkRegion rgn)
 {
     Blt_Painter painter;
+    Tk_Window tkRef;
+    Blt_HashEntry *hPtr;
 
     Blt_3DBorder_SetClipRegion(tkwin, bgPtr->corePtr->border, rgn);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_SetPainterClipRegion(painter, rgn);
+
+    tkRef = GetReferenceWindow(bgPtr->corePtr, tkwin);
+    hPtr = Blt_FindHashEntry(&bgPtr->corePtr->instTable, tkRef);
+    if (hPtr != NULL) {
+        BgInstance *instPtr;
+        
+        instPtr = Blt_GetHashValue(hPtr);
+        if (instPtr != NULL) {
+            TkSetRegion(Tk_Display(tkwin), instPtr->gc, rgn);
+        }
+    }
 }
 
 void
 Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Bg *bgPtr)
 {
     Blt_Painter painter;
+    Tk_Window tkRef;
+    Blt_HashEntry *hPtr;
 
     Blt_3DBorder_UnsetClipRegion(tkwin, bgPtr->corePtr->border);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_UnsetPainterClipRegion(painter);
+    tkRef = GetReferenceWindow(bgPtr->corePtr, tkwin);
+    hPtr = Blt_FindHashEntry(&bgPtr->corePtr->instTable, tkRef);
+    if (hPtr != NULL) {
+        BgInstance *instPtr;
+        
+        instPtr = Blt_GetHashValue(hPtr);
+        if (instPtr != NULL) {
+            XSetClipMask(Tk_Display(tkwin), instPtr->gc, None);
+        }
+    }
 }
 
 unsigned int
