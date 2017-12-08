@@ -2248,8 +2248,10 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
     }
     /* Handle the simple case where it's a solid color background. */
     if (corePtr->flags & BACKGROUND_SOLID) {
-        Tk_Fill3DRectangle(tkwin, drawable, corePtr->border, x, y, w, h, 0,
-                           TK_RELIEF_FLAT);
+        GC gc;
+        
+        gc = Tk_3DBorderGC(tkwin, corePtr->border, TK_3D_FLAT_GC);
+	XFillRectangle(corePtr->display, drawable, gc, x, y, w, h);
         return;
     }
     GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
