@@ -2284,7 +2284,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
                         XPoint *xPointArr, int numPoints, int shape, int mode) 
 {
     HDC hDC;
-g    POINT *winPointArr;
+    POINT *winPointArr;
     POINT staticPoints[64];
     TkWinDCState state;
     int fillMode;
