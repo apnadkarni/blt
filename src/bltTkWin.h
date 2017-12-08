@@ -107,8 +107,6 @@ typedef struct {
 #include <missing.h> 
 #endif /* __GNUC__ */
 
-#undef XCopyArea                
-#define XCopyArea               Blt_EmulateXCopyArea
 #undef XCopyPlane               
 #define XCopyPlane              Blt_EmulateXCopyPlane
 #undef XDrawArcs                
@@ -160,9 +158,6 @@ typedef struct {
 
 extern GC Blt_EmulateXCreateGC(Display *display, Drawable drawable,
     unsigned long mask, XGCValues *valuesPtr);
-extern void Blt_EmulateXCopyArea(Display *display, Drawable src, Drawable dest,
-    GC gc, int src_x, int src_y, unsigned int width, unsigned int height,
-    int dest_x, int dest_y);
 extern void Blt_EmulateXCopyPlane(Display *display, Drawable src,
     Drawable dest, GC gc, int src_x, int src_y, unsigned int width,
     unsigned int height, int dest_x, int dest_y, unsigned long plane);
