@@ -2608,7 +2608,7 @@ Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
 Region
 Blt_CreateRectangleRegion(int x1, int y1, int x2, int y2)
 {
-    HRGN hRhn;
+    HRGN hRgn;
     
     if (x1 < 0) {
         x1 = 0;
