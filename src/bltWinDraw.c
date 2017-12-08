@@ -2284,7 +2284,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
                         XPoint *xPointArr, int numPoints, int shape, int mode) 
 {
     HDC hDC;
-    POINT *winPointArr;
+g    POINT *winPointArr;
     POINT staticPoints[64];
     TkWinDCState state;
     int fillMode;
@@ -2604,3 +2604,23 @@ Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
     }
     return (Region)hRgn;
 }
+
+Region
+Blt_CreateRectangleRegion(int x1, int y1, int x2, int y2)
+{
+    if (x1 < 0) {
+        x1 = 0;
+    }
+    if (y1 < 0) {
+        y1 = 0;
+    }
+    if (x1 > x2) {
+        return;
+    }
+    if (y1 > y2) {
+        return;
+    }
+    return (Region)CreateRectRgn(x1, y1, x2, y2);
+}
+
+

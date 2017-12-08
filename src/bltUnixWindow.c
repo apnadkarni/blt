@@ -840,3 +840,30 @@ Blt_FreeShmPixmap(Display *display, Pixmap pixmap)
     Tk_FreeXId(display, (XID) pixmap);
 }
 #endif
+
+Region
+Blt_CreateRectangleRegion(int x1, int y1, int x2, int y2)
+{
+    XRectangle r;
+    Region rgn;
+        
+    if (x1 < 0) {
+        x1 = 0;
+    }
+    if (y1 < 0) {
+        y1 = 0;
+    }
+    if (x1 > x2) {
+        return NULL;
+    }
+    if (y1 > y2) {
+        return NULL;
+    }
+    r.x = x1;
+    r.y = y1;
+    r.width = x2 - x1 + 1;
+    r.height = y2 - y1 + 1;
+    rgn = XCreateRegion();
+    XUnionRectWithRegion(&r, rgn, rgn);
+    return rgn;
+}
