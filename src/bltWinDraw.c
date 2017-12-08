@@ -2393,6 +2393,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
             HPEN hPen, hOldPen;
             HBRUSH hBrush, hOldBrush;
             
+        fillSolid:
             hPen = GetStockObject(NULL_PEN);
             hOldPen = SelectPen(hDC, hPen);
             hBrush = CreateSolidBrush(gc->foreground);
