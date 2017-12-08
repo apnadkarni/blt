@@ -199,13 +199,6 @@ GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
     statePtr->clipPtr = (TkpClipMask *)gc->clip_mask;
     statePtr->dc = TkWinGetDrawableDC(display, drawable, &statePtr->state);
     statePtr->drawable = drawable;
-    fprintf(stderr, "state clip region is %p\n", statePtr->clipPtr);
-    if (statePtr->clipPtr != NULL) {
-        fprintf(stderr, "state clip region type is %d\n",
-                statePtr->clipPtr->type);
-        fprintf(stderr, "state clip region region is %p\n",
-                statePtr->clipPtr->value.region);
-    }
     if ((statePtr->clipPtr != NULL) && 
         (statePtr->clipPtr->type == TKP_CLIP_REGION)) {
         SelectClipRgn(statePtr->dc, (HRGN)statePtr->clipPtr->value.region);
@@ -1917,6 +1910,14 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
 #endif
             r.left = r.top = 0;
             r.right = w, r.bottom = h;
+            fprintf(stderr, "Draw solid rect\n");
+            fprintf(stderr, "state clip region is %p\n", state.clipPtr);
+            if (state.clipPtr != NULL) {
+                fprintf(stderr, "state clip region type is %d\n",
+                        state.clipPtr->type);
+                fprintf(stderr, "state clip region region is %p\n",
+                        state.clipPtr->value.region);
+            }
             FillRect(hDC, &r, hBrush);
 #ifdef notdef
             BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, SRCCOPY);
