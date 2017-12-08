@@ -1303,7 +1303,7 @@ Blt_EmulateXDrawLines(Display *display, Drawable drawable, GC gc,
                 winPointArr[i].y = (int)xPointArr[i].y;
             }
         } else {
-            int i;
+            int i, j;
             
             winPointArr[0].x = (int)xPointArr[0].x;
             winPointArr[0].y = (int)xPointArr[0].y;
@@ -1360,7 +1360,7 @@ Blt_EmulateXDrawSegments(Display *display, Drawable drawable, GC gc,
         for (i = 0; i < numSegments; i++) {
             info.count = 0; /* Reset dash counter after every segment. */
             LineDDA(xSegmentArr[i].x1, xSegmentArr[i].y1, xSegmentArr[i].x2, 
-                    XSegmentArr[i].y2, DrawDot, (LPARAM)&info);
+                    xSegmentArr[i].y2, DrawDot, (LPARAM)&info);
         }
     } else {
         HPEN hPen, hOldPen;
