@@ -8836,13 +8836,16 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     if (((x + w) <  x1) || (x > x2) || ((y + h) < y1) || (y > y2)) {
         return 0;
     }
+#ifdef notdef
     r.x = x1;
     r.y = y1;
     r.width = x2 - x1;
     r.height = y2 - y1; 
     rgn = TkCreateRegion();
     TkUnionRectWithRegion(&r, rgn, rgn);
-
+#else
+    rgn = Blt_CreateRectangleRegion(x1, y1, x2, y2);
+#endif
     /* Clear the entry label background. */
     Blt_Bg_SetClipRegion(viewPtr->tkwin, bg, rgn);
     if (((w - colPtr->ruleWidth) > 0) && ((h - entryPtr->ruleHeight) > 0)) {
