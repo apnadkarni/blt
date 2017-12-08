@@ -1918,7 +1918,7 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
             r.left = r.top = 0;
             r.right = w, r.bottom = h;
             FillRect(hDC, &r, hBrush);
-#ifdef
+#ifdef notdef
             BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, SRCCOPY);
             SelectObject(hMemDC, hOldBitmap);
             DeleteBitmap(hBitmap);
