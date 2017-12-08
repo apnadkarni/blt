@@ -2615,10 +2615,10 @@ Blt_CreateRectangleRegion(int x1, int y1, int x2, int y2)
         y1 = 0;
     }
     if (x1 > x2) {
-        return;
+        return None;
     }
     if (y1 > y2) {
-        return;
+        return None;
     }
     return (Region)CreateRectRgn(x1, y1, x2, y2);
 }
