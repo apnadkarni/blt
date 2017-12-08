@@ -199,6 +199,13 @@ GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
     statePtr->clipPtr = (TkpClipMask *)gc->clip_mask;
     statePtr->dc = TkWinGetDrawableDC(display, drawable, &statePtr->state);
     statePtr->drawable = drawable;
+    fprintf(stderr, "state clip region is %p\n", statePtr->clipPtr);
+    if (statePtr->clipPtr != NULL) {
+        fprintf(stderr, "state clip region type is %d\n",
+                statePtr->clipPtr->type);
+        fprintf(stderr, "state clip region region is %p\n",
+                statePtr->clipPtr->value.region);
+    }
     if ((statePtr->clipPtr != NULL) && 
         (statePtr->clipPtr->type == TKP_CLIP_REGION)) {
         SelectClipRgn(statePtr->dc, (HRGN)statePtr->clipPtr->value.region);
@@ -2617,11 +2624,9 @@ Blt_CreateRectangleRegion(int x1, int y1, int x2, int y2)
         y1 = 0;
     }
     if (x1 > x2) {
-        abort();
         return None;
     }
     if (y1 > y2) {
-        abort();
         return None;
     }
     hRgn = CreateRectRgn(x1, y1, x2, y2);
