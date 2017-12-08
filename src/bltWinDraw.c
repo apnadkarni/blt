@@ -1909,18 +1909,22 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
 
         fillSolid:
             /* TkWinFillRect(hDC, x, y, w, h, gc->foreground);  */
-            hMemDC = CreateCompatibleDC(hDC);
             hBrush = CreateSolidBrush(gc->foreground);
+#ifdef notdef
+            hMemDC = CreateCompatibleDC(hDC);
             hBitmap = CreateCompatibleBitmap(hDC, w, h);
             hOldBitmap = SelectBitmap(hMemDC, hBitmap);
+#endif
             r.left = r.top = 0;
             r.right = w, r.bottom = h;
-            FillRect(hMemDC, &r, hBrush);
+            FillRect(hDC, &r, hBrush);
+#ifdef
             BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, SRCCOPY);
             SelectObject(hMemDC, hOldBitmap);
             DeleteBitmap(hBitmap);
-            DeleteBrush(hBrush);
             DeleteDC(hMemDC);
+#endif
+            DeleteBrush(hBrush);
         }
         break;
     }
