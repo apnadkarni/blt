@@ -1920,250 +1920,6 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
     ReleaseDCAndState(&state);
 }
 
-
-#ifdef notdef
-static void
-RenderObject(
-    HDC hDC,
-    GC gc,
-    XPoint *xPointArr,
-    int npoints,
-    int mode,
-    HPEN hPen,
-    WinDrawFunc func)
-{
-    RECT r = {0, 0, 0, 0};
-    HPEN hOldPen;
-    HBRUSH hOldBrush;
-    POINT *winPoints = ConvertPoints(xPointArr, npoints, mode, &r);
-    if (((gc->fill_style == FillStippled) || 
-         (gc->fill_style == FillOpaqueStippled)) && (gc->stipple != None)) {
-	HBITMAP hOldBitmap;
-	HBRUSH hOldMemBrush;
-	HDC hMemDC;
-	LONG width, height;
-	TkWinDrawable *twdPtr = (TkWinDrawable *)gc->stipple;
-	int i;
-
-	if (twdPtr->type != TWD_BITMAP) {
-	    Tcl_Panic("unexpected drawable type in stipple");
-	}
-
-	/*
-	 * Grow the bounding box enough to account for line width.
-	 */
-
-	r.left -= gc->line_width;
-	r.top -= gc->line_width;
-	r.right += gc->line_width;
-	r.bottom += gc->line_width;
-
-	width = r.right - r.left;
-	height = r.bottom - r.top;
-
-	/*
-	 * Select stipple pattern into destination dc.
-	 */
-
-	SetBrushOrgEx(hDC, gc->ts_x_origin, gc->ts_y_origin, NULL);
-	hOldBrush = SelectObject(hDC, CreatePatternBrush(twdPtr->bitmap.handle));
-
-	/*
-	 * Create temporary drawing surface containing a copy of the
-	 * destination equal in size to the bounding box of the object.
-	 */
-
-	hMemDC = CreateCompatibleDC(hDC);
-	hOldBitmap = SelectObject(hMemDC, CreateCompatibleBitmap(hDC, width,
-		height));
-	hOldPen = SelectObject(hMemDC, hPen);
-	BitBlt(hMemDC, 0, 0, width, height, hDC, r.left, r.top, SRCCOPY);
-
-	/*
-	 * Translate the object for rendering in the temporary drawing
-	 * surface.
-	 */
-
-	for (i = 0; i < npoints; i++) {
-	    winPoints[i].x -= r.left;
-	    winPoints[i].y -= r.top;
-	}
-
-	/*
-	 * Draw the object in the foreground color and copy it to the
-	 * destination wherever the pattern is set.
-	 */
-
-	SetPolyFillMode(hMemDC, (gc->fill_rule == EvenOddRule) ? ALTERNATE
-		: WINDING);
-	hOldMemBrush = SelectObject(hMemDC, CreateSolidBrush(gc->foreground));
-	(*func)(hMemDC, winPoints, npoints);
-	BitBlt(hDC, r.left, r.top, width, height, hMemDC, 0, 0, COPYFG);
-
-	/*
-	 * If we are rendering an opaque stipple, then draw the polygon in
-	 * the background color and copy it to the destination wherever the
-	 * pattern is clear.
-	 */
-
-	if (gc->fill_style == FillOpaqueStippled) {
-	    DeleteObject(SelectObject(hMemDC,
-		    CreateSolidBrush(gc->background)));
-	    (*func)(hMemDC, winPoints, npoints);
-	    BitBlt(hDC, r.left, r.top, width, height, hMemDC, 0, 0,
-		    COPYBG);
-	}
-
-	SelectObject(hMemDC, hOldPen);
-	DeleteObject(SelectObject(hMemDC, hOldMemBrush));
-	DeleteObject(SelectObject(hMemDC, hOldBitmap));
-	DeleteDC(hMemDC);
-    } else {
-	hOldPen = SelectObject(hDC, hPen);
-	hOldBrush = SelectObject(hDC, CreateSolidBrush(gc->foreground));
-	SetROP2(hDC, tkpWinRopModes[gc->function]);
-
-	SetPolyFillMode(hDC, (gc->fill_rule == EvenOddRule) ? ALTERNATE
-		: WINDING);
-
-	(*func)(hDC, winPoints, npoints);
-
-	SelectObject(hDC, hOldPen);
-    }
-    DeleteObject(SelectObject(hDC, hOldBrush));
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_EmulateXFillPolygon --
- *
- *      Fill polygon in the given drawable.  Handles tiling.
- *
- * Results:
- *      None.
- *
- * Side effects:
- *      Draws onto the specified drawable.
- *
- *---------------------------------------------------------------------------
- */
-void
-Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
-                        XPoint *xPointArr, int numPoints, int shape,int mode)
-{
-    DCState state;
-    HDC hDC;
-    RECT r;
-
-    if (drawable == None) {
-        return;
-    }
-    hDC = GetDCAndState(display, drawable, gc, &state);
-    r.left = r.top = 0;
-    r.right = w, r.bottom = h;
-
-    switch(gc->fill_style) {
-    case FillTiled:
-        {
-            BITMAP bm;
-            HBITMAP hOldBitmap;
-            HDC hMemDC;
-            TkWinDrawable *twdPtr;
-
-            if (gc->tile == None) { 
-                goto fillSolid;
-            }
-#ifdef notdef
-            if ((GetDeviceCaps(hDC, RASTERCAPS) & RC_BITBLT) == 0) {
-                goto fillSolid;
-            }
-#endif
-            twdPtr = (TkWinDrawable *)gc->tile;
-            /* The tiling routine needs to know the size of the bitmap */
-            GetObject(twdPtr->bitmap.handle, sizeof(BITMAP), &bm);
-
-            hMemDC = CreateCompatibleDC(hDC);
-            hOldBitmap = SelectBitmap(hMemDC, twdPtr->bitmap.handle);
-            TileArea(hDC, hMemDC, gc->ts_x_origin, gc->ts_y_origin, bm.bmWidth, 
-                     bm.bmHeight, x, y, w, h);
-            (void)SelectBitmap(hMemDC, hOldBitmap);
-            DeleteDC(hMemDC);
-        }
-        break; 
-            
-    case FillOpaqueStippled:
-    case FillStippled:
-        {
-            HBITMAP hOldBitmap, hBitmap;
-            HBRUSH hFgBrush, hBgBrush;
-            HBRUSH hOldBrush, hBrush;
-            HDC hMemDC;
-            TkWinDrawable *twdPtr;
-
-            if (gc->stipple == None) {
-                goto fillSolid;
-            }
-            twdPtr = (TkWinDrawable *)gc->stipple;
-            if (twdPtr->type != TWD_BITMAP) {
-                panic("unexpected drawable type in stipple");
-            }
-            hBrush = CreatePatternBrush(twdPtr->bitmap.handle);
-            SetBrushOrgEx(hDC, gc->ts_x_origin, gc->ts_y_origin, NULL);
-            hOldBrush = SelectBrush(hDC, hBrush);
-            hMemDC = CreateCompatibleDC(hDC);
-            
-            hFgBrush = CreateSolidBrush(gc->foreground);
-            hBgBrush = CreateSolidBrush(gc->background);
-            hBitmap = CreateCompatibleBitmap(hDC, w, h);
-            hOldBitmap = SelectObject(hMemDC, hBitmap);
-    RenderObject(hDC, gc, xPointArr, numPoints, mode, hPen, Polygon);
-            FillRect(hMemDC, &r, hFgBrush);
-            SetBkMode(hDC, TRANSPARENT);
-            BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, COPYFG);
-            if (gc->fill_style == FillOpaqueStippled) {
-    RenderObject(hDC, gc, xPointArr, numPoints, mode, hPen, Polygon);
-                FillRect(hMemDC, &r, hBgBrush);
-                BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, COPYBG);
-            }
-            (void)SelectBrush(hDC, hOldBrush);
-            (void)SelectBitmap(hMemDC, hOldBitmap);
-            DeleteBrush(hFgBrush);
-            DeleteBrush(hBgBrush);
-            DeleteBrush(hBrush);
-            DeleteBitmap(hBitmap);
-            DeleteDC(hMemDC);
-        }
-        break;
-
-    case FillSolid:
-        {
-            HBITMAP hOldBitmap, hBitmap;
-            HBRUSH hBrush;
-            HDC hMemDC;
-
-        fillSolid:
-            /* TkWinFillRect(hDC, x, y, w, h, gc->foreground);  */
-            hMemDC = CreateCompatibleDC(hDC);
-            hBrush = CreateSolidBrush(gc->foreground);
-            hBitmap = CreateCompatibleBitmap(hDC, w, h);
-            hOldBitmap = SelectBitmap(hMemDC, hBitmap);
-            r.left = r.top = 0;
-            r.right = w, r.bottom = h;
-    RenderObject(hDC, gc, xPointArr, numPoints, mode, hPen, Polygon);
-            FillRect(hMemDC, &r, hBrush);
-            BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, SRCCOPY);
-            SelectObject(hMemDC, hOldBitmap);
-            DeleteBitmap(hBitmap);
-            DeleteBrush(hBrush);
-            DeleteDC(hMemDC);
-        }
-        break;
-    }
-    ReleaseDCAndState(&state);
-}
-#endif
-
 #ifdef notdef
 #if (_TCL_VERSION >= _VERSION(8,1,0)) 
 static BOOL
@@ -2529,24 +2285,27 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
 {
     HDC hDC;
     POINT *winPointArr;
+    POINT staticPoints[64];
     TkWinDCState state;
     int fillMode;
-    int x1, x2, y1, y2;
     int i;
+    int x1, x2, y1, y2, w, h;
 
     if (drawable == None) {
         return;
     }
-    /* Allocate array of POINTS to create the polygon's path. */
-    winPointArr = Blt_Malloc(sizeof(POINT) * numPoints);
-    if (winPointArr == NULL) {
-        return;
+    if (numPoints > 64) {
+        winPointArr = Blt_Malloc(sizeof(POINT) * numPoints);
+        if (winPointArr == NULL) {
+            return;
+        }
+    } else {
+        winPointArr = staticPoints;
     }
 
     /* Determine the bounding box of the polygon. */
     x1 = x2 = xPointArr[0].x;
     y1 = y2 = xPointArr[0].y;
-    
     for (i = 0 ; i < numPoints; i++) {
         if (xPointArr[i].x < x1) {
             x1 = xPointArr[i].x;
@@ -2563,110 +2322,91 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
         winPointArr[i].x = xPointArr[i].x;
         winPointArr[i].y = xPointArr[i].y;
     }
-
+    w = x2 - x1 + 1;
+    h = y2 - y1 + 1;
+    
     hDC = TkWinGetDrawableDC(display, drawable, &state);
     SetROP2(hDC, tkpWinRopModes[gc->function]);
     fillMode = (gc->fill_rule == EvenOddRule) ? ALTERNATE : WINDING;
 
-    if ((gc->fill_style == FillStippled) || 
-        (gc->fill_style == FillOpaqueStippled)) {
-#ifndef notdef
-        int i;
-        int w, h;
-        HRGN hRgn;
-
-        /* Points are offsets within the bounding box. */
-        for (i = 0; i <  numPoints; i++) {
-            winPointArr[i].x -= x1;
-            winPointArr[i].y -= y1;
+    switch(gc->fill_style) {
+    case FillStippled:
+    case FillOpaqueStippled:
+        {
+            int i;
+            HRGN hRgn;
+            
+            /* Points are offsets within the bounding box. */
+            for (i = 0; i <  numPoints; i++) {
+                winPointArr[i].x -= x1;
+                winPointArr[i].y -= y1;
+            }
+            /* Use the polygon as a clip path. */
+            LPtoDP(hDC, winPointArr, numPoints);
+            hRgn = CreatePolygonRgn(winPointArr, numPoints, fillMode);
+            SelectClipRgn(hDC, hRgn);
+            OffsetClipRgn(hDC, x1, y1);
+            
+            /* Stipple the bounding box. */
+            StippleArea(display, hDC, gc, x1, y1, w, h);
+            SelectClipRgn(hDC, NULL), DeleteRgn(hRgn);
         }
-        /* Use the polygon as a clip path. */
-        LPtoDP(hDC, winPointArr, numPoints);
-        hRgn = CreatePolygonRgn(winPointArr, numPoints, fillMode);
-        SelectClipRgn(hDC, hRgn);
-        OffsetClipRgn(hDC, x1, y1);
+        break;
         
-        /* Stipple the bounding box. */
-        w = x2 - x1 + 1;
-        h = y2 - y1 + 1;
-        StippleArea(display, hDC, gc, x1, y1, w, h);
-        SelectClipRgn(hDC, NULL), DeleteRgn(hRgn);
-#else 
-        HBITMAP hBitmap, hOldBitmap;
-        HBRUSH hBrush, hOldBrush;
-        HDC hMem;
-        HPEN hPen, hOldPen;
-        TkWinDrawable *twdPtr;
-
-        twdPtr = (TkWinDrawable *)gc->stipple;
-        if (twdPtr->type != TWD_BITMAP) {
-            panic("unexpected drawable type in stipple");
-        }
+    case FillTiled:
         {
             BITMAP bm;
-            int bytesPerRow;
-            int y;
-            unsigned char *srcRowPtr;
-            unsigned char *bits;
+            HBITMAP hOldBitmap;
+            HDC hMemDC;
+            TkWinDrawable *twdPtr;
+            HRGN hRgn;
             
+            if (gc->tile == None) { 
+                goto fillSolid;
+            }
+#ifdef notdef
+            if ((GetDeviceCaps(hDC, RASTERCAPS) & RC_BITBLT) == 0) {
+                goto fillSolid;
+            }
+#endif 
+            /* Use the polygon as a clip path. */
+            LPtoDP(hDC, winPointArr, numPoints);
+            hRgn = CreatePolygonRgn(winPointArr, numPoints, fillMode);
+            SelectClipRgn(hDC, hRgn);
+            OffsetClipRgn(hDC, x1, y1);
+            
+            twdPtr = (TkWinDrawable *)gc->tile;
+            /* The tiling routine needs to know the size of the bitmap */
             GetObject(twdPtr->bitmap.handle, sizeof(BITMAP), &bm);
-            bits = Blt_GetBitmapData(display, gc->stipple, bm.bmWidth, bm.bmHeight,
-                                     &bytesPerRow);
-            if (bits == NULL) {
-                panic("help me");
-            }
-            srcRowPtr = bits;
-            for (y = 0; y < bm.bmHeight; y++) {
-                unsigned char *bp, *bend;
-                for (bp = srcRowPtr, bend = bp + bytesPerRow; bp < bend; bp++) {
-                    *bp = ~*bp;
-                }
-                srcRowPtr += bytesPerRow;
-            }
-            bm.bmBits = bits;
-            bm.bmType = 0;
-            bm.bmPlanes = 1;
-            bm.bmBitsPixel = 1;
-            hBitmap = CreateBitmapIndirect(&bm);
-            Blt_Free(bits);
+            hMemDC = CreateCompatibleDC(hDC);
+            hOldBitmap = SelectBitmap(hMemDC, twdPtr->bitmap.handle);
+            TileArea(hDC, hMemDC, gc->ts_x_origin, gc->ts_y_origin, bm.bmWidth, 
+                     bm.bmHeight, x1, y1, w, h);
+            (void)SelectBitmap(hMemDC, hOldBitmap);
+            SelectClipRgn(hDC, NULL), DeleteRgn(hRgn);
+            DeleteDC(hMemDC);
         }
-        /* hBrush = CreatePatternBrush(twdPtr->bitmap.handle); */
-        hBrush = CreateHatchBrush(HS_VERTICAL, gc->foreground);
-        SetBrushOrgEx(hDC, gc->ts_x_origin, gc->ts_y_origin, NULL);
-        hPen = GetStockObject(NULL_PEN);
-        SetTextColor(hDC, gc->foreground);
-        SetBkMode(hDC, TRANSPARENT);
-        hOldPen = SelectPen(hDC, hPen);
-        hOldBrush = SelectBrush(hDC, hBrush);
-        if (gc->fill_style == FillOpaqueStippled) {
-            SetBkColor(hDC, gc->background);
-        } else {
-            SetBkMode(hDC, TRANSPARENT);
-        }
-        SetPolyFillMode(hDC, fillMode);
-        Polygon(hDC, winPointArr, numPoints);
-        SelectPen(hDC, hOldPen), DeletePen(hPen);
-        SelectBrush(hDC, hOldBrush), DeleteBrush(hBrush);
-#endif
-    } else {
-        HPEN hPen, hOldPen;
-        HBRUSH hBrush, hOldBrush;
+        break; 
 
-        /* 
-         * FIXME: Right now, we're assuming that it's solid or
-         * stippled and ignoring tiling. I'll merge the bits from
-         * Blt_TilePolygon later. 
-         */
-        hPen = GetStockObject(NULL_PEN);
-        hOldPen = SelectPen(hDC, hPen);
-        hBrush = CreateSolidBrush(gc->foreground);
-        hOldBrush = SelectBrush(hDC, hBrush);
-        SetPolyFillMode(hDC, fillMode);
-        Polygon(hDC, winPointArr, numPoints);
-        (void)SelectPen(hDC, hOldPen), DeletePen(hPen);
-        (void)SelectBrush(hDC, hOldBrush), DeleteBrush(hBrush);
+    case FillSolid:
+        {
+            HPEN hPen, hOldPen;
+            HBRUSH hBrush, hOldBrush;
+            
+            hPen = GetStockObject(NULL_PEN);
+            hOldPen = SelectPen(hDC, hPen);
+            hBrush = CreateSolidBrush(gc->foreground);
+            hOldBrush = SelectBrush(hDC, hBrush);
+            SetPolyFillMode(hDC, fillMode);
+            Polygon(hDC, winPointArr, numPoints);
+            (void)SelectPen(hDC, hOldPen), DeletePen(hPen);
+            (void)SelectBrush(hDC, hOldBrush), DeleteBrush(hBrush);
+        }
+        break;
     }
-    Blt_Free(winPointArr);
+    if (winPointArr != staticPoints) {
+        Blt_Free(winPointArr);
+    }
     TkWinReleaseDrawableDC(drawable, hDC, &state);
 }
 

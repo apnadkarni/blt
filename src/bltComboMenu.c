@@ -3367,11 +3367,9 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 static int
 CheckItemVariable(Tcl_Interp *interp, Item *itemPtr)
 {
-    ComboMenu *comboPtr;
     Tcl_Obj *objPtr;
     int bool;
 
-    comboPtr = itemPtr->comboPtr;
     if ((itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON))==0) {
         return FALSE;                  /* Not a radiobutton or checkbutton. */
     }
