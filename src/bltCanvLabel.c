@@ -48,7 +48,7 @@
  */
 
 #define USE_OLD_CANVAS  1
-#define DEBUG 0
+#define DEBUG 1
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"

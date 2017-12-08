@@ -1664,12 +1664,24 @@ ExtFontDrawProc(
             
             hFont = Blt_GetHashValue(hPtr);
             hDC = TkWinGetDrawableDC(display, drawable, &state);
+            if (fontPtr->rgn != NULL) {
+                TkSetRegion(display, gc, fontPtr->rgn);
+            }
             Blt_TextOut(hDC, gc, hFont, text, numBytes, x, y);
             TkWinReleaseDrawableDC(drawable, hDC, &state);
+            if (fontPtr->rgn != NULL) {
+                XSetClipMask(display, gc, None);
+            }
         }
     } else {
+        if (fontPtr->rgn != NULL) {
+            TkSetRegion(display, gc, fontPtr->rgn);
+        }
         Tk_DrawChars(display, drawable, gc, setPtr->tkFont, text, numBytes, 
                      x, y);
+        if (fontPtr->rgn != NULL) {
+            XSetClipMask(display, gc, None);
+        }
     }
 }
 
