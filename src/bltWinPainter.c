@@ -113,31 +113,6 @@ static Tcl_FreeProc FreePainter;
 static Blt_HashTable painterTable;
 static int initialized = 0;
 
-static HDC
-GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
-{
-    statePtr->clipPtr = (TkpClipMask *)gc->clip_mask;
-    statePtr->dc = TkWinGetDrawableDC(display, drawable, &statePtr->state);
-    statePtr->drawable = drawable;
-    if ((statePtr->clipPtr != NULL) && 
-        (statePtr->clipPtr->type == TKP_CLIP_REGION)) {
-        SelectClipRgn(statePtr->dc, (HRGN)statePtr->clipPtr->value.region);
-        OffsetClipRgn(statePtr->dc, gc->clip_x_origin, gc->clip_y_origin);
-    }
-    SetROP2(statePtr->dc, tkpWinRopModes[gc->function]);
-    return statePtr->dc;
-}
-
-static void
-ReleaseDCAndState(DCState *statePtr)
-{
-    if ((statePtr->clipPtr != NULL) && 
-        (statePtr->clipPtr->type==TKP_CLIP_REGION)) {
-        SelectClipRgn(statePtr->dc, NULL);
-    }
-    TkWinReleaseDrawableDC(statePtr->drawable, statePtr->dc, &statePtr->state);
-}
-
 static void
 GetPaletteColors(HDC hDC, Painter *p, Blt_Pixel *colors)
 {

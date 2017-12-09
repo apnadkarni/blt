@@ -211,6 +211,11 @@ BLT_EXTERN unsigned char *Blt_GetBitmapData(Display *display, Pixmap bitmap,
         int width, int height, int *pitchPtr);
 
 extern HPALETTE Blt_GetSystemPalette(void);
+typedef struct _DCState DCState;
+
+extern HDC Blt_GetDCAndState(Display *display, Drawable drawable, GC gc,
+        DCState *statePtr);
+extern void Blt_ReleaseDCAndState(DCState *statePtr);
 
 BLT_EXTERN HPEN Blt_GCToPen(HDC dc, GC gc);
 BLT_EXTERN void Blt_TextOut(HDC dc, GC gc, HFONT hfont, const char *text, 

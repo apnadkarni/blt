@@ -144,13 +144,13 @@ static int bltModes[] =
     WHITENESS                           /* GXset */
 };
 
-typedef struct _DCState {
+struct _DCState {
     TkWinDCState state;
     TkpClipMask *clipPtr;
     GC gc;
     Drawable drawable;
     HDC dc;
-} DCState;
+};
 
 #ifdef notdef
 static Blt_HashTable gcTable;
@@ -193,8 +193,8 @@ Blt_GetSystemPalette(void)
     return hPalette;
 }
 
-static HDC
-GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
+HDC
+Blt_GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
 {
     statePtr->clipPtr = (TkpClipMask *)gc->clip_mask;
     statePtr->dc = TkWinGetDrawableDC(display, drawable, &statePtr->state);
@@ -208,8 +208,8 @@ GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
     return statePtr->dc;
 }
 
-static void
-ReleaseDCAndState(DCState *statePtr)
+void
+Blt_ReleaseDCAndState(DCState *statePtr)
 {
     if ((statePtr->clipPtr != NULL) && 
         (statePtr->clipPtr->type==TKP_CLIP_REGION)) {
@@ -817,7 +817,7 @@ Blt_EmulateXDrawRectangles(Display *display, Drawable drawable, GC gc,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
 
     hPen = Blt_GCToPen(hDC, gc);
     hOldPen = SelectPen(hDC, hPen);
@@ -838,7 +838,7 @@ Blt_EmulateXDrawRectangles(Display *display, Drawable drawable, GC gc,
     }
     SelectPen(hDC, hOldPen),     DeletePen(hPen);
     SelectBrush(hDC, hOldBrush), DeleteBrush(hBrush);
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 #ifdef notdef
@@ -1054,7 +1054,7 @@ Blt_EmulateXDrawArcs(Display *display, Drawable drawable, GC gc, XArc *xArcArr,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     hPen = Blt_GCToPen(hDC, gc);
     hOldPen = SelectPen(hDC, hPen);
     hBrush = GetStockBrush(NULL_BRUSH);
@@ -1064,7 +1064,7 @@ Blt_EmulateXDrawArcs(Display *display, Drawable drawable, GC gc, XArc *xArcArr,
     }
     DeleteBrush(SelectBrush(hDC, hOldBrush));
     DeletePen(SelectPen(hDC, hOldPen));
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1096,7 +1096,7 @@ Blt_EmulateXFillArcs(Display *display, Drawable drawable, GC gc, XArc *xArcArr,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     hPen = Blt_GCToPen(hDC, gc);
     hOldPen = SelectPen(hDC, hPen);
     hBrush = CreateSolidBrush(gc->foreground);
@@ -1106,7 +1106,7 @@ Blt_EmulateXFillArcs(Display *display, Drawable drawable, GC gc, XArc *xArcArr,
     }
     DeleteBrush(SelectBrush(hDC, hOldBrush));
     DeletePen(SelectPen(hDC, hOldPen));
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1164,7 +1164,7 @@ Blt_EmulateXDrawLine(Display *display, Drawable drawable, GC gc,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     if (gc->line_style != LineSolid) {
         /* Handle dotted lines specially */
         DashInfo info;
@@ -1203,7 +1203,7 @@ Blt_EmulateXDrawLine(Display *display, Drawable drawable, GC gc,
         DeletePen(SelectPen(hDC, hOldPen));
         DeleteBrush(SelectBrush(hDC, hOldBrush));
     }
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 static void
@@ -1220,7 +1220,7 @@ DrawLine(Display *display, Drawable drawable, GC gc, POINT *winPointArr,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     hPen = Blt_GCToPen(hDC, gc);
     hOldPen = SelectPen(hDC, hPen);
     hBrush = CreateSolidBrush(gc->foreground);
@@ -1248,7 +1248,7 @@ DrawLine(Display *display, Drawable drawable, GC gc, POINT *winPointArr,
     }
     DeletePen(SelectPen(hDC, hOldPen));
     DeleteBrush(SelectBrush(hDC, hOldBrush));
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1271,7 +1271,7 @@ Blt_EmulateXDrawLines(Display *display, Drawable drawable, GC gc,
         HDC hDC;
         int result;
 
-        hDC = GetDCAndState(display, drawable, gc, &state);
+        hDC = Blt_GetDCAndState(display, drawable, gc, &state);
         result = GetDashInfo(hDC, gc, &info);
         if (result) {
             XPoint *p1, *p2;
@@ -1284,7 +1284,7 @@ Blt_EmulateXDrawLines(Display *display, Drawable drawable, GC gc,
             }
             result = TCL_OK;
         }
-        ReleaseDCAndState(&state);
+        Blt_ReleaseDCAndState(&state);
         if (result) {
             return;
         }
@@ -1348,7 +1348,7 @@ Blt_EmulateXDrawSegments(Display *display, Drawable drawable, GC gc,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     if (gc->line_style != LineSolid) {
         /* Handle dotted lines specially */
         DashInfo info;
@@ -1375,7 +1375,7 @@ Blt_EmulateXDrawSegments(Display *display, Drawable drawable, GC gc,
         }
         DeletePen(SelectPen(hDC, hOldPen));
     }
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1410,7 +1410,7 @@ Blt_EmulateXDrawRectangle(Display *display, Drawable drawable, GC gc, int x,
         return;
     }
     
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     hPen = Blt_GCToPen(hDC, gc);
     hBrush = GetStockObject(NULL_BRUSH);
     hOldPen = SelectPen(hDC, hPen);
@@ -1435,7 +1435,7 @@ Blt_EmulateXDrawRectangle(Display *display, Drawable drawable, GC gc, int x,
     }
     DeletePen(SelectPen(hDC, hOldPen));
     DeleteBrush(SelectBrush(hDC, hOldBrush));
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1470,11 +1470,11 @@ Blt_EmulateXDrawPoints(Display *display, Drawable drawable, GC gc,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     for (i = 0; i < numPoints; i++) {
         SetPixelV(hDC, xPointArr[i].x, xPointArr[i].y, gc->foreground);
     }
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1669,7 +1669,7 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     switch(gc->fill_style) {
     case FillTiled:
         if (gc->tile == None) {
@@ -1790,7 +1790,7 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
 #endif
         break;
     }
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 /*
@@ -1819,7 +1819,7 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
     if (drawable == None) {
         return;
     }
-    hDC = GetDCAndState(display, drawable, gc, &state);
+    hDC = Blt_GetDCAndState(display, drawable, gc, &state);
     r.left = r.top = 0;
     r.right = w, r.bottom = h;
 
@@ -1915,7 +1915,7 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
         }
         break;
     }
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
 }
 
 #ifdef notdef
