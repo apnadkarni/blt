@@ -150,7 +150,6 @@ typedef struct _DCState {
     GC gc;
     Drawable drawable;
     HDC dc;
-    HRGN hOldRegion;
 } DCState;
 
 #ifdef notdef
@@ -200,11 +199,9 @@ GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
     statePtr->clipPtr = (TkpClipMask *)gc->clip_mask;
     statePtr->dc = TkWinGetDrawableDC(display, drawable, &statePtr->state);
     statePtr->drawable = drawable;
-    statePtr->hOldRegion = NULL;
     if ((statePtr->clipPtr != NULL) && 
         (statePtr->clipPtr->type == TKP_CLIP_REGION)) {
-        statePtr->hOldRegion = SelectClipRgn(statePtr->dc,
-               (HRGN)statePtr->clipPtr->value.region);
+        SelectClipRgn(statePtr->dc, (HRGN)statePtr->clipPtr->value.region);
         OffsetClipRgn(statePtr->dc, gc->clip_x_origin, gc->clip_y_origin);
     }
     SetROP2(statePtr->dc, tkpWinRopModes[gc->function]);
@@ -216,7 +213,7 @@ ReleaseDCAndState(DCState *statePtr)
 {
     if ((statePtr->clipPtr != NULL) && 
         (statePtr->clipPtr->type==TKP_CLIP_REGION)) {
-        SelectClipRgn(statePtr->dc, statePtr->hOldRegion);
+        SelectClipRgn(statePtr->dc, NULL);
     }
     TkWinReleaseDrawableDC(statePtr->drawable, statePtr->dc, &statePtr->state);
 }
@@ -2006,8 +2003,6 @@ Blt_EmulateXCopyPlane(
         hDestDC = hSrcDC;
     }
     if ((clipPtr == NULL) || (clipPtr->type == TKP_CLIP_REGION)) {
-        HRGN hOldRegion;
-
         /*
          * Case 1: Opaque bitmaps.  Windows handles the conversion from one
          *         bit to multiple bits by setting 0 to the foreground
@@ -2015,7 +2010,7 @@ Blt_EmulateXCopyPlane(
          *         but there you are).
          */
         if ((clipPtr != NULL) && (clipPtr->type == TKP_CLIP_REGION)) {
-            hOldRegion = SelectClipRgn(hDestDC, (HRGN)clipPtr->value.region);
+            SelectClipRgn(hDestDC, (HRGN)clipPtr->value.region);
             OffsetClipRgn(hDestDC, gc->clip_x_origin, gc->clip_y_origin);
         }
         SetBkMode(hDestDC, OPAQUE);
@@ -2024,7 +2019,7 @@ Blt_EmulateXCopyPlane(
         BitBlt(hDestDC, destX, destY, width, height, hSrcDC, srcX, srcY,
             SRCCOPY);
         if ((clipPtr != NULL) && (clipPtr->type == TKP_CLIP_REGION)) {
-            SelectClipRgn(hDestDC, hOldRegion);
+            SelectClipRgn(hDestDC, NULL);
         }
     } else if (clipPtr->type == TKP_CLIP_PIXMAP) {
         Drawable mask;
@@ -2272,7 +2267,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
     case FillOpaqueStippled:
         {
             int i;
-            HRGN hRgn, hOldRegion;
+            HRGN hRgn;
             
             /* Points are offsets within the bounding box. */
             for (i = 0; i <  numPoints; i++) {
@@ -2283,12 +2278,12 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
             LPtoDP(hDC, winPointArr, numPoints);
             /* FIXME: Really need to combine with current region. */
             hRgn = CreatePolygonRgn(winPointArr, numPoints, fillMode);
-            hOldRegion = SelectClipRgn(hDC, hRgn);
+            SelectClipRgn(hDC, hRgn);
             OffsetClipRgn(hDC, x1, y1);
             
             /* Stipple the bounding box. */
             StippleArea(display, hDC, gc, x1, y1, w, h);
-            SelectClipRgn(hDC, hOldRegion), DeleteRgn(hRgn);
+            SelectClipRgn(hDC, NULL), DeleteRgn(hRgn);
         }
         break;
         
@@ -2298,7 +2293,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
             HBITMAP hOldBitmap;
             HDC hMemDC;
             TkWinDrawable *twdPtr;
-            HRGN hRgn, hOldRegion;
+            HRGN hRgn;
             
             if (gc->tile == None) { 
                 goto fillSolid;
@@ -2312,7 +2307,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
             LPtoDP(hDC, winPointArr, numPoints);
             /* FIXME: Really need to combine regions. */
             hRgn = CreatePolygonRgn(winPointArr, numPoints, fillMode);
-            hOldRegion = SelectClipRgn(hDC, hRgn);
+            SelectClipRgn(hDC, hRgn);
             OffsetClipRgn(hDC, x1, y1);
             
             twdPtr = (TkWinDrawable *)gc->tile;
@@ -2323,7 +2318,7 @@ Blt_EmulateXFillPolygon(Display *display, Drawable drawable, GC gc,
             TileArea(hDC, hMemDC, gc->ts_x_origin, gc->ts_y_origin, bm.bmWidth, 
                      bm.bmHeight, x1, y1, w, h);
             (void)SelectBitmap(hMemDC, hOldBitmap);
-            SelectClipRgn(hDC, hOldRegion), DeleteRgn(hRgn);
+            SelectClipRgn(hDC, NULL), DeleteRgn(hRgn);
             DeleteDC(hMemDC);
         }
         break; 
