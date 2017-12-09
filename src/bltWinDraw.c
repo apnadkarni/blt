@@ -2545,26 +2545,4 @@ Blt_EmulateXPolygonRegion(XPoint xPointArr[], int numPoints, int rule)
     return (Region)hRgn;
 }
 
-Region
-Blt_CreateRectangleRegion(int x1, int y1, int x2, int y2)
-{
-    HRGN hRgn;
-    
-    if (x1 < 0) {
-        x1 = 0;
-    }
-    if (y1 < 0) {
-        y1 = 0;
-    }
-    if (x1 > x2) {
-        return None;
-    }
-    if (y1 > y2) {
-        return None;
-    }
-    hRgn = CreateRectRgn(x1, y1, x2, y2);
-    assert(hRgn != NULL);
-    return (Region)hRgn;
-}
-
 

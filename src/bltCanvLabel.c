@@ -48,7 +48,7 @@
  */
 
 #define USE_OLD_CANVAS  1
-#define DEBUG 1
+#define DEBUG 0
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
@@ -989,7 +989,6 @@ GetClipRegion(Tk_Canvas canvas, LabelItem *labelPtr)
         Tk_CanvasDrawableCoords(canvas, 
                 labelPtr->anchorPos.x + labelPtr->rotWidth, 
                 labelPtr->anchorPos.y + labelPtr->rotHeight, &x2, &y2);
-#ifdef notdef
         r.x = x1;
         r.y = y1;
         r.width  = x2 - x1;
@@ -1012,8 +1011,6 @@ GetClipRegion(Tk_Canvas canvas, LabelItem *labelPtr)
 #endif
         clipRegion = TkCreateRegion();
         TkUnionRectWithRegion(&r, clipRegion, clipRegion);
-#endif
-        clipRegion = Blt_CreateRectangleRegion(x1, y1, x2, y2);
     } else {
         XPoint points[5];
         int i;

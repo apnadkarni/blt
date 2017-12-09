@@ -2251,7 +2251,7 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
         GC gc;
         
         gc = Tk_3DBorderGC(tkwin, corePtr->border, TK_3D_FLAT_GC);
-	XFillRectangle(corePtr->display, drawable, instPtr->gc, x, y, w, h);
+	XFillRectangle(corePtr->display, drawable, gc, x, y, w, h);
         return;
     }
     GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
