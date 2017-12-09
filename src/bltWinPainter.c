@@ -469,7 +469,7 @@ PaintPicture(
     int resetPalette;
 
     ditherPtr = NULL;
-    hDC = GetDCAndState(painterPtr->display, drawable, painterPtr->gc, &state);
+    hDC = Blt_GetDCAndState(painterPtr->display, drawable, painterPtr->gc, &state);
     if (GetDeviceCaps(hDC, RASTERCAPS) & RC_PALETTE) {
         TkWinColormap *mapPtr;
 
@@ -534,7 +534,7 @@ PaintPicture(
     if (resetPalette) {
         SelectPalette(hDC, hOldPalette, FALSE);
     }
-    ReleaseDCAndState(&state);
+    Blt_ReleaseDCAndState(&state);
     if (ditherPtr != NULL) {
         Blt_FreePicture(ditherPtr);
     }
