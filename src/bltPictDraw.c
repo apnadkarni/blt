@@ -1173,7 +1173,7 @@ PaintEllipseAA(
     area.x1 = x - (a + 1);
     area.y1 = y - (b + 1);
     area.x2 = area.x1 + ellipseWidth;
-    area.y2 = area.y2 + ellipseHeight;
+    area.y2 = area.y1 + ellipseHeight;
     
     if (!Blt_AdjustAreaToPicture(picture, &area)) {
         return;                 /* Ellipse is totally clipped. */
@@ -1210,8 +1210,8 @@ PaintEllipseAA(
         Blt_FreePicture(big);
         Blt_ApplyColorToPicture(tmp, colorPtr);
         /* Replace the bounding box in the original with the new. */
-        Blt_CompositeArea(picture, tmp, 0, 0, area.x2 - area.x1,
-                          area.y2 - area.y1,  area.x1, area.y1);
+        Blt_CompositeArea(picture, tmp, 0, 0, AREA_WIDTH(area),
+                          AREA_HEIGHT(area),  area.x1, area.y1);
         Blt_FreePicture(tmp);
     }
 }

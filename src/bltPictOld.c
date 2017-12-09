@@ -2184,15 +2184,15 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    Blt_SetBrushArea(switches.brush, area.x1, area.y1, area.x2 - area.x1,
-                     area.y2 - area.y1);
+    Blt_SetBrushArea(switches.brush, area.x1, area.y1, AREA_WIDTH(area),
+                     AREA_HEIGHT(area));
     if (switches.shadow.width > 0) {
-        PaintRectangleShadow(picture, area.x1, area.y1, area.x2 - area.x1,
-                             area.y2 - area.y1, switches.radius, 
+        PaintRectangleShadow(picture, area.x1, area.y1, AREA_WIDTH(area),
+                AREA_HEIGHT(area), switches.radius, 
                 switches.lineWidth, &switches.shadow);
     }
-    Blt_PaintRectangle(picture, area.x1, area.y1, area.x2 - area.x1,
-                       area.y2 - area.y1, switches.radius, 
+    Blt_PaintRectangle(picture, area.x1, area.y1, AREA_WIDTH(area),
+                AREA_HEIGHT(area), switches.radius, 
                 switches.lineWidth, switches.brush, TRUE);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
