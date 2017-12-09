@@ -200,7 +200,7 @@ GetDCAndState(Display *display, Drawable drawable, GC gc, DCState *statePtr)
     statePtr->clipPtr = (TkpClipMask *)gc->clip_mask;
     statePtr->dc = TkWinGetDrawableDC(display, drawable, &statePtr->state);
     statePtr->drawable = drawable;
-    statPtr->hOldRegion = NULL;
+    statePtr->hOldRegion = NULL;
     if ((statePtr->clipPtr != NULL) && 
         (statePtr->clipPtr->type == TKP_CLIP_REGION)) {
         statePtr->hOldRegion = SelectClipRgn(statePtr->dc,
