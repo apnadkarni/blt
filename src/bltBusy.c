@@ -518,7 +518,7 @@ SnapReferenceWindow(Tk_Window tkwin, int w, int h)
          * the reference window and copy the snapshot region into it.  */
         copy = Blt_CreatePicture(Tk_Width(tkwin), Tk_Height(tkwin));
         Blt_BlankPicture(copy, 0xFFFFFFFF);
-        Blt_CopyRegion(copy, picture, 0, 0, w, h, x, y);
+        Blt_CopyArea(copy, picture, 0, 0, w, h, x, y);
         Blt_FreePicture(picture);
         picture = copy;
     } 
@@ -1974,7 +1974,7 @@ DisplayProc(ClientData clientData)
             y = (busyPtr->height - h) / 2;
             assert(x >= 0 && y >= 0);
             copy = Blt_ClonePicture(busyPtr->snapshot);
-            Blt_CompositeRegion(copy, busyPtr->layer, 0, 0, w, h, x, y);
+            Blt_CompositeArea(copy, busyPtr->layer, 0, 0, w, h, x, y);
         }
         Blt_PaintPicture(painter, drawable, copy, 0, 0, busyPtr->width, 
                 busyPtr->height, 0, 0, 0);

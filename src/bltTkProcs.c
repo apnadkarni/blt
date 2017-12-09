@@ -20,7 +20,7 @@ BltTkProcs bltTkProcs = {
     Blt_ApplyScalarToPictureWithMask, /* 4 */
     Blt_MaskPicture, /* 5 */
     Blt_BlankPicture, /* 6 */
-    Blt_BlankRegion, /* 7 */
+    Blt_BlankArea, /* 7 */
     Blt_BlurPicture, /* 8 */
     Blt_ResizePicture, /* 9 */
     Blt_AdjustPictureSize, /* 10 */
@@ -52,8 +52,8 @@ BltTkProcs bltTkProcs = {
     Blt_PremultiplyColors, /* 36 */
     Blt_UnmultiplyColors, /* 37 */
     Blt_MultiplyPixels, /* 38 */
-    Blt_GetBBoxFromObjv, /* 39 */
-    Blt_AdjustRegionToPicture, /* 40 */
+    Blt_GetAreaFromObjv, /* 39 */
+    Blt_AdjustAreaToPicture, /* 40 */
     Blt_GetPixelFromObj, /* 41 */
     Blt_GetPixel, /* 42 */
     Blt_NameOfPixel, /* 43 */
@@ -64,11 +64,11 @@ BltTkProcs bltTkProcs = {
     Blt_TentVertically, /* 48 */
     Blt_ZoomHorizontally, /* 49 */
     Blt_ZoomVertically, /* 50 */
-    Blt_CompositeRegion, /* 51 */
+    Blt_CompositeArea, /* 51 */
     Blt_CompositePictures, /* 52 */
     Blt_ColorBlendPictures, /* 53 */
     Blt_FadePicture, /* 54 */
-    Blt_CopyRegion, /* 55 */
+    Blt_CopyArea, /* 55 */
     Blt_CopyPictureBits, /* 56 */
     Blt_GammaCorrectPicture, /* 57 */
     Blt_SharpenPicture, /* 58 */

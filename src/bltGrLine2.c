@@ -4218,10 +4218,10 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
         Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
     } else if (elemPtr->brush != NULL) {
         brush = elemPtr->brush;
-        Blt_SetBrushRegion(brush, 0, 0, w, h);
+        Blt_SetBrushArea(brush, 0, 0, w, h);
     } else if (elemPtr->areaBg != NULL) {
         brush = Blt_Bg_PaintBrush(elemPtr->areaBg);
-        Blt_SetBrushRegion(brush, 0, 0, w, h);
+        Blt_SetBrushArea(brush, 0, 0, w, h);
     } else {
         Blt_Free(vertices);
         return;

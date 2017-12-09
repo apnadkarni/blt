@@ -1159,7 +1159,7 @@ PaintEllipseAA(
                                  * then draw a solid filled ellipse. */
     Blt_Pixel *colorPtr)
 {
-    PictRegion region;
+    PictArea area;
     Blt_Picture big;
     int numSamples = 3; 
     int ellipseWidth, ellipseHeight;
@@ -1170,17 +1170,18 @@ PaintEllipseAA(
     }
     ellipseWidth = a + a + 3;
     ellipseHeight = b + b + 3;
-    region.x = x - (a + 1);
-    region.y = y - (b + 1);
-    region.w = ellipseWidth;
-    region.h = ellipseHeight;
+    area.x1 = x - (a + 1);
+    area.y1 = y - (b + 1);
+    area.x2 = area.x1 + ellipseWidth;
+    area.y2 = area.y2 + ellipseHeight;
     
-    if (!Blt_AdjustRegionToPicture(picture, &region)) {
+    if (!Blt_AdjustAreaToPicture(picture, &area)) {
         return;                 /* Ellipse is totally clipped. */
     }
-    /* Scale the region forming the bounding box of the ellipse into a new
+    /* Scale the area forming the bounding box of the ellipse into a new
      * picture. The bounding box is scaled by *nSamples* times. */
-    big = Blt_CreatePicture(ellipseWidth * numSamples, ellipseHeight * numSamples);
+    big = Blt_CreatePicture(ellipseWidth * numSamples,
+                            ellipseHeight * numSamples);
     if (big != NULL) {
         Blt_Picture tmp;
         int cx, cy;
@@ -1209,8 +1210,8 @@ PaintEllipseAA(
         Blt_FreePicture(big);
         Blt_ApplyColorToPicture(tmp, colorPtr);
         /* Replace the bounding box in the original with the new. */
-        Blt_CompositeRegion(picture, tmp, 0, 0, region.w, region.h, 
-                region.x, region.y);
+        Blt_CompositeArea(picture, tmp, 0, 0, area.x2 - area.x1,
+                          area.y2 - area.y1,  area.x1, area.y1);
         Blt_FreePicture(tmp);
     }
 }
@@ -1232,7 +1233,7 @@ PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r,
                        lineWidth, brush, TRUE);
     Blt_FreeBrush(brush);
     Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
-    Blt_CompositeRegion(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_CompositeArea(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
 }
 
@@ -1842,12 +1843,12 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2d *vertices,
     }
     blur = Blt_CreatePicture(w, h);
     Blt_BlankPicture(blur, 0x0);
-    Blt_CopyRegion(blur, tmp, 0, 0, w, h, shadowPtr->offset*2,
+    Blt_CopyArea(blur, tmp, 0, 0, w, h, shadowPtr->offset*2,
                    shadowPtr->offset*2); 
     Blt_BlurPicture(blur, blur, shadowPtr->width, 3);
     Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &shadowPtr->color);
     Blt_FreePicture(tmp);
-    Blt_CompositeRegion(destPtr, blur, 0, 0, w, h, x1, y1);
+    Blt_CompositeArea(destPtr, blur, 0, 0, w, h, x1, y1);
     Blt_FreePicture(blur);
 }
 
@@ -1909,9 +1910,9 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, double r,
     Blt_FreeBrush(brush);
     if (blend) {
         Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-        Blt_CompositeRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
+        Blt_CompositeArea(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     } else {
-        Blt_CopyRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
+        Blt_CopyArea(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     }
     Blt_FreePicture(tmpPtr);
 }
@@ -1979,7 +1980,7 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         DrawCircleShadow(picture, x, y, radius, switches.lineWidth, 
                 switches.blend, &switches.shadow);
     }
-    Blt_SetBrushRegion(switches.brush, x - radius, y - radius, 
+    Blt_SetBrushArea(switches.brush, x - radius, y - radius, 
         radius + radius, radius + radius);
     DrawCircle(picture, x, y, radius, switches.lineWidth, switches.brush, 
                switches.blend);
@@ -2254,7 +2255,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     PaintPolygonShadow(destPtr, numVertices, vertices, &r, 
                                        &switches.shadow);
                 }
-                Blt_SetBrushRegion(switches.brush, r.left, r.top, 
+                Blt_SetBrushArea(switches.brush, r.left, r.top, 
                                  r.right - r.left, r.bottom - r.top);
                 Blt_PaintPolygon(destPtr, numVertices, vertices, 
                         switches.brush);
@@ -2310,7 +2311,7 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    Blt_SetBrushRegion(switches.brush, x, y, switches.width, switches.height);
+    Blt_SetBrushArea(switches.brush, x, y, switches.width, switches.height);
     if (switches.shadow.width > 0) {
         PaintRectangleShadow(picture, x, y, switches.width, switches.height,
                 switches.radius, switches.lineWidth, &switches.shadow);
@@ -2519,7 +2520,7 @@ Blt_PaintRadioButton0(
 
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
-    /* Blt_SetBrushRegion(newBrush, 0, 0, w, h);  */
+    /* Blt_SetBrushArea(newBrush, 0, 0, w, h);  */
     Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);

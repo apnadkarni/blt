@@ -1427,7 +1427,7 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
     }
     blur = Blt_CreatePicture(w, h);
     Blt_BlankPicture(blur, 0x0);
-    Blt_CopyRegion(blur, tmp, 0, 0, w, h, shadowPtr->offset*2, 
+    Blt_CopyArea(blur, tmp, 0, 0, w, h, shadowPtr->offset*2, 
                    shadowPtr->offset*2); 
     Blt_BlurPicture(blur, blur, shadowPtr->width, 3);
     Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &shadowPtr->color);
@@ -1562,7 +1562,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 #ifndef notdef
         Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
 #else
-        Blt_CopyRegion(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
+        Blt_CopyArea(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
 #endif
         Blt_FreePicture(tmpPtr);
     } else if (switchesPtr->shadow.width > 0) {
@@ -1661,7 +1661,7 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
         Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
         Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     } else {
-        Blt_CopyRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
+        Blt_CopyArea(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     }
     Blt_FreePicture(tmpPtr);
 }
@@ -1729,7 +1729,7 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         DrawCircleShadow(picture, x, y, radius, switches.lineWidth, 
                 switches.blend, &switches.shadow);
     }
-    Blt_SetBrushRegion(switches.brush, x - radius, y - radius, 
+    Blt_SetBrushArea(switches.brush, x - radius, y - radius, 
         radius + radius, radius + radius);
     DrawCircle(picture, x, y, radius, switches.lineWidth, switches.brush, 
                switches.blend);
@@ -2136,7 +2136,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     PaintPolygonShadow(destPtr, numVertices, vertices, &r, 
                                        &switches.shadow);
                 }
-                Blt_SetBrushRegion(switches.brush, r.left, r.top, 
+                Blt_SetBrushArea(switches.brush, r.left, r.top, 
                                  r.right - r.left, r.bottom - r.top);
                 Blt_PaintPolygon(destPtr, numVertices, vertices, 
                         switches.brush);
@@ -2167,10 +2167,10 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_Picture picture = clientData;
     RectangleSwitches switches;
-    PictRegion r;
+    PictArea area;
     Blt_PaintBrush brush;
     
-    if (Blt_GetBBoxFromObjv(interp, 4, objv + 3, &r) != TCL_OK) {
+    if (Blt_GetAreaFromObjv(interp, 4, objv + 3, &area) != TCL_OK) {
         return TCL_ERROR;
     }
     if (Blt_GetPaintBrush(interp, "black", &brush) != TCL_OK) {
@@ -2184,12 +2184,15 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    Blt_SetBrushRegion(switches.brush, r.x, r.y, r.w, r.h);
+    Blt_SetBrushArea(switches.brush, area.x1, area.y1, area.x2 - area.x1,
+                     area.y2 - area.y1);
     if (switches.shadow.width > 0) {
-        PaintRectangleShadow(picture, r.x, r.y, r.w, r.h, switches.radius, 
+        PaintRectangleShadow(picture, area.x1, area.y1, area.x2 - area.x1,
+                             area.y2 - area.y1, switches.radius, 
                 switches.lineWidth, &switches.shadow);
     }
-    Blt_PaintRectangle(picture, r.x, r.y, r.w, r.h, switches.radius, 
+    Blt_PaintRectangle(picture, area.x1, area.y1, area.x2 - area.x1,
+                       area.y2 - area.y1, switches.radius, 
                 switches.lineWidth, switches.brush, TRUE);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
@@ -2521,7 +2524,7 @@ Blt_PaintRadioButton(
 
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
-    Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
+    Blt_SetBrushArea(newBrush, 0, 0, w, h); 
     Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);

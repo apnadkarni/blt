@@ -208,13 +208,16 @@ BLT_EXTERN Blt_ResampleFilter bltTentFilter;
 BLT_EXTERN Blt_ResampleFilter bltTableFilter;
 
 typedef struct {
-    int x, y, w, h;
+    int x1, y1, x2, y2;
     unsigned int flags;
-} PictRegion;
+} PictArea;
+
+#define AREA_WIDTH(a)        ((a).x2 - (a).x1)
+#define AREA_HEIGHT(a)       ((a).y2 - (a).y1)
 
 #define BLT_PICTURE_NOCOPY   (1<<0)          /* Don't copy the source image. */
-#define BLT_PICTURE_COORDS   (1<<1)          /* Region coordinates set. */
-#define BLT_PICTURE_SIZE     (1<<2)          /* Region size set. */
+#define BLT_PICTURE_COORDS   (1<<1)          /* Area coordinates set. */
+#define BLT_PICTURE_SIZE     (1<<2)          /* Area size set. */
 
 #define Blt_AddPictures(dest, src) \
     Blt_ApplyPictureToPicture(dest, src, 0, 0, (src)->width, (src)->height, \
@@ -259,7 +262,7 @@ BLT_EXTERN void Blt_MaskPicture(Blt_Picture dest, Blt_Picture mask,
         int x, int y, int w, int h, int dx, int dy, Blt_Pixel *colorPtr);
 
 BLT_EXTERN void Blt_BlankPicture(Blt_Picture picture, unsigned int colorValue);
-BLT_EXTERN void Blt_BlankRegion(Blt_Picture picture, int x, int y, int w, int h,
+BLT_EXTERN void Blt_BlankArea(Blt_Picture picture, int x, int y, int w, int h,
         unsigned int colorValue);
 
 BLT_EXTERN void Blt_BlurPicture(Blt_Picture dest, Blt_Picture src, int radius, 
@@ -337,11 +340,11 @@ BLT_EXTERN void Blt_UnmultiplyColors(Blt_Picture picture);
 BLT_EXTERN void Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
         float value);
 
-BLT_EXTERN int Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc, 
-        Tcl_Obj *const *objv, PictRegion *regionPtr);
+BLT_EXTERN int Blt_GetAreaFromObjv(Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv, PictArea *areaPtr);
 
-BLT_EXTERN int Blt_AdjustRegionToPicture(Blt_Picture picture, 
-        PictRegion *regionPtr);
+BLT_EXTERN int Blt_AdjustAreaToPicture(Blt_Picture picture, 
+        PictArea *areaPtr);
 
 BLT_EXTERN int Blt_GetPixelFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         Blt_Pixel *pixelPtr);
@@ -363,7 +366,7 @@ BLT_EXTERN void Blt_ZoomHorizontally(Blt_Picture dest, Blt_Picture src,
         Blt_ResampleFilter filter);
 BLT_EXTERN void Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, 
         Blt_ResampleFilter filter);
-BLT_EXTERN void Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, 
+BLT_EXTERN void Blt_CompositeArea(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
 BLT_EXTERN void Blt_CompositePictures(Blt_Picture dest, Blt_Picture src);
 
@@ -373,7 +376,7 @@ BLT_EXTERN void Blt_ColorBlendPictures(Blt_Picture dest, Blt_Picture src,
 BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
         double factor);
 
-BLT_EXTERN void Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, 
+BLT_EXTERN void Blt_CopyArea(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
 
 BLT_EXTERN void Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src);

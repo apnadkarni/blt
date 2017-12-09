@@ -2169,7 +2169,7 @@ CompositePicture(
         /* Dimension of source region may be adjusted by the actual size of
          * the drawable.  This is reflected in the size of the background
          * picture. */
-        Blt_CompositeRegion(bgPtr, fg, sx, sy, bgPtr->width, bgPtr->height, 
+        Blt_CompositeArea(bgPtr, fg, sx, sy, bgPtr->width, bgPtr->height, 
                 0, 0);
         PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height,
                      dx, dy, flags);

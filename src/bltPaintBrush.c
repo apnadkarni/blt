@@ -2900,7 +2900,7 @@ Blt_SetBrushOpacity(Blt_PaintBrush brush, double percent)
 }
 
 void
-Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, int w, int h)
+Blt_SetBrushArea(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
     

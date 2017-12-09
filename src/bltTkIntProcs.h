@@ -561,10 +561,10 @@ BLT_EXTERN void		Blt_SetBrushOrigin(Blt_PaintBrush brush, int x,
 BLT_EXTERN void		Blt_SetBrushOpacity(Blt_PaintBrush brush,
 				double percent);
 #endif
-#ifndef Blt_SetBrushRegion_DECLARED
-#define Blt_SetBrushRegion_DECLARED
+#ifndef Blt_SetBrushArea_DECLARED
+#define Blt_SetBrushArea_DECLARED
 /* 94 */
-BLT_EXTERN void		Blt_SetBrushRegion(Blt_PaintBrush brush, int x,
+BLT_EXTERN void		Blt_SetBrushArea(Blt_PaintBrush brush, int x,
 				int y, int w, int h);
 #endif
 #ifndef Blt_GetBrushAlpha_DECLARED
@@ -1617,7 +1617,7 @@ typedef struct BltTkIntProcs {
     void (*blt_SetColorBrushColor) (Blt_PaintBrush brush, unsigned int value); /* 91 */
     void (*blt_SetBrushOrigin) (Blt_PaintBrush brush, int x, int y); /* 92 */
     void (*blt_SetBrushOpacity) (Blt_PaintBrush brush, double percent); /* 93 */
-    void (*blt_SetBrushRegion) (Blt_PaintBrush brush, int x, int y, int w, int h); /* 94 */
+    void (*blt_SetBrushArea) (Blt_PaintBrush brush, int x, int y, int w, int h); /* 94 */
     int (*blt_GetBrushAlpha) (Blt_PaintBrush brush); /* 95 */
     void (*blt_GetBrushOrigin) (Blt_PaintBrush brush, int *xPtr, int *yPtr); /* 96 */
     unsigned int (*blt_GetAssociatedColorFromBrush) (Blt_PaintBrush brush, int x, int y); /* 97 */
@@ -2164,9 +2164,9 @@ extern BltTkIntProcs *bltTkIntProcsPtr;
 #define Blt_SetBrushOpacity \
 	(bltTkIntProcsPtr->blt_SetBrushOpacity) /* 93 */
 #endif
-#ifndef Blt_SetBrushRegion
-#define Blt_SetBrushRegion \
-	(bltTkIntProcsPtr->blt_SetBrushRegion) /* 94 */
+#ifndef Blt_SetBrushArea
+#define Blt_SetBrushArea \
+	(bltTkIntProcsPtr->blt_SetBrushArea) /* 94 */
 #endif
 #ifndef Blt_GetBrushAlpha
 #define Blt_GetBrushAlpha \

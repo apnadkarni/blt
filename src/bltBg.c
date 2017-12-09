@@ -2198,7 +2198,7 @@ GetBgInstance(Tk_Window tkwin, int w, int h, BackgroundObject *corePtr)
     instPtr->hashPtr = hPtr;
     Tk_CreateEventHandler(instPtr->tkwin, StructureNotifyMask,
               InstanceEventProc, instPtr);
-    Blt_SetBrushRegion(corePtr->brush, 0, 0, w, h);
+    Blt_SetBrushArea(corePtr->brush, 0, 0, w, h);
     Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush, TRUE);
 
     /* Create a pixmap the size of the reference window. */

@@ -101,7 +101,7 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_SetColorBrushColor, /* 91 */
     Blt_SetBrushOrigin, /* 92 */
     Blt_SetBrushOpacity, /* 93 */
-    Blt_SetBrushRegion, /* 94 */
+    Blt_SetBrushArea, /* 94 */
     Blt_GetBrushAlpha, /* 95 */
     Blt_GetBrushOrigin, /* 96 */
     Blt_GetAssociatedColorFromBrush, /* 97 */

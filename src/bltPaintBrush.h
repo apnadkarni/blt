@@ -455,7 +455,7 @@ BLT_EXTERN void Blt_SetColorBrushColor(Blt_PaintBrush brush,
         unsigned int value);
 BLT_EXTERN void Blt_SetBrushOrigin(Blt_PaintBrush brush, int x, int y);
 BLT_EXTERN void Blt_SetBrushOpacity(Blt_PaintBrush brush, double percent);
-BLT_EXTERN void Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, 
+BLT_EXTERN void Blt_SetBrushArea(Blt_PaintBrush brush, int x, int y, 
         int w,  int h);
 
 BLT_EXTERN int Blt_GetBrushAlpha(Blt_PaintBrush brush);

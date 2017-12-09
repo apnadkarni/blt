@@ -978,7 +978,7 @@ PaintEllipseAA(
                                  * then draw a solid filled ellipse. */
     Blt_Pixel *colorPtr)
 {
-    PictRegion region;
+    PictArea area;
     Blt_Picture big;
     int numSamples = 3; 
     int ellipseWidth, ellipseHeight;
@@ -989,15 +989,15 @@ PaintEllipseAA(
     }
     ellipseWidth = a + a + 3;
     ellipseHeight = b + b + 3;
-    region.x = x - (a + 1);
-    region.y = y - (b + 1);
-    region.w = ellipseWidth;
-    region.h = ellipseHeight;
+    area.x1 = x - (a + 1);
+    area.y1 = y - (b + 1);
+    area.x2 = area.x1 + ellipseWidth;
+    area.y2 = area.y1 + ellipseHeight;
     
-    if (!Blt_AdjustRegionToPicture(picture, &region)) {
+    if (!Blt_AdjustAreaToPicture(picture, &area)) {
         return;                 /* Ellipse is totally clipped. */
     }
-    /* Scale the region forming the bounding box of the ellipse into a new
+    /* Scale the area forming the bounding box of the ellipse into a new
      * picture. The bounding box is scaled by *nSamples* times. */
     big = Blt_CreatePicture(ellipseWidth * numSamples, ellipseHeight * numSamples);
     if (big != NULL) {
@@ -1028,8 +1028,8 @@ PaintEllipseAA(
         Blt_FreePicture(big);
         Blt_ApplyColorToPicture(tmp, colorPtr);
         /* Replace the bounding box in the original with the new. */
-        Blt_CompositeRegion(picture, tmp, 0, 0, region.w, region.h, 
-                region.x, region.y);
+        Blt_CompositeArea(picture, tmp, 0, 0, area.w, area.h, 
+                area.x, area.y);
         Blt_FreePicture(tmp);
     }
 }
@@ -1083,7 +1083,7 @@ PaintRectangleAA(
         return;
     }
     /* 
-     * Scale the region forming the bounding box of the ellipse into a new
+     * Scale the area forming the bounding box of the ellipse into a new
      * picture. The bounding box is scaled by *nSamples* times.
      */
     big = Blt_CreatePicture((w+2*offset) * numSamples, 
@@ -1092,7 +1092,7 @@ PaintRectangleAA(
     if (big == NULL) {
         return;
     }
-    Blt_SetBrushRegion(brush, 0, 0, w * numSamples, h * numSamples);
+    Blt_SetBrushArea(brush, 0, 0, w * numSamples, h * numSamples);
     Blt_PaintRectangle(big,             /* Contains super-sampled original
                                          * background. */
                        0, 0,
@@ -1108,7 +1108,7 @@ PaintRectangleAA(
    Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
         
    /* Replace the bounding box in the original with the new. */
-   Blt_CompositeRegion(picture, tmp, 0, 0, w+offset, h+offset, x, y);
+   Blt_CompositeArea(picture, tmp, 0, 0, w+offset, h+offset, x, y);
    Blt_FreePicture(big);
    Blt_FreePicture(tmp);
 }
@@ -1131,7 +1131,7 @@ PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r,
         lineWidth, brush, TRUE);
     Blt_FreeBrush(brush);
     Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
-    Blt_CompositeRegion(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_CompositeArea(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
 }
 

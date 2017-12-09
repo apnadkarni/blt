@@ -1351,7 +1351,7 @@ GifToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
                     next = Blt_ClonePicture(composite);
                     srcPtr->delay = delay;
                     /* Clear the current region for the next frame. */
-                    Blt_BlankRegion(next, gif.imageLeftPosition, 
+                    Blt_BlankArea(next, gif.imageLeftPosition, 
                                     gif.imageTopPosition, 
                                     gif.imageWidth, gif.imageHeight, 
                                     0x0);

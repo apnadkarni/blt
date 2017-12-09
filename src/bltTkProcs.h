@@ -50,10 +50,10 @@ BLT_EXTERN void		Blt_MaskPicture(Blt_Picture dest, Blt_Picture mask,
 BLT_EXTERN void		Blt_BlankPicture(Blt_Picture picture,
 				unsigned int colorValue);
 #endif
-#ifndef Blt_BlankRegion_DECLARED
-#define Blt_BlankRegion_DECLARED
+#ifndef Blt_BlankArea_DECLARED
+#define Blt_BlankArea_DECLARED
 /* 7 */
-BLT_EXTERN void		Blt_BlankRegion(Blt_Picture picture, int x, int y,
+BLT_EXTERN void		Blt_BlankArea(Blt_Picture picture, int x, int y,
 				int w, int h, unsigned int colorValue);
 #endif
 #ifndef Blt_BlurPicture_DECLARED
@@ -235,17 +235,17 @@ BLT_EXTERN void		Blt_UnmultiplyColors(Blt_Picture picture);
 BLT_EXTERN void		Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
 				float value);
 #endif
-#ifndef Blt_GetBBoxFromObjv_DECLARED
-#define Blt_GetBBoxFromObjv_DECLARED
+#ifndef Blt_GetAreaFromObjv_DECLARED
+#define Blt_GetAreaFromObjv_DECLARED
 /* 39 */
-BLT_EXTERN int		Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc,
-				Tcl_Obj *const *objv, PictRegion *regionPtr);
+BLT_EXTERN int		Blt_GetAreaFromObjv(Tcl_Interp *interp, int objc,
+				Tcl_Obj *const *objv, PictArea *regionPtr);
 #endif
-#ifndef Blt_AdjustRegionToPicture_DECLARED
-#define Blt_AdjustRegionToPicture_DECLARED
+#ifndef Blt_AdjustAreaToPicture_DECLARED
+#define Blt_AdjustAreaToPicture_DECLARED
 /* 40 */
-BLT_EXTERN int		Blt_AdjustRegionToPicture(Blt_Picture picture,
-				PictRegion *regionPtr);
+BLT_EXTERN int		Blt_AdjustAreaToPicture(Blt_Picture picture,
+				PictArea *regionPtr);
 #endif
 #ifndef Blt_GetPixelFromObj_DECLARED
 #define Blt_GetPixelFromObj_DECLARED
@@ -303,10 +303,10 @@ BLT_EXTERN void		Blt_ZoomHorizontally(Blt_Picture dest,
 BLT_EXTERN void		Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src,
 				Blt_ResampleFilter filter);
 #endif
-#ifndef Blt_CompositeRegion_DECLARED
-#define Blt_CompositeRegion_DECLARED
+#ifndef Blt_CompositeArea_DECLARED
+#define Blt_CompositeArea_DECLARED
 /* 51 */
-BLT_EXTERN void		Blt_CompositeRegion(Blt_Picture dest,
+BLT_EXTERN void		Blt_CompositeArea(Blt_Picture dest,
 				Blt_Picture src, int sx, int sy, int w,
 				int h, int dx, int dy);
 #endif
@@ -328,10 +328,10 @@ BLT_EXTERN void		Blt_ColorBlendPictures(Blt_Picture dest,
 BLT_EXTERN void		Blt_FadePicture(Blt_Picture picture, int x, int y,
 				int w, int h, double factor);
 #endif
-#ifndef Blt_CopyRegion_DECLARED
-#define Blt_CopyRegion_DECLARED
+#ifndef Blt_CopyArea_DECLARED
+#define Blt_CopyArea_DECLARED
 /* 55 */
-BLT_EXTERN void		Blt_CopyRegion(Blt_Picture dest, Blt_Picture src,
+BLT_EXTERN void		Blt_CopyArea(Blt_Picture dest, Blt_Picture src,
 				int sx, int sy, int w, int h, int dx, int dy);
 #endif
 #ifndef Blt_CopyPictureBits_DECLARED
@@ -603,7 +603,7 @@ typedef struct BltTkProcs {
     void (*blt_ApplyScalarToPictureWithMask) (Blt_Picture dest, Blt_Pixel *colorPtr, Blt_Picture mask, int invert, Blt_PictureArithOps op); /* 4 */
     void (*blt_MaskPicture) (Blt_Picture dest, Blt_Picture mask, int x, int y, int w, int h, int dx, int dy, Blt_Pixel *colorPtr); /* 5 */
     void (*blt_BlankPicture) (Blt_Picture picture, unsigned int colorValue); /* 6 */
-    void (*blt_BlankRegion) (Blt_Picture picture, int x, int y, int w, int h, unsigned int colorValue); /* 7 */
+    void (*blt_BlankArea) (Blt_Picture picture, int x, int y, int w, int h, unsigned int colorValue); /* 7 */
     void (*blt_BlurPicture) (Blt_Picture dest, Blt_Picture src, int radius, int numPasses); /* 8 */
     void (*blt_ResizePicture) (Blt_Picture picture, int w, int h); /* 9 */
     void (*blt_AdjustPictureSize) (Blt_Picture picture, int w, int h); /* 10 */
@@ -635,8 +635,8 @@ typedef struct BltTkProcs {
     void (*blt_PremultiplyColors) (Blt_Picture picture); /* 36 */
     void (*blt_UnmultiplyColors) (Blt_Picture picture); /* 37 */
     void (*blt_MultiplyPixels) (Blt_Picture dst, Blt_Picture src, float value); /* 38 */
-    int (*blt_GetBBoxFromObjv) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, PictRegion *regionPtr); /* 39 */
-    int (*blt_AdjustRegionToPicture) (Blt_Picture picture, PictRegion *regionPtr); /* 40 */
+    int (*blt_GetAreaFromObjv) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, PictArea *areaPtr); /* 39 */
+    int (*blt_AdjustAreaToPicture) (Blt_Picture picture, PictArea *areaPtr); /* 40 */
     int (*blt_GetPixelFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr); /* 41 */
     int (*blt_GetPixel) (Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr); /* 42 */
     const char * (*blt_NameOfPixel) (Blt_Pixel *pixelPtr); /* 43 */
@@ -647,11 +647,11 @@ typedef struct BltTkProcs {
     void (*blt_TentVertically) (Blt_Picture dest, Blt_Picture src); /* 48 */
     void (*blt_ZoomHorizontally) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 49 */
     void (*blt_ZoomVertically) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 50 */
-    void (*blt_CompositeRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 51 */
+    void (*blt_CompositeArea) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 51 */
     void (*blt_CompositePictures) (Blt_Picture dest, Blt_Picture src); /* 52 */
     void (*blt_ColorBlendPictures) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 53 */
     void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, double factor); /* 54 */
-    void (*blt_CopyRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 55 */
+    void (*blt_CopyArea) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 55 */
     void (*blt_CopyPictureBits) (Blt_Picture dest, Blt_Picture src); /* 56 */
     void (*blt_GammaCorrectPicture) (Blt_Picture dest, Blt_Picture src, float gamma); /* 57 */
     void (*blt_SharpenPicture) (Blt_Picture dest, Blt_Picture src); /* 58 */
@@ -734,9 +734,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_BlankPicture \
 	(bltTkProcsPtr->blt_BlankPicture) /* 6 */
 #endif
-#ifndef Blt_BlankRegion
-#define Blt_BlankRegion \
-	(bltTkProcsPtr->blt_BlankRegion) /* 7 */
+#ifndef Blt_BlankArea
+#define Blt_BlankArea \
+	(bltTkProcsPtr->blt_BlankArea) /* 7 */
 #endif
 #ifndef Blt_BlurPicture
 #define Blt_BlurPicture \
@@ -862,13 +862,13 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_MultiplyPixels \
 	(bltTkProcsPtr->blt_MultiplyPixels) /* 38 */
 #endif
-#ifndef Blt_GetBBoxFromObjv
-#define Blt_GetBBoxFromObjv \
-	(bltTkProcsPtr->blt_GetBBoxFromObjv) /* 39 */
+#ifndef Blt_GetAreaFromObjv
+#define Blt_GetAreaFromObjv \
+	(bltTkProcsPtr->blt_GetAreaFromObjv) /* 39 */
 #endif
-#ifndef Blt_AdjustRegionToPicture
-#define Blt_AdjustRegionToPicture \
-	(bltTkProcsPtr->blt_AdjustRegionToPicture) /* 40 */
+#ifndef Blt_AdjustAreaToPicture
+#define Blt_AdjustAreaToPicture \
+	(bltTkProcsPtr->blt_AdjustAreaToPicture) /* 40 */
 #endif
 #ifndef Blt_GetPixelFromObj
 #define Blt_GetPixelFromObj \
@@ -910,9 +910,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_ZoomVertically \
 	(bltTkProcsPtr->blt_ZoomVertically) /* 50 */
 #endif
-#ifndef Blt_CompositeRegion
-#define Blt_CompositeRegion \
-	(bltTkProcsPtr->blt_CompositeRegion) /* 51 */
+#ifndef Blt_CompositeArea
+#define Blt_CompositeArea \
+	(bltTkProcsPtr->blt_CompositeArea) /* 51 */
 #endif
 #ifndef Blt_CompositePictures
 #define Blt_CompositePictures \
@@ -926,9 +926,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_FadePicture \
 	(bltTkProcsPtr->blt_FadePicture) /* 54 */
 #endif
-#ifndef Blt_CopyRegion
-#define Blt_CopyRegion \
-	(bltTkProcsPtr->blt_CopyRegion) /* 55 */
+#ifndef Blt_CopyArea
+#define Blt_CopyArea \
+	(bltTkProcsPtr->blt_CopyArea) /* 55 */
 #endif
 #ifndef Blt_CopyPictureBits
 #define Blt_CopyPictureBits \

@@ -1098,7 +1098,7 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
             Blt_Picture picture;
 
             picture = Blt_CreatePicture(w, h);
-            Blt_SetBrushRegion(attrPtr->brush, 0, 0, w, h);
+            Blt_SetBrushArea(attrPtr->brush, 0, 0, w, h);
             Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, attrPtr->brush, 0);
             painter = Blt_GetPainter(tkwin, 1.0);
             Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x1, y1, 0);
@@ -1124,7 +1124,7 @@ FillBackground(Tk_Canvas canvas, Drawable drawable, LabelItem *labelPtr,
         }
         Blt_BlankPicture(picture, 0x0);
         painter = Blt_GetPainter(tkwin, 1.0);
-        Blt_SetBrushRegion(attrPtr->brush, 0, 0, w, h);
+        Blt_SetBrushArea(attrPtr->brush, 0, 0, w, h);
         if (labelPtr->flags & ORTHOGONAL) {
             Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, attrPtr->brush, 0);
             Blt_Picture_SetCompositeFlag(picture);

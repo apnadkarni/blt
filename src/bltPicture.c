@@ -102,13 +102,13 @@ static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_CompositeRegionProc CompositeRegion;
+static Blt_CompositeAreaProc CompositeArea;
 static Blt_CompositePicturesProc CompositePictures;
 static Blt_CrossFadePicturesProc CrossFadePictures;
 static Blt_SelectPixelsProc SelectPixels;
 static Blt_PremultiplyColorsProc PremultiplyColors;
 static Blt_UnmultiplyColorsProc UnassociateColors;
-static Blt_CopyRegionProc CopyRegion;
+static Blt_CopyAreaProc CopyArea;
 static Blt_CopyPictureBitsProc CopyPictureBits;
 static Blt_BlankPictureProc BlankPicture;
 
@@ -121,12 +121,12 @@ static Blt_PictureProcs stdPictureProcs = {
     TentVertically,
     ZoomHorizontally,
     ZoomVertically,
-    CompositeRegion,
+    CompositeArea,
     CompositePictures,
     SelectPixels,
     PremultiplyColors,
     UnassociateColors,
-    CopyRegion,
+    CopyArea,
     CopyPictureBits,
     CrossFadePictures,
     BlankPicture
@@ -195,10 +195,10 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 }
 
 void 
-Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
+Blt_CompositeArea(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
                     int h, int dx, int dy)
 {
-    (*bltPictProcsPtr->compositeRegionProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->compositeAreaProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
@@ -240,10 +240,10 @@ Blt_UnmultiplyColors(Blt_Picture picture)
 }
 
 void 
-Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
+Blt_CopyArea(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
                     int h, int dx, int dy)
 {
-    (*bltPictProcsPtr->copyRegionProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->copyAreaProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
@@ -509,7 +509,7 @@ BlankPicture(Pict *destPtr, unsigned int value)
 }
 
 void
-Blt_BlankRegion(Pict *destPtr, int x, int y, int w, int h, 
+Blt_BlankArea(Pict *destPtr, int x, int y, int w, int h, 
                 unsigned int colorValue) 
 {
     Blt_Pixel *destRowPtr;
@@ -827,11 +827,11 @@ UnassociateColors(Pict *srcPtr)
 }
 
 /*
- * CompositeRegion --
+ * CompositeArea --
  *
  */  
 static void
-CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
+CompositeArea(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
                 int dx, int dy)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
@@ -905,7 +905,7 @@ CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 static void
 CompositePictures(Pict *destPtr, Pict *srcPtr)
 {
-    CompositeRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
+    CompositeArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
 
 
@@ -3390,7 +3390,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_TOP:
-        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+        Blt_CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
                        0, h2);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (h2 - 1) * destPtr->pixelsPerRow;
@@ -3412,7 +3412,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_LEFT:
-        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+        Blt_CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
                        w2, 0);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (w2 - 1);
@@ -3436,7 +3436,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_RIGHT:
-        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+        Blt_CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
                        0, 0);
         srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
         destRowPtr = destPtr->bits + srcPtr->width;
@@ -4311,7 +4311,7 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyRegion --
+ * CopyArea --
  *
  *      Creates a copy of the given picture.  
  *
@@ -4321,7 +4321,7 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
+CopyArea(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
            int dy)
 {
     int *srcRowPtr, *destRowPtr;
@@ -4401,7 +4401,7 @@ CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
 static void
 CopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
-    CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
+    CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
 
 /*
@@ -6327,7 +6327,7 @@ Blt_TilePicture(
                 fprintf(stderr, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
                         sx, sy, tw, th, dx, dy);
 #endif
-                Blt_CompositeRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
+                Blt_CompositeArea(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
             }
         }
     }
@@ -7217,8 +7217,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (x < 0) {
                 x = 0;
             }
-            Blt_CopyRegion(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
-            Blt_CopyRegion(destPtr, fromPtr, x, 0, fromPtr->width - x,
+            Blt_CopyArea(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
+            Blt_CopyArea(destPtr, fromPtr, x, 0, fromPtr->width - x,
                            fromPtr->height, x, 0);
         }
         break;
@@ -7233,8 +7233,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (x < 0) {
                 x = 0;
             }
-            Blt_CopyRegion(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
-            Blt_CopyRegion(destPtr, toPtr, x, 0, fromPtr->width - x,
+            Blt_CopyArea(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
+            Blt_CopyArea(destPtr, toPtr, x, 0, fromPtr->width - x,
                            fromPtr->height, x, 0);
         }
         break;
@@ -7249,8 +7249,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (y < 0) {
                 y = 0;
             }
-            Blt_CopyRegion(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
-            Blt_CopyRegion(destPtr, toPtr, 0, y, fromPtr->width,
+            Blt_CopyArea(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyArea(destPtr, toPtr, 0, y, fromPtr->width,
                            fromPtr->height - y, 0, y);
         }
         break;
@@ -7265,8 +7265,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (y < 0) {
                 y = 0;
             }
-            Blt_CopyRegion(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
-            Blt_CopyRegion(destPtr, toPtr, 0, y, fromPtr->width,
+            Blt_CopyArea(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyArea(destPtr, toPtr, 0, y, fromPtr->width,
                            fromPtr->height - y, 0, y);
         }
         break;
