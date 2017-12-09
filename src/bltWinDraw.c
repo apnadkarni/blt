@@ -1904,30 +1904,19 @@ Blt_EmulateXFillRectangle(Display *display, Drawable drawable, GC gc,
             HDC hMemDC;
 
         fillSolid:
-            hFgBrush = CreateSolidBrush(gc->foreground);
-#ifdef notdef
-            hMemDC = CreateCompatibleDC(hDC);
+            /* TkWinFillRect(hDC, x, y, w, h, gc->foreground);  */
+            memDC = CreateCompatibleDC(hDC);
+            hBrush = CreateSolidBrush(gc->foreground);
             hBitmap = CreateCompatibleBitmap(hDC, w, h);
-            hOldBitmap = SelectBitmap(hMemDC, hBitmap);
-#endif
-            r.left = r.top = 0;
-            r.right = w, r.bottom = h;
-            fprintf(stderr, "Draw solid rect\n");
-            fprintf(stderr, "state clip region is %p\n", state.clipPtr);
-            if (state.clipPtr != NULL) {
-                fprintf(stderr, "state clip region type is %d\n",
-                        state.clipPtr->type);
-                fprintf(stderr, "state clip region region is %p\n",
-                        state.clipPtr->value.region);
-            }
-            FillRect(hDC, &r, hFgBrush);
-#ifdef notdef
-            BitBlt(hDC, x, y, w, h, hMemDC, 0, 0, SRCCOPY);
-            SelectObject(hMemDC, hOldBitmap);
+            oldBitmap = SelectBitmap(memDC, hBitmap);
+            rect.left = rect.top = 0;
+            rect.right = w, rect.bottom = h;
+            FillRect(memDC, &rect, hBrush);
+            BitBlt(hDC, x, y, w, h, memDC, 0, 0, SRCCOPY);
+            SelectObject(memDC, oldBitmap);
             DeleteBitmap(hBitmap);
-            DeleteDC(hMemDC);
-#endif
-            DeleteBrush(hFgBrush);
+            DeleteBrush(hBrush);
+            DeleteDC(memDC);
         }
         break;
     }
