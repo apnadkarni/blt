@@ -1530,7 +1530,7 @@ CloseSink(Sink *sinkPtr)
 static int
 CookSink(Tcl_Interp *interp, Sink *sinkPtr)
 {
-    unsigned char *srcPtr, *endPtr;
+    unsigned char *srcPtr;
     int crlf;
     int oldMark;
 
@@ -1540,6 +1540,8 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
         sinkPtr->mark = sinkPtr->fill; 
     } else if (sinkPtr->encoding == ENCODING_ASCII) { /* ascii */
 #if (_TCL_VERSION <  _VERSION(8,1,0)) 
+        unsigned char *endPtr;
+
         /* Convert NUL bytes to question marks. */
         srcPtr = sinkPtr->bytes + sinkPtr->mark;
         endPtr = sinkPtr->bytes + sinkPtr->fill;
@@ -1561,6 +1563,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
         unsigned char *destPtr;
         unsigned char *raw, *cooked;
         unsigned char leftover[100];
+        unsigned char *endPtr;
         
         raw = sinkPtr->bytes + sinkPtr->mark;
         numRaw = sinkPtr->fill - sinkPtr->mark;
@@ -1631,6 +1634,7 @@ CookSink(Tcl_Interp *interp, Sink *sinkPtr)
     if ((crlf) && (sinkPtr->encoding != ENCODING_BINARY)) {
         size_t count;
         unsigned char *destPtr;
+        unsigned char *endPtr;
 
         destPtr = srcPtr = sinkPtr->bytes + oldMark;
         endPtr = sinkPtr->bytes + sinkPtr->fill;

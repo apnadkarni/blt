@@ -1521,11 +1521,9 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     xStep = (xMax - xMin) / (double)(xNum - 1);
     yStep = (yMax - yMin) / (double)(yNum - 1);
     {
-        int count;
         Point2d *p;
 
         p = vertices;
-        count = 0;
         for (i = 0; i < yNum; i++) {
             double y0;
             int j;
@@ -1534,7 +1532,6 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
             for (j = 0; j < xNum; j++) {
                 p->x = xMin + (xStep * j);
                 p->y = y0;
-                count++;
                 p++;
             }
         }

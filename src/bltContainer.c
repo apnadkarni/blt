@@ -395,15 +395,17 @@ XGeometryErrorProc(
 static int
 GetAdoptedWindowGeometry(Tcl_Interp *interp, Container *conPtr)
 {
-    int x, y, w, h, borderWidth, depth;
-    int xOffset, yOffset;
-    Window root, dummy;
-    Tk_ErrorHandler handler;
-    int result;
-    int any = -1;
+    int x, y, w, h;
     
-    xOffset = yOffset = 0;
     if (conPtr->adopted != None) {
+        int any = -1;
+        Tk_ErrorHandler handler;
+        Window root, dummy;
+        int xOffset, yOffset;
+        int borderWidth, depth;
+        int result;
+
+        xOffset = yOffset = 0;
         handler = Tk_CreateErrorHandler(conPtr->display, any, X_GetGeometry, 
                 any, XGeometryErrorProc, &result);
         root = Tk_RootWindow(conPtr->tkwin);
@@ -1811,7 +1813,7 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
 {
     char *atomName;
     XErrorHandler handler;
-    static char name[200];
+    static char name[256];
     int result;
 
     handler = XSetErrorHandler(IgnoreErrors);
@@ -1825,8 +1827,8 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
     } else {
         size_t length = strlen(atomName);
 
-        if (length > 200) {
-            length = 200;
+        if (length > 255) {
+            length = 255;
         }
         memcpy(name, atomName, length);
         name[length] = '\0';

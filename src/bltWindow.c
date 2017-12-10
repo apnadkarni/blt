@@ -82,8 +82,9 @@ Blt_GetDrawableAttributes(Display *display, Drawable drawable)
 }
 
 void
-Blt_SetDrawableAttributes(Display *display, Drawable drawable, int depth,
-    int width, int height, Colormap colormap, Visual *visual)
+Blt_SetDrawableAttributes(Display *display, Drawable drawable, int width,
+                          int height, int depth, Colormap colormap,
+                          Visual *visual)
 {
     if (drawable != None) {
         Blt_DrawableAttributes *attrPtr;
@@ -155,18 +156,6 @@ Blt_FreeDrawableAttributes(Display *display, Drawable drawable)
         }
     }
 }
-
-#ifdef notdef
-Blt_Draw *
-Blt_GetPixmap(Display *display, Window id, int w, int h, int depth)
-{
-    pixmap = Tk_GetPixmap(display, id, w, h, depth);
-    drawPtr = Blt_SetDrawableAttributes(display, pixmap, int depth,
-        int w, int h, Colormap colormap, Visual *visual);
-    drawPtr->id = pixmap;
-    return drawPtr;
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -419,9 +408,9 @@ Blt_SetWindowInstanceData(Tk_Window tkwin, ClientData instanceData)
 ClientData
 Blt_GetWindowInstanceData(Tk_Window tkwin)
 {
-    TkWindow *winPtr;
-
     while (tkwin != NULL) {
+        TkWindow *winPtr;
+
         winPtr = (TkWindow *)tkwin;
         if (winPtr->instanceData != NULL) {
             return winPtr->instanceData;

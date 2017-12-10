@@ -391,7 +391,7 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
 {
     char *atomName;
     XErrorHandler handler;
-    static char name[200];
+    static char name[256];
     int result;
 
     handler = XSetErrorHandler(IgnoreErrors);
@@ -405,8 +405,8 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
     } else {
         size_t length = strlen(atomName);
 
-        if (length > 200) {
-            length = 200;
+        if (length > 255) {
+            length = 255;
         }
         memcpy(name, atomName, length);
         name[length] = '\0';

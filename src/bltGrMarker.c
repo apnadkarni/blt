@@ -1533,7 +1533,6 @@ ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
     int numWorldPts;
     int minArgs, maxArgs;
     Point2d *worldPts;
-    int i;
 
     if (objc == 0) {
         return TCL_OK;
@@ -1586,6 +1585,7 @@ ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
 
     {
         Point2d *pp;
+        int i;
 
         pp = worldPts;
         for (i = 0; i < objc; i += 2) {
@@ -2525,7 +2525,6 @@ BitmapMapProc(Marker *markerPtr)
     Point2d corner1, corner2;
     int destWidth, destHeight;
     int srcWidth, srcHeight;
-    int i;
 
     if (bmPtr->srcBitmap == None) {
         return;
@@ -2634,6 +2633,7 @@ BitmapMapProc(Marker *markerPtr)
         double rotWidth, rotHeight;
         Point2d polygon[5];
         int n;
+        int i;
 
         /* 
          * Compute a polygon to represent the background area of the
@@ -3285,8 +3285,6 @@ TextConfigureProc(Marker *markerPtr)
     Graph *graphPtr = markerPtr->obj.graphPtr;
     TextMarker *tmPtr = (TextMarker *)markerPtr;
     GC newGC;
-    XGCValues gcValues;
-    unsigned long gcMask;
 
     tmPtr->style.angle = (float)FMOD(tmPtr->style.angle, 360.0);
     if (tmPtr->style.angle < 0.0f) {
@@ -3294,6 +3292,9 @@ TextConfigureProc(Marker *markerPtr)
     }
     newGC = NULL;
     if (tmPtr->fillColor != NULL) {
+        unsigned long gcMask;
+        XGCValues gcValues;
+    
         gcMask = GCForeground;
         gcValues.foreground = tmPtr->fillColor->pixel;
         newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);

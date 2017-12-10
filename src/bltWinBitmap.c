@@ -64,7 +64,6 @@ Blt_PhotoImageMask(
     TkWinBitmap *twdPtr;
     int offset, count;
     int x, y;
-    unsigned char *srcPtr;
     int destBytesPerRow;
     int destHeight;
     unsigned char *destBits;
@@ -77,6 +76,8 @@ Blt_PhotoImageMask(
 
     /* FIXME: figure out why this is so! */
     for (y = src.height - 1; y >= 0; y--) {
+        unsigned char *srcPtr;
+
         srcPtr = src.pixelPtr + offset;
         for (x = 0; x < src.width; x++) {
             if (srcPtr[src.offset[3]] == 0x00) {
@@ -314,8 +315,6 @@ Blt_RotateBitmap(
         double theta, sinTheta, cosTheta;
         double srcCX, srcCY;    /* Center of source rectangle */
         double destCX, destCY;  /* Center of destination rectangle */
-        double tx, ty;
-        double rx, ry;          /* Angle of rotation for x and y coordinates */
 
         theta = angle * DEG2RAD;
         sinTheta = sin(theta), cosTheta = cos(theta);
@@ -331,8 +330,12 @@ Blt_RotateBitmap(
         /* Rotate each pixel of dest image, placing results in source image */
 
         for (y = 0; y < destHeight; y++) {
+            double ty;
+
             ty = y - destCY;
             for (x = 0; x < destWidth; x++) {
+                double tx;
+                double rx, ry; /* Angle of rotation for x and y coordinates */
 
                 /* Translate origin to center of destination image */
                 tx = x - destCX;

@@ -754,10 +754,12 @@ ReadPostScript(Tcl_Interp *interp, EpsItem *itemPtr)
             } else if ((field[0] == 'T') &&
                 (strncmp(field, "Title:", 6) == 0)) {
                 if (dscTitle == NULL) {
-                    char *lp, *rp;
+                    char *lp;
 
                     lp = strchr(field + 6, '(');
                     if (lp != NULL) {
+                        char *rp;
+
                         rp = strrchr(field + 6, ')');
                         if (rp != NULL) {
                             *rp = '\0';

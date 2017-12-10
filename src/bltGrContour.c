@@ -5309,7 +5309,6 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
     InitEdgeEquation(renPtr->eq + 0, v1, v2);
     InitEdgeEquation(renPtr->eq + 1, v2, v3);
     InitEdgeEquation(renPtr->eq + 2, v3, v1);
-    scale = 0.0;
     /*
      * Orient edges so that the triangle's interior lies within all of
      * their positive half-spaces. Assuring that the area is positive
@@ -5327,9 +5326,7 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
         FlipEquation(renPtr->eq + 2);
         area = -area;
     }
-    if (scale <= 0.0) {
-        scale = 1.0 / ((double) area);
-    }
+    scale = 1.0 / ((double) area);
     sp0 = scale * Az;
     sp1 = scale * Bz;
     sp2 = scale * Cz;

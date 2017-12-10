@@ -172,11 +172,6 @@ static DataFormat dataFormats[] = {
 #endif
 };
 
-typedef struct {
-    Tcl_Obj *cmd0;
-    Tcl_Interp *interp;
-} CompareData;
-
 /*
  * TraceInfo --
  *
@@ -4427,7 +4422,6 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 
             col = Blt_Chain_GetValue(link);
             j = blt_table_column_index(table, col);
-            assert(j >= 0);
             matches[j] = TRUE;
         }
     }
@@ -7451,7 +7445,6 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
             
             row = Blt_Chain_GetValue(link);
             j = blt_table_row_index(table, row);
-            assert(j >= 0);
             matches[j] = TRUE;
         }
     }
@@ -7866,7 +7859,6 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
     BLT_TABLE_ROW row;
-    Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
     row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
@@ -7875,6 +7867,7 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (objc == 4) {
         BLT_TABLE_COLUMN col;
+        Tcl_Obj *listObjPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
@@ -8160,9 +8153,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (result != TCL_OK) {
         goto error;
     }
-    if (order != NULL) {
-        Blt_Free(order);
-    }
+    Blt_Free(order);
     if (switches.flags & SORT_ALTER) {
         /* Make row order permanent. */
         blt_table_set_row_map(cmdPtr->table, map);

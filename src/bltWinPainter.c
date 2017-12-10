@@ -400,8 +400,6 @@ DrawableToPicture(
 
         bits = (unsigned char *)ds.dsBm.bmBits;
         destPtr = Blt_CreatePicture(w, h);
-        destRowPtr = destPtr->bits;
-        
         /* 
          * Copy the DIB RGB data into the picture. The DIB origin is the
          * bottom-left corner, so the scanlines are stored in reverse order
@@ -469,7 +467,8 @@ PaintPicture(
     int resetPalette;
 
     ditherPtr = NULL;
-    hDC = Blt_GetDCAndState(painterPtr->display, drawable, painterPtr->gc, &state);
+    hDC = Blt_GetDCAndState(painterPtr->display, drawable, painterPtr->gc,
+                            &state);
     if (GetDeviceCaps(hDC, RASTERCAPS) & RC_PALETTE) {
         TkWinColormap *mapPtr;
 

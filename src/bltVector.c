@@ -372,9 +372,7 @@ Blt_Vec_GetRange(Tcl_Interp *interp, Vector *vPtr, const char *string)
     char *colon;
     char c;
 
-    colon = NULL;
     c = string[0];
-
     colon = strchr(string, ':');
     if (colon != NULL) {
         if (string == colon) {
@@ -1262,11 +1260,6 @@ Blt_Vec_Free(Vector *vPtr)
     if (vPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&vPtr->dataPtr->vectorTable, vPtr->hashPtr);
     }
-#ifdef NAMESPACE_DELETE_NOTIFY
-    if (vPtr->nsPtr != NULL) {
-        Blt_DestroyNsDeleteNotify(vPtr->interp, vPtr->nsPtr, vPtr);
-    }
-#endif /* NAMESPACE_DELETE_NOTIFY */
     Blt_Free(vPtr);
 }
 
@@ -1374,10 +1367,6 @@ Blt_Vec_Create(
         vPtr->nsPtr = objName.nsPtr;
 
         vPtr->name = Blt_GetHashKey(&dataPtr->vectorTable, hPtr);
-#ifdef NAMESPACE_DELETE_NOTIFY
-        Blt_CreateNsDeleteNotify(interp, objName.nsPtr, vPtr, 
-                VectorInstDeleteProc);
-#endif /* NAMESPACE_DELETE_NOTIFY */
         Blt_SetHashValue(hPtr, vPtr);
     } 
     if (cmdName != NULL) {
@@ -1849,10 +1838,6 @@ VectorCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     vPtr->nsPtr = objName.nsPtr;
 
     vPtr->name = Blt_GetHashKey(&dataPtr->vectorTable, hPtr);
-#ifdef NAMESPACE_DELETE_NOTIFY
-    Blt_CreateNsDeleteNotify(interp, objName.nsPtr, vPtr, 
-                VectorInstDeleteProc);
-#endif /* NAMESPACE_DELETE_NOTIFY */
     Blt_SetHashValue(hPtr, vPtr);
 
     vPtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)qualName, 

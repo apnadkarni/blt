@@ -271,7 +271,7 @@ BLT_EXTERN int *	Blt_Mesh_GetHull(Blt_Mesh mesh, int *numHullPtsPtr);
 #define Blt_Mesh_GetExtents_DECLARED
 /* 44 */
 BLT_EXTERN void		Blt_Mesh_GetExtents(Blt_Mesh mesh, float *x1Ptr,
-				float *x2Ptr, float *y1Ptr, float *y2Ptr);
+				float *y1Ptr, float *x2Ptr, float *y2Ptr);
 #endif
 #ifndef Blt_Mesh_GetTriangles_DECLARED
 #define Blt_Mesh_GetTriangles_DECLARED

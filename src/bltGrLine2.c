@@ -2325,9 +2325,7 @@ GenerateParametricSplineOld(Trace *tracePtr)
     int smooth;
 
     Blt_GraphExtents(elemPtr, &exts);
-    xpoints = ypoints = NULL;
     xspline = yspline = NULL;
-    distance = NULL;
 
     /* 
      * Populate the x2 array with both the original X-coordinates and extra

@@ -3957,11 +3957,12 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Item *itemPtr = (Item *)widgRec;
     Style **stylePtrPtr = (Style **)(widgRec + offset);
     Style *stylePtr;
-    char *string;
-
-    string = Tcl_GetString(objPtr);
+    const char *string;
+    int length;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
     comboPtr = itemPtr->comboPtr;
-    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+    if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
         stylePtr = NULL;
     } else if (GetStyleFromObj(interp, comboPtr, objPtr, &stylePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3970,7 +3971,9 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if ((*stylePtrPtr != NULL) && (*stylePtrPtr != &comboPtr->defStyle)) {
         DestroyStyle(*stylePtrPtr);
     }
-    stylePtr->refCount++;
+    if (stylePtr != NULL) {
+        stylePtr->refCount++;
+    }
     *stylePtrPtr = stylePtr;
     return TCL_OK;
 }
@@ -5441,7 +5444,6 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((itemPtr == NULL) || (itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN))) {
         return TCL_OK;          /* Item is currently disabled or hidden. */
     }
-    result = TCL_OK;
     Tcl_Preserve(itemPtr);
 
     /* Select the currently selected item. */

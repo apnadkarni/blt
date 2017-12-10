@@ -1376,7 +1376,7 @@ DoConfig(
                     != TCL_OK) {
                     return TCL_ERROR;
                 }
-                if (objPtr <= 0) {
+                if (value <= 0) {
                     Tcl_AppendResult(interp, "value \"", Tcl_GetString(objPtr),
                                      "\" must be positive.", (char *)NULL);
                     return TCL_ERROR;

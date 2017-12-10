@@ -312,6 +312,8 @@ Blt_InitFeaturesArray(Tcl_Interp *interp)
         int majorNum, minorNum;
 
         if (XRRQueryExtension(display, &majorNum, &minorNum)) {
+            Tcl_Obj *objPtr;
+
             objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
             Tcl_SetVar2Ex(interp, "::blt::features", "XRandrQueryExtension", 
                 objPtr, TCL_GLOBAL_ONLY);
@@ -323,6 +325,8 @@ Blt_InitFeaturesArray(Tcl_Interp *interp)
         int majorNum, minorNum;
 
         if (XShmQueryVersion(display, &majorNum, &minorNum, &state)) {
+            Tcl_Obj *objPtr;
+
             objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
             Tcl_SetVar2Ex(interp, "::blt::features", "XShmQueryExtension", 
                 objPtr, TCL_GLOBAL_ONLY);
@@ -361,6 +365,8 @@ Blt_InitFeaturesArray(Tcl_Interp *interp)
         int majorNum, minorNum;
 
         if (XRenderQueryExtension(display, &majorNum, &minorNum)) {
+            Tcl_Obj *objPtr;
+
             objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
             Tcl_SetVar2Ex(interp, "::blt::features", "XRenderQueryExtention", 
                 objPtr, TCL_GLOBAL_ONLY);
@@ -380,9 +386,9 @@ Blt_InitFeaturesArray(Tcl_Interp *interp)
 #else 
     state = FALSE;
 #endif  /* USE_XSHM */
+    objPtr = Tcl_NewBooleanObj(state);
     Tcl_SetVar2Ex(interp, "::blt::features", "enable_xshm", objPtr, 
                   TCL_GLOBAL_ONLY);
-    objPtr = Tcl_NewBooleanObj(state);
     SetFeature("enable_xshm", state);
     Tcl_TraceVar2(interp, "::blt::features", "enable_xshm", TRACE_FLAGS,
         FeatureVariableProc, NULL);

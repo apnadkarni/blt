@@ -2434,7 +2434,9 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         ih = IconHeight(stylePtr->icon);
     }
     if (cellPtr->dataObjPtr != NULL) {
+#ifdef notdef
         tw = cellPtr->textWidth;
+#endif
         th = cellPtr->textHeight;
         tw = cellWidth - iw;
         if (stylePtr->icon != NULL) {
@@ -3404,8 +3406,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     GC gc;
     Entry *rowPtr;
     int ix, iy, tx, ty;
-    unsigned int gap, colWidth, rowHeight, cellWidth, cellHeight;
-    unsigned int iw, ih, th;
+    int gap, colWidth, rowHeight, cellWidth, cellHeight;
+    int iw, ih, th;
     int relief;
     TreeView *viewPtr;
     int x0;
@@ -3883,11 +3885,11 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     if (cellPtr->tkImage != NULL) {
         Tk_SizeOfImage(cellPtr->tkImage, (int *)&pw, (int *)&ph);
     }
-    cellPtr->height += MAX(ph, ih);
     if (stylePtr->icon != NULL) {
         iw = IconWidth(stylePtr->icon);
         ih = IconHeight(stylePtr->icon);
     } 
+    cellPtr->height += MAX(ph, ih);
     if ((stylePtr->flags & SHOW_TEXT) && (cellPtr->dataObjPtr != NULL)) {
         TextStyle ts;
         const char *string;

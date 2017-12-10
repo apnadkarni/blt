@@ -1599,10 +1599,7 @@ FormatDouble(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 static Tcl_Obj *
 FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 {
-    int64_t ll;
-    long l;
     Tcl_Obj *objPtr;
-    short s;
     char spec[2*TCL_INTEGER_SPACE + 9];
     char *p;
     int length;
@@ -1612,21 +1609,29 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
     
     parserPtr->flags &= ~FMT_ISNEGATIVE;
     if (parserPtr->flags & FMT_LONGLONG) {
+        int64_t ll;
+
         ll = (int64_t)d;
         if (ll < 0) {
             parserPtr->flags |= FMT_ISNEGATIVE;
         }
     } else if (parserPtr->flags & FMT_LONG) {
+        long l;
+
         l = (long int)d;
         if (l < 0) {
             parserPtr->flags |= FMT_ISNEGATIVE;
         }
     } else if (parserPtr->flags & FMT_SHORT) {
+        short s;
+
         s = (short int)d;
         if (s < 0) {
             parserPtr->flags |= FMT_ISNEGATIVE;
         }
     } else {
+        long l;
+
         l = (long)d;
         if (l < (long)0) {
             parserPtr->flags |= FMT_ISNEGATIVE;
@@ -1803,7 +1808,7 @@ AppendFormatToObj(Tcl_Interp *interp, Tcl_Obj *appendObjPtr, const char *format,
         }
         if (index < 0) {
             /* Index is outside of available vector elements. */
-            msg = badIndex[parser.flags & FMT_XPG];
+            msg = badIndex[(parser.flags & FMT_XPG) != 0];
             goto errorMsg;              
         }
 
@@ -2451,9 +2456,7 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int fmtSize;
     int mode, swap;
     int count, total, first, i;
-    int length;
     size_t arraySize;
-    ssize_t bytesRead;
 
     string = Tcl_GetString(objv[2]);
     channel = Tcl_GetChannel(interp, string, &mode);
@@ -2532,6 +2535,9 @@ BinreadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     total = 0;
     while (!Tcl_Eof(channel)) {
+        int length;
+        ssize_t bytesRead;
+
         bytesRead = Tcl_Read(channel, byteArr, arraySize);
         if (bytesRead < 0) {
             Tcl_AppendResult(interp, "error reading channel: ",
@@ -3000,7 +3006,7 @@ SequenceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Vector *vPtr = clientData;
     const char *string;
     double start, stop, step;
-    int i, numSteps;
+    int numSteps;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &start) != TCL_OK) {
         return TCL_ERROR;
@@ -3027,6 +3033,8 @@ SequenceOp(ClientData clientData, Tcl_Interp *interp, int objc,
         numSteps = (int)(s) + 1;
     }
     if (numSteps > 0) {
+        int i;
+        
         if (Blt_Vec_SetLength(interp, vPtr, numSteps) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -3289,14 +3297,17 @@ SplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (numVectors > 0) {
-        int i, j, k;
-        int oldSize, newSize, extra;
+        int i;
+        int extra;
 
         extra = vPtr->length / numVectors;
         for (i = 0; i < numVectors; i++) {
             Vector *destPtr;
+            int oldSize, newSize;
+            int j, k;
 
-            if (GetVector(interp, vPtr->dataPtr, objv[i + 2], &destPtr) != TCL_OK) {
+            if (GetVector(interp, vPtr->dataPtr, objv[i + 2], &destPtr)
+                != TCL_OK) {
                 return TCL_ERROR;
             }
             oldSize = destPtr->length;
@@ -3493,7 +3504,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     objc -= i, objv += i;
     sortDecreasing = (switches.flags & SORT_DECREASING);
-    sortLength = 0;
 
     vectors = Blt_AssertMalloc(sizeof(Vector *) * (objc + 1));
     vectors[0] = vPtr;

@@ -503,7 +503,7 @@ NewIsoline(Tcl_Interp *interp, Graph *graphPtr, const char *name)
 
     isoPtr = Blt_AssertCalloc(1, sizeof(Isoline));
     if (name == NULL) {
-        sprintf(string, "isoline%u", graphPtr->nextIsolineId);
+        sprintf(string, "isoline%d", graphPtr->nextIsolineId);
         graphPtr->nextIsolineId++;
         name = string;
     }
@@ -1246,7 +1246,6 @@ StepsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    Isoline *isoPtr;
     long numSteps, i;
 
     if (Blt_GetCountFromObj(interp, objv[3], COUNT_POS, &numSteps) != TCL_OK) {
@@ -1257,6 +1256,8 @@ StepsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 0; i < numSteps; i++) {
+        Isoline *isoPtr;
+
         isoPtr = NewIsoline(interp, graphPtr, NULL);
         if (isoPtr == NULL) {
             return TCL_ERROR;

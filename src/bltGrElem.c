@@ -268,9 +268,9 @@ FetchVectorValues(Tcl_Interp *interp, ElemValues *valuesPtr, Blt_Vector *vector)
     if (size == 0) {
         if (valuesPtr->values != NULL) {
             Blt_Free(valuesPtr->values);
-         }
+        }
         valuesPtr->min = 0.0;
-        valuesPtr->min = 1.0;
+        valuesPtr->max = 1.0;
         valuesPtr->values = NULL;
         valuesPtr->numValues = 0;
         return TCL_OK;
@@ -1847,7 +1847,6 @@ CreateElement(Graph *graphPtr, Tcl_Interp *interp, int objc,
         prefix = "line";        break;
     case CID_ELEM_CONTOUR:
         prefix = "contour";     break;
-        break;
     default:
         Tcl_AppendResult(interp, "unknown element type (", Blt_Itoa(classId),
                          ")", (char *)NULL);
@@ -2619,7 +2618,6 @@ static int
 NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
-    Element *elemPtr;
     Graph *graphPtr = clientData;
     NearestElement nearest;
     const char *string;
@@ -2689,6 +2687,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     } else {
         Blt_ChainLink link;
+        Element *elemPtr;
 
         /* 
          * Find the nearest point from the set of displayed elements,

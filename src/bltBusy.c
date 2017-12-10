@@ -1451,7 +1451,6 @@ static int
 CheckOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
-    Blt_HashEntry *hPtr;
     BusyInterpData *dataPtr = clientData;
     Tk_Window tkwin;
     const char *pathName;
@@ -1459,6 +1458,8 @@ CheckOp(ClientData clientData, Tcl_Interp *interp, int objc,
     pathName = Tcl_GetString(objv[2]);
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkMain);
     do {
+        Blt_HashEntry *hPtr;
+
         hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (const char *)tkwin);
         if (hPtr != NULL) {
             Busy *busyPtr;

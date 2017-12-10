@@ -2296,8 +2296,7 @@ Blt_ExprVector(
     Vector *vPtr = (Vector *)vector;
     Value value;
 
-    dataPtr = (vector != NULL) 
-        ? vPtr->dataPtr : Blt_Vec_GetInterpData(interp);
+    dataPtr = (vPtr != NULL) ? vPtr->dataPtr : Blt_Vec_GetInterpData(interp);
     value.vPtr = Blt_Vec_New(dataPtr);
     if (EvaluateExpression(interp, string, &value) != TCL_OK) {
         Blt_Vec_Free(value.vPtr);

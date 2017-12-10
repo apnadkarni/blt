@@ -1032,11 +1032,9 @@ static int
 ParseStartDirection(Parser *parserPtr, char *record, int offset)
 {
     Afm *afmPtr = (Afm *)record;
-    int *valuePtr = (int *)(record + offset);
     int n;
     int result;
 
-    assert(*valuePtr == 0);
     if (Tcl_GetInt(NULL, parserPtr->argv[1], &n) != TCL_OK) {
         ParserError(parserPtr, "can't convert \"%s\" to integer.", 
                     parserPtr->argv[1]);

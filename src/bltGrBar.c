@@ -1483,13 +1483,14 @@ MapErrorBars(Graph *graphPtr, BarElement *elemPtr, BarStyle **dataToStyle)
         indexPtr = map = Blt_AssertMalloc(n * 3 * sizeof(int));
         for (i = 0; i < n; i++) {
             double x, y;
-            double high, low;
             BarStyle *stylePtr;
 
             x = elemPtr->x.values[i];
             y = elemPtr->y.values[i];
             stylePtr = dataToStyle[i];
             if ((FINITE(x)) && (FINITE(y))) {
+                double high, low;
+
                 if (elemPtr->xError.numValues > 0) {
                     high = x + elemPtr->xError.values[i];
                     low = x - elemPtr->xError.values[i];
@@ -1547,13 +1548,14 @@ MapErrorBars(Graph *graphPtr, BarElement *elemPtr, BarStyle **dataToStyle)
         indexPtr = map = Blt_AssertMalloc(n * 3 * sizeof(int));
         for (i = 0; i < n; i++) {
             double x, y;
-            double high, low;
             BarStyle *stylePtr;
 
             x = elemPtr->x.values[i];
             y = elemPtr->y.values[i];
             stylePtr = dataToStyle[i];
             if ((FINITE(x)) && (FINITE(y))) {
+                double high, low;
+
                 if (elemPtr->yError.numValues > 0) {
                     high = y + elemPtr->yError.values[i];
                     low = y - elemPtr->yError.values[i];
@@ -2343,9 +2345,6 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
     XRectangle *rp, *rend;
     int count;
     const char *fmt;
-    char string[TCL_DOUBLE_SPACE * 2 + 2];
-    double x, y;
-    Point2d anchorPos;
     
     count = 0;
     fmt = penPtr->valueFormat;
@@ -2353,6 +2352,10 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
         fmt = "%g";
     }
     for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
+        double x, y;
+        Point2d anchorPos;
+        char string[TCL_DOUBLE_SPACE * 2 + 2];
+
         x = elemPtr->x.values[barToData[count]];
         y = elemPtr->y.values[barToData[count]];
         count++;

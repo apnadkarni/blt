@@ -2301,7 +2301,6 @@ NiceNum(double x, int round)            /* If non-zero, round. Otherwise
 static void
 LogAxis(Axis *axisPtr, double min, double max)
 {
-    double range;
     double tickMin, tickMax;
     double majorStep, minorStep;
     int numMajor, numMinor;
@@ -2312,6 +2311,7 @@ LogAxis(Axis *axisPtr, double min, double max)
     tickMin = tickMax = Blt_NaN();
     if (min < max) {
         double amin, amax;
+        double range;
         
         if (min > 0.0) {
             amin = log10(min);
@@ -3113,10 +3113,12 @@ static void
 MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
 {
     double min, max;
-    int x1, y1, x2, y2;
+
     min = axisPtr->tickMin;
     max = axisPtr->tickMax;
     if (HORIZONTAL(axisPtr->marginPtr)) {
+        int x1, x2;
+
         x2 = Blt_HMap(axisPtr, min);
         x1 = Blt_HMap(axisPtr, max);
         axisPtr->colorbar.rect.x = MIN(x1, x2);
@@ -3124,6 +3126,8 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
         axisPtr->colorbar.rect.width = ABS(x1 - x2) + 1;
         axisPtr->colorbar.rect.height = axisPtr->colorbar.thickness;
     } else {
+        int y1, y2;
+
         y2 = Blt_VMap(axisPtr, min);
         y1 = Blt_VMap(axisPtr, max);
         axisPtr->colorbar.rect.x = infoPtr->colorbar;
@@ -3585,7 +3589,6 @@ static void
 DrawAxis(Axis *axisPtr, Drawable drawable)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
-    int isHoriz;
 
 #ifdef notdef
     fprintf(stderr, "axis=%s scale=%d tmin=%g tmax=%g vmin=%g vmax=%g\n",
@@ -3631,6 +3634,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
         double viewWidth, viewMin, viewMax;
         double worldWidth, worldMin, worldMax;
         double fract;
+        int isHoriz;
 
         worldMin = axisPtr->dataRange.min;
         worldMax = axisPtr->dataRange.max;

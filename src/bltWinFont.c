@@ -414,10 +414,11 @@ MakeAliasTable(Tk_Window tkwin)
     Blt_InitHashTable(&aliasTable, TCL_STRING_KEYS);
     table = xlfdFontAliases;
     for(faPtr = table; faPtr->name != NULL; faPtr++) {
-        Blt_HashEntry *hPtr;
         const char **alias;
            
         for (alias = faPtr->aliases; *alias != NULL; alias++) {
+            Blt_HashEntry *hPtr;
+
             hPtr = Blt_FindHashEntry(&familyTable, *alias);
             if (hPtr != NULL) {
                 int isNew;
@@ -1171,9 +1172,7 @@ GetFontsetFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
         Tk_Font tkFont;
 
         tkFont = GetFontFromPattern(interp, tkwin, patternPtr);
-        if (patternPtr != NULL) {
-            FreeFontPattern(patternPtr);
-        }
+        FreeFontPattern(patternPtr);
         if (tkFont == NULL) {
             Blt_DeleteHashEntry(&fontSetTable, hPtr);
             return NULL;
@@ -1238,7 +1237,9 @@ MakeRotatedFont(
     lf.lfCharSet = DEFAULT_CHARSET;
     lf.lfOutPrecision = OUT_TT_ONLY_PRECIS;
     lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+#ifdef notdef
     lf.lfQuality = DEFAULT_QUALITY;
+#endif
     lf.lfQuality = ANTIALIASED_QUALITY;
     lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
 

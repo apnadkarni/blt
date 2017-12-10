@@ -2120,7 +2120,7 @@ ComputeRowLayout(ListView *viewPtr)
 static void
 ComputeColumnsLayout(ListView *viewPtr)
 {
-    int x, y, w, h;
+    int x, w, h;
     int reqWidth, reqHeight;
     int maxWidth, maxHeight;
     int winHeight;
@@ -2162,7 +2162,7 @@ ComputeColumnsLayout(ListView *viewPtr)
     x = 0;
     itemPtr = FirstItem(viewPtr, HIDDEN); 
     while (itemPtr != NULL) {
-        int i;
+        int i, y;
         int colWidth;
         Item *p;
         
@@ -2330,7 +2330,7 @@ ComputeIconsLayout(ListView *viewPtr)
 static void
 ComputeRowsLayout(ListView *viewPtr)
 {
-    int x, y, w, h;
+    int y, w, h;
     int reqWidth, reqHeight;
     int maxWidth, maxHeight;
     int winWidth;
@@ -2372,7 +2372,7 @@ ComputeRowsLayout(ListView *viewPtr)
     y = 0;
     itemPtr = FirstItem(viewPtr, HIDDEN); 
     while (itemPtr != NULL) {
-        int i;
+        int i, x;
         int rowHeight;
         Item *p;
         
@@ -2858,12 +2858,12 @@ MoveItem(ListView *viewPtr, Item *itemPtr, int dir, Item *wherePtr)
 static Item *
 NextTaggedItem(ItemIterator *iterPtr)
 {
-    Item *itemPtr;
-
     switch (iterPtr->type) {
     case ITER_TAG:
     case ITER_ALL:
         if (iterPtr->link != NULL) {
+            Item *itemPtr;
+
             itemPtr = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return itemPtr;
@@ -3438,11 +3438,11 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Item *itemPtr = (Item *)widgRec;
     Style **stylePtrPtr = (Style **)(widgRec + offset);
     Style *stylePtr;
-    char *string;
-
-    string = Tcl_GetString(objPtr);
+    int length;
+    
+    Tcl_GetStringFromObj(objPtr, &length);
     viewPtr = itemPtr->viewPtr;
-    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+    if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
         stylePtr = NULL;
     } else if (GetStyleFromObj(interp, viewPtr, objPtr, &stylePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3451,7 +3451,9 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if ((*stylePtrPtr != NULL) && (*stylePtrPtr != &viewPtr->defStyle)) {
         DestroyStyle(*stylePtrPtr);
     }
-    stylePtr->refCount++;
+    if (stylePtr != NULL) {
+        stylePtr->refCount++;
+    }
     *stylePtrPtr = stylePtr;
     return TCL_OK;
 }

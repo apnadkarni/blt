@@ -920,15 +920,14 @@ RecordEdit(ComboEntry *comboPtr, int type, int index, const char *text,
 static void
 CleanText(ComboEntry *comboPtr)
 {
-    char *p, *q, *pend;
-
     if (comboPtr->screenText != NULL) {
         Blt_Free(comboPtr->screenText);
     }
     if (comboPtr->cipher != NULL) {
         int i, charSize;
         Tcl_UniChar dummy;
-
+        char *p;
+    
         charSize = Tcl_UtfToUniChar(comboPtr->cipher, &dummy);
         comboPtr->numScreenBytes = comboPtr->numChars * charSize;
         comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
@@ -938,6 +937,8 @@ CleanText(ComboEntry *comboPtr)
         }
         comboPtr->screenText[comboPtr->numScreenBytes] = '\0';
     } else {
+        char *p, *q, *pend;
+
         comboPtr->numScreenBytes = comboPtr->numBytes;
         comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
         for (p = comboPtr->text, q = comboPtr->screenText, 
@@ -3113,14 +3114,12 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     {
-        int tx, ty;
+        int tx;
 
         tx = comboPtr->inset;
-        ty = y;
         if (comboPtr->iconWidth > 0) {
             tx += comboPtr->iconWidth;
         }
-        ty += (comboPtr->entryHeight - comboPtr->textHeight) / 2;
         if ((x >= tx) && (x < (tx + comboPtr->textWidth))) {
             Tcl_SetObjResult(interp, Tcl_NewStringObj("text", 4));
             return TCL_OK;
@@ -4209,10 +4208,12 @@ DrawTextForEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, i
         h = comboPtr->entryHeight;
     }
     if (comboPtr->image != NULL) {
-        int imgX, imgY, imgWidth, imgHeight;
+        int imgWidth;
 
         imgWidth = comboPtr->textWidth;
         if (comboPtr->scrollX < imgWidth) {
+            int imgX, imgY, imgHeight;
+
             imgX = comboPtr->scrollX;
             imgY = y;
             if (comboPtr->entryHeight > comboPtr->iconHeight) {
@@ -4536,7 +4537,6 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
             bx = comboPtr->inset;
         }
         by = y0;
-        x0 += bw;
         cavityWidth -= bw;
         if (comboPtr->entryHeight > bh) {
             by += ((comboPtr->entryHeight - bh) + 1) / 2;

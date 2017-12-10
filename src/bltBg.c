@@ -1516,10 +1516,6 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
                     corePtr->flags & RELATIVETO_MASK, Tk_PathName(tkRef),
                     Tk_PathName(tkwin));
                     
-#ifdef notdef
-            corePtr->flags = RELATIVETO_SELF;
-            tkRef = tkwin;
-#endif
             abort();
         }
     }
@@ -1664,9 +1660,10 @@ ShiftLine(
 
     if (shiftTable[0] == 0) {
         int i;
-        double tangent, cosine;
 
         for (i = 0; i <= 128; i++) {
+            double tangent, cosine;
+
             tangent = i/128.0;
             cosine = 128/cos(atan(tangent)) + .5;
             shiftTable[i] = (int) cosine;
@@ -2446,7 +2443,7 @@ DestroyBackground(Bg *bgPtr)
     BackgroundObject *corePtr = bgPtr->corePtr;
 
     Blt_Chain_DeleteLink(corePtr->chain, bgPtr->link);
-    if (Blt_Chain_GetLength(corePtr->chain) <= 0) {
+    if (Blt_Chain_GetLength(corePtr->chain) == 0) {
         DestroyBackgroundObject(corePtr);
     }
     Blt_Free(bgPtr);
@@ -2984,9 +2981,6 @@ Blt_Bg_SetChangedProc(
 void
 Blt_Bg_Free(Bg *bgPtr)
 {
-    BackgroundObject *corePtr = bgPtr->corePtr;
-
-    assert(corePtr != NULL);
     DestroyBackground(bgPtr);
 }
 

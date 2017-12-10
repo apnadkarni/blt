@@ -168,10 +168,11 @@ void
 Blt_Chain_Reset(Chain *chainPtr)        /* Chain to clear */
 {
     if (chainPtr != NULL) {
-        ChainLink *oldPtr;
         ChainLink *linkPtr = chainPtr->head;
 
         while (linkPtr != NULL) {
+            ChainLink *oldPtr;
+
             oldPtr = linkPtr;
             linkPtr = linkPtr->next;
             Blt_Free(oldPtr);

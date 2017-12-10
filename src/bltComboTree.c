@@ -2417,10 +2417,11 @@ DestroyIcons(ComboTree *comboPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
-    struct _Icon *iconPtr;
 
     for (hPtr = Blt_FirstHashEntry(&comboPtr->iconTable, &cursor);
          hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
+        struct _Icon *iconPtr;
+
         iconPtr = Blt_GetHashValue(hPtr);
         Tk_FreeImage(iconPtr->tkImage);
         Blt_Free(iconPtr);
@@ -3377,11 +3378,11 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Entry *entryPtr = (Entry *)widgRec;
     Style **stylePtrPtr = (Style **)(widgRec + offset);
     Style *stylePtr;
-    const char *string;
-
-    string = Tcl_GetString(objPtr);
+    int length;
+    
+    Tcl_GetStringFromObj(objPtr, &length);
     comboPtr = entryPtr->comboPtr;
-    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+    if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
         stylePtr = NULL;
     } else if (GetStyleFromObj(interp, comboPtr, objPtr, &stylePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3390,7 +3391,9 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if ((*stylePtrPtr != NULL) && (*stylePtrPtr != &comboPtr->defStyle)) {
         DestroyStyle(*stylePtrPtr);
     }
-    stylePtr->refCount++;
+    if (stylePtr != NULL) {
+        stylePtr->refCount++;
+    }
     *stylePtrPtr = stylePtr;
     return TCL_OK;
 }
@@ -3631,11 +3634,12 @@ Apply(ComboTree *comboPtr, Entry *entryPtr, ApplyProc *proc, unsigned int flags)
     }
     if (((flags & ENTRY_CLOSED) == 0) || 
         ((entryPtr->flags & ENTRY_CLOSED) == 0)) {
-        Entry *childPtr;
         Blt_TreeNode node, next;
 
         for (node = Blt_Tree_FirstChild(entryPtr->node); node != NULL; 
              node = next) {
+            Entry *childPtr;
+
             next = Blt_Tree_NextSibling(node);
             /* 
              * Get the next child before calling Apply

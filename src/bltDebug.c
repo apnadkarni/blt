@@ -170,12 +170,14 @@ GetWatch(DebugCmdInterpData *dataPtr, Tcl_Obj *objPtr)
     Blt_ChainLink link;
     char c;
     Watch *watchPtr;
-    char *name, *string;
+    char *name;
 
     name = Tcl_GetString(objPtr);
     c = name[0];
     for (link = Blt_Chain_FirstLink(dataPtr->chain); link != NULL;
         link = Blt_Chain_NextLink(link)) {
+        char *string;
+
         watchPtr = Blt_Chain_GetValue(link);
         string = Tcl_GetString(watchPtr->nameObjPtr);
         if ((string[0] == c) && (strcmp(name, string) == 0)) {

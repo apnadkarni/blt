@@ -2484,7 +2484,6 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PaintBrushCmdInterpData *dataPtr = clientData;
     PaintBrushCmd *cmdPtr;
     Blt_PaintBrushType type;
-    const char *string;
     Blt_HashEntry *hPtr;
 
     if (Blt_GetBrushTypeFromObj(interp, objv[2], &type) != TCL_OK) {
@@ -2492,6 +2491,8 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     hPtr = NULL;
     if (objc > 3) {
+        const char *string;
+
         string = Tcl_GetString(objv[3]);
         if (string[0] != '-') {         
             int isNew;

@@ -2646,9 +2646,9 @@ Blt_GraphCmdInitProc(Tcl_Interp *interp)
 Graph *
 Blt_GetGraphFromWindowData(Tk_Window tkwin)
 {
-    Graph *graphPtr;
-
     while (tkwin != NULL) {
+        Graph *graphPtr;
+
         graphPtr = (Graph *)Blt_GetWindowInstanceData(tkwin);
         if (graphPtr != NULL) {
             return graphPtr;

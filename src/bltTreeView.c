@@ -2934,10 +2934,11 @@ DumpIconTable(TreeView *viewPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    struct _Icon *iconPtr;
 
     for (hPtr = Blt_FirstHashEntry(&viewPtr->iconTable, &iter);
          hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+	struct _Icon *iconPtr;
+
         iconPtr = Blt_GetHashValue(hPtr);
         Tk_FreeImage(iconPtr->tkImage);
         Blt_Free(iconPtr);
@@ -4734,7 +4735,6 @@ static void
 PruneSelection(TreeView *viewPtr, Entry *rootPtr)
 {
     Blt_ChainLink link, next;
-    Entry *entryPtr;
     int changed;
 
     /* 
@@ -4745,6 +4745,8 @@ PruneSelection(TreeView *viewPtr, Entry *rootPtr)
     changed = FALSE;
     for (link = Blt_Chain_FirstLink(viewPtr->sel.list); link != NULL; 
          link = next) {
+	Entry *entryPtr;
+
         next = Blt_Chain_NextLink(link);
         entryPtr = Blt_Chain_GetValue(link);
         if (Blt_Tree_IsAncestor(rootPtr->node, entryPtr->node)) {
@@ -4766,7 +4768,6 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
 {
     GC newGC;
     Blt_ChainLink link;
-    Column *colPtr;
     XGCValues gcValues;
     unsigned long gcMask;
 
@@ -4783,6 +4784,7 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     for (link = Blt_Chain_FirstLink(viewPtr->columns); link != NULL;
          link = Blt_Chain_NextLink(link)) {
         Cell *cellPtr;
+	Column *colPtr;
 
         colPtr = Blt_Chain_GetValue(link);
         cellPtr = GetCell(entryPtr, colPtr);
@@ -8481,7 +8483,6 @@ static void
 DrawColumnTitles(TreeView *viewPtr, Drawable drawable)
 {
     Blt_ChainLink link;
-    Column *colPtr;
     int x;
 
     if (viewPtr->titleHeight < 1) {
@@ -8489,6 +8490,8 @@ DrawColumnTitles(TreeView *viewPtr, Drawable drawable)
     }
     for (link = Blt_Chain_FirstLink(viewPtr->columns); link != NULL;
          link = Blt_Chain_NextLink(link)) {
+	Column *colPtr;
+
         colPtr = Blt_Chain_GetValue(link);
         if (colPtr->flags & HIDDEN) {
             continue;
@@ -8788,7 +8791,6 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     Icon icon;
     TkRegion rgn;
     XRectangle r;
-    int level;
     int x, y, xMax, w, h;
     int y2, y1, x1, x2;
 
@@ -8808,6 +8810,8 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
             x -= (DEF_ICON_WIDTH * 2) / 3;
         }
     } else {
+	int level;
+
         level = EntryDepth(viewPtr, entryPtr);
         x += ICONWIDTH(level);
         w -= ICONWIDTH(level);
@@ -12686,7 +12690,6 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    Blt_TreeNode parent;
     Entry *srcPtr, *destPtr;
     char c;
     int action;
@@ -12717,6 +12720,8 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (srcPtr = FirstTaggedEntry(&iter); srcPtr != NULL; 
          srcPtr = NextTaggedEntry(&iter)) {
+	Blt_TreeNode parent;
+
         /* Verify they aren't ancestors. */
         if (Blt_Tree_IsAncestor(srcPtr->node, destPtr->node)) {
             Tcl_DString ds;
@@ -14208,10 +14213,11 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    CellStyle *stylePtr;
     int i;
 
     for (i = 3; i < objc; i++) {
+	CellStyle *stylePtr;
+
         stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[i]));
         if (stylePtr == NULL) {
             return TCL_ERROR;
@@ -14875,9 +14881,6 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = TCL_OK;                    /* Suppress compiler warning. */
     for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
          entryPtr = NextTaggedEntry(&iter)) {
-        if (entryPtr == NULL) {
-            return TCL_OK;
-        }
         if (IsClosed(entryPtr)) {
             result = OpenEntry(viewPtr, entryPtr);
         } else {

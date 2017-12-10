@@ -957,8 +957,11 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     long l;
     Tcl_Obj *objPtr;
 
+    if (length < 0) {
+        length = strlen(s);
+    }
     objPtr = NULL;
-    if ((type != TABLE_COLUMN_TYPE_STRING) ||
+    if ((type != TABLE_COLUMN_TYPE_STRING) &&
         (type != TABLE_COLUMN_TYPE_BLOB)) {
 
         /* For the non-string types, make a copy of the string as a
@@ -1477,8 +1480,6 @@ ShareTags(Table *srcPtr, Table *destPtr)
 static Table *
 FindClientInNamespace(InterpData *dataPtr, Blt_ObjectName *namePtr)
 {
-    Blt_Chain chain;
-    Blt_ChainLink link;
     Blt_HashEntry *hPtr;
     Tcl_DString ds;
     const char *qualName;
@@ -1486,13 +1487,17 @@ FindClientInNamespace(InterpData *dataPtr, Blt_ObjectName *namePtr)
     qualName = Blt_MakeQualifiedName(namePtr, &ds);
     hPtr = Blt_FindHashEntry(&dataPtr->clientTable, qualName);
     Tcl_DStringFree(&ds);
-    if (hPtr == NULL) {
-        return NULL;
+    if (hPtr != NULL) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
+
+        chain = Blt_GetHashValue(hPtr);
+        link = Blt_Chain_FirstLink(chain);
+        if (link != NULL) {
+            return Blt_Chain_GetValue(link);
+        }
     }
-    chain = Blt_GetHashValue(hPtr);
-    link = Blt_Chain_FirstLink(chain);
-    assert(link != NULL);
-    return Blt_Chain_GetValue(link);
+    return NULL;
 }
 
 /*
@@ -2946,6 +2951,7 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
+    /* FIXME: What are you doing w/ numRows and numCols? */
     numRows = count;
     if (Blt_GetCount(interp, restorePtr->argv[2], COUNT_POS, &count)!=TCL_OK) {
         RestoreError(interp, restorePtr);
@@ -3352,8 +3358,6 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                       BLT_TABLE_ITERATOR *iterPtr)
 {
     const char *tag, *p;
-    int result;
-    Tcl_Obj *rangeObjPtr;
     long index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
     Rows *rowsPtr;
@@ -3371,6 +3375,8 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     switch (spec) {
     case TABLE_SPEC_INDEX:
         {
+            int result;
+
             p = Tcl_GetString(objPtr);
             if (p == tag) {
                 result = Blt_GetLongFromObj(NULL, objPtr, &index);
@@ -3451,6 +3457,7 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     case TABLE_SPEC_RANGE:
         {
             Row *firstPtr, *lastPtr;
+            Tcl_Obj *rangeObjPtr;
 
             p = strchr(tag, '-');
             if (p == NULL) {
@@ -3480,9 +3487,7 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
             iterPtr->type = TABLE_ITERATOR_RANGE;
             iterPtr->table = table;
             iterPtr->tag = tag;
-            if (firstPtr != NULL) {
-                iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
-            }
+            iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
         }
         return TCL_OK;
 
@@ -3512,13 +3517,13 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 BLT_TABLE_ROW
 blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROW row;
-
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
         /* iterPtr->link is already set by blt_table_row_iterator */
         if (iterPtr->link != NULL) {
+            BLT_TABLE_ROW row;
+
             row = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return row;
@@ -3568,12 +3573,12 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 BLT_TABLE_ROW
 blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROW row;
-            
     switch (iterPtr->type) {
     case TABLE_ITERATOR_CHAIN:
     case TABLE_ITERATOR_TAG:
         if (iterPtr->link != NULL) {
+            BLT_TABLE_ROW row;
+            
             row = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return row;
@@ -3724,7 +3729,6 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 {
     const char *tag, *p;
     int result;
-    Tcl_Obj *fromObjPtr, *toObjPtr;
     long index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
     Columns *columnsPtr;
@@ -3821,6 +3825,7 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     case TABLE_SPEC_RANGE:
         {
             Column *firstPtr, *lastPtr;
+            Tcl_Obj *fromObjPtr, *toObjPtr;
             
             p = strchr(tag, '-');
             if (p == NULL) {
@@ -3878,13 +3883,13 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 BLT_TABLE_COLUMN
 blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_COLUMN col;
-
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
         /* iterPtr->link is already set by blt_table_column_iterator */
         if (iterPtr->link != NULL) {
+            BLT_TABLE_COLUMN col;
+
             col = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return col;
@@ -3935,12 +3940,12 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 BLT_TABLE_COLUMN
 blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_COLUMN col;
-            
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
         if (iterPtr->link != NULL) {
+            BLT_TABLE_COLUMN col;
+            
             col = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return col;
@@ -6866,7 +6871,6 @@ blt_table_set_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
                      Column *colPtr, double value)
 {
     Value *valuePtr;
-    char string[200];
 
     if ((colPtr->type != TABLE_COLUMN_TYPE_DOUBLE) &&
         (colPtr->type != TABLE_COLUMN_TYPE_STRING) &&
@@ -6880,6 +6884,8 @@ blt_table_set_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     if (!isnan(value)) {
+        char string[200];
+
         valuePtr->datum.d = value;
         valuePtr->length = sprintf(string, "%.17g", value);
         if (strlen(string) >= TABLE_VALUE_LENGTH) {

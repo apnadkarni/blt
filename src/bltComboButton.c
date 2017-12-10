@@ -2014,7 +2014,6 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
         tw = MIN(w, comboPtr->textWidth);
         th = MIN(h, comboPtr->textHeight);
         DrawLabel(comboPtr, drawable, tx, ty, tw, th);
-        x += tw;
     }
     /* Arrow button. */
     if (comboPtr->flags & ARROW) {

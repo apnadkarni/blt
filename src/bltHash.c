@@ -1278,7 +1278,7 @@ Blt_HashStats(Blt_HashTable *tablePtr)  /* Table where to collect stats. */
 {
     Blt_HashEntry **bp, **bend;
     char *result, *p;
-    double average, tmp;
+    double average;
 #define NUM_COUNTERS 10
     size_t count[NUM_COUNTERS], overflow, i, max;
 
@@ -1294,6 +1294,7 @@ Blt_HashStats(Blt_HashTable *tablePtr)  /* Table where to collect stats. */
          bp++) {
         Blt_HashEntry *hPtr;
         size_t j;
+        double tmp;
 
         j = 0;
         for (hPtr = *bp; hPtr != NULL; hPtr = hPtr->nextPtr) {

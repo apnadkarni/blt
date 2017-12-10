@@ -1915,12 +1915,13 @@ OverTarget(
 static void
 RemoveWindow(AnyWindow *windowPtr) /* window rep to be freed */
 {
-    AnyWindow *childPtr;
     Blt_ChainLink link;
 
     /* Throw away leftover slots. */
     for (link = Blt_Chain_FirstLink(windowPtr->chain); link != NULL;
         link = Blt_Chain_NextLink(link)) {
+        AnyWindow *childPtr;
+
         childPtr = Blt_Chain_GetValue(link);
         RemoveWindow(childPtr);
     }
@@ -1965,7 +1966,6 @@ QueryWindow(
     if (visible) {
         Blt_ChainLink link;
         Blt_Chain chain;
-        AnyWindow *childPtr;
 
         /*
          * Collect a list of child windows, sorted in z-order.  The
@@ -1976,6 +1976,8 @@ QueryWindow(
         /* Add and initialize extra slots if needed. */
         for (link = Blt_Chain_FirstLink(chain); link != NULL;
             link = Blt_Chain_NextLink(link)) {
+            AnyWindow *childPtr;
+
             childPtr = Blt_AssertCalloc(1, sizeof(AnyWindow));
             childPtr->initialized = FALSE;
             childPtr->nativeWindow = (WINDOW)Blt_Chain_GetValue(link);
@@ -2059,7 +2061,6 @@ ExpandPercents(
     Tcl_DString *resultPtr)
 {
     const char *chunk, *p;
-    char letter;
     int i;
 
     /*
@@ -2069,6 +2070,7 @@ ExpandPercents(
      */
     chunk = p = string;
     while ((p = strchr(p, '%')) != NULL) {
+        char letter;
 
         /* Copy up to the percent sign.  Repair the string afterwards */
         Tcl_DStringAppend(resultPtr, chunk, p - chunk);
@@ -2117,7 +2119,6 @@ DragOp(
     DragdropCmdInterpData *dataPtr = clientData;
     int x, y;
     Token *tokenPtr;
-    int status;
     Source *srcPtr;
     SubstDescriptors subst[2];
     int active;
@@ -2149,6 +2150,7 @@ DragOp(
      */
     if ((!Tk_IsMapped(tokenPtr->tkwin)) && (!srcPtr->pkgCmdInProgress)) {
         Tcl_DString ds;
+        int status;
 
         /*
          *  No list of send handlers?  Then source is disabled.
@@ -2528,15 +2530,14 @@ TargetOp(
     Tcl_Obj *const *objv)
 {
     DragdropCmdInterpData *dataPtr = clientData;
-    SubstDescriptors subst[2];
     Tk_Window tkwin;
-    Blt_HashEntry *hPtr;
     Target *targetPtr;
     int isNew;
     char *string;
 
     if (objc == 2) {
         Blt_HashSearch cursor;
+        Blt_HashEntry *hPtr;
 
         for (hPtr = Blt_FirstHashEntry(&dataPtr->targetTable, &cursor);
             hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -2568,6 +2569,7 @@ TargetOp(
             
             if (objc == 4) {
                 Blt_HashSearch cursor;
+                Blt_HashEntry *hPtr;
                 
                 for (hPtr =Blt_FirstHashEntry(&targetPtr->handlerTable,&cursor);
                      hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -2577,6 +2579,7 @@ TargetOp(
                 return TCL_OK;
             } else if (objc >= 6) {
                 const char *cmd;
+                Blt_HashEntry *hPtr;
                 
                 /*
                  *  Process handler definition
@@ -2611,8 +2614,8 @@ TargetOp(
              *  HANDLE:  drag&drop target <pathName> handle <data> ?<value>?
              */
             Tcl_DString ds;
-            int result;
             char *cmd;
+            Blt_HashEntry *hPtr;
             
             if (objc < 5 || objc > 6) {
                 Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -2631,6 +2634,9 @@ TargetOp(
             }
             cmd = Blt_GetHashValue(hPtr);
             if (cmd != NULL) {
+                int result;
+                SubstDescriptors subst[2];
+
                 subst[0].letter = 'W';
                 subst[0].value = Tk_PathName(targetPtr->tkwin);
                 subst[1].letter = 'v';

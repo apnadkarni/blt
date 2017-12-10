@@ -1866,7 +1866,7 @@ Blt_SimplifyLine(Point2d *inputPts, long low, long high, double tolerance,
 #define StackTop()      stack[s]
     long *stack;
     long split = -1; 
-    double dist2, tolerance2;
+    double tolerance2;
     long s = -1;                 /* Points to top stack item. */
     long count;
 
@@ -1876,6 +1876,8 @@ Blt_SimplifyLine(Point2d *inputPts, long low, long high, double tolerance,
     indices[count++] = 0;
     tolerance2 = tolerance * tolerance;
     while (!StackEmpty()) {
+        double dist2;
+
         dist2 = FindSplit(inputPts, low, StackTop(), &split);
         if (dist2 > tolerance2) {
             StackPush(split);
@@ -2081,12 +2083,14 @@ Blt_LineRectClip(
                                          * and clipped line segment. */
 {
     double t1, t2;
-    double dx, dy;
+    double dx;
 
     t1 = 0.0, t2 = 1.0;
     dx = q->x - p->x;
     if ((ClipTest (-dx, p->x - regionPtr->left, &t1, &t2)) &&
         (ClipTest (dx, regionPtr->right - p->x, &t1, &t2))) {
+        double dy;
+
         dy = q->y - p->y;
         if ((ClipTest (-dy, p->y - regionPtr->top, &t1, &t2)) && 
             (ClipTest (dy, regionPtr->bottom - p->y, &t1, &t2))) {
