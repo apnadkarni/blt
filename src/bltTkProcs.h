@@ -239,13 +239,13 @@ BLT_EXTERN void		Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
 #define Blt_GetAreaFromObjv_DECLARED
 /* 39 */
 BLT_EXTERN int		Blt_GetAreaFromObjv(Tcl_Interp *interp, int objc,
-				Tcl_Obj *const *objv, PictArea *regionPtr);
+				Tcl_Obj *const *objv, PictArea *areaPtr);
 #endif
 #ifndef Blt_AdjustAreaToPicture_DECLARED
 #define Blt_AdjustAreaToPicture_DECLARED
 /* 40 */
 BLT_EXTERN int		Blt_AdjustAreaToPicture(Blt_Picture picture,
-				PictArea *regionPtr);
+				PictArea *areaPtr);
 #endif
 #ifndef Blt_GetPixelFromObj_DECLARED
 #define Blt_GetPixelFromObj_DECLARED
@@ -306,9 +306,8 @@ BLT_EXTERN void		Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src,
 #ifndef Blt_CompositeArea_DECLARED
 #define Blt_CompositeArea_DECLARED
 /* 51 */
-BLT_EXTERN void		Blt_CompositeArea(Blt_Picture dest,
-				Blt_Picture src, int sx, int sy, int w,
-				int h, int dx, int dy);
+BLT_EXTERN void		Blt_CompositeArea(Blt_Picture dest, Blt_Picture src,
+				int sx, int sy, int w, int h, int dx, int dy);
 #endif
 #ifndef Blt_CompositePictures_DECLARED
 #define Blt_CompositePictures_DECLARED

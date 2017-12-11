@@ -1067,7 +1067,7 @@ typedef struct BltTclIntProcs {
     int (*blt_Mesh_Type) (Blt_Mesh mesh); /* 41 */
     Point2d * (*blt_Mesh_GetVertices) (Blt_Mesh mesh, int *numVerticesPtr); /* 42 */
     int * (*blt_Mesh_GetHull) (Blt_Mesh mesh, int *numHullPtsPtr); /* 43 */
-    void (*blt_Mesh_GetExtents) (Blt_Mesh mesh, float *x1Ptr, float *x2Ptr, float *y1Ptr, float *y2Ptr); /* 44 */
+    void (*blt_Mesh_GetExtents) (Blt_Mesh mesh, float *x1Ptr, float *y1Ptr, float *x2Ptr, float *y2Ptr); /* 44 */
     Blt_MeshTriangle * (*blt_Mesh_GetTriangles) (Blt_Mesh mesh, int *numTrianglesPtr); /* 45 */
     Tcl_Namespace * (*blt_GetVariableNamespace) (Tcl_Interp *interp, const char *varName); /* 46 */
     Tcl_Namespace * (*blt_GetCommandNamespace) (Tcl_Command cmdToken); /* 47 */

@@ -564,8 +564,8 @@ BLT_EXTERN void		Blt_SetBrushOpacity(Blt_PaintBrush brush,
 #ifndef Blt_SetBrushArea_DECLARED
 #define Blt_SetBrushArea_DECLARED
 /* 94 */
-BLT_EXTERN void		Blt_SetBrushArea(Blt_PaintBrush brush, int x,
-				int y, int w, int h);
+BLT_EXTERN void		Blt_SetBrushArea(Blt_PaintBrush brush, int x, int y,
+				int w, int h);
 #endif
 #ifndef Blt_GetBrushAlpha_DECLARED
 #define Blt_GetBrushAlpha_DECLARED
