@@ -401,7 +401,7 @@ GetTimeZoneOffsets(Tcl_Interp *interp, Tcl_Obj *objPtr, TimeZone *zonePtr)
     if (result == TCL_OK) {
         result = GetTimeZoneOffset(interp, objv[1], &zonePtr->dst);
     }
-    return TCL_OK;
+    return result;
 }
 
 static Tcl_Obj *
