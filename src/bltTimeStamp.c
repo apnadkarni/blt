@@ -667,13 +667,14 @@ ParseString(Tcl_Interp *interp, TimeStampParser *parserPtr, int length,
 {
     ParserToken *tokenPtr;
     char c;
-    int i;
     Tcl_Obj *objPtr;
     
     c = tolower(string[0]);
     tokenPtr = parserPtr->curTokenPtr;
     /* Step 1. Test of month and weekday names (may be abbreviated). */
     if (length >= 3) {
+        int i;
+    
         /* Test for months. Allow abbreviations greater than 2 characters. */
         for (i = 0; i < numMonths; i++) {
             const char *p;

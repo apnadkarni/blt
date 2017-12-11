@@ -348,9 +348,10 @@ TrimWhitespace(XmlReader *readerPtr)
     for (node = root; node != NULL; node = next) {
         next = Blt_Tree_NextNode(root, node);
         if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
-            Tcl_Obj *objPtr, *newPtr;
+            Tcl_Obj *objPtr;
             int length;
             const char *first, *last, *pend, *string;
+
             if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, node,
                         SYM_CDATA, &objPtr) != TCL_OK) {
                 continue;
@@ -367,6 +368,8 @@ TrimWhitespace(XmlReader *readerPtr)
                 }
             }
             if (last > first) {
+                Tcl_Obj *newPtr;
+
                 newPtr = Tcl_NewStringObj(first, last - first);
                 Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
                                   SYM_CDATA, newPtr);

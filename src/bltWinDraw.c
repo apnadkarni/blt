@@ -668,7 +668,6 @@ Blt_EmulateXCreateGC(Display *display, Drawable drawable, unsigned long mask,
 HPEN
 Blt_GCToPen(HDC hDC, GC gc)
 {
-    DWORD *dashPtr;
     DWORD dashArr[12];
     DWORD lineAttrs, lineStyle;
     HPEN hPen;
@@ -747,6 +746,8 @@ Blt_GCToPen(HDC hDC, GC gc)
     SetBkMode(hDC, TRANSPARENT);
 
     if (Blt_GetPlatformId() == VER_PLATFORM_WIN32_NT) {
+        DWORD *dashPtr;
+
         /* Windows NT/2000/XP. */
         if (numDashValues > 0) {
             lineStyle = PS_USERSTYLE;
@@ -1241,6 +1242,8 @@ DrawLine(Display *display, Drawable drawable, GC gc, POINT *winPointArr,
         size = numPoints;
     }
     for (i = numPoints; i > 0; i -= size) {
+        int n;
+
         n = MIN(i, size);
         Polyline(hDC, winPointArr + start, n + extra);
         start += (n - 1);
@@ -1575,9 +1578,9 @@ static void
 TileArea(HDC hDestDC, HDC hSrcDC, int tileOriginX, int tileOriginY, 
         int tileWidth,  int tileHeight, int x, int y, int width, int height)
 {
-    int destX, destY;
-    int destWidth, destHeight;
-    int srcX, srcY;
+    int destX;
+    int destWidth;
+    int srcX;
     int xOrigin, yOrigin;
     int delta;
     int left, top, right, bottom;
@@ -1599,7 +1602,7 @@ TileArea(HDC hDestDC, HDC hSrcDC, int tileOriginX, int tileOriginY,
         if (delta > 0) {
             yOrigin -= (tileHeight - delta);
         }
-    } else if (y >= tileOriginY) {
+    } else if (y > tileOriginY) {
         delta = (y - tileOriginY) % tileHeight;
         if (delta > 0) {
             yOrigin -= delta;
@@ -1610,6 +1613,10 @@ TileArea(HDC hDestDC, HDC hSrcDC, int tileOriginX, int tileOriginY,
     top = y;
     bottom = y + height;
     for (y = yOrigin; y < bottom; y += tileHeight) {
+        int destY;
+        int destHeight;
+        int srcY;
+
         srcY = 0;
         destY = y;
         destHeight = tileHeight;
@@ -2111,7 +2118,7 @@ StippleArea(Display *display,
         if (dy > 0) {
             startY -= (bm.bmHeight - dy);
         }
-    } else if (y >= gc->ts_y_origin) {
+    } else if (y > gc->ts_y_origin) {
         dy = (y - gc->ts_y_origin) % bm.bmHeight;
         if (dy > 0) {
             startY -= dy;
@@ -2141,8 +2148,8 @@ StippleArea(Display *display,
     }
 
     for (y = startY; y < bottom; y += bm.bmHeight) {
-        int srcX, srcY;
-        int destX, destY, destWidth, destHeight;
+        int srcY;
+        int destY, destHeight;
 
         srcY = 0;
         destY = y;
@@ -2156,6 +2163,9 @@ StippleArea(Display *display,
             destHeight = (bottom - destY);
         }
         for (x = startX; x < right; x += bm.bmWidth) {
+            int srcX;
+            int destX, destWidth;
+
             srcX = 0;
             destX = x;
             destWidth = bm.bmWidth;

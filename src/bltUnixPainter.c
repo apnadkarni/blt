@@ -220,7 +220,7 @@ FindShift(unsigned int mask)            /* 32-bit word */
     int bit;
 
     for (bit = 0; bit < 32; bit++) {
-        if (mask & (1 << bit)) {
+        if (mask & (1U << bit)) {
             break;
         }
     }

@@ -2881,8 +2881,6 @@ CompareNodes(Blt_TreeNode *n1Ptr, Blt_TreeNode *n2Ptr)
             Tcl_DString dsCmd, dsName;
             const char *qualName;
 
-            result = 0; /* Hopefully this will be okay even if the TCL command
-                         * fails to return the correct result. */
             Tcl_DStringInit(&dsCmd);
             Tcl_DStringAppend(&dsCmd, sortData.command, -1);
             Tcl_DStringInit(&dsName);
@@ -3995,22 +3993,20 @@ WriteDumpRecord(DumpInfo *dumpPtr, Tcl_DString *dataPtr)
     const char *string;
     int length;
 
+    Tcl_DStringAppend(dataPtr, "\n", 1);
     string = Tcl_DStringValue(dataPtr);
     length = Tcl_DStringLength(dataPtr);
     if (dumpPtr->channel == NULL) {
         Tcl_DStringAppend(&dumpPtr->ds, string, length);
-        Tcl_DStringAppend(&dumpPtr->ds, "\n", 1);
     } else {
         ssize_t numWritten;
 
 #if HAVE_UTF
         numWritten = Tcl_WriteChars(dumpPtr->channel, string, length);
-        numWritten = Tcl_WriteChars(dumpPtr->channel, "\n", 1);
 #else
         numWritten = Tcl_Write(dumpPtr->channel, string, length);
-        numWritten = Tcl_Write(dumpPtr->channel, "\n", 1);
 #endif
-        if (numWritten < 0) {
+        if (numWritten != length) {
             return TCL_ERROR;
         }
     }

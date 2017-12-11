@@ -2494,7 +2494,6 @@ ParseParentheses(Tcl_Interp *interp, const char *string, char **leftPtr,
         if (((left != NULL) && (right == NULL)) ||
             ((left == NULL) && (right != NULL)) ||
             (left > right) || (right != (p - 1))) {
-            return TCL_OK;
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad array specification \"", string,
                              "\"", (char *)NULL);
@@ -2882,12 +2881,12 @@ Blt_Tree_ApplyBFS(
 {
     Blt_Chain queue;
     Blt_ChainLink link, next;
-    int result;
 
     queue = Blt_Chain_Create();
     link = Blt_Chain_Append(queue, branchPtr);
     while (link != NULL) {
         Node *parentPtr, *childPtr;
+        int result;
 
         parentPtr = Blt_Chain_GetValue(link);
         /* Add the children to the queue. */

@@ -1125,7 +1125,7 @@ Blt_CreatePipeline(
                                          * exist at *pids right now. */
     int cmdCount;                       /* Count of number of distinct
                                          * commands found in objc/objv. */
-    char *inputLiteral = NULL;          /* If non-null, then this points to a
+    char *inputLiteral;                 /* If non-null, then this points to a
                                          * string containing input data
                                          * (specified via <<) to be piped to
                                          * the first process in the

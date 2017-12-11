@@ -570,10 +570,11 @@ MakeAliasTable(Tk_Window tkwin)
     table = xlfdFontAliases;
 #endif
     for(fp = table; fp->name != NULL; fp++) {
-        Blt_HashEntry *hPtr;
         const char **alias;
            
         for (alias = fp->aliases; *alias != NULL; alias++) {
+            Blt_HashEntry *hPtr;
+
             hPtr = Blt_FindHashEntry(&familyTable, *alias);
             if (hPtr != NULL) {
                 int isNew;
@@ -1884,10 +1885,9 @@ ftFontMeasure(ftFontset *setPtr, const char *source, int numBytes,
 {
     FcChar32 c;
     XGlyphInfo extents;
-    int clen;
-    int curX, newX;
+    int curX;
     int termByte = 0, termX = 0;
-    int curByte, newByte, sawNonSpace;
+    int curByte, sawNonSpace;
 #if 0
     char string[256];
     int len = 0;
@@ -1905,6 +1905,9 @@ ftFontMeasure(ftFontset *setPtr, const char *source, int numBytes,
     sawNonSpace = 0;
     while (numBytes > 0) {
         Tcl_UniChar unichar;
+        int clen;
+        int newX;
+        int newByte;
 
         clen = Tcl_UtfToUniChar(source, &unichar);
         c = (FcChar32)unichar;
@@ -2459,7 +2462,6 @@ ftFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
     FcChar8 *name, *family;
     FcPattern *pattern, *matchingPattern;
     FcResult result;
-    XftFont *xftFontPtr;
     _Blt_Font *dupPtr; 
     ftFontset *newPtr;
     ftFontset *setPtr = fontPtr->clientData;
@@ -2518,6 +2520,8 @@ ftFontDupProc(Tk_Window tkwin, _Blt_Font *fontPtr, double size)
         newPtr = Blt_GetHashValue(hPtr);
         newPtr->refCount++;
     } else {
+        XftFont *xftFontPtr;
+
         /* We don't have it. So see if we can open the font via the
          * modified new pattern. */
         xftFontPtr = XftFontOpenPattern(fontPtr->display, matchingPattern);
