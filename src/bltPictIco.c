@@ -846,7 +846,7 @@ FindShift(unsigned int mask)
     int bit;
 
     for (bit = 0; bit < 32; bit++) {
-        if (mask & (1 << bit)) {
+        if (mask & (1U << bit)) {
             break;
         }
     }

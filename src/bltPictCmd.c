@@ -1524,7 +1524,7 @@ ObjToFile(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     PictImage *imgPtr = (PictImage *)widgRec;
     const char *fileName;
     Blt_PictFormat *fmtPtr;
-    char *extPtr, ext[32];
+    char *ext, buffer[32];
 
     fileName = Tcl_GetString(objPtr);
     if (fileName[0] == '\0') {
@@ -1541,21 +1541,19 @@ ObjToFile(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
         goto error;
     }
-    extPtr = NULL;
+    ext = NULL;
     if (fileName[0] != '@') {
-        extPtr = strrchr(fileName, '.');
-        if (extPtr != NULL) {
-            extPtr++;
-            if (*extPtr == '\0') {
-                extPtr = NULL;
-            } 
-            strncpy(ext, extPtr, 31);
-            ext[31] = '\0';
-            Blt_LowerCase(ext);
-            extPtr = ext;
+        char *dot;
+
+        dot = strrchr(fileName, '.');
+        if ((dot != NULL) && (dot[1] != '\0')) {
+            strncpy(buffer, dot + 1, 31);
+            buffer[31] = '\0';
+            Blt_LowerCase(buffer);
+            ext = buffer;
         }
     }
-    fmtPtr = QueryExternalFormat(interp, dbuffer, extPtr);
+    fmtPtr = QueryExternalFormat(interp, dbuffer, ext);
     if (fmtPtr == NULL) {
         Tcl_AppendResult(interp, "\nunknown image file format in \"", fileName, 
                 "\"", (char *)NULL);
@@ -4946,9 +4944,7 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ReflectSwitches switches;
     int w, h;
     int dw, dh;
-    int r;
 
-    r = 1;
     if (Blt_GetPictureFromObj(interp, objv[2], &srcPtr) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -4993,6 +4989,9 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
         break;
     }
     if (switches.blur > 0) { 
+        int r;
+
+        r = 1;
         tmpPtr = destPtr;
         destPtr = Blt_CreatePicture(w, h);
         Blt_BlurPicture(destPtr, tmpPtr, r, switches.blur);

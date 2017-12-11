@@ -949,7 +949,6 @@ PsToPbm(
     int numPids;
     Blt_Pid *pids;
     int result;
-    const char **p;
     const char *args[] = {
         "gs",                           /* Ghostscript command */
         "-dEPSCrop",                    /* (optional) crop page to bbox  */
@@ -988,6 +987,7 @@ PsToPbm(
         int i;
         Tcl_Obj *objv[11];
         int objc = 11;
+        const char **p;
 
         for (i = 0, p = args; *p != NULL; p++, i++) {
             objv[i] = Tcl_NewStringObj(*p, -1);

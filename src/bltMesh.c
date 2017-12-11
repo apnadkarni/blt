@@ -1457,7 +1457,6 @@ ComputeRegularMesh(Mesh *meshPtr, int xNum, int yNum)
 static int
 RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 {
-    int i;
     double xStep, yStep;
     DataSourceResult x, y;
     double xMin, xMax, xNum, yNum, yMin, yMax;
@@ -1522,6 +1521,7 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     yStep = (yMax - yMin) / (double)(yNum - 1);
     {
         Point2d *p;
+        int i;
 
         p = vertices;
         for (i = 0; i < yNum; i++) {
@@ -1930,7 +1930,6 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     MeshCmdInterpData *dataPtr = clientData;
     Tcl_DString ds;
     char c;
-    char ident[200];
     const char *name, *string;
     int isNew, length, type;
 
@@ -1982,8 +1981,9 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* If no name was given for the marker, make up one. */
     if (name == NULL) {
         Blt_ObjectName objName;
+        char ident[256];
 
-        Blt_FormatString(ident, 200, "mesh%d", dataPtr->nextMeshId++);
+        Blt_FormatString(ident, 255, "mesh%d", dataPtr->nextMeshId++);
         if (!Blt_ParseObjectName(interp, ident, &objName, 0)) {
             return TCL_ERROR;
         }

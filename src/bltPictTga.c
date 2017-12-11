@@ -780,7 +780,6 @@ TgaSetInfo(Tcl_Interp *interp, Tga *tgaPtr, Tcl_Obj *varNameObjPtr)
 {
     Tcl_Obj *listObjPtr;
     TgaExtension *extPtr = &tgaPtr->ext;
-    char string[200];
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     /* Filename */
@@ -818,12 +817,16 @@ TgaSetInfo(Tcl_Interp *interp, Tga *tgaPtr, Tcl_Obj *varNameObjPtr)
         if ((extPtr->mon == 0) && (extPtr->day == 0) && (extPtr->year == 0)) {
             TgaAddInt(interp, listObjPtr, "date", 0);
         } else {
+            char string[200];
+
             sprintf(string, "%d/%d/%d", extPtr->mon, extPtr->day,extPtr->year);
             TgaAddString(interp, listObjPtr, "date", string);
         }
         if ((extPtr->sec == 0) && (extPtr->min == 0) && (extPtr->hour == 0)) {
             TgaAddInt(interp, listObjPtr, "time", 0);
         } else {
+            char string[200];
+
             sprintf(string, "%02d:%02d:%02d", extPtr->hour, extPtr->min, 
                 extPtr->sec);
             TgaAddString(interp, listObjPtr, "time", string);
@@ -834,6 +837,8 @@ TgaSetInfo(Tcl_Interp *interp, Tga *tgaPtr, Tcl_Obj *varNameObjPtr)
             (extPtr->jobSec == 0)) {
             TgaAddInt(interp, listObjPtr, "jobTime", 0);
         } else {
+            char string[200];
+
             sprintf(string, "%02d:%02d:%02d", extPtr->jobHour, extPtr->jobMin, 
                     extPtr->jobSec);
             TgaAddString(interp, listObjPtr, "jobTime", string);

@@ -359,7 +359,6 @@ Blt_ParseBraces(
     int level;
     const char *src;
     char *dest, *end;
-    char c;
     const char *lastChar = string + strlen(string);
 
     src = string;
@@ -373,6 +372,8 @@ Blt_ParseBraces(
      */
 
     for (;;) {
+        char c;
+
         c = *src;
         src++;
 

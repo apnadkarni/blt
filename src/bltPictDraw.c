@@ -1108,7 +1108,7 @@ PaintFilledEllipse(
 {
     ScanLine *coords;
     Blt_Pixel fill;
-    int dx, dy;
+    int dy;
 
     coords = ComputeEllipseQuadrant(a, b);
     if (blend) {
@@ -1121,6 +1121,8 @@ PaintFilledEllipse(
     }
     FillHorizontalLine(picture, x - a, x + a, y, &fill, blend);
     for (dy = 1; dy <= b; dy++) {
+        int dx;
+
         dx = coords[dy].right;
         FillHorizontalLine(picture, x - dx, x + dx, y + dy, &fill, blend);
         FillHorizontalLine(picture, x - dx, x + dx, y - dy, &fill, blend);
@@ -1163,7 +1165,6 @@ PaintEllipseAA(
     Blt_Picture big;
     int numSamples = 3; 
     int ellipseWidth, ellipseHeight;
-    int blend = 1;
 
     if ((lineWidth >= a) || (lineWidth >= b)) {
         lineWidth = 0;
@@ -1186,6 +1187,7 @@ PaintEllipseAA(
         Blt_Picture tmp;
         int cx, cy;
         Blt_Pixel color;
+        int blend = 1;
 
         cx = a + 1;
         cy = b + 1;
@@ -1701,12 +1703,13 @@ Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2d *vertices,
     bot = MIN(destPtr->height-1, floor(vertices[map[n-1]].y-.5)); /* ymax */
 
     for (y = top; y <= bot; y++) {      /* step through scanlines */
-        unsigned int i, j;
-
         /* Scanline y is at y+.5 in continuous coordinates */
+        unsigned int j;
 
         /* Check vertices between previous scanline and current one, if any */
         for (/*empty*/; (k < n) && (vertices[map[k]].y <= (y +.5)); k++) {
+            unsigned int i, j;
+
             /* to simplify, if pt.y=y+.5, pretend it's above */
             /* invariant: y-.5 < pt[i].y <= y+.5 */
             i = map[k]; 

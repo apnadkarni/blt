@@ -3957,10 +3957,9 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Item *itemPtr = (Item *)widgRec;
     Style **stylePtrPtr = (Style **)(widgRec + offset);
     Style *stylePtr;
-    const char *string;
     int length;
     
-    string = Tcl_GetStringFromObj(objPtr, &length);
+    Tcl_GetStringFromObj(objPtr, &length);
     comboPtr = itemPtr->comboPtr;
     if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
         stylePtr = NULL;

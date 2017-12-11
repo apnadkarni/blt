@@ -407,15 +407,12 @@ ConvertSingleCDATA(XmlReader *readerPtr)
             if (strcmp(Blt_Tree_NodeLabel(child), SYM_CDATA) == 0) {
                 Blt_TreeNode parent;
                 Tcl_Obj *objPtr;
-                int length;
-                const char *string, *label;
+                const char *label;
 
                 if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, child,
                                       SYM_CDATA, &objPtr) != TCL_OK) {
                     continue;
                 }
-                string = Tcl_GetStringFromObj(objPtr, &length);
-
                 parent = Blt_Tree_ParentNode(node);
                 label = Blt_Tree_NodeLabel(node);
                 if (!Blt_Tree_ValueExists(readerPtr->tree, parent, label)) {

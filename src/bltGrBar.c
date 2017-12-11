@@ -772,14 +772,6 @@ ConfigurePen(Graph *graphPtr, BarPen *penPtr)
 
     screenNum = Tk_ScreenNumber(graphPtr->tkwin);
 
-    gcMask = GCLineWidth;
-    gcValues.line_width = LineWidth(penPtr->errorBarLineWidth);
-    if (penPtr->outline != NULL) {
-        gcMask |= GCForeground;
-        gcValues.foreground = Tk_3DBorderColor(penPtr->outline)->pixel;
-    }
-    newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
-
     newGC = NULL;
     gcMask = GCForeground | GCBackground;
     gcValues.foreground = BlackPixel(graphPtr->display, screenNum);

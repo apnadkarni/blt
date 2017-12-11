@@ -4216,6 +4216,7 @@ DrawTextForEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, i
 
             imgX = comboPtr->scrollX;
             imgY = y;
+            /* FIXME: Why is image at 0 instead of centered? */
             if (comboPtr->entryHeight > comboPtr->iconHeight) {
                 imgY += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
             }

@@ -883,7 +883,7 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
         int n, r, g, b;
 
         n = strlen(string + 1);
-        if ((n > 12) && (n < 3) && ((n % 3) != 0)) {
+        if ((n > 12) || (n < 3) || ((n % 3) != 0)) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad color specification \"", string,
                              "\"", (char *)NULL);

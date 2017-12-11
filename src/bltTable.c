@@ -2251,10 +2251,10 @@ ParseIndex(Tcl_Interp *interp, const char *string, int *rowPtr, int *colPtr)
 
     }
     *comma = '\0';
-    result = ((Tcl_ExprLong(interp, string, &row) != TCL_OK) ||
-        (Tcl_ExprLong(interp, comma + 1, &column) != TCL_OK));
+    result = ((Tcl_ExprLong(interp, string, &row) == TCL_OK) &&
+              (Tcl_ExprLong(interp, comma + 1, &column) == TCL_OK));
     *comma = ',';               /* Repair the argument */
-    if (result) {
+    if (!result) {
         return TCL_ERROR;
     }
     if ((row < 0) || (row > (long)USHRT_MAX)) {
@@ -4841,7 +4841,6 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableInterpData *dataPtr = clientData;
     Table *tablePtr;
-    int result;
     int i;
 
     if (Blt_GetTableFromObj(dataPtr, interp, objv[2], &tablePtr) != TCL_OK) {
@@ -4850,6 +4849,7 @@ InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 3; i < objc; i++) {
         TableEntry *entryPtr;
         const char *string;
+        int result;
 
         string = Tcl_GetString(objv[i]);
         if (GetEntry(interp, tablePtr, string, &entryPtr) != TCL_OK) {

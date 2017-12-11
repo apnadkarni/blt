@@ -444,7 +444,7 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
     assert((h > 0) && (h <= SHRT_MAX));
 
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-        int pixelsPerRow, numRows, bytesPerRow;
+        int pixelsPerRow, numRows;
         size_t numBytes;
         void *buffer;
         ptrdiff_t ptr;
@@ -464,6 +464,7 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
         if (srcPtr->bits != NULL && (srcPtr->pixelsPerRow > 0)) {
             Blt_Pixel *srcRowPtr, *destRowPtr;
             int y, numRows;
+            int bytesPerRow;
 
             bytesPerRow = sizeof(Blt_Pixel) * 
                 MIN(pixelsPerRow, srcPtr->pixelsPerRow);
@@ -1815,12 +1816,12 @@ BellFilter(double x)
 static double
 BSplineFilter(double x)
 {
-    double x2;
-
     if (x < 0.0) {
         x = -x;
     }
     if (x < 1) {
+        double x2;
+
         x2 = x * x;
         return ((.5 * x2 * x) - x2 + (2.0 / 3.0));
     } else if (x < 2) {
@@ -3491,7 +3492,6 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
         for (y = 0; y < srcPtr->height; y++) {
             Blt_Pixel *sp, *send;
             double t;
-            int alpha;
             
             /* 1..0 */
             t = 1.0 - ((double)y / (srcPtr->height - 1));
@@ -3501,6 +3501,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
             for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
                 int a, t1;
                 double m;
+                int alpha;
                 
                 m = t;
                 if (jitterPtr->range > 0.0) {
@@ -3953,7 +3954,6 @@ Maximize(
     long rWhole, long gWhole, long bWhole, long wWhole,
     PictStats *s)
 {
-    long int rHalf, gHalf, bHalf, wHalf;
     long int rBase, gBase, bBase, wBase;
     int i;
     float temp, max;
@@ -3965,6 +3965,8 @@ Maximize(
     max = 0.0;
     *cut = -1;
     for (i = first; i < last; i++) {
+        long int rHalf, gHalf, bHalf, wHalf;
+
         rHalf = rBase + Top(cubePtr, dir, i, s->mR);
         gHalf = gBase + Top(cubePtr, dir, i, s->mG);
         bHalf = bBase + Top(cubePtr, dir, i, s->mB);
@@ -4071,10 +4073,9 @@ Cut(Cube *set1, Cube *set2, PictStats *s)
 static int
 SplitCS(PictStats *s, Cube *cubes, int numReqColors)
 {
-    float *vv, temp;
+    float *vv;
     int i;
-    int next, k;
-    int nc;
+    int next, nc;
 
     vv = Blt_AssertMalloc(sizeof(float) * numReqColors);
     nc = numReqColors;
@@ -4082,6 +4083,9 @@ SplitCS(PictStats *s, Cube *cubes, int numReqColors)
     cubes[0].r1 = cubes[0].g1 = cubes[0].b1 = 32;
     next = 0;
     for (i = 1; i < numReqColors; i++) {
+        float temp;
+        int k;
+        
         if (Cut(cubes + next, cubes + i, s)) {
             /* Volume test ensures we won't try to cut one-cell box */
             vv[next] = (cubes[next].vol > 1) ? Var(cubes + next, s) : 0.0f;
@@ -6271,7 +6275,7 @@ Blt_TilePicture(
         if (delta > 0) {
             startY -= (srcPtr->height - delta);
         }
-    } else if (y >= yOrigin) {
+    } else if (y > yOrigin) {
         delta = (y - yOrigin) % srcPtr->height;
         if (delta > 0) {
             startY -= delta;

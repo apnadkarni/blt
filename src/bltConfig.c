@@ -884,7 +884,6 @@ DoConfig(
                                  * initialized. */
     int specFlags)
 {
-    char *ptr;
     int objIsEmpty;
 
     objIsEmpty = FALSE;
@@ -901,6 +900,8 @@ DoConfig(
         objIsEmpty = (length == 0);
     }
     do {
+        char *ptr;
+
         ptr = widgRec + sp->offset;
         switch (sp->type) {
         case BLT_CONFIG_ANCHOR: 
@@ -1710,11 +1711,13 @@ FormatConfigValue(
 
     case BLT_CONFIG_LIST: 
         {
-            Tcl_Obj *objPtr, *listObjPtr;
+            Tcl_Obj *listObjPtr;
             char *const *p;
             
             listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
             for (p = *(char ***)ptr; *p != NULL; p++) {
+                Tcl_Obj *objPtr;
+
                 objPtr = Tcl_NewStringObj(*p, -1);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
@@ -1984,7 +1987,6 @@ Blt_ConfigureWidgetFromObj(
                                  * or else they are not considered. */
     int hateFlags;              /* If a spec contains any bits here, it's
                                  * not considered. */
-    int result;
 
     if (tkwin == NULL) {
         /*
@@ -2084,6 +2086,8 @@ Blt_ConfigureWidgetFromObj(
             }
 
             if (objPtr != NULL) {
+                int result;
+
                 Tcl_IncrRefCount(objPtr);
                 result = DoConfig(interp, tkwin, sp, objPtr, widgRec, flags);
                 Tcl_DecrRefCount(objPtr);
@@ -2098,6 +2102,7 @@ Blt_ConfigureWidgetFromObj(
                 }
             } else if ((sp->defValue != NULL) && 
                 ((sp->specFlags & BLT_CONFIG_DONT_SET_DEFAULT) == 0)) {
+                int result;
 
                 /* No resource value is found, use the default value. */
                 objPtr = Tcl_NewStringObj(sp->defValue, -1);

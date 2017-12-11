@@ -208,7 +208,7 @@ XbmHeader(Blt_DBuffer dbuffer, Xbm *xbmPtr)
         next = line;
         while ((*next != '\r') && (*next != '\n') && (next < end)) {
             /* Must be ASCII and can't overrun line buffer. */
-            if ((*next & !ISASCII(*next)) || (next-line) > XBM_MAX_LINE) {
+            if ((*next && !ISASCII(*next)) || ((next-line) > XBM_MAX_LINE)) {
                 return FALSE;
             }
             next++;
@@ -216,7 +216,8 @@ XbmHeader(Blt_DBuffer dbuffer, Xbm *xbmPtr)
         s = (char *)line;
         save = *next;
         *next = '\0';
-        if (*s == '#' && sscanf(s, "#define %s %d", substring,  &value) == 2) {
+        if ((*s == '#') &&
+            (sscanf(s, "#define %1023s %d", substring,  &value) == 2)) {
             char *name;
             char c;
             char *p;
@@ -246,11 +247,11 @@ XbmHeader(Blt_DBuffer dbuffer, Xbm *xbmPtr)
             }
             *next = save;
             continue;
-        } else if (*s == 's' && sscanf(s, "static short %s = {", substring) == 1) {
+        } else if (*s == 's' && sscanf(s, "static short %1023s = {", substring) == 1) {
             xbmPtr->version = 10;
-        } else if (*s == 's' && sscanf(s,"static unsigned char %s = {", substring) == 1) {
+        } else if (*s == 's' && sscanf(s,"static unsigned char %1023s = {", substring) == 1) {
             xbmPtr->version = 11;
-        } else if (*s == 's' && sscanf(s, "static char %s = {", substring) == 1) {
+        } else if (*s == 's' && sscanf(s, "static char %1023s = {", substring) == 1) {
             xbmPtr->version = 11;
         } else {
             *next = save;
@@ -473,7 +474,9 @@ XbmToPicture(Tcl_Interp *interp, const char *fileName,
     }
 
     Blt_DBuffer_Free(buffer);
-    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
+    if (destPtr != NULL) {
+        destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
+    }
     return destPtr;
  error:
     if (destPtr) {

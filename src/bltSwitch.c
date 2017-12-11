@@ -154,11 +154,13 @@ FormatSwitchValue(
 
     case BLT_SWITCH_LIST: 
         {
-            Tcl_Obj *objPtr, *listObjPtr;
+            Tcl_Obj *listObjPtr;
             char *const *p;
             
             listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
             for (p = *(char ***)ptr; *p != NULL; p++) {
+                Tcl_Obj *objPtr;
+
                 objPtr = Tcl_NewStringObj(*p, -1);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }

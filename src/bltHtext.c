@@ -904,10 +904,10 @@ LineSearch(
     int yCoord,                 /* Search y-coordinate  */
     int low, int high)          /* Range of lines to search */
 {
-    int median;
-    Line *linePtr;
-
     while (low <= high) {
+        int median;
+        Line *linePtr;
+
         median = (low + high) >> 1;
         linePtr = htPtr->lineArr + median;
         if (yCoord < linePtr->offset) {
@@ -942,10 +942,10 @@ IndexSearch(
     int key,                    /* Search index */
     int low, int high)          /* Range of lines to search */
 {
-    int median;
-    Line *linePtr;
-
     while (low <= high) {
+        int median;
+        Line *linePtr;
+
         median = (low + high) >> 1;
         linePtr = htPtr->lineArr + median;
         if (key < linePtr->textStart) {
@@ -1021,11 +1021,12 @@ GetXYPosIndex(
     textLength = linePtr->textEnd - linePtr->textStart;
     if (Blt_Chain_GetLength(linePtr->chain) > 0) {
         Blt_ChainLink link;
-        int deltaX;
-        EmbeddedWidget *winPtr;
 
         for (link = Blt_Chain_FirstLink(linePtr->chain); link != NULL;
             link = Blt_Chain_NextLink(link)) {
+            int deltaX;
+            EmbeddedWidget *winPtr;
+
             winPtr = Blt_Chain_GetValue(link);
             deltaX = winPtr->precedingTextWidth + winPtr->cavityWidth;
             if ((curX + deltaX) > x) {
@@ -1987,7 +1988,6 @@ CollectCommand(
     char cmdArr[])              /* Output buffer to be filled with the Tcl
                                  * command */
 {
-    int c;
     int i;
     int state, count;
 
@@ -1995,6 +1995,8 @@ CollectCommand(
 
     state = count = 0;
     for (i = 0; i < maxBytes; i++) {
+        int c;
+
         c = inputArr[i];
         if (c == htPtr->specChar) {
             state++;
@@ -3944,9 +3946,10 @@ CgetOp(
 {
     char *itemPtr;
     Blt_ConfigSpec *specsPtr;
-    char *string;
 
     if (objc > 3) {
+        const char *string;
+
         string = Tcl_GetString(objv[2]);
         if (string[0] == '.') {
             Tk_Window tkwin;

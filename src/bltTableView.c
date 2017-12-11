@@ -1672,10 +1672,11 @@ DestroyIcons(TableView *viewPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    struct _Icon *iconPtr;
 
     for (hPtr = Blt_FirstHashEntry(&viewPtr->iconTable, &iter);
          hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        struct _Icon *iconPtr;
+
         iconPtr = Blt_GetHashValue(hPtr);
         Tk_FreeImage(iconPtr->tkImage);
         Blt_Free(iconPtr);
@@ -8340,9 +8341,12 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
         return TCL_ERROR;
     }
+    if (colPtr == NULL) {
+        return TCL_OK;
+    }
     cmdObjPtr = (colPtr->cmdObjPtr == NULL) 
         ? viewPtr->colCmdObjPtr : colPtr->cmdObjPtr;
-    if (((viewPtr->flags & COLUMN_TITLES) == 0) || (colPtr == NULL)  ||
+    if (((viewPtr->flags & COLUMN_TITLES) == 0) || 
         (colPtr->flags & (DISABLED|HIDDEN)) || (cmdObjPtr == NULL)) {
         return TCL_OK;
     }
@@ -8948,9 +8952,10 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 
     if (!initialized) {
         Blt_InitHashTable(&findTable, BLT_ONE_WORD_KEYS);
+        initialized = TRUE;
     }
     nsPtr = Tcl_GetCurrentNamespace(interp);
-    hPtr = Blt_CreateHashEntry(&findTable, (char *)nsPtr, &isNew);
+    hPtr = Blt_CreateHashEntry(&findTable, nsPtr, &isNew);
     assert(isNew);
     Blt_SetHashValue(hPtr, switchesPtr);
 
@@ -10365,9 +10370,12 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetRow(interp, viewPtr, objv[3], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
     }
+    if (rowPtr == NULL) {
+        return TCL_OK;
+    }
     cmdObjPtr = (rowPtr->cmdObjPtr == NULL) 
         ? viewPtr->rowCmdObjPtr : rowPtr->cmdObjPtr;
-    if (((viewPtr->flags & ROW_TITLES) == 0) || (rowPtr == NULL) ||
+    if (((viewPtr->flags & ROW_TITLES) == 0) || 
         (rowPtr->flags & (DISABLED|HIDDEN)) || (cmdObjPtr == NULL)) {
         return TCL_OK;
     }
@@ -11276,9 +11284,6 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_AppendResult(interp, "can't select hidden mark", (char *)NULL);
         return TCL_ERROR;
     }
-    if (markPtr == NULL) {
-        markPtr = anchorPtr;
-    }
     if (viewPtr->selectMode == SELECT_CELLS) {
         CellSelection *selPtr = &viewPtr->selectCells;
         const char *string;
@@ -11551,12 +11556,13 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 
         cellPtr = Blt_Chain_GetValue(link);
         if (cellPtr->stylePtr != stylePtr) {
-            Blt_HashEntry *hPtr;
             CellKey *keyPtr;
             int isNew;
 
             keyPtr = GetKey(cellPtr);
             if (cellPtr->stylePtr != NULL) {
+                Blt_HashEntry *hPtr;
+
                 /* Remove the cell from old style's table of cells. */
                 hPtr = Blt_FindHashEntry(&stylePtr->table, (char *)keyPtr);
                 if (hPtr != NULL) {
@@ -11846,12 +11852,14 @@ StyleNamesOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
-    Tcl_Obj *listObjPtr, *objPtr;
-    CellStyle *stylePtr;
+    Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &cursor); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&cursor)) {
+        CellStyle *stylePtr;
+        Tcl_Obj *objPtr;
+
         stylePtr = Blt_GetHashValue(hPtr);
         if (stylePtr->name == NULL) {
             continue;                   /* Style has been deleted, but is
@@ -13039,13 +13047,14 @@ ReplaceTable(TableView *viewPtr, BLT_TABLE table)
         key.rowPtr = viewPtr->rowMap[i];
         for (j = 0; j < viewPtr->numColumns; j++) {
             Blt_HashEntry *hPtr;
-            Cell *cellPtr;
             int isNew;
             
             key.colPtr = viewPtr->columnMap[j];
             hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
                 &isNew);
             if (isNew) {
+                Cell *cellPtr;
+
                 cellPtr = NewCell(viewPtr, hPtr);
                 Blt_SetHashValue(hPtr, cellPtr);
             }

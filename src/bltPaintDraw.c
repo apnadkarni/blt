@@ -927,7 +927,7 @@ PaintFilledEllipse(
 {
     ScanLine *coords;
     Blt_Pixel fill;
-    int dx, dy;
+    int dy;
 
     coords = ComputeEllipseQuadrant(a, b);
     if (blend) {
@@ -940,6 +940,8 @@ PaintFilledEllipse(
     }
     FillHorizontalLine(picture, x - a, x + a, y, &fill, blend);
     for (dy = 1; dy <= b; dy++) {
+        int dx;
+
         dx = coords[dy].right;
         FillHorizontalLine(picture, x - dx, x + dx, y + dy, &fill, blend);
         FillHorizontalLine(picture, x - dx, x + dx, y - dy, &fill, blend);
@@ -982,7 +984,6 @@ PaintEllipseAA(
     Blt_Picture big;
     int numSamples = 3; 
     int ellipseWidth, ellipseHeight;
-    int blend = 1;
 
     if ((lineWidth >= a) || (lineWidth >= b)) {
         lineWidth = 0;
@@ -1004,6 +1005,7 @@ PaintEllipseAA(
         Blt_Picture tmp;
         int cx, cy;
         Blt_Pixel color;
+        int blend = 1;
 
         cx = a + 1;
         cy = b + 1;

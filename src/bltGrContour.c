@@ -4596,7 +4596,8 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
 static void
 ActiveToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 {
-#ifdef FIXME
+#ifdef notdef
+    /* FIXME */
     ContourElement *elemPtr = (ContourElement *)basePtr;
 #endif
 }

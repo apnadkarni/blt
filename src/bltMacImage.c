@@ -344,9 +344,9 @@ QueryPalette(Painter *painterPtr, Blt_Pixel *palette)
         unsigned int  r, g, b;
         
         r = g = b = 0;
-        nRed   = (painterPtr->rMask >> painterPtr->rShift) + 1;
-        nGreen = (painterPtr->gMask >> painterPtr->gShift) + 1;
-        nBlue  = (painterPtr->bMask >> painterPtr->bShift) + 1;
+        numRed   = (painterPtr->rMask >> painterPtr->rShift) + 1;
+        numGreen = (painterPtr->gMask >> painterPtr->gShift) + 1;
+        numBlue  = (painterPtr->bMask >> painterPtr->bShift) + 1;
 
         for (cp = colors, cend = cp + visualPtr->map_entries; cp < cend; 
              cp++) {
@@ -446,17 +446,17 @@ ColorRamp(Painter *painterPtr, XColor *colors)
      */
     igamma = 1.0 / painterPtr->gamma;
 
-    rScale = 255.0 / (painterPtr->nRed - 1);
-    gScale = 255.0 / (painterPtr->nGreen - 1);
-    bScale = 255.0 / (painterPtr->nBlue - 1);
+    rScale = 255.0 / (painterPtr->numRed - 1);
+    gScale = 255.0 / (painterPtr->numGreen - 1);
+    bScale = 255.0 / (painterPtr->numBlue - 1);
 
     switch (painterPtr->visualPtr->class) {
     case TrueColor:
     case DirectColor:
         
-        nColors = MAX3(painterPtr->nRed, painterPtr->nGreen,painterPtr->nBlue);
+        nColors = MAX3(painterPtr->numRed, painterPtr->numGreen,painterPtr->numBlue);
         if (painterPtr->isMonochrome) {
-            numColors = painterPtr->nBlue = painterPtr->nGreen = painterPtr->nRed;
+            numColors = painterPtr->numBlue = painterPtr->numGreen = painterPtr->numRed;
         } 
 
         /* Compute the 16-bit RGB values from each possible 8-bit
@@ -485,28 +485,28 @@ ColorRamp(Painter *painterPtr, XColor *colors)
     case GrayScale:
     case StaticGray:
 
-        nColors = (painterPtr->nRed * painterPtr->nGreen * painterPtr->nBlue);
+        nColors = (painterPtr->numRed * painterPtr->numGreen * painterPtr->numBlue);
         if (painterPtr->isMonochrome) {
-            numColors = painterPtr->nRed;
+            numColors = painterPtr->numRed;
         } 
         if (!painterPtr->isMonochrome) {
             XColor *cp;
             int i;
             
             cp = colors;
-            for (i = 0; i < painterPtr->nRed; i++) {
+            for (i = 0; i < painterPtr->numRed; i++) {
                 int j;
                 unsigned char r;
                 
                 r = (unsigned char)(i * rScale + 0.5);
                 r = painterPtr->igammaTable[r];
-                for (j = 0; j < painterPtr->nGreen; j++) {
+                for (j = 0; j < painterPtr->numGreen; j++) {
                     int k;
                     unsigned int g;
 
                     g = (unsigned char)(j * gScale + 0.5);
                     g = painterPtr->igammaTable[g];
-                    for (k = 0; k < painterPtr->nBlue; k++) {
+                    for (k = 0; k < painterPtr->numBlue; k++) {
                         unsigned int b;
 
                         b = (unsigned char)(k * bScale + 0.5);
@@ -613,7 +613,7 @@ AllocateColors(Painter *painterPtr, XColor *colors, int numColors)
         painterPtr->nPixels = i; /* # of pixels in array */
         if (i == numColors) {
             fprintf(stderr, "painter palette %d/%d/%d colors okay\n", 
-                    painterPtr->nRed, painterPtr->nGreen, painterPtr->nBlue);
+                    painterPtr->numRed, painterPtr->numGreen, painterPtr->numBlue);
             return TRUE;                /* Success. */
         }
     }
@@ -621,8 +621,8 @@ AllocateColors(Painter *painterPtr, XColor *colors, int numColors)
      * If we didn't get all of the colors, free the current palette,
      * reduce the palette RGB component sizes.
      */
-    fprintf(stderr, "can't allocate %d/%d/%d colors\n", painterPtr->nRed,
-            painterPtr->nGreen, painterPtr->nBlue);
+    fprintf(stderr, "can't allocate %d/%d/%d colors\n", painterPtr->numRed,
+            painterPtr->numGreen, painterPtr->numBlue);
     XFreeColors(painterPtr->display, painterPtr->colormap, painterPtr->pixels, 
         painterPtr->nPixels, 0);
 
@@ -681,18 +681,18 @@ FillPalette(Painter *painterPtr, XColor *colors, int numColors)
         int i, rMult;
         double rScale, gScale, bScale;
         
-        rMult = painterPtr->nGreen * painterPtr->nBlue;
+        rMult = painterPtr->numGreen * painterPtr->numBlue;
         
-        rScale = 255.0 / (painterPtr->nRed - 1);
-        gScale = 255.0 / (painterPtr->nGreen - 1);
-        bScale = 255.0 / (painterPtr->nBlue - 1);
+        rScale = 255.0 / (painterPtr->numRed - 1);
+        gScale = 255.0 / (painterPtr->numGreen - 1);
+        bScale = 255.0 / (painterPtr->numBlue - 1);
         
         for (i = 0; i < 256; i++) {
             int r, g, b;
             
-            r = (i * (painterPtr->nRed - 1) + 127) / 255;
-            g = (i * (painterPtr->nGreen - 1) + 127) / 255;
-            b = (i * (painterPtr->nBlue - 1) + 127) / 255;
+            r = (i * (painterPtr->numRed - 1) + 127) / 255;
+            g = (i * (painterPtr->numGreen - 1) + 127) / 255;
+            b = (i * (painterPtr->numBlue - 1) + 127) / 255;
             
             if ((painterPtr->visualPtr->class == DirectColor) || 
                 (painterPtr->visualPtr->class == TrueColor)) {
@@ -701,7 +701,7 @@ FillPalette(Painter *painterPtr, XColor *colors, int numColors)
                 painterPtr->bBits[i] = colors[b].pixel & painterPtr->bMask;
             } else {
                 painterPtr->rBits[i] = r * rMult;
-                painterPtr->gBits[i] = g * painterPtr->nBlue;
+                painterPtr->gBits[i] = g * painterPtr->numBlue;
                 painterPtr->bBits[i] = b;
             }
             painterPtr->palette[i].Red = (unsigned char)(r * rScale + 0.5);
@@ -769,9 +769,9 @@ AllocatePalette(
     switch (painterPtr->visualPtr->class) {
     case TrueColor:
     case DirectColor:
-        painterPtr->nRed =   1 << CountBits(painterPtr->rMask);
-        painterPtr->nGreen = 1 << CountBits(painterPtr->gMask);
-        painterPtr->nBlue =  1 << CountBits(painterPtr->bMask);
+        painterPtr->numRed =   1 << CountBits(painterPtr->rMask);
+        painterPtr->numGreen = 1 << CountBits(painterPtr->gMask);
+        painterPtr->numBlue =  1 << CountBits(painterPtr->bMask);
         break;
 
     case GrayScale:
@@ -779,18 +779,18 @@ AllocatePalette(
     case PseudoColor:
     case StaticColor:
         if (painterPtr->depth > 15) {
-            painterPtr->nRed = painterPtr->nGreen = painterPtr->nBlue = 32;
+            painterPtr->numRed = painterPtr->numGreen = painterPtr->numBlue = 32;
         } else if (painterPtr->depth >= 3) {
             int *ip = stdPalettes[painterPtr->depth - 3];
-            painterPtr->nRed = ip[0];
-            painterPtr->nGreen = ip[1];
-            painterPtr->nBlue = ip[2];
+            painterPtr->numRed = ip[0];
+            painterPtr->numGreen = ip[1];
+            painterPtr->numBlue = ip[2];
         }
         break;
 
     default:
-        painterPtr->nGreen = painterPtr->nBlue = 0;
-        painterPtr->nRed = 1 << painterPtr->depth;
+        painterPtr->numGreen = painterPtr->numBlue = 0;
+        painterPtr->numRed = 1 << painterPtr->depth;
         painterPtr->isMonochrome = TRUE;
         break;
     }
@@ -806,7 +806,7 @@ AllocatePalette(
          * colors (we just use the foreground and background colors in
          * the GC).
          */
-        if ((painterPtr->isMonochrome) && (painterPtr->nRed <= 2)) {
+        if ((painterPtr->isMonochrome) && (painterPtr->numRed <= 2)) {
             painterPtr->flags |= BLACK_AND_WHITE;
             /* return; */
         }
@@ -822,8 +822,8 @@ AllocatePalette(
             break;              /* Success. */
         }
         if (!painterPtr->isMonochrome) {
-            if ((painterPtr->nRed == 2) && (painterPtr->nGreen == 2) && 
-                (painterPtr->nBlue == 2)) {
+            if ((painterPtr->numRed == 2) && (painterPtr->numGreen == 2) && 
+                (painterPtr->numBlue == 2)) {
                 break;
                 /* Fall back to 1-bit monochrome display. */
                 /* painterPtr->mono = TRUE; */
@@ -835,12 +835,12 @@ AllocatePalette(
                  * half (27/64) the previous value for PseudoColor
                  * displays.
                  */
-                painterPtr->nRed = (painterPtr->nRed * 3 + 2) / 4;
-                painterPtr->nGreen = (painterPtr->nGreen * 3 + 2) / 4;
-                painterPtr->nBlue = (painterPtr->nBlue * 3 + 2) / 4;
+                painterPtr->numRed = (painterPtr->numRed * 3 + 2) / 4;
+                painterPtr->numGreen = (painterPtr->numGreen * 3 + 2) / 4;
+                painterPtr->numBlue = (painterPtr->numBlue * 3 + 2) / 4;
             }
         } else {
-            painterPtr->nRed /= 2;
+            painterPtr->numRed /= 2;
         }
     }
     FillPalette(painterPtr, colors, numColors);
@@ -892,16 +892,16 @@ NewPainter(PainterKey *keyPtr)
     {
         int numRedBits, numGreenBits, numBlueBits;
 
-        nRedBits = CountBits(painterPtr->rMask);
-        nGreenBits = CountBits(painterPtr->gMask);
-        nBlueBits = CountBits(painterPtr->bMask);
-        if (nRedBits < 8) {
+        numRedBits = CountBits(painterPtr->rMask);
+        numGreenBits = CountBits(painterPtr->gMask);
+        numBlueBits = CountBits(painterPtr->bMask);
+        if (numRedBits < 8) {
             painterPtr->rAdjust = 8 - numRedBits;
         }
-        if (nGreenBits < 8) {
+        if (numGreenBits < 8) {
             painterPtr->gAdjust = 8 - numGreenBits;
         }
-        if (nBlueBits < 8) {
+        if (numBlueBits < 8) {
             painterPtr->bAdjust = 8 - numBlueBits;
         }
     }

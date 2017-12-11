@@ -1290,7 +1290,6 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         }
         ah = cavityWidth * 90 /100;
         aw = cavityWidth * 60/100;
-        bx = by = scrollPtr->inset;
         bx = Tk_Width(scrollPtr->tkwin) - scrollPtr->inset - size;
         by = Tk_Height(scrollPtr->tkwin) - scrollPtr->inset - size;
         ax = bx + borderWidth;
@@ -1386,7 +1385,6 @@ DrawArrowVistaStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         }
         ah = cavityWidth * 90 /100;
         aw = cavityWidth * 75/100;
-        bx = by = scrollPtr->inset;
         bx = Tk_Width(scrollPtr->tkwin) - scrollPtr->inset - size;
         by = Tk_Height(scrollPtr->tkwin) - scrollPtr->inset - size;
         ax = bx + borderWidth;

@@ -571,12 +571,11 @@ Blt_Ps_XSetBitmapData(
     Pixmap bitmap,
     int width, int height)
 {
-    unsigned char byte;
     int x, y, bitPos;
     unsigned long pixel;
     int byteCount;
     char string[10];
-    unsigned char *srcBits, *srcPtr;
+    unsigned char *srcBits;
     int bytesPerRow;
 
     srcBits = Blt_GetBitmapData(display, bitmap, width, height, &bytesPerRow);
@@ -587,6 +586,9 @@ Blt_Ps_XSetBitmapData(
     Blt_Ps_Append(psPtr, "\t<");
     byteCount = bitPos = 0;             /* Suppress compiler warning */
     for (y = height - 1; y >= 0; y--) {
+        unsigned char byte;
+        unsigned char *srcPtr;
+
         srcPtr = srcBits + (bytesPerRow * y);
         byte = 0;
         for (x = 0; x < width; x++) {

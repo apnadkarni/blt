@@ -1553,8 +1553,8 @@ AfmGetMetricsFromFont(Blt_Font font)
 {
     Afm *afmPtr;
     Tcl_DString ds;
-    double pointSize;
     Tcl_Interp *interp;
+    double pointSize;
 
     Tcl_DStringInit(&ds);
     pointSize = Blt_Font_PostscriptName(font, &ds);
@@ -1810,13 +1810,15 @@ Blt_Afm_TextWidth(Blt_Font font, const char *string, int numBytes)
     }
     {
         /* Kerning */
-        unsigned char c1, c2;
+        unsigned char c1;
         Tcl_UniChar ch;
 
         p = string;
         p += Tcl_UtfToUniChar(string, &ch);
         c1 = (unsigned char)(ch & 0xff);
         while (p < pend) {
+            unsigned char c2;
+
             p += Tcl_UtfToUniChar(p, &ch);
             c2 = (unsigned char)(ch & 0xff);
             if (afmPtr->metrics[c1].hasKernPair) {

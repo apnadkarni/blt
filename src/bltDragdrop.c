@@ -2122,7 +2122,6 @@ DragOp(
     Source *srcPtr;
     SubstDescriptors subst[2];
     int active;
-    const char *result;
 
     /*
      *  HANDLE:  drag&drop drag <path> <x> <y>
@@ -2151,6 +2150,7 @@ DragOp(
     if ((!Tk_IsMapped(tokenPtr->tkwin)) && (!srcPtr->pkgCmdInProgress)) {
         Tcl_DString ds;
         int status;
+        const char *result;
 
         /*
          *  No list of send handlers?  Then source is disabled.
@@ -2475,8 +2475,7 @@ SourceOp(
     if (objc > 3) {
         char c;
         int length;
-        int status;
-        char *string;
+        const char *string;
 
         /*
          *  HANDLE:  drag&drop source <pathName> ?options...?
@@ -2485,6 +2484,8 @@ SourceOp(
         c = string[0];
 
         if (c == '-') {
+            int status;
+
             if (objc == 3) {
                 status = Blt_ConfigureInfoFromObj(interp, tokenPtr->tkwin, 
                         configSpecs, (char *)srcPtr, (Tcl_Obj *)NULL, 0);

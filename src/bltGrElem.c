@@ -2687,8 +2687,6 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     } else {
         Blt_ChainLink link;
-        Element *elemPtr;
-
         /* 
          * Find the nearest point from the set of displayed elements,
          * searching the display list from back to front.  That way if the
@@ -2697,6 +2695,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
          */
         for (link = Blt_Chain_LastLink(graphPtr->elements.displayList); 
              link != NULL; link = Blt_Chain_PrevLink(link)) {
+            Element *elemPtr;
+
             elemPtr = Blt_Chain_GetValue(link);
             if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
                 continue;
