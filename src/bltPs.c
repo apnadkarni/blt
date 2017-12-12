@@ -751,10 +751,17 @@ Blt_Ps_XSetDashes(Blt_Ps ps, Blt_Dashes *dashesPtr)
 
     Blt_Ps_Append(ps, "[ ");
     if (dashesPtr != NULL) {
-        unsigned char *vp;
+        unsigned char *p;
 
-        for (vp = dashesPtr->values; *vp != 0; vp++) {
-            Blt_Ps_Format(ps, " %d", *vp);
+        for (p = dashesPtr->values; *p != 0; p++) {
+            unsigned int value;
+
+            value = (unsigned int)*p;
+            fprintf(stderr, "value=%d\n", value);
+            if (value == 0) {
+                break;
+            }
+            Blt_Ps_Format(ps, " %d", value);
         }
     }
     Blt_Ps_Append(ps, "] 0 setdash\n");
