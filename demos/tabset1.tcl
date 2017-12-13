@@ -16,7 +16,7 @@ blt::tabset .t \
     -outerborderwidth 0 \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
-    -closebutton yes \
+    -xbutton yes \
     -width 7i
 font create myFont -family Arial -size 9
 puts stderr myFont=[font configure myFont]

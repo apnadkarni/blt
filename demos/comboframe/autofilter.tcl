@@ -183,7 +183,7 @@ proc autofilter::EqualsNumberSearch { w } {
 
     blt::comboentry $f.entry \
         -hidearrow yes \
-        -clearbutton yes
+        -xbutton yes
     blt::tk::label $f.label \
         -text "Search for values that equal:" 
     blt::tk::label $f.hint \
@@ -1435,7 +1435,7 @@ blt::comboentry .e \
     -textwidth 0 \
     -menu .e.autofilter \
     -exportselection yes \
-    -clearbutton yes 
+    -xbutton yes 
 
 #    -bg $bg 
 

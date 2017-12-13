@@ -142,7 +142,7 @@
                                          * widget. */
 #define TEAROFF            (1<<5)       /* Indicates if the perforation should
                                          * be drawn (see -tearoff). */
-#define CLOSE_BUTTON       (1<<6)       /* Draw a "x" button on each
+#define X_BUTTON           (1<<6)       /* Draw a "x" button on each
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
 #define OVERFULL           (1<<7)       /* Tabset has enough tabs to be
@@ -180,7 +180,7 @@
 #ifdef notdef
 #define TEAROFF         (1<<5)          /* Indicates the tab will have a
                                          * perforation drawn.*/
-#define CLOSE_BUTTON    (1<<6)          /* Draw a "x" button on each
+#define X_BUTTON        (1<<6)          /* Draw a "x" button on each
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
 #endif  /* defined above */
@@ -221,15 +221,15 @@ enum ShowTabs {
 #define DEF_SCROLLTABS                  "0"
 #define DEF_SELECTBACKGROUND            STD_NORMAL_BACKGROUND
 #define DEF_SELECTBORDERWIDTH           "1"
-#define DEF_SELECT_COMMAND               (char *)NULL
-#define DEF_CLOSE_COMMAND                (char *)NULL
+#define DEF_SELECT_COMMAND              (char *)NULL
+#define DEF_XBUTTON_COMMAND             (char *)NULL
 #define DEF_SELECTFOREGROUND            RGB_BLACK
 #define DEF_SELECTMODE                  "multiple"
 #define DEF_SELECTPADX                  "4"
 #define DEF_SELECTPADY                  "2"
 #define DEF_SELECTRELIEF                "raised"
 #define DEF_SHADOWCOLOR                 RGB_BLACK
-#define DEF_CLOSEBUTTON                 "0"
+#define DEF_XBUTTON                     "0"
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
@@ -242,16 +242,16 @@ enum ShowTabs {
 #define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
 
-#define DEF_CLOSEBUTTON_ACTIVEBACKGROUND "#EE5F5F"
-#define DEF_CLOSEBUTTON_ACTIVEFOREGROUND RGB_WHITE
-#define DEF_CLOSEBUTTON_ACTIVERELIEF    "raised"
-#define DEF_CLOSEBUTTON_BACKGROUND      RGB_GREY82
-#define DEF_CLOSEBUTTON_BORDERWIDTH     "0"
-#define DEF_CLOSEBUTTON_COMMAND         (char *)NULL
-#define DEF_CLOSEBUTTON_FOREGROUND      RGB_GREY50
-#define DEF_CLOSEBUTTON_RELIEF          "flat"
-#define DEF_CLOSEBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
-#define DEF_CLOSEBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
+#define DEF_XBUTTON_ACTIVEBACKGROUND "#EE5F5F"
+#define DEF_XBUTTON_ACTIVEFOREGROUND RGB_WHITE
+#define DEF_XBUTTON_ACTIVERELIEF    "raised"
+#define DEF_XBUTTON_BACKGROUND      RGB_GREY82
+#define DEF_XBUTTON_BORDERWIDTH     "0"
+#define DEF_XBUTTON_COMMAND         (char *)NULL
+#define DEF_XBUTTON_FOREGROUND      RGB_GREY50
+#define DEF_XBUTTON_RELIEF          "flat"
+#define DEF_XBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
+#define DEF_XBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -259,7 +259,7 @@ enum ShowTabs {
 #define DEF_TAB_BACKGROUND              (char *)NULL
 #define DEF_TAB_BORDERWIDTH             "1"
 #define DEF_TAB_BUTTON                  (char *)NULL
-#define DEF_TAB_CLOSEBUTTON             "1"
+#define DEF_TAB_XBUTTON             "1"
 #define DEF_TAB_COMMAND                 (char *)NULL
 #define DEF_TAB_DATA                    (char *)NULL
 #define DEF_TAB_DELETE_COMMAND          (char *)NULL
@@ -484,8 +484,8 @@ struct _Tab {
                                          * (other than the * label or name)
                                          * with the tab. */
 
-    Tcl_Obj *closeObjPtr;               /* Command to be executed when the tab
-                                         * is closed. */
+    Tcl_Obj *xCmdObjPtr;                /* Command to be executed when the
+                                         * tab is closed. */
     Blt_ChainLink link;                 /* Pointer to where the tab resides in
                                          * the list of tabs. */
     Tcl_Obj *perfCmdObjPtr;             /* Command invoked when the tab is
@@ -496,7 +496,7 @@ struct _Tab {
     GC backGC;
 
     /* Gadget positions and locations: */
-    GadgetRegion buttonRegion;
+    GadgetRegion xButtonRegion;
     GadgetRegion textRegion;
     GadgetRegion iconRegion;
     GadgetRegion focusRegion;
@@ -585,11 +585,11 @@ struct _Tabset {
     int justify;
     int iconPos;
 
-    float angle;                        /* Angle to rotate tab.  This includes
-                                         * the icon, text, and close
-                                         * buttons. The tab can only be rotated
-                                         * at right angles: 0, 90, 180, 270,
-                                         * etc. */
+    float angle;                        /* Angle to rotate tab.  This
+                                         * includes the icon, text, and X
+                                         * buttons. The tab can only be
+                                         * rotated at right angles: 0, 90,
+                                         * 180, 270, etc. */
     int quad;
     /*
      * Focus highlight ring
@@ -627,9 +627,9 @@ struct _Tabset {
                                          * selected tab. */
     int outerPad;                       /* Padding around the exterior of
                                          * the tabset and folder. */
-    Button closeButton;                 /* Close tab button drawn on right
-                                         * side of a tab. */
-    Tcl_Obj *closeObjPtr;               /* Command to be executed when the
+    Button xButton;                     /* X button drawn on right side of
+                                         * a tab. */
+    Tcl_Obj *xCmdObjPtr;                /* Command to be executed when the
                                          * tab is closed. */
     TabStyle defStyle;                  /* Global attribute information
                                          * specific to tabs. */
@@ -677,7 +677,7 @@ struct _Tabset {
                                          * its active foreground /
                                          * background colors.  */
     Tab *activeButtonPtr;               /* Tab where to pointer is located
-                                         * over the close button.  The
+                                         * over the X button.  The
                                          * button is displayed with its
                                          * active foreground / background
                                          * colors.  */
@@ -742,29 +742,29 @@ static Blt_CustomOption showTabsOption = {
 static Blt_ConfigSpec buttonSpecs[] =
 {
     {BLT_CONFIG_COLOR, "-activebackground", "activeBackground", 
-        "ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
+        "ActiveBackground", DEF_XBUTTON_ACTIVEBACKGROUND, 
         Blt_Offset(Button, activeBgColor), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
-        "ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
+        "ActiveForeground", DEF_XBUTTON_ACTIVEFOREGROUND, 
         Blt_Offset(Button, activeFg), 0},
     {BLT_CONFIG_COLOR, "-background", "background", "Background", 
-        DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
+        DEF_XBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-        DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
+        DEF_XBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
-        DEF_CLOSEBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
+        DEF_XBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_CLOSEBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
+        DEF_XBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CLOSEBUTTON_RELIEF, 
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_XBUTTON_RELIEF, 
         Blt_Offset(Button, relief), 0},
     {BLT_CONFIG_COLOR, "-selectbackground", "selectBackground", 
-        "SelectBackground", DEF_CLOSEBUTTON_SELECTBACKGROUND, 
+        "SelectBackground", DEF_XBUTTON_SELECTBACKGROUND, 
         Blt_Offset(Button, selBgColor), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
-        "SelectForeground", DEF_CLOSEBUTTON_SELECTFOREGROUND, 
+        "SelectForeground", DEF_XBUTTON_SELECTFOREGROUND, 
         Blt_Offset(Button, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
@@ -783,11 +783,6 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Tab, bg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
-    {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
-        DEF_TAB_CLOSEBUTTON, Blt_Offset(Tab, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)CLOSE_BUTTON},
-    {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
-        DEF_CLOSE_COMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
         Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
@@ -838,6 +833,11 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-windowwidth", "windowWidth", "WindowWidth",
         DEF_TAB_WINDOWWIDTH, Blt_Offset(Tab, reqWardWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-xbutton", "xButton", "XButton", 
+        DEF_TAB_XBUTTON, Blt_Offset(Tab, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)X_BUTTON},
+    {BLT_CONFIG_OBJ, "-xbuttoncommand", "xButtonCommand", "XButtonCommand",
+        DEF_XBUTTON_COMMAND, Blt_Offset(Tab, xCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -857,12 +857,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Tabset, defStyle.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
-        DEF_CLOSEBUTTON, Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)CLOSE_BUTTON},
-    {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
-        DEF_CLOSE_COMMAND, Blt_Offset(Tabset, closeObjPtr),
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_DASHES, 
@@ -955,6 +949,12 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_TROUGHCOLOR, Blt_Offset(Tabset, bg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(Tabset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-xbutton", "xButton", "XButton", 
+        DEF_XBUTTON, Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)X_BUTTON},
+    {BLT_CONFIG_OBJ, "-xbuttoncommand", "xButtonCommand", "XButtonCommand",
+        DEF_XBUTTON_COMMAND, Blt_Offset(Tabset, xCmdObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -1973,8 +1973,8 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
             if (contextPtr != NULL) {
                 *contextPtr = TAB_LABEL;
             }
-            rPtr = &tabPtr->buttonRegion;
-            if ((tabPtr->flags & CLOSE_BUTTON) && 
+            rPtr = &tabPtr->xButtonRegion;
+            if ((tabPtr->flags & X_BUTTON) && 
                 (x >= (tabPtr->screenX + rPtr->x)) && 
                  (x < (tabPtr->screenX + rPtr->x + rPtr->w)) && 
                  (y >= (tabPtr->screenY + rPtr->y)) && 
@@ -3013,7 +3013,7 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     tabPtr->fill = FILL_BOTH;
     tabPtr->anchor = TK_ANCHOR_CENTER;
     tabPtr->container = NULL;
-    tabPtr->flags = NORMAL | CLOSE_BUTTON | TEAROFF;
+    tabPtr->flags = NORMAL | X_BUTTON | TEAROFF;
     tabPtr->name = Blt_GetHashKey(&setPtr->tabTable, hPtr);
     Blt_SetHashValue(hPtr, tabPtr);
     tabPtr->hashPtr = hPtr;
@@ -3171,7 +3171,7 @@ ConfigureButton(
     Tcl_Obj *const *objv,
     int flags)
 {
-    Button *butPtr = &setPtr->closeButton;
+    Button *butPtr = &setPtr->xButton;
     Blt_FontMetrics fm;
 
     iconOption.clientData = setPtr;
@@ -3613,7 +3613,7 @@ FreeTabset(DestroyData dataPtr)
         DestroyTab(tabPtr);
     }
     Blt_Tags_Reset(&setPtr->tags);
-    DestroyButton(setPtr, &setPtr->closeButton);
+    DestroyButton(setPtr, &setPtr->xButton);
     Blt_Chain_Destroy(setPtr->chain);
     Blt_DestroyBindingTable(setPtr->bindTable);
     Blt_DeleteHashTable(&setPtr->iconTable);
@@ -3653,7 +3653,7 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->scrollUnits = 2;
     setPtr->side = SIDE_TOP;
     setPtr->tkwin = tkwin;
-    setPtr->closeButton.borderWidth = 0;
+    setPtr->xButton.borderWidth = 0;
     setPtr->xSelectPad = SELECT_PADX;
     setPtr->ySelectPad = SELECT_PADY;
     setPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, setPtr, 
@@ -3709,7 +3709,7 @@ ConfigureTabset(
     }
     if (Blt_ConfigModified(configSpecs, "-width", "-height", "-side", "-gap",
         "-slant", "-iconposition", "-rotate", "-tiers", "-tabwidth", 
-        "-scrolltabs", "-showtabs", "-closebutton", "-justify",
+        "-scrolltabs", "-showtabs", "-xbutton", "-justify",
         "-iconposition", (char *)NULL)) {
         setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
     }
@@ -3982,7 +3982,7 @@ ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     iconOption.clientData = setPtr;
     return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, buttonSpecs,
-        (char *)&setPtr->closeButton, objv[2], 0);
+        (char *)&setPtr->xButton, objv[2], 0);
 }
 
 /*
@@ -4014,10 +4014,10 @@ ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     iconOption.clientData = setPtr;
     if (objc == 3) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
-            (char *)&setPtr->closeButton, (Tcl_Obj *)NULL, 0);
+            (char *)&setPtr->xButton, (Tcl_Obj *)NULL, 0);
     } else if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
-            (char *)&setPtr->closeButton, objv[3], 0);
+            (char *)&setPtr->xButton, objv[3], 0);
     }
     if (ConfigureButton(interp, setPtr, objc - 3, objv + 3, 
                         BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
@@ -4112,8 +4112,8 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
         return TCL_OK;
     }
-    cmdObjPtr = (tabPtr->closeObjPtr == NULL) 
-        ? setPtr->closeObjPtr : tabPtr->closeObjPtr;
+    cmdObjPtr = (tabPtr->xCmdObjPtr == NULL) 
+        ? setPtr->xCmdObjPtr : tabPtr->xCmdObjPtr;
     if (cmdObjPtr != NULL) {
         int result;
 
@@ -5888,13 +5888,13 @@ TearoffOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ComputeLabelGeometry --
  *
- * I T B  |xpad|icon|pad|ipadx|text|ipadx|labelpad|cbw|closebutton|cbw|xpad|
+ * I T B  |xpad|icon|pad|ipadx|text|ipadx|labelpad|cbw|xbutton|cbw|xpad|
  * I T    |xpad|icon|pad|ipadx|text|ipadx|xpad|
  * I      |xpad|icon|xpad|
  * T      |xpad|ipadx|text|ipadx|xpad|
- * T B    |xpad|ipadx|text|ipadx|pad|cbw|closebutton|cbw|xpad|
- * I B    |xpad|icon|pad|cbw|closebutton|cbw|xpad|
- * B      |xpad|cbw|closebutton|cbw|xpad|
+ * T B    |xpad|ipadx|text|ipadx|pad|cbw|xbutton|cbw|xpad|
+ * I B    |xpad|icon|pad|cbw|xbutton|cbw|xpad|
+ * B      |xpad|cbw|xbutton|cbw|xpad|
  *
  *      Let -padx -pady -ipadx -ipady  always work at 0 degrees.
  *---------------------------------------------------------------------------
@@ -5933,9 +5933,9 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
         ih = IconHeight(tabPtr->icon);
         count++;
     }
-    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+    if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        bw = bh = setPtr->closeButton.width;
+        bw = bh = setPtr->xButton.width;
         count++;
     }
     w += iw + th + bw;
@@ -5962,7 +5962,7 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
  *
  * ComputeTabGeometry --
  *
- *      |padleft|icon|labelpad|text|labelpad|cbw|close|cbw|padright|
+ *      |padleft|icon|labelpad|text|labelpad|cbw|xbutton|cbw|padright|
  *---------------------------------------------------------------------------
  */
 static void
@@ -5970,7 +5970,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
 {
     Blt_Font font;
     int iconWidth0, iconHeight0;
-    int closeWidth0, closeHeight0;
+    int xButtonWidth0, xButtonHeight0;
     unsigned int w, h;
     int count;
 
@@ -5980,7 +5980,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     count = 0;
     tabPtr->textWidth0 = tabPtr->textHeight0 = 0;
     iconWidth0 = iconHeight0 = 0;
-    closeWidth0 = closeHeight0 = 0;
+    xButtonWidth0 = xButtonHeight0 = 0;
     if (tabPtr->text != NULL) {
         TextStyle ts;
 
@@ -6000,13 +6000,13 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
         iconHeight0 = IconHeight(tabPtr->icon);
         count++;
     }
-    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+    if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        closeWidth0 = closeHeight0 = setPtr->closeButton.width;
+        xButtonWidth0 = xButtonHeight0 = setPtr->xButton.width;
         count++;
     }
-    w += iconWidth0 + tabPtr->textWidth0 + closeWidth0;
-    h += MAX3(iconHeight0, tabPtr->textHeight0, closeHeight0);
+    w += iconWidth0 + tabPtr->textWidth0 + xButtonWidth0;
+    h += MAX3(iconHeight0, tabPtr->textHeight0, xButtonHeight0);
     if (count > 0) {
         w += LABEL_PAD * (count - 1);
     }
@@ -7532,35 +7532,35 @@ DisplayTearoff(ClientData clientData)
  */
 static Blt_OpSpec tabsetOps[] =
 {
-    {"activate",    2, ActivateOp,    3, 3, "tab",},
+    {"activate",    2, ActivateOp,    3, 3, "tabName",},
     {"add",         2, AddOp,         2, 0, "?label? ?option-value..?",},
-    {"bind",        2, BindOp,        3, 5, "tab ?sequence command?",},
+    {"bind",        2, BindOp,        3, 5, "tabName ?sequence command?",},
     {"button",      2, ButtonOp,      2, 0, "args",},
     {"cget",        2, CgetOp,        3, 3, "option",},
-    {"close",       2, CloseOp,       3, 3, "tab",},
+    {"close",       2, CloseOp,       3, 3, "tabName",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
-    {"delete",      3, DeleteOp,      2, 0, "?tab...?",},
+    {"delete",      3, DeleteOp,      2, 0, "?tabName ...?",},
     {"dockall",     2, DockallOp,     2, 2, "" }, 
-    {"exists",      3, ExistsOp,      3, 3, "tab",},
-    {"extents",     3, ExtentsOp,     3, 3, "tab",},
-    {"focus",       1, FocusOp,       2, 3, "?tab?",},
-    {"highlight",   1, ActivateOp,    3, 3, "tab",},
-    {"id",          2, IdOp,          3, 3, "tab",},
-    {"index",       3, IndexOp,       3, 3, "tab",},
+    {"exists",      3, ExistsOp,      3, 3, "tabName",},
+    {"extents",     3, ExtentsOp,     3, 3, "tabName",},
+    {"focus",       1, FocusOp,       2, 3, "?tabName?",},
+    {"highlight",   1, ActivateOp,    3, 3, "tabName",},
+    {"id",          2, IdOp,          3, 3, "tabName",},
+    {"index",       3, IndexOp,       3, 3, "tabName",},
     {"insert",      3, InsertOp,      3, 0, "position ?option value?",},
-    {"invoke",      3, InvokeOp,      3, 3, "tab",},
+    {"invoke",      3, InvokeOp,      3, 3, "tabName",},
     {"move",        1, MoveOp,        5, 5, "destTab firstTab lastTab ?switches?",},
     {"names",       2, NamesOp,       2, 0, "?pattern...?",},
     {"nearest",     2, NearestOp,     4, 4, "x y",},
     {"perforation", 1, PerforationOp, 2, 0, "args",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
-    {"see",         3, SeeOp,         3, 3, "tab",},
-    {"select",      3, SelectOp,      3, 3, "tab",},
+    {"see",         3, SeeOp,         3, 3, "tabName",},
+    {"select",      3, SelectOp,      3, 3, "tabName",},
     {"size",        2, SizeOp,        2, 2, "",},
     {"tab",         3, TabOp,         2, 0, "oper args",},
     {"tag",         3, TagOp,         2, 0, "oper args",},
-    {"tearoff",     2, TearoffOp,     3, 4, "tab ?parent?",},
+    {"tearoff",     2, TearoffOp,     3, 4, "tabName ?parent?",},
     {"view",        1, ViewOp,        2, 5, 
         "?moveto fract? ?scroll number what?",},
 };
@@ -7753,7 +7753,7 @@ RotateRegion(Tab *tabPtr, int x, int y, unsigned int w, unsigned int h)
  *      
  *      1. icon 
  *      2. text or image
- *      3. close button.
+ *      3. x button.
  *      4. focus rectangle
  *      5. 
  *   x,y
@@ -7839,15 +7839,15 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
                 tabPtr->rotHeight);
 #endif
 
-    /* Close button geometry. */
+    /* X button geometry. */
     if ((setPtr->plusPtr != tabPtr) && 
-        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
+        (setPtr->flags & tabPtr->flags & X_BUTTON)) {
         int bx, by, bw, bh;
 
-        /* Close button is always located on the right side of the tab,
-         * it's height is centered. */
-        bw = bh = setPtr->closeButton.width;
-        bx = x2 - bw - setPtr->closeButton.borderWidth;
+        /* X button is always located on the right side of the tab, it's
+         * height is centered. */
+        bw = bh = setPtr->xButton.width;
+        bx = x2 - bw - setPtr->xButton.borderWidth;
         by = y1;
         if (h > bh) {
             by += (h - bh) / 2;
@@ -7860,14 +7860,14 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
         if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
             bx += 2 * xSelPad;
         }
-        tabPtr->buttonRegion = RotateRegion(tabPtr, bx, by, bw, bh);
+        tabPtr->xButtonRegion = RotateRegion(tabPtr, bx, by, bw, bh);
 #if DEBUG1
         fprintf(stderr, "ComputeLabelOffset: button tab=%s x=%d,y=%d,w=%d,h=%d => x=%d,y=%d w=%d,h=%d\n",
-                tabPtr->text, bx, by, bw, bh, tabPtr->buttonRegion.x, 
-                tabPtr->buttonRegion.y, tabPtr->buttonRegion.width, 
-                tabPtr->buttonRegion.height);
+                tabPtr->text, bx, by, bw, bh, tabPtr->xButtonRegion.x, 
+                tabPtr->xButtonRegion.y, tabPtr->xButtonRegion.width, 
+                tabPtr->xButtonRegion.height);
 #endif
-        x2 -= bw + 2 * setPtr->closeButton.borderWidth;
+        x2 -= bw + 2 * setPtr->xButton.borderWidth;
     }
 
     /* Label/image and icon. Their positioning is related because of
@@ -7893,8 +7893,8 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     
     labelWidth = tabPtr->labelWidth0;
     if ((tabPtr != setPtr->plusPtr) && 
-        (setPtr->flags & tabPtr->flags & CLOSE_BUTTON)) {
-        labelWidth -= setPtr->closeButton.width;
+        (setPtr->flags & tabPtr->flags & X_BUTTON)) {
+        labelWidth -= setPtr->xButton.width;
     }
     if (w > labelWidth) {
         if (setPtr->justify == TK_JUSTIFY_CENTER) {
@@ -8000,7 +8000,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 static Blt_Picture
 DrawButton(Tabset *setPtr, Tab *tabPtr)
 {
-    Button *butPtr = &setPtr->closeButton;
+    Button *butPtr = &setPtr->xButton;
     Blt_Picture picture;
     Blt_Pixel fill, symbol;
 
@@ -8018,8 +8018,8 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
         }
     }
 
-    picture = Blt_PaintDelete(setPtr->closeButton.width,
-                              setPtr->closeButton.height,
+    picture = Blt_PaintDelete(setPtr->xButton.width,
+                              setPtr->xButton.height,
                               fill.u32, symbol.u32,
                               (tabPtr == setPtr->activeButtonPtr));
     if (setPtr->angle != 0.0) {
@@ -8101,9 +8101,9 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     cavityWidth += xSelPad;
     cavityHeight += ySelPad;
-    /* Close button */
-    rPtr = &tabPtr->buttonRegion;
-    if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+    /* X button */
+    rPtr = &tabPtr->xButtonRegion;
+    if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
         (setPtr->plusPtr != tabPtr) &&  (rPtr->w > 0) && (rPtr->h > 0)) {
         Blt_Picture picture;
         int bx, by;
@@ -8207,10 +8207,10 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
             maxLength -= (setPtr->flags & SLANT_LEFT) ? slant : setPtr->inset2;
         }
         maxLength -= tabPtr->iPadX.side2;
-        if ((setPtr->flags & tabPtr->flags & CLOSE_BUTTON) &&
+        if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
             (setPtr->plusPtr != tabPtr)) {
-            maxLength -= LABEL_PAD + setPtr->closeButton.width + 
-                setPtr->closeButton.borderWidth;
+            maxLength -= LABEL_PAD + setPtr->xButton.width + 
+                setPtr->xButton.borderWidth;
         }
         if (tabPtr == setPtr->selectPtr) {
             maxLength += setPtr->xSelectPad;

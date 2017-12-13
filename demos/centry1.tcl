@@ -38,8 +38,8 @@ blt::comboentry .e \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
-    -clearbutton yes \
-    -clearcommand { .e delete 0 end } 
+    -xbutton yes 
+
 
 blt::combobutton .b \
     -textvariable t \

@@ -425,11 +425,6 @@ available for *tabset* widgets:
     The tab's **-tearoff** option must also be set to true.  The default
     is "0".
 
-  **-textside** *sideName*
-    If both images and text are specified for a tab, this option determines
-    on which side of the tab the text is to be displayed. The valid sides
-    are "left", "right", "top", and "bottom".  The default value is "left".
-
   **-tiers** *numTiers*
     Specifies the maximum number of tiers to use to display the tabs.  The
     default value is "1".  

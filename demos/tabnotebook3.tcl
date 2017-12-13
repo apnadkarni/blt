@@ -7,7 +7,7 @@ source scripts/demo.tcl
 set bg [blt::background create radial -lowcolor  grey70 -highcolor grey90 \
 	-jitter 10 -relativeto .]
 
-image create picture label1 -file afm.png
+image create picture label1 -file ./images/folder.gif
 image create picture label2 -file ./images/mini-book2.gif
 image create picture testImage -file ./images/txtrflag.gif
 
@@ -207,17 +207,17 @@ blt::combomenu .scrolltabs.m -textvariable text(-scrolltabs)
     -command { .ts configure -scrolltabs $config(-scrolltabs) }
 .scrolltabs.m select 1
 
-blt::tk::label .clearbutton_l -text "-clearbutton" 
-blt::combobutton .clearbutton -textvariable text(-clearbutton) \
-    -menu .clearbutton.m 
-blt::combomenu .clearbutton.m -textvariable text(-clearbutton)
-.clearbutton.m add -type radiobutton -text [.ts cget -clearbutton]
-.clearbutton.m add -type separator
-.clearbutton.m add -type radiobutton -text "No" -value "0" 
-.clearbutton.m add -type radiobutton -text "Yes" -value "1" 
-.clearbutton.m item configure all -variable config(-clearbutton) \
-    -command { .ts configure -clearbutton $config(-clearbutton) }
-.clearbutton.m select 0
+blt::tk::label .xbutton_l -text "-xbutton" 
+blt::combobutton .xbutton -textvariable text(-xbutton) \
+    -menu .xbutton.m 
+blt::combomenu .xbutton.m -textvariable text(-xbutton)
+.xbutton.m add -type radiobutton -text [.ts cget -xbutton]
+.xbutton.m add -type separator
+.xbutton.m add -type radiobutton -text "No" -value "0" 
+.xbutton.m add -type radiobutton -text "Yes" -value "1" 
+.xbutton.m item configure all -variable config(-xbutton) \
+    -command { .ts configure -xbutton $config(-xbutton) }
+.xbutton.m select 0
 
 if 0 {
 blt::tk::label .showsingletab_l -text "-showsingletab" 
@@ -560,8 +560,8 @@ blt::table . \
     .selectpady          19,2 -fill x \
     .side_l              20,1 -anchor e \
     .side                20,2 -fill x \
-    .clearbutton_l       21,1 -anchor e \
-    .clearbutton         21,2 -fill x \
+    .xbutton_l           21,1 -anchor e \
+    .xbutton             21,2 -fill x \
     .slant_l             23,1 -anchor e \
     .slant               23,2 -fill x \
     .tabwidth_l          24,1 -anchor e \

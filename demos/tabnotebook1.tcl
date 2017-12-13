@@ -1,7 +1,6 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
 
 # Create a tabset widget.  
 

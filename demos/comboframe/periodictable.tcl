@@ -620,7 +620,7 @@ blt::comboentry .e \
     -textwidth 0 \
     -menu .e.m \
     -exportselection yes \
-    -clearbutton yes 
+    -xbutton yes 
 
 #    -bg $bg 
 

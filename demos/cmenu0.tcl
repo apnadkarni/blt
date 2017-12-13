@@ -28,7 +28,7 @@ blt::comboentry .e \
     -width 500 \
     -menu .e.m \
     -exportselection yes \
-    -clearbutton yes 
+    -xbutton yes 
 	
 blt::combomenu .e.m  \
     -restrictwidth min \

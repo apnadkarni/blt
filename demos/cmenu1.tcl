@@ -31,7 +31,7 @@ blt::comboentry .entry \
     -exportselection yes \
     -xscrollcommand { .s set }  \
     -arrowbackground white \
-    -clearbutton yes 
+    -xbutton yes 
 	
 #    -bg $bg 
 

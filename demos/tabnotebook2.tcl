@@ -15,7 +15,6 @@ blt::tabset .t \
     -tabwidth same \
     -scrollcommand { .s set } \
     -slant right \
-    -textside right \
     -tiers 2 
 
 label .t.l -image testImage

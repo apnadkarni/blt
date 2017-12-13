@@ -103,12 +103,12 @@
                                          * currently visible on screen. */
 #define ARROW            (1<<14)        /* Display the arrow button on the
                                          * far right.*/
-#define XBUTTON          (1<<15)        /* Display the clear button on the
+#define XBUTTON          (1<<15)        /* Display the x button on the
                                          * right when text has been
                                          * entered. */
 #define ACTIVE_ARROW     (1<<16)        /* The arrow button is currently
                                            active. */
-#define ACTIVE_BUTTON    (1<<17)        /* The clear button is currently
+#define ACTIVE_BUTTON    (1<<17)        /* The x button is currently
                                          * active. */
 #define ACTIVE_MASK      ((ACTIVE_ARROW)|(ACTIVE_BUTTON))
 
@@ -584,13 +584,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ComboEntry, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
-        DEF_XBUTTON, Blt_Offset(ComboEntry, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)XBUTTON},
-    {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
-        DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, xButton.cmdObjPtr), 
-        BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_OBJ, "-command", "command", "Command", 
         DEF_CMD, Blt_Offset(ComboEntry, cmdObjPtr), 
         BLT_CONFIG_NULL_OK, },
@@ -709,6 +702,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width",
         DEF_WIDTH, Blt_Offset(ComboEntry, reqWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-xbutton", "xButton", "xButton", 
+        DEF_XBUTTON, Blt_Offset(ComboEntry, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)XBUTTON},
+    {BLT_CONFIG_OBJ, "-xbuttoncommand", "xButtonCommand", "XButtonCommand", 
+        DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, xButton.cmdObjPtr), 
+        BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
         DEF_SCROLL_CMD, Blt_Offset(ComboEntry, scrollCmdObjPtr), 
         BLT_CONFIG_NULL_OK},
