@@ -103,12 +103,12 @@
                                          * currently visible on screen. */
 #define ARROW            (1<<14)        /* Display the arrow button on the
                                          * far right.*/
-#define CLRBUTTON        (1<<15)        /* Display the clear button on the
+#define XBUTTON          (1<<15)        /* Display the clear button on the
                                          * right when text has been
                                          * entered. */
 #define ACTIVE_ARROW     (1<<16)        /* The arrow button is currently
                                            active. */
-#define ACTIVE_BUTTON     (1<<17)        /* The clear button is currently
+#define ACTIVE_BUTTON    (1<<17)        /* The clear button is currently
                                          * active. */
 #define ACTIVE_MASK      ((ACTIVE_ARROW)|(ACTIVE_BUTTON))
 
@@ -131,7 +131,7 @@
 #define DEF_ARROW_RELIEF        "raised"
 #define DEF_ARROW_WIDTH         "0"
 #define DEF_BORDERWIDTH         "0"
-#define DEF_CLRBUTTON           "0"
+#define DEF_XBUTTON             "0"
 #define DEF_CMD                 ((char *)NULL)
 #define DEF_HIDE_ARROW          "0"
 #define DEF_CURSOR              ((char *)NULL)
@@ -585,9 +585,9 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_BORDERWIDTH, Blt_Offset(ComboEntry, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
-        DEF_CLRBUTTON, Blt_Offset(ComboEntry, flags), 
+        DEF_XBUTTON, Blt_Offset(ComboEntry, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)CLRBUTTON},
+        (Blt_CustomOption *)XBUTTON},
     {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
         DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, xButton.cmdObjPtr), 
         BLT_CONFIG_NULL_OK },
@@ -1120,7 +1120,7 @@ ComputeGeometry(ComboEntry *comboPtr)
         comboPtr->arrowWidth |= 0x1;
         comboPtr->width += comboPtr->arrowWidth;
     }
-    if (comboPtr->flags & CLRBUTTON) {
+    if (comboPtr->flags & XBUTTON) {
         XButton *butPtr = &comboPtr->xButton;
         int bw, bh;
 
@@ -2378,7 +2378,7 @@ ConfigureXButton(
         return TCL_ERROR;
     }
     butPtr->width = butPtr->height = 0;
-    if (comboPtr->flags & CLRBUTTON) {
+    if (comboPtr->flags & XBUTTON) {
         Blt_FontMetrics fm;
 
         Blt_Font_GetMetrics(comboPtr->font, &fm);
@@ -3079,9 +3079,6 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((x < 0) || (x >= width) || (y < 0) || (y >= height)) {
         return TCL_OK;
     }
-    if (height > comboPtr->entryHeight) {
-        y += (height - comboPtr->entryHeight) / 2;
-    }
     if (comboPtr->icon) {
         int iconX;
         
@@ -3098,7 +3095,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_OK;
         }
     }
-    if (comboPtr->flags & CLRBUTTON) {
+    if (comboPtr->flags & XBUTTON) {
         XButton *butPtr = &comboPtr->xButton;
 
         if ((x >= butPtr->x) && (x < (butPtr->x + butPtr->width)) &&
@@ -4461,7 +4458,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
         cavityWidth -= comboPtr->arrowWidth;
     }
         
-    drawButton = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
+    drawButton = ((comboPtr->flags & XBUTTON) && (comboPtr->numBytes > 0));
 #ifdef notdef
     if (drawButton) {
         cavityWidth -= butPtr->width + 2 * butPtr->borderWidth + PADDING(butPtr->padX);
