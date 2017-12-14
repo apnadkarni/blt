@@ -24,7 +24,6 @@ MKDIR_P =	@MKDIR_P@
 ICONS =		filter.png \
 		folder.png \
 		folder-open.png 
-
 all: 
 
 install:
