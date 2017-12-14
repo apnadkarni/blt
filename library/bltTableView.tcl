@@ -61,6 +61,7 @@ namespace eval blt {
 }
 
 # Filter 
+if 0 {
 image create picture blt::TableView::filter -data {
     AAEBAABbACAAAAAAEAAQAAgIao1I+Iq6YP8AAAAASI4KRY+wcf9mnTX/yeC2/7nW
     n/9roDz/xd2w/1Z2OP9XjyX/TJENQ3SZUf9ulUz/P1sk+UqQDEOkyoP/krRy/2Kd
@@ -88,7 +89,15 @@ image create picture blt::TableView::filter -data {
     AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+AgAAAAAAAFRSVUVWSVNJT04t
     WEZJTEUuAA==
 }
+}
 
+if { [blt::winop xdpi] > 150 } {
+  image create picture blt::TableView::filter \
+      -file $blt_library/icons/32x32/filter.png
+} else {
+  image create picture blt::TableView::filter \
+      -file $blt_library/icons/16x16/filter.png
+}
 
 image create picture blt::TableView::xbutton -data {
     AAEBAAAEACAAAAAACgAKAAgIAAAAAOXn5/+GiYn/ZGdn/wECAQAAAAABAgECAwIB

@@ -21,7 +21,8 @@ RM =		rm -f
 SHELL =		/bin/sh
 MKDIR_P =	@MKDIR_P@
 
-ICONS =		folder.png \
+ICONS =		filter.png \
+		folder.png \
 		folder-open.png 
 
 all: 
