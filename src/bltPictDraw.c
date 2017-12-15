@@ -1876,6 +1876,8 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2d *vertices,
     TranslatePolygon(vertices, vertices, numVertices, 0.0f, 0.0f, 4.0);
     Blt_BlankPicture(big, 0x0);
     GetPolygonBoundingBox(numVertices, vertices, &r2);
+    Blt_SetBrushArea(brush, r2.left, r2.top, 
+                     r2.right - r2.left, r2.bottom - r2.top);
     if ((shadowPtr != NULL) && (shadowPtr->width > 0)) {
         PaintPolygonShadow(big, numVertices, vertices, &r2, shadowPtr);
     }
