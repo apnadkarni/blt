@@ -1896,6 +1896,8 @@ PostScriptProc(
         Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
                           labelPtr->yPad.side1, labelPtr->yPad.side2);
         layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
+        fprintf(stderr, "text=%s w=%d,h=%d\n", labelPtr->text,
+                layoutPtr->width, layoutPtr->height);
         /* Let the requested width and height override the computed size. */
         w = (labelPtr->reqWidth > 0.0) ? labelPtr->reqWidth : layoutPtr->width;
         h = (labelPtr->reqHeight > 0.0) ? labelPtr->reqHeight : layoutPtr->height;
@@ -1995,7 +1997,9 @@ PostScriptProc(
         Blt_Ps_Append(ps, "\n% Draw the label's outline\n");
         Blt_Ps_XSetForeground(ps, attrPtr->fgColor);
         Blt_Ps_XSetLineWidth(ps, attrPtr->lineWidth);
-        Blt_Ps_Format(ps, "[ %d ] 0 setdash\n", attrPtr->dashes);
+        if (attrPtr->dashes > 0) {
+            Blt_Ps_Format(ps, "[%d] 0 setdash\n", attrPtr->dashes);
+        }
         Blt_Ps_Append(ps, 
                       "gsave\n"
                       "  stroke\n"
@@ -2011,15 +2015,43 @@ PostScriptProc(
                       Blt_Font_Name(font), Blt_Font_PointSize(font), 
                       Blt_Font_PixelSize(font), FontPica(tkwin, font));
 #endif
+#ifdef notdef
         Blt_Ps_XSetFont(ps, font);
+#else
+        {
+            const char *family;
+    /*
+     * Check to see if it's a PostScript font. Tk_PostScriptFontName silently
+     * generates a bogus PostScript font name, so we have to check to see if
+     * this is really a PostScript font first before we call it.
+     */
+    family = Blt_Afm_GetPostscriptFamily(Blt_Font_Family(font));
+    if (family != NULL) {
+        Tcl_DString ds;
+        double pointSize;
+        
+        Tcl_DStringInit(&ds);
+        pointSize = (double)Blt_Font_PostscriptName(font, &ds);
+        pointSize = Blt_Font_PixelSize(font);
+        Blt_Ps_Format(ps, "%g /%s SetFont\n", pointSize, 
+                Tcl_DStringValue(&ds));
+        Tcl_DStringFree(&ds);
+    } else {
+    Blt_Ps_Format(ps, "%g /Helvetica-Bold SetFont\n", 
+                  Blt_Font_PointSize(font));
+    }
+        }
+#endif
         Blt_Ps_XSetForeground(ps, attrPtr->fgColor);
         for (i = 0; i < layoutPtr->numFragments; i++) {
             TextFragment *fragPtr;
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
-                fprintf(stderr, "moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%d\n",
-                        x0, fragPtr->rx, xOffset, w, layoutPtr->width);
+                fprintf(stderr, "text=%s moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%dx%d\n",
+                        fragPtr->text, x0, fragPtr->rx,
+                        xOffset, w, layoutPtr->width,
+                        layoutPtr->height);
                 Blt_Ps_Format(ps, "%g %g moveto\n",
                               x0 + fragPtr->rx + xOffset, 
    Tk_CanvasPsY(canvas, y0 + fragPtr->ry + yOffset));
