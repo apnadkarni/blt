@@ -61,7 +61,7 @@
 #define CharIndexToByteOffset(s, n)     (Tcl_UtfAtIndex(s, n) - s)
 
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
-#define IPAD            4               /* Internal pad between components. */
+#define IPADX           4               /* Internal pad between components. */
 #define XPAD            1
 #define YPAD            1               /* Internal pad between
                                          * components. */
@@ -1074,11 +1074,11 @@ ComputeGeometry(ComboEntry *comboPtr)
     comboPtr->width = comboPtr->height = 0;
 
     if (comboPtr->icon != NULL) {
-        comboPtr->iconWidth  = IconWidth(comboPtr->icon) + IPAD;
+        comboPtr->iconWidth  = IconWidth(comboPtr->icon) + IPADX;
         comboPtr->iconHeight = IconHeight(comboPtr->icon) + 2 * YPAD;
     }
     if (comboPtr->prefIconWidth > 0) {
-        comboPtr->iconWidth = comboPtr->prefIconWidth + IPAD;
+        comboPtr->iconWidth = comboPtr->prefIconWidth + IPADX;
     }
     comboPtr->entryWidth += comboPtr->iconWidth;
     if (comboPtr->entryHeight < comboPtr->iconHeight) {
@@ -1105,7 +1105,7 @@ ComputeGeometry(ComboEntry *comboPtr)
         } else {
             comboPtr->entryWidth += comboPtr->textWidth;
         }
-        comboPtr->entryWidth += IPAD;
+        comboPtr->entryWidth += IPADX;
     } 
     if (comboPtr->entryHeight < comboPtr->textHeight) {
         comboPtr->entryHeight = comboPtr->textHeight;
@@ -1153,10 +1153,10 @@ ComputeGeometry(ComboEntry *comboPtr)
             comboPtr->width = tw;
         }
         comboPtr->hintWidth = tw;
-        comboPtr->hintHeight = th + 2 * IPAD;
+        comboPtr->hintHeight = th + 4 * YPAD;
         comboPtr->height += comboPtr->hintHeight;
     } 
-    comboPtr->width  += 2 * comboPtr->inset + IPAD;
+    comboPtr->width  += 2 * comboPtr->inset + IPADX;
     comboPtr->height += 2 * comboPtr->inset;
     {
         int w, h;
@@ -4474,7 +4474,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
     if (comboPtr->icon != NULL) {
         int ix, iy, iw, ih;
         
-        ix = x0 + IPAD;
+        ix = x0 + IPADX;
         iy = y0 + YPAD;
         iw = MIN(cavityWidth, comboPtr->iconWidth);
         ih = MIN(cavityHeight, comboPtr->iconHeight);
@@ -4502,7 +4502,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
         x0 += comboPtr->iconWidth;
         cavityWidth -= comboPtr->iconWidth;
     }
-    tx = x0 + IPAD;
+    tx = x0 + IPADX;
     ty = y0 + 1;
     /* Clear button. */
     if (drawButton) {
@@ -4601,14 +4601,15 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
                          cavityHeight- 2);
         cavityHeight -= comboPtr->textHeight;
     }
-    if ((comboPtr->hintObjPtr != NULL) && (cavityHeight > 0)) {
+    if ((comboPtr->hintObjPtr != NULL) && 
+        ((Tk_Height(comboPtr->tkwin)-cavityHeight) >= comboPtr->hintHeight)) {
         TextStyle ts;
         const char *string;
         int length;
         int tx, ty;
 
-        tx = comboPtr->inset + IPAD;
-        ty = Tk_Height(comboPtr->tkwin) - comboPtr->inset;
+        tx = comboPtr->inset + IPADX;
+        ty = Tk_Height(comboPtr->tkwin) - comboPtr->highlightWidth;
         string = Tcl_GetStringFromObj(comboPtr->hintObjPtr, &length);
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, comboPtr->hintFont);
