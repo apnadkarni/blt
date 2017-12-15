@@ -32,13 +32,13 @@ proc ToggleHideChars {} {
 blt::comboentry .e \
     -textvariable t \
     -font { arial 11 } \
-    -image $image \
     -iconvariable icon \
     -edit yes \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
-    -xbutton yes 
+    -xbutton yes \
+    -hint "Enter Search String" 
 
 
 blt::combobutton .b \

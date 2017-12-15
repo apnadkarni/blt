@@ -349,11 +349,6 @@ command.  The following operations are available for *comboentry* widgets:
     acceptable to **Tk_GetPixels**.  If *numPixels* is "0", the width of
     the icon is set from the width of the image.  The default is "0".
     
-  **-image** *imageName* 
-    Specifies an image to be displayed instead of the text for the *combentry*.
-    *ImageName* is the name of an Tk photo or BLT picture.
-    If *imageName* is "", the text is displayed. The default is "".
-
   **-insertcolor** *colorName* 
     Specifies the color of the insertion cursor.  The default is "black".
     

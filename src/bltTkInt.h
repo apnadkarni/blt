@@ -107,6 +107,7 @@
 #define STD_FONT_MEDIUM         "{Sans Serif} 11"
 #define STD_FONT_NORMAL         "{Sans Serif} 10"
 #define STD_FONT_SMALL          "{Sans Serif} 9"
+#define STD_FONT_TINY           "{Sans Serif} 6"
 #define STD_FONT_NUMBERS        "Math 8"
 #define STD_FONT                STD_FONT_NORMAL
 #define STD_INDICATOR_COLOR     RGB_RED3
@@ -122,6 +123,7 @@
 #define STD_SELECT_FONT_MEDIUM  "{Sans Serif} 11 Bold"
 #define STD_SELECT_FONT_NORMAL  "{Sans Serif} 10 Bold"
 #define STD_SELECT_FONT_SMALL   "{Sans Serif} 9 Bold"
+#define STD_SELECT_FONT_TINY    "{Sans Serif} 6 Bold"
 #define STD_SELECT_FONT         STD_SELECT_FONT_NORMAL
 #define STD_DISABLED_FOREGROUND RGB_GREY70
 #define STD_DISABLED_BACKGROUND RGB_GREY90

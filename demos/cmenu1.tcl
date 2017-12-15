@@ -22,7 +22,6 @@ if { [file exists ../library] } {
 
 set myIcon ""
 blt::comboentry .entry \
-    -image $image \
     -textvariable myTextVar \
     -iconvariable myIconVar \
     -arrowrelief flat \

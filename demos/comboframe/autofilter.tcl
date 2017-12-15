@@ -1,9 +1,13 @@
 
 package require BLT
 
-# Filter 
-image create picture autofilter::filter \
-    -file $blt_library/icons/16x16/filter.png
+if { [blt::winop xdpi] > 150 } {
+  image create picture autofilter::filter \
+      -file $blt_library/icons/32x32/filter.png
+} else {
+  image create picture autofilter::filter \
+      -file $blt_library/icons/16x16/filter.png
+}
 
 namespace eval autofilter {
     variable _current ""
@@ -1394,7 +1398,6 @@ set icon2 [image create picture -file images/blt98.gif]
 set icon [image create picture -data $imgData]
 set bg white
 
-set image ""
 option add *ComboEntry.takeFocus 1
 
 if { [file exists ../library] } {
@@ -1403,7 +1406,6 @@ if { [file exists ../library] } {
 
     set myIcon ""
 blt::comboentry .e \
-    -image $image \
     -textvariable myText \
     -iconvariable myIcon \
     -arrowrelief flat \
@@ -1437,6 +1439,8 @@ blt::table . \
 
 
 bind .e.autofilter <Leave> {
-    .e.autofilter.frame.comboview deactivate
+    if { ![string match ".e.autofilter.frame.comboview.*" [winfo containing %X %Y]] } {
+	.e.autofilter.frame.comboview deactivate
+    }
 }
 

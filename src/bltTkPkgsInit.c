@@ -108,6 +108,12 @@ Blt_TkPkgsInit(Tcl_Interp *interp)      /* Interpreter for application. */
     Tcl_StaticPackage(interp, "blt_picture_gif", Blt_PictureGifInit, 
         Blt_PictureGifSafeInit);
 
+    if (Blt_PictureIcoInit(interp) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    Tcl_StaticPackage(interp, "blt_picture_ico", Blt_PictureIcoInit, 
+        Blt_PictureIcoSafeInit);
+
 #ifdef HAVE_LIBJPG
     if (Blt_PictureJpgInit(interp) != TCL_OK) {
         return TCL_ERROR;

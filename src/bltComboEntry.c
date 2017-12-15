@@ -117,6 +117,10 @@
 #define TRACE_VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
 
 
+#define DEF_HINT                ((char *)NULL)
+#define DEF_HINT_NORMAL_FG      RGB_GREY40
+#define DEF_HINT_DISABLED_FG    STD_DISABLED_FOREGROUND
+#define DEF_HINT_FONT           STD_FONT_TINY
 #define DEF_ARROW_ACTIVE_BG     STD_ACTIVE_BACKGROUND
 #define DEF_ARROW_ACTIVE_FG     STD_ACTIVE_FOREGROUND
 #define DEF_ARROW_ACTIVE_RELIEF "raised"
@@ -146,7 +150,6 @@
 #define DEF_HIGHLIGHT_WIDTH     "2"
 #define DEF_ICON                ((char *)NULL)
 #define DEF_ICON_VARIABLE       ((char *)NULL)
-#define DEF_IMAGE               ((char *)NULL)
 #define DEF_INSERT_COLOR        STD_NORMAL_FOREGROUND
 #define DEF_INSERT_OFFTIME      "300"
 #define DEF_INSERT_ONTIME       "600"
@@ -434,12 +437,8 @@ typedef struct  {
                                          * representing the icon.  This
                                          * overrides the value of the above
                                          * field. */
-    Icon image;                         /* If non-NULL, image to be
-                                         * displayed instead of text in the
-                                         * entry. */
     char *text;                         /* Text string to be displayed in
-                                         * the entry if an image has no
-                                         * been designated. Its value is
+                                         * the entry. Its value is
                                          * overridden by the -textvariable
                                          * option. */
     char *screenText;                   /* Text string to be displayed on
@@ -545,6 +544,14 @@ typedef struct  {
     const char *cipher;                 /* If non-NULL, this is the
                                          * character to display for every
                                          * character of text. */
+    /* Hint */
+    Tcl_Obj *hintObjPtr;                /* Text string to be displayed as
+                                         * the entry's hint. */
+    XColor *hintNormalFgColor;          /* Color of the hint text. */
+    XColor *hintDisabledFgColor;        /* Color of the hint text when the
+                                         * entry is disabled. */
+    Blt_Font hintFont;                  /* Font of the hint text. */
+    short int hintWidth, hintHeight;
 } ComboEntry;
 
 static Blt_ConfigSpec configSpecs[] =
@@ -628,6 +635,15 @@ static Blt_ConfigSpec configSpecs[] =
         "HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
         Blt_Offset(ComboEntry, highlightWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-hint", "hint", "Hint", DEF_HINT, 
+        Blt_Offset(ComboEntry, hintObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-hintdisabledforeground", "hintDisabledForeground",
+        "HintDisabledForeground", DEF_HINT_DISABLED_FG,
+         Blt_Offset(ComboEntry, hintDisabledFgColor), 0},
+    {BLT_CONFIG_FONT, "-hintfont", "hintFont", "HintFont", DEF_HINT_FONT,
+        Blt_Offset(ComboEntry, hintFont), 0},
+    {BLT_CONFIG_COLOR, "-hintforeground", "hintForeground", "HintForeground",
+        DEF_HINT_NORMAL_FG, Blt_Offset(ComboEntry, hintNormalFgColor), 0},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_ICON, 
         Blt_Offset(ComboEntry, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_CUSTOM, "-iconvariable", "iconVariable", "IconVariable", 
@@ -636,8 +652,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-iconwidth", "iconWidth", "IconWidth",
         DEF_WIDTH, Blt_Offset(ComboEntry, prefIconWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
-        Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_COLOR, "-insertcolor", "insertColor", "InsertColor",
         DEF_INSERT_COLOR, Blt_Offset(ComboEntry, insertColor), 0},
     {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
@@ -722,7 +736,7 @@ static Tcl_CmdDeleteProc ComboEntryInstCmdDeletedProc;
 static Tcl_FreeProc FreeComboEntryProc;
 static Tcl_IdleProc ComboEntryInvokeCmdProc;
 static Tcl_IdleProc ComboEntrySelectCmdProc;
-static Tcl_IdleProc DisplayComboEntry;
+static Tcl_IdleProc DisplayProc;
 static Tcl_ObjCmdProc ComboEntryInstCmdProc;
 static Tcl_TimerProc BlinkCursorTimerProc;
 static Tk_EventProc ComboEntryEventProc;
@@ -753,7 +767,7 @@ EventuallyRedraw(ComboEntry *comboPtr)
 {
     if ((comboPtr->tkwin != NULL) && ((comboPtr->flags & REDRAW_PENDING)==0)) {
         comboPtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplayComboEntry, comboPtr);
+        Tcl_DoWhenIdle(DisplayProc, comboPtr);
     }
 }
 
@@ -1030,20 +1044,20 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
  *  C
  *  L
  *  P
- *  max of icon/text/image/arrow
+ *  max of icon/text/arrow
  *  P
  *  L
  *  C
  *  H
  *
- * |H|C|L|P| icon |P| text/image |P|L|B| arrow |B|C|H|
+ * |H|C|L|P| icon |P| text |P|L|B| arrow |B|C|H|
  * 
  * H = highlight thickness
  * C = comboentry borderwidth
  * L = label borderwidth
  * P = pad
  * I = icon
- * T = text or image
+ * T = text
  *---------------------------------------------------------------------------
  */
 static void
@@ -1070,10 +1084,7 @@ ComputeGeometry(ComboEntry *comboPtr)
     if (comboPtr->entryHeight < comboPtr->iconHeight) {
         comboPtr->entryHeight = comboPtr->iconHeight;
     }
-    if (comboPtr->image != NULL) {
-        comboPtr->textWidth  = IconWidth(comboPtr->image) + IPAD;
-        comboPtr->textHeight = IconHeight(comboPtr->image) + YPAD * 2;
-    } else {
+    {
         unsigned int w, h;
 
         CleanText(comboPtr);
@@ -1130,6 +1141,21 @@ ComputeGeometry(ComboEntry *comboPtr)
         }
         comboPtr->width += bw;
     }
+    comboPtr->hintWidth = comboPtr->hintHeight = 0;
+    if (comboPtr->hintObjPtr != NULL) {
+        unsigned int tw, th;
+        const char *string;
+        int length;
+        
+        string = Tcl_GetStringFromObj(comboPtr->hintObjPtr, &length);
+        Blt_GetTextExtents(comboPtr->hintFont, 0, string, length, &tw, &th);
+        if (tw > comboPtr->width) {
+            comboPtr->width = tw;
+        }
+        comboPtr->hintWidth = tw;
+        comboPtr->hintHeight = th + 2 * IPAD;
+        comboPtr->height += comboPtr->hintHeight;
+    } 
     comboPtr->width  += 2 * comboPtr->inset + IPAD;
     comboPtr->height += 2 * comboPtr->inset;
     {
@@ -1359,7 +1385,7 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
             comboPtr->tkwin = NULL; 
         }
         if (comboPtr->flags & REDRAW_PENDING) {
-            Tcl_CancelIdleCall(DisplayComboEntry, comboPtr);
+            Tcl_CancelIdleCall(DisplayProc, comboPtr);
         }
         if (comboPtr->flags & SELECT_PENDING) {
             Tcl_CancelIdleCall(ComboEntrySelectCmdProc, comboPtr);
@@ -4203,29 +4229,6 @@ DrawTextForEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, i
     if (h > comboPtr->entryHeight) {
         h = comboPtr->entryHeight;
     }
-    if (comboPtr->image != NULL) {
-        int imgWidth;
-
-        imgWidth = comboPtr->textWidth;
-        if (comboPtr->scrollX < imgWidth) {
-            int imgX, imgY, imgHeight;
-
-            imgX = comboPtr->scrollX;
-            imgY = y;
-            /* FIXME: Why is image at 0 instead of centered? */
-            if (comboPtr->entryHeight > comboPtr->iconHeight) {
-                imgY += (comboPtr->entryHeight - comboPtr->iconHeight) / 2;
-            }
-            imgWidth -= comboPtr->scrollX;
-            if (imgWidth > w) {
-                imgWidth = w;
-            }
-            imgHeight = MIN(h, comboPtr->iconHeight);
-            Tk_RedrawImage(IconImage(comboPtr->image), imgX, 0, imgWidth, 
-                       imgHeight, drawable, x, y);
-        }
-        return;
-    }
     Blt_Font_GetMetrics(comboPtr->font, &fm);
     textY = fm.ascent;
     if (comboPtr->entryHeight > comboPtr->textHeight) {
@@ -4447,7 +4450,8 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
     int x0, y0, cavityWidth, cavityHeight, tx, ty, w, h;
 
     cavityWidth = Tk_Width(comboPtr->tkwin) - (2 * comboPtr->inset);
-    cavityHeight = Tk_Height(comboPtr->tkwin) - (2 * comboPtr->inset);
+    cavityHeight = Tk_Height(comboPtr->tkwin) - (2 * comboPtr->inset) -
+        comboPtr->hintHeight;
     
     /* Background (just inside of focus highlight ring). */
     x0 = y0 = comboPtr->inset;
@@ -4593,9 +4597,26 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
     }
     comboPtr->viewWidth = cavityWidth;
     if ((cavityWidth > 0) && (cavityHeight > 0)) {
-        DrawTextForEntry(comboPtr, drawable, tx, ty, cavityWidth - 4, cavityHeight- 2);
+        DrawTextForEntry(comboPtr, drawable, tx, ty, cavityWidth - 4,
+                         cavityHeight- 2);
+        cavityHeight -= comboPtr->textHeight;
     }
+    if ((comboPtr->hintObjPtr != NULL) && (cavityHeight > 0)) {
+        TextStyle ts;
+        const char *string;
+        int length;
+        int tx, ty;
 
+        tx = comboPtr->inset + IPAD;
+        ty = Tk_Height(comboPtr->tkwin) - comboPtr->inset;
+        string = Tcl_GetStringFromObj(comboPtr->hintObjPtr, &length);
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetFont(ts, comboPtr->hintFont);
+        Blt_Ts_SetAnchor(ts, TK_ANCHOR_SW);
+        Blt_Ts_SetMaxLength(ts, Tk_Width(comboPtr->tkwin) - 2*comboPtr->inset);
+        Blt_Ts_SetForeground(ts, comboPtr->hintNormalFgColor);
+        Blt_Ts_DrawText(comboPtr->tkwin, drawable, string, length, &ts, tx, ty);
+    }
     /* Draw focus highlight ring. */
     if (comboPtr->highlightWidth > 0) {
         GC gc;
@@ -4611,19 +4632,24 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
     }
     w = Tk_Width(comboPtr->tkwin)  - 2 * comboPtr->highlightWidth;
     h = Tk_Height(comboPtr->tkwin) - 2 * comboPtr->highlightWidth;
+
+
     if ((comboPtr->relief != TK_RELIEF_FLAT) && (w > 0) && (h > 0) &&
         (comboPtr->borderWidth > 0)) {
         Blt_Bg_DrawRectangle(comboPtr->tkwin, drawable, 
-                comboPtr->normalBg, comboPtr->highlightWidth,
-                comboPtr->highlightWidth, w, h, comboPtr->borderWidth,
-                comboPtr->relief);
+                             comboPtr->normalBg, comboPtr->highlightWidth,
+                             comboPtr->highlightWidth,
+                             w,
+                             h - comboPtr->hintHeight,
+                             comboPtr->borderWidth,
+                             comboPtr->relief);
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayComboEntry --
+ * DisplayProc --
  *
  *      This procedure is invoked to display a comboentry widget.
  *
@@ -4636,7 +4662,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayComboEntry(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     ComboEntry *comboPtr = clientData;
     Pixmap drawable;
@@ -4674,10 +4700,12 @@ DisplayComboEntry(ClientData clientData)
 #ifdef WIN32
         assert(drawable != None);
 #endif
+        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, comboPtr->normalBg,
+                                 0, 0, w, h, 0, TK_RELIEF_FLAT);
         bg = (comboPtr->flags & FOCUS) ? comboPtr->inFocusBg :
             comboPtr->outFocusBg;
-        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, 0, 0, w, h, 0, 
-                             TK_RELIEF_FLAT);
+        Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg,
+                  0, 0, w, h - comboPtr->hintHeight, 0, TK_RELIEF_FLAT);
         DrawEntry(comboPtr, drawable);
         XCopyArea(comboPtr->display, drawable, Tk_WindowId(comboPtr->tkwin),
                   comboPtr->highlightGC, 0, 0, w, h, 0, 0);
