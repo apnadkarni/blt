@@ -976,7 +976,7 @@ static Tcl_CmdDeleteProc TabsetInstDeletedCmd;
 static Tcl_FreeProc FreeTabset;
 static Tcl_FreeProc FreeTab;
 static Tcl_IdleProc AdoptWindowProc;
-static Tcl_IdleProc DisplayTabset;
+static Tcl_IdleProc DisplayProc;
 static Tcl_IdleProc DisplayTearoff;
 static Tcl_ObjCmdProc TabsetCmd;
 static Tcl_ObjCmdProc TabsetInstCmd;
@@ -1075,7 +1075,7 @@ EventuallyRedraw(Tabset *setPtr)
 {
     if ((setPtr->tkwin != NULL) && !(setPtr->flags & REDRAW_PENDING)) {
         setPtr->flags |= REDRAW_PENDING;
-        Tcl_DoWhenIdle(DisplayTabset, setPtr);
+        Tcl_DoWhenIdle(DisplayProc, setPtr);
     }
 }
 
@@ -3556,7 +3556,7 @@ TabsetEventProc(ClientData clientData, XEvent *eventPtr)
             Tcl_DeleteCommandFromToken(setPtr->interp, setPtr->cmdToken);
         }
         if (setPtr->flags & REDRAW_PENDING) {
-            Tcl_CancelIdleCall(DisplayTabset, setPtr);
+            Tcl_CancelIdleCall(DisplayProc, setPtr);
         }
         Tcl_EventuallyFree(setPtr, FreeTabset);
         break;
@@ -3589,7 +3589,7 @@ FreeTabset(DestroyData dataPtr)
     Blt_ChainLink link, next;
 
     if (setPtr->flags & REDRAW_PENDING) {
-        Tcl_CancelIdleCall(DisplayTabset, setPtr);
+        Tcl_CancelIdleCall(DisplayProc, setPtr);
     }
     iconOption.clientData = setPtr;
     Blt_FreeOptions(configSpecs, (char *)setPtr, setPtr->display, 0);
@@ -7236,7 +7236,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayTabset --
+ * DisplayProc --
  *
  *      This procedure is invoked to display the widget.
  *
@@ -7254,7 +7254,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayTabset(ClientData clientData)    /* Information about widget. */
+DisplayProc(ClientData clientData)    /* Information about widget. */
 {
     Tabset *setPtr = clientData;
     Pixmap pixmap;
