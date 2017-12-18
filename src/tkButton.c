@@ -119,65 +119,69 @@
 #define INDICATOR       "#b03060"
 #define DISABLED        "#a3a3a3"
 
-#define DEF_BUTTON_ANCHOR               "center"
-#define DEF_BUTTON_ACTIVE_BACKGROUND    STD_ACTIVE_BACKGROUND
-#define DEF_BUTTON_ACTIVE_BG_MONO       RGB_BLACK
-#define DEF_BUTTON_ACTIVE_FOREGROUND    RGB_BLACK
-#define DEF_BUTTON_ACTIVE_FG_MONO       RGB_WHITE
-#define DEF_BUTTON_BACKGROUND           STD_NORMAL_BACKGROUND
-#define DEF_BUTTON_BG_MONO              RGB_WHITE
-#define DEF_BUTTON_BITMAP               ""
-#define DEF_BUTTON_BORDERWIDTH          "2"
-#define DEF_PUSHBUTTON_BORDERWIDTH      "1"
-#define DEF_BUTTON_CURSOR               ""
-#define DEF_BUTTON_COMMAND              ""
-#define DEF_BUTTON_COMPOUND             "none"
-#define DEF_BUTTON_DEFAULT              "disabled"
-#define DEF_BUTTON_DISABLED_FOREGROUND  STD_DISABLED_FOREGROUND
-#define DEF_BUTTON_DISABLED_FG_MONO     ""
-#define DEF_BUTTON_FG                   RGB_BLACK
-#define DEF_BUTTON_FONT                 STD_FONT
-#define DEF_BUTTON_HEIGHT               "0"
-#define DEF_BUTTON_HIGHLIGHT_BG         STD_NORMAL_BACKGROUND
-#define DEF_BUTTON_HIGHLIGHT            RGB_BLACK
-#define DEF_LABEL_HIGHLIGHT_WIDTH       "0"
-#define DEF_PUSHBUTTON_HIGHLIGHT_WIDTH  "0"
-#define DEF_BUTTON_HIGHLIGHT_WIDTH      "2"
-#define DEF_BUTTON_IMAGE                (char *) NULL
-#define DEF_BUTTON_INDICATOR            "1"
-#define DEF_BUTTON_JUSTIFY              "center"
-#define DEF_BUTTON_OFF_VALUE            "0"
-#define DEF_BUTTON_ON_VALUE             "1"
-#define DEF_BUTTON_ONIMAGE              (char *)NULL
-#define DEF_BUTTON_OFFIMAGE             (char *)NULL
-#define DEF_BUTTON_OVER_RELIEF          "raised"
-#define DEF_BUTTON_PADX                 "3m"
-#define DEF_LABCHKRAD_PADX              "1"
-#define DEF_BUTTON_PADY                 "1m"
-#define DEF_LABCHKRAD_PADY              "1"
 
-#define DEF_PUSHBUTTON_PADX             "2"
-#define DEF_PUSHBUTTON_PADY             "2"
 
-#define DEF_BUTTON_RELIEF               "raised"
-#define DEF_BUTTON_REPEAT_DELAY         "0"
-#define DEF_LABCHKRAD_RELIEF            "flat"
-#define DEF_LABCHKRAD_OVER_RELIEF       "flat"
-#define DEF_BUTTON_SELECT_BACKGROUND    RGB_WHITE
-#define DEF_BUTTON_SELECT_FOREGROUND    STD_INDICATOR_COLOR
-#define DEF_BUTTON_SELECT_MONO          RGB_BLACK
-#define DEF_BUTTON_SELECT_IMAGE         (char *)NULL
-#define DEF_BUTTON_STATE                "normal"
-#define DEF_LABEL_TAKE_FOCUS            "0"
-#define DEF_BUTTON_TAKE_FOCUS           (char *) NULL
-#define DEF_BUTTON_TEXT                 ""
-#define DEF_BUTTON_TEXT_VARIABLE        ""
-#define DEF_BUTTON_UNDERLINE            "-1"
-#define DEF_BUTTON_VALUE                ""
-#define DEF_BUTTON_WIDTH                "0"
-#define DEF_BUTTON_WRAP_LENGTH          "0"
-#define DEF_RADIOBUTTON_VARIABLE        "selectedButton"
+#define DEF_ACTIVE_BACKGROUND    STD_ACTIVE_BACKGROUND
+#define DEF_ACTIVE_BG_MONO       RGB_BLACK
+#define DEF_ACTIVE_FG_MONO       RGB_WHITE
+#define DEF_ACTIVE_FOREGROUND    RGB_BLACK
+#define DEF_ANCHOR               "center"
+#define DEF_BACKGROUND           STD_NORMAL_BACKGROUND
+#define DEF_BG_MONO              RGB_WHITE
+#define DEF_BITMAP               ""
+#define DEF_BORDERWIDTH          "2"
 #define DEF_CHECKBUTTON_VARIABLE        ""
+#define DEF_COMMAND              ""
+#define DEF_COMPOUND             "none"
+#define DEF_CURSOR               ""
+#define DEF_DEFAULT              "disabled"
+#define DEF_DISABLED_FG_MONO     ""
+#define DEF_DISABLED_FOREGROUND  STD_DISABLED_FOREGROUND
+#define DEF_FG                   RGB_BLACK
+#define DEF_FONT                 STD_FONT
+#define DEF_HEIGHT               "0"
+#define DEF_HIGHLIGHT            RGB_BLACK
+#define DEF_HIGHLIGHT_BG         STD_NORMAL_BACKGROUND
+#define DEF_HIGHLIGHT_WIDTH      "2"
+#define DEF_IMAGE                (char *) NULL
+#define DEF_INDICATOR            "1"
+#define DEF_JUSTIFY              "center"
+#define DEF_LABCHKRAD_OVER_RELIEF       "flat"
+#define DEF_LABCHKRAD_PADX              "1"
+#define DEF_LABCHKRAD_PADY              "1"
+#define DEF_LABCHKRAD_RELIEF            "flat"
+#define DEF_LABEL_HIGHLIGHT_WIDTH       "0"
+#define DEF_LABEL_TAKE_FOCUS            "0"
+#define DEF_OFFIMAGE             (char *)NULL
+#define DEF_OFF_VALUE            "0"
+#define DEF_ONIMAGE              (char *)NULL
+#define DEF_ON_VALUE             "1"
+#define DEF_OVER_RELIEF          "raised"
+#define DEF_PADX                 "3m"
+#define DEF_PADY                 "1m"
+#define DEF_PUSHBUTTON_BACKGROUND         RGB_GREY90
+#define DEF_PUSHBUTTON_FOREGROUND         RGB_BLACK
+#define DEF_PUSHBUTTON_ACTIVE_BACKGROUND  RGB_GREY95
+#define DEF_PUSHBUTTON_ACTIVE_FOREGROUND  RGB_BLACK
+#define DEF_PUSHBUTTON_BORDERWIDTH        "1"
+#define DEF_PUSHBUTTON_HIGHLIGHT_WIDTH    "0"
+#define DEF_PUSHBUTTON_PADX               "2"
+#define DEF_PUSHBUTTON_PADY               "2"
+#define DEF_RADIOBUTTON_VARIABLE          "selectedButton"
+#define DEF_RELIEF               "raised"
+#define DEF_REPEAT_DELAY         "0"
+#define DEF_SELECT_BACKGROUND    RGB_WHITE
+#define DEF_SELECT_FOREGROUND    STD_INDICATOR_COLOR
+#define DEF_SELECT_IMAGE         (char *)NULL
+#define DEF_SELECT_MONO          RGB_BLACK
+#define DEF_STATE                "normal"
+#define DEF_TAKE_FOCUS           (char *) NULL
+#define DEF_TEXT                 ""
+#define DEF_TEXT_VARIABLE        ""
+#define DEF_UNDERLINE            "-1"
+#define DEF_VALUE                ""
+#define DEF_WIDTH                "0"
+#define DEF_WRAP_LENGTH          "0"
 
 /*
  * A data structure of the following type is kept for each
@@ -386,9 +390,9 @@ typedef struct {
 
 #define TYPE_LABEL              0
 #define TYPE_BUTTON             1
-#define TYPE_PUSH_BUTTON        2
-#define TYPE_CHECK_BUTTON       3
-#define TYPE_RADIO_BUTTON       4
+#define TYPE_PUSHBUTTON         2
+#define TYPE_CHECKBUTTON        3
+#define TYPE_RADIOBUTTON        4
 
 /*
  * Class names for buttons, indexed by one of the type values above.
@@ -423,23 +427,23 @@ static const char *classNames[] = {
  * specs:
  */
 
-#define LABEL_MASK              BLT_CONFIG_USER_BIT
-#define BUTTON_MASK             BLT_CONFIG_USER_BIT << 1
-#define PUSH_BUTTON_MASK        BLT_CONFIG_USER_BIT << 2
-#define CHECK_BUTTON_MASK       BLT_CONFIG_USER_BIT << 3
-#define RADIO_BUTTON_MASK       BLT_CONFIG_USER_BIT << 4
+#define LABEL_MASK              (BLT_CONFIG_USER_BIT)
+#define BUTTON_MASK             (BLT_CONFIG_USER_BIT << 1)
+#define PUSHBUTTON_MASK         (BLT_CONFIG_USER_BIT << 2)
+#define CHECKBUTTON_MASK        (BLT_CONFIG_USER_BIT << 3)
+#define RADIOBUTTON_MASK        (BLT_CONFIG_USER_BIT << 4)
 #define ALL_MASK                (LABEL_MASK | BUTTON_MASK \
-        | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK)
+        | CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK)
 
-#define ALL_BUTTONS             (BUTTON_MASK | CHECK_BUTTON_MASK | \
-                                 RADIO_BUTTON_MASK | PUSH_BUTTON_MASK)
+#define ALL_BUTTONS_MASK        (BUTTON_MASK | CHECKBUTTON_MASK | \
+                                 RADIOBUTTON_MASK | PUSHBUTTON_MASK)
 
 static int configFlags[] = {
     LABEL_MASK, 
     BUTTON_MASK,
-    PUSH_BUTTON_MASK,
-    CHECK_BUTTON_MASK, 
-    RADIO_BUTTON_MASK
+    PUSHBUTTON_MASK,
+    CHECKBUTTON_MASK, 
+    RADIOBUTTON_MASK
 };
 
 static Blt_OptionParseProc ObjToImage;
@@ -456,182 +460,188 @@ static Blt_CustomOption imageOption =
 
 static Blt_ConfigSpec configSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", "Foreground",
-        DEF_BUTTON_ACTIVE_BACKGROUND, Blt_Offset(Button, activeBg),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK |
-        BLT_CONFIG_COLOR_ONLY},
-    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", "Foreground",
-        DEF_BUTTON_ACTIVE_BG_MONO, Blt_Offset(Button, activeBg),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
-        | BLT_CONFIG_MONO_ONLY},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "ActiveBackground",
-        DEF_BUTTON_ACTIVE_FOREGROUND, Blt_Offset(Button, activeFg),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
-        | BLT_CONFIG_COLOR_ONLY},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "ActiveForeground",
-        DEF_BUTTON_ACTIVE_FG_MONO, Blt_Offset(Button, activeFg),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
-        | BLT_CONFIG_MONO_ONLY},
-    {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor",
-        DEF_BUTTON_ANCHOR, Blt_Offset(Button, anchor), ALL_MASK},
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
+        "ActiveBackground", DEF_PUSHBUTTON_ACTIVE_BACKGROUND,
+        Blt_Offset(Button, activeBg), PUSHBUTTON_MASK | BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
+        "ActiveBackground", DEF_ACTIVE_BACKGROUND,
+        Blt_Offset(Button, activeBg), BUTTON_MASK | CHECKBUTTON_MASK |
+        RADIOBUTTON_MASK | BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
+        "ActiveBackground", DEF_ACTIVE_BG_MONO,
+         Blt_Offset(Button, activeBg),  ALL_BUTTONS_MASK|BLT_CONFIG_MONO_ONLY},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground",
+        "ActiveForeground", DEF_PUSHBUTTON_ACTIVE_FOREGROUND,
+        Blt_Offset(Button, activeFg), PUSHBUTTON_MASK | BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground",
+        "ActiveForeground", DEF_ACTIVE_FOREGROUND,
+         Blt_Offset(Button, activeFg), BUTTON_MASK | CHECKBUTTON_MASK |
+         RADIOBUTTON_MASK | BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground",
+        "ActiveForeground", DEF_ACTIVE_FG_MONO, Blt_Offset(Button, activeFg),
+        ALL_BUTTONS_MASK | BLT_CONFIG_MONO_ONLY},
+    {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_ANCHOR,
+        Blt_Offset(Button, anchor), ALL_MASK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_BUTTON_BACKGROUND, Blt_Offset(Button, normalBg),
-        ALL_MASK | BLT_CONFIG_COLOR_ONLY},
+        DEF_PUSHBUTTON_BACKGROUND, Blt_Offset(Button, normalBg),
+        PUSHBUTTON_MASK | BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_BUTTON_BG_MONO, Blt_Offset(Button, normalBg),
+        DEF_BACKGROUND, Blt_Offset(Button, normalBg), LABEL_MASK | BUTTON_MASK |
+        CHECKBUTTON_MASK | RADIOBUTTON_MASK | BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+        DEF_BG_MONO, Blt_Offset(Button, normalBg),
         ALL_MASK | BLT_CONFIG_MONO_ONLY},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL,
-        (char *)NULL, 0, ALL_MASK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL,
-        (char *)NULL, 0, ALL_MASK},
-    {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap",
-        DEF_BUTTON_BITMAP, Blt_Offset(Button, bitmap),
-        ALL_MASK | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,
+        ALL_MASK},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0,
+        ALL_MASK},
+    {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap", DEF_BITMAP,
+        Blt_Offset(Button, bitmap), ALL_MASK | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_BUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth), 
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | LABEL_MASK},
+        DEF_BORDERWIDTH, Blt_Offset(Button, borderWidth), 
+        BUTTON_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK | LABEL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_PUSHBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth), 
-        PUSH_BUTTON_MASK},
+        PUSHBUTTON_MASK},
     {BLT_CONFIG_OBJ, "-command", "command", "Command",
-        DEF_BUTTON_COMMAND, Blt_Offset(Button, cmdObjPtr),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK |
+        DEF_COMMAND, Blt_Offset(Button, cmdObjPtr),
+        BUTTON_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK |
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-compound", "compound", "Compound",
-        DEF_BUTTON_COMPOUND, Blt_Offset(Button, compound), 
+        DEF_COMPOUND, Blt_Offset(Button, compound), 
         ALL_MASK | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
-        DEF_BUTTON_CURSOR, Blt_Offset(Button, cursor),
+        DEF_CURSOR, Blt_Offset(Button, cursor),
         ALL_MASK | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STATE, "-default", "default", "Default",
-        DEF_BUTTON_DEFAULT, Blt_Offset(Button, defaultState), BUTTON_MASK},
+        DEF_DEFAULT, Blt_Offset(Button, defaultState), BUTTON_MASK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
-        "DisabledForeground", DEF_BUTTON_DISABLED_FOREGROUND,
-        Blt_Offset(Button, disabledFg), BUTTON_MASK | CHECK_BUTTON_MASK | 
-        RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | BLT_CONFIG_COLOR_ONLY | 
+        "DisabledForeground", DEF_DISABLED_FOREGROUND,
+        Blt_Offset(Button, disabledFg), BUTTON_MASK | CHECKBUTTON_MASK | 
+        RADIOBUTTON_MASK | PUSHBUTTON_MASK | BLT_CONFIG_COLOR_ONLY | 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
-        "DisabledForeground", DEF_BUTTON_DISABLED_FG_MONO,
-        Blt_Offset(Button, disabledFg), BUTTON_MASK | CHECK_BUTTON_MASK
-        | RADIO_BUTTON_MASK | BLT_CONFIG_MONO_ONLY | BLT_CONFIG_NULL_OK},
+        "DisabledForeground", DEF_DISABLED_FG_MONO,
+        Blt_Offset(Button, disabledFg), BUTTON_MASK | CHECKBUTTON_MASK
+        | RADIOBUTTON_MASK | BLT_CONFIG_MONO_ONLY | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL,
         (char *)NULL, 0, ALL_MASK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_BUTTON_FONT, 
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
         Blt_Offset(Button, font), ALL_MASK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-        DEF_BUTTON_FG, Blt_Offset(Button, normalFg), ALL_MASK},
+        DEF_FG, Blt_Offset(Button, normalFg), ALL_MASK},
     {BLT_CONFIG_STRING, "-height", "height", "Height",
-        DEF_BUTTON_HEIGHT, Blt_Offset(Button, heightString), ALL_MASK},
+        DEF_HEIGHT, Blt_Offset(Button, heightString), ALL_MASK},
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
-        "HighlightBackground", DEF_BUTTON_HIGHLIGHT_BG,
+        "HighlightBackground", DEF_HIGHLIGHT_BG,
         Blt_Offset(Button, highlightBg), ALL_MASK},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-        DEF_BUTTON_HIGHLIGHT, Blt_Offset(Button, highlightColorPtr),
+        DEF_HIGHLIGHT, Blt_Offset(Button, highlightColorPtr),
         ALL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness",
         DEF_LABEL_HIGHLIGHT_WIDTH, Blt_Offset(Button, highlightWidth),
-        PUSH_BUTTON_MASK | LABEL_MASK},
+        PUSHBUTTON_MASK | LABEL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness",
-        DEF_BUTTON_HIGHLIGHT_WIDTH, Blt_Offset(Button, highlightWidth),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
-    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_BUTTON_IMAGE, 
+        DEF_HIGHLIGHT_WIDTH, Blt_Offset(Button, highlightWidth),
+        BUTTON_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK},
+    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
         Blt_Offset(Button, image), ALL_MASK | BLT_CONFIG_NULL_OK, &imageOption},
     {BLT_CONFIG_BOOLEAN, "-indicatoron", "indicatorOn", "IndicatorOn",
-        DEF_BUTTON_INDICATOR, Blt_Offset(Button, indicatorOn),
-        CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
+        DEF_INDICATOR, Blt_Offset(Button, indicatorOn),
+        CHECKBUTTON_MASK | RADIOBUTTON_MASK},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify",
-        DEF_BUTTON_JUSTIFY, Blt_Offset(Button, justify), ALL_MASK},
+        DEF_JUSTIFY, Blt_Offset(Button, justify), ALL_MASK},
     {BLT_CONFIG_SYNONYM, "-offimage", "image", (char *)NULL,
-        (char *)NULL, 0, CHECK_BUTTON_MASK | PUSH_BUTTON_MASK},
+        (char *)NULL, 0, CHECKBUTTON_MASK | PUSHBUTTON_MASK},
     {BLT_CONFIG_STRING, "-offvalue", "offValue", "Value",
-        DEF_BUTTON_OFF_VALUE, Blt_Offset(Button, offValue),
-        CHECK_BUTTON_MASK | PUSH_BUTTON_MASK },
+        DEF_OFF_VALUE, Blt_Offset(Button, offValue),
+        CHECKBUTTON_MASK | PUSHBUTTON_MASK },
     {BLT_CONFIG_STRING, "-onvalue", "onValue", "Value",
-        DEF_BUTTON_ON_VALUE, Blt_Offset(Button, onValue),
-        CHECK_BUTTON_MASK | PUSH_BUTTON_MASK | BLT_CONFIG_NULL_OK },
+        DEF_ON_VALUE, Blt_Offset(Button, onValue),
+        CHECKBUTTON_MASK | PUSHBUTTON_MASK | BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_SYNONYM, "-onimage", "selectImage", (char *)NULL,
-        (char *)NULL, 0, CHECK_BUTTON_MASK | PUSH_BUTTON_MASK},
+        (char *)NULL, 0, CHECKBUTTON_MASK | PUSHBUTTON_MASK},
     {BLT_CONFIG_RELIEF, "-overrelief", "overRelief", "OverRelief",
-        DEF_BUTTON_OVER_RELIEF, Blt_Offset(Button, overRelief),
-        BUTTON_MASK | PUSH_BUTTON_MASK},
+        DEF_OVER_RELIEF, Blt_Offset(Button, overRelief),
+        BUTTON_MASK | PUSHBUTTON_MASK},
     {BLT_CONFIG_RELIEF, "-overrelief", "overRelief", "OverRelief",
         DEF_LABCHKRAD_OVER_RELIEF, Blt_Offset(Button, overRelief),
-        LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
+        LABEL_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad",
-        DEF_BUTTON_PADX, Blt_Offset(Button, padX), BUTTON_MASK},
+        DEF_PADX, Blt_Offset(Button, padX), BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad",
         DEF_LABCHKRAD_PADX, Blt_Offset(Button, padX),
-        LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
+        LABEL_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "Pad",
-        DEF_PUSHBUTTON_PADX, Blt_Offset(Button, padX), PUSH_BUTTON_MASK},
+        DEF_PUSHBUTTON_PADX, Blt_Offset(Button, padX), PUSHBUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad",
-        DEF_BUTTON_PADY, Blt_Offset(Button, padY), BUTTON_MASK},
+        DEF_PADY, Blt_Offset(Button, padY), BUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad",
         DEF_LABCHKRAD_PADY, Blt_Offset(Button, padY),
-        LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
+        LABEL_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "Pad",
-        DEF_PUSHBUTTON_PADY, Blt_Offset(Button, padY), PUSH_BUTTON_MASK},
+        DEF_PUSHBUTTON_PADY, Blt_Offset(Button, padY), PUSHBUTTON_MASK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
-        DEF_BUTTON_RELIEF, Blt_Offset(Button, relief), 
-        BUTTON_MASK | PUSH_BUTTON_MASK},
+        DEF_RELIEF, Blt_Offset(Button, relief), 
+        BUTTON_MASK | PUSHBUTTON_MASK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
         DEF_LABCHKRAD_RELIEF, Blt_Offset(Button, relief),
-        LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
+        LABEL_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK},
     {BLT_CONFIG_INT, "-repeatdelay", "repeatDelay", "RepeatDelay",
-        DEF_BUTTON_REPEAT_DELAY, Blt_Offset(Button, repeatDelay),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK},
+        DEF_REPEAT_DELAY, Blt_Offset(Button, repeatDelay),
+        BUTTON_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
-        "SelectForeground", DEF_BUTTON_SELECT_FOREGROUND, 
+        "SelectForeground", DEF_SELECT_FOREGROUND, 
         Blt_Offset(Button, selectFg),
-        CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
+        CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK | 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-        "SelectBackground", DEF_BUTTON_SELECT_BACKGROUND, 
+        "SelectBackground", DEF_SELECT_BACKGROUND, 
         Blt_Offset(Button, selectBg),
-        CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
+        CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK | 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-selectcolor", "selectBackground", (char *)NULL,
         (char *)NULL, 0, 
-        CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
+        CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK | 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-selectimage", "selectImage", "SelectImage",
-        DEF_BUTTON_SELECT_IMAGE, Blt_Offset(Button, selectImage),
-        CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
+        DEF_SELECT_IMAGE, Blt_Offset(Button, selectImage),
+        CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK | 
         BLT_CONFIG_NULL_OK, &imageOption},
     {BLT_CONFIG_STATE, "-state", "state", "State",
-        DEF_BUTTON_STATE, Blt_Offset(Button, state),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK},
+        DEF_STATE, Blt_Offset(Button, state),
+        BUTTON_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_LABEL_TAKE_FOCUS, Blt_Offset(Button, takeFocus),
         LABEL_MASK | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
-        DEF_BUTTON_TAKE_FOCUS, Blt_Offset(Button, takeFocus),
-        BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK |
+        DEF_TAKE_FOCUS, Blt_Offset(Button, takeFocus),
+        BUTTON_MASK | CHECKBUTTON_MASK | RADIOBUTTON_MASK | PUSHBUTTON_MASK |
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-text", "text", "Text",
-        DEF_BUTTON_TEXT, Blt_Offset(Button, text), ALL_MASK},
+        DEF_TEXT, Blt_Offset(Button, text), ALL_MASK},
     {BLT_CONFIG_STRING, "-textvariable", "textVariable", "Variable",
-        DEF_BUTTON_TEXT_VARIABLE, Blt_Offset(Button, textVarName),
+        DEF_TEXT_VARIABLE, Blt_Offset(Button, textVarName),
         ALL_MASK | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_INT, "-underline", "underline", "Underline",
-        DEF_BUTTON_UNDERLINE, Blt_Offset(Button, underline), ALL_MASK},
+        DEF_UNDERLINE, Blt_Offset(Button, underline), ALL_MASK},
     {BLT_CONFIG_STRING, "-value", "value", "Value",
-        DEF_BUTTON_VALUE, Blt_Offset(Button, onValue),
-        RADIO_BUTTON_MASK},
+        DEF_VALUE, Blt_Offset(Button, onValue),
+        RADIOBUTTON_MASK},
     {BLT_CONFIG_STRING, "-value", "value", "Value", (char *)NULL, 
-        Blt_Offset(Button, value), PUSH_BUTTON_MASK|BLT_CONFIG_NULL_OK},
+        Blt_Offset(Button, value), PUSHBUTTON_MASK|BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-variable", "variable", "Variable",
         DEF_RADIOBUTTON_VARIABLE, Blt_Offset(Button, selVarName),
-        RADIO_BUTTON_MASK},
+        RADIOBUTTON_MASK},
     {BLT_CONFIG_STRING, "-variable", "variable", "Variable",
         DEF_CHECKBUTTON_VARIABLE, Blt_Offset(Button, selVarName),
-        CHECK_BUTTON_MASK | PUSH_BUTTON_MASK | BLT_CONFIG_NULL_OK},
+        CHECKBUTTON_MASK | PUSHBUTTON_MASK | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-width", "width", "Width",
-        DEF_BUTTON_WIDTH, Blt_Offset(Button, widthString), ALL_MASK},
+        DEF_WIDTH, Blt_Offset(Button, widthString), ALL_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-wraplength", "wrapLength", "WrapLength",
-        DEF_BUTTON_WRAP_LENGTH, Blt_Offset(Button, wrapLength), ALL_MASK},
+        DEF_WRAP_LENGTH, Blt_Offset(Button, wrapLength), ALL_MASK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -828,7 +838,7 @@ static int
 CheckbuttonCmd(ClientData clientData, Tcl_Interp *interp, int objc,
                Tcl_Obj *const *objv)
 {
-    return ButtonCreate(clientData, interp, objc, objv, TYPE_CHECK_BUTTON);
+    return ButtonCreate(clientData, interp, objc, objv, TYPE_CHECKBUTTON);
 }
 
 static int
@@ -842,14 +852,14 @@ static int
 RadiobuttonCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
                Tcl_Obj *const *objv)
 {
-    return ButtonCreate(clientData, interp, objc, objv, TYPE_RADIO_BUTTON);
+    return ButtonCreate(clientData, interp, objc, objv, TYPE_RADIOBUTTON);
 }
 
 static int
 PushbuttonCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
-    return ButtonCreate(clientData, interp, objc, objv, TYPE_PUSH_BUTTON);
+    return ButtonCreate(clientData, interp, objc, objv, TYPE_PUSHBUTTON);
 }
 
 static void
@@ -885,8 +895,8 @@ ButtonCreate(
     int objc,                   /* Number of arguments. */
     Tcl_Obj *const *objv,       /* Argument strings. */
     int type)                   /* Type of button to create: TYPE_LABEL,
-                                 * TYPE_BUTTON, TYPE_CHECK_BUTTON, or
-                                 * TYPE_RADIO_BUTTON. */
+                                 * TYPE_BUTTON, TYPE_CHECKBUTTON, or
+                                 * TYPE_RADIOBUTTON. */
 {
     Button *butPtr;
     Tk_Window tkwin;
@@ -1027,18 +1037,18 @@ ButtonWidgetCmd(
             }
         }
     } else if ((c == 'd') && (strncmp(string, "deselect", length) == 0) && 
-               (butPtr->type >= TYPE_PUSH_BUTTON)) {
+               (butPtr->type >= TYPE_PUSHBUTTON)) {
         if (objc > 2) {
             Tcl_AppendResult(interp, "wrong # args: should be \"", 
                 Tcl_GetString(objv[0]), " deselect\"", (char *)NULL);
             goto error;
         }
-        if (butPtr->type == TYPE_CHECK_BUTTON) {
+        if (butPtr->type == TYPE_CHECKBUTTON) {
             if (Tcl_SetVar(interp, butPtr->selVarName, butPtr->offValue,
                     TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
                 goto error;
             }
-        } else if (butPtr->type == TYPE_PUSH_BUTTON) {
+        } else if (butPtr->type == TYPE_PUSHBUTTON) {
             if (Tcl_SetVar(interp, butPtr->selVarName, butPtr->offValue,
                         TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
                 goto error;
@@ -1093,7 +1103,7 @@ ButtonWidgetCmd(
             }
         }
     } else if ((c == 's') && (strncmp(string, "select", length) == 0) && 
-               (butPtr->type >= TYPE_PUSH_BUTTON)) {
+               (butPtr->type >= TYPE_PUSHBUTTON)) {
         const char *string;
         if (objc > 2) {
             Tcl_AppendResult(interp, "wrong # args: should be \"", 
@@ -1106,7 +1116,7 @@ ButtonWidgetCmd(
             goto error;
         }
     } else if ((c == 't') && (strncmp(string, "toggle", length) == 0) && 
-               (length >= 2) && (butPtr->type == TYPE_PUSH_BUTTON)) {
+               (length >= 2) && (butPtr->type == TYPE_PUSHBUTTON)) {
         if (objc > 2) {
             Tcl_AppendResult(interp, "wrong # args: should be \"", 
                 Tcl_GetString(objv[0]), " toggle\"", (char *)NULL);
@@ -1360,7 +1370,7 @@ ConfigureButton(
     if (butPtr->padY < 0) {
         butPtr->padY = 0;
     }
-    if (butPtr->type >= TYPE_PUSH_BUTTON) {
+    if (butPtr->type >= TYPE_PUSHBUTTON) {
         const char *value;
 
         if (butPtr->selVarName == NULL) {
@@ -1377,13 +1387,13 @@ ConfigureButton(
         if (value != NULL) {
             const char *string;
 
-            string = ((butPtr->type == TYPE_PUSH_BUTTON) && 
+            string = ((butPtr->type == TYPE_PUSHBUTTON) && 
                      (butPtr->value != NULL)) ? butPtr->value : butPtr->onValue;
             if (strcmp(value, string) == 0) {
                 butPtr->flags |= SELECTED;
             }
         } else {
-            if (butPtr->type == TYPE_PUSH_BUTTON) {
+            if (butPtr->type == TYPE_PUSHBUTTON) {
                 if (butPtr->value != NULL) {
                     if (Tcl_SetVar(interp, butPtr->selVarName, butPtr->value,
                         TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
@@ -1393,7 +1403,7 @@ ConfigureButton(
             } else {
                 const char *value;
 
-                value = (butPtr->type == TYPE_CHECK_BUTTON) ? 
+                value = (butPtr->type == TYPE_CHECKBUTTON) ? 
                     butPtr->offValue : "";
                 if (Tcl_SetVar(interp, butPtr->selVarName, value,
                                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
@@ -1630,7 +1640,7 @@ DisplayButton(ClientData clientData)
         (butPtr->selectBg != NULL) && (!butPtr->indicatorOn)) {
         bg = butPtr->selectBg;
     }
-    if ((butPtr->type == TYPE_PUSH_BUTTON) && (butPtr->flags & SELECTED) && 
+    if ((butPtr->type == TYPE_PUSHBUTTON) && (butPtr->flags & SELECTED) && 
         (butPtr->state == STATE_ACTIVE) && (butPtr->selectBg != NULL) && 
         (!butPtr->indicatorOn)) {
         bg = butPtr->selectBg;
@@ -1640,7 +1650,7 @@ DisplayButton(ClientData clientData)
      * checkbutton or radiobutton and there's no indicator.
      */
     relief = butPtr->relief;
-    if ((butPtr->type >= TYPE_PUSH_BUTTON) && (!butPtr->indicatorOn)) {
+    if ((butPtr->type >= TYPE_PUSHBUTTON) && (!butPtr->indicatorOn)) {
         relief = (butPtr->flags & SELECTED) ? TK_RELIEF_SUNKEN
             : butPtr->relief;
     }
@@ -1750,10 +1760,10 @@ DisplayButton(ClientData clientData)
      * or bitmap.
      */
     if (butPtr->indicatorOn) {
-        if (butPtr->type == TYPE_CHECK_BUTTON) {
+        if (butPtr->type == TYPE_CHECKBUTTON) {
             DrawCheckButton(tkwin, pixmap, butPtr, x, y);
             x -= GAP;
-        } else if (butPtr->type == TYPE_RADIO_BUTTON) {
+        } else if (butPtr->type == TYPE_RADIOBUTTON) {
             DrawRadioButton(tkwin, pixmap, butPtr, bg, x, y);
         } 
     }
@@ -1868,9 +1878,9 @@ ComputeButtonGeometry(Button *butPtr)
         if (butPtr->height > 0) {
             height = butPtr->height;
         }
-        if ((butPtr->type >= TYPE_CHECK_BUTTON) && butPtr->indicatorOn) {
+        if ((butPtr->type >= TYPE_CHECKBUTTON) && butPtr->indicatorOn) {
             butPtr->indicatorSpace = height;
-            if (butPtr->type == TYPE_CHECK_BUTTON) {
+            if (butPtr->type == TYPE_CHECKBUTTON) {
                 butPtr->indicatorDiameter = (65 * height) / 100;
             } else {
                 butPtr->indicatorDiameter = (75 * height) / 100;
@@ -1900,9 +1910,9 @@ ComputeButtonGeometry(Button *butPtr)
         if (butPtr->height > 0) {
             height = butPtr->height * fm.linespace;
         }
-        if ((butPtr->type >= TYPE_CHECK_BUTTON) && butPtr->indicatorOn) {
+        if ((butPtr->type >= TYPE_CHECKBUTTON) && butPtr->indicatorOn) {
             butPtr->indicatorDiameter = fm.linespace;
-            if (butPtr->type == TYPE_CHECK_BUTTON) {
+            if (butPtr->type == TYPE_CHECKBUTTON) {
                 butPtr->indicatorDiameter = 
                     (85 * butPtr->indicatorDiameter) / 100;
             }
@@ -2058,7 +2068,7 @@ ButtonCmdDeletedProc(ClientData clientData)
 static int
 InvokeButton(Button *butPtr)
 {
-    if (butPtr->type == TYPE_PUSH_BUTTON) {
+    if (butPtr->type == TYPE_PUSHBUTTON) {
         if (butPtr->flags & SELECTED) {
             if (Tcl_SetVar(butPtr->interp, butPtr->selVarName, butPtr->offValue,
                            TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
@@ -2073,7 +2083,7 @@ InvokeButton(Button *butPtr)
                 return TCL_ERROR;
             }
         }
-    } else if (butPtr->type == TYPE_CHECK_BUTTON) {
+    } else if (butPtr->type == TYPE_CHECKBUTTON) {
         const char *value;
 
         value = (butPtr->flags & SELECTED) ? butPtr->offValue : butPtr->onValue;
@@ -2081,7 +2091,7 @@ InvokeButton(Button *butPtr)
                        TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
         }
-    } else if (butPtr->type == TYPE_RADIO_BUTTON) {
+    } else if (butPtr->type == TYPE_RADIOBUTTON) {
         if (Tcl_SetVar(butPtr->interp, butPtr->selVarName, butPtr->onValue,
                 TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL) {
             return TCL_ERROR;
@@ -2148,7 +2158,7 @@ ButtonVarProc(
         value = "";
     }
     string = butPtr->onValue;
-    if ((butPtr->type == TYPE_PUSH_BUTTON) && (butPtr->value != NULL)) {
+    if ((butPtr->type == TYPE_PUSHBUTTON) && (butPtr->value != NULL)) {
         string = butPtr->value;
     }
     if (strcmp(value, string) == 0) {
