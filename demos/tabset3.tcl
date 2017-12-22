@@ -3,9 +3,6 @@
 package require BLT
 #blt::bltdebug 100
 
-set tile [image create picture -file ~/madthinker.jpg]
-set bg [blt::background create tile -image $tile -relativeto .]
-set bg red
 set bg [blt::background create checker -offcolor  grey80 -oncolor grey85 \
 	-relativeto self]
 
@@ -142,13 +139,13 @@ for { set i 0 } { $i < 500 } { incr i } {
 
 blt::tk::scrollbar .s -command { .t view } -orient horizontal
 radiobutton .left -text "Left" -variable side -value "left" \
-    -command { .t configure -side $side -rotate 90 }
+    -command { .t configure -side $side }
 radiobutton .right -text "Right" -variable side -value "right" \
-    -command { .t configure -side $side -rotate 270 }
+    -command { .t configure -side $side }
 radiobutton .top -text "Top" -variable side -value "top" \
-    -command { .t configure -side $side -rotate 0 }
+    -command { .t configure -side $side }
 radiobutton .bottom -text "Bottom" -variable side -value "bottom" \
-    -command { .t configure -side $side -rotate 0 }
+    -command { .t configure -side $side }
 
 blt::table . \
     .t 0,0 -fill both -cspan 2 \

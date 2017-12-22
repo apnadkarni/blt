@@ -13,7 +13,6 @@ blt::tabset .t \
     -iconposition left \
     -scrollincrement 10 \
     -scrollcommand { .s set } \
-    -rotate 0 \
     -selectcommand {  MakePicture .t }  \
     -pagewidth 500 -pageheight 500 \
   -scrolltabs 1
@@ -81,7 +80,7 @@ blt::table . \
 blt::table configure . r1 -resize none 
 focus .t
 
-foreach f $files {
+foreach f [lrange $files 0 3] {
     set tail [file tail $f]
     set root [file root $tail]
     regsub -all {\.} $root {_} root

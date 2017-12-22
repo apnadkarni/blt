@@ -3259,8 +3259,6 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
      * Handle the easy cases.
      */
     angleInt = (int)angle;
-    fprintf(stderr, "angle=%g angleInt=%d quad=%d, diff=%g\n",
-            angle, angleInt, angleInt / 90, angle - angleInt);
     if ((angle - angleInt) < 0.05) {
         switch (angleInt / 90) {
         case ROTATE_270:                /* 270 degrees */
