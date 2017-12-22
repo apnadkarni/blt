@@ -1710,13 +1710,11 @@ Blt_ScaleRotateBitmapRegion(
     yScale = rHeight / (double)virtHeight;
 
     if (FMOD(angle, (double)90.0) == 0.0) {
-        int quadrant;
         int y;
 
         /* Handle right-angle rotations specifically */
 
-        quadrant = (int)(angle / 90.0);
-        switch (quadrant) {
+        switch ((int)(angle / 90.0)) {
         case ROTATE_270:        /* 270 degrees */
             for (y = 0; y < (int)regionHeight; y++) {
                 int sx, x;

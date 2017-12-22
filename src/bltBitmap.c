@@ -125,12 +125,6 @@ typedef struct {
 #define DEF_BITMAP_SCALE        "1.0"
 #define DEF_BITMAP_JUSTIFY      "center"
 
-#define ROTATE_0        0
-#define ROTATE_90       1
-#define ROTATE_180      2
-#define ROTATE_270      3
-
-
 static Blt_ConfigSpec composeConfigSpecs[] =
 {
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL,

@@ -38,11 +38,6 @@
 #ifndef _BLT_IMAGE_H
 #define _BLT_IMAGE_H
 
-#define ROTATE_0        0
-#define ROTATE_90       1
-#define ROTATE_180      2
-#define ROTATE_270      3
-
 /* Routines that really should be in the Tk image C API. */
 
 BLT_EXTERN int Blt_Image_IsDeleted(Tk_Image tkImage);

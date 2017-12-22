@@ -432,7 +432,7 @@ BLT_EXTERN int Blt_IsPicture(Tk_Image tkImage);
 BLT_EXTERN struct _Blt_Chain *Blt_GetPicturesFromPictureImage(
         Tcl_Interp *interp, Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromImage(Tcl_Interp *interp, 
-        Tk_Image tkImage, int *isPicturePtr);
+        Tk_Image tkImage, int *isAllocatedPtr);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPictureImage(Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPhotoImage(Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromBitmapImage(Tk_Image tkImage);

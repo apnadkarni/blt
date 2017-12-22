@@ -478,7 +478,7 @@ BLT_EXTERN struct _Blt_Chain * Blt_GetPicturesFromPictureImage(
 #define Blt_GetPictureFromImage_DECLARED
 /* 79 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromImage(Tcl_Interp *interp,
-				Tk_Image tkImage, int *isPicturePtr);
+				Tk_Image tkImage, int *isAllocatedPtr);
 #endif
 #ifndef Blt_GetPictureFromPictureImage_DECLARED
 #define Blt_GetPictureFromPictureImage_DECLARED

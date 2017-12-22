@@ -92,10 +92,9 @@
 #endif
 #include <X11/Xutil.h>
 
-#define ROTATE_0        0
-#define ROTATE_90       1
-#define ROTATE_180      2
-#define ROTATE_270      3
+enum RightAngleRotations {
+    ROTATE_0, ROTATE_90, ROTATE_180, ROTATE_270
+};
 
 Pixmap
 Blt_PhotoImageMask(Tk_Window tkwin, Tk_PhotoImageBlock src)

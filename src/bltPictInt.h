@@ -67,11 +67,6 @@
 
 #define RGBIndex(r,g,b) (((r)<<10) + ((r)<<6) + (r) + ((g) << 5) + (g) + (b))
 
-#define ROTATE_0        0
-#define ROTATE_90       1
-#define ROTATE_180      2
-#define ROTATE_270      3
-
 #define UCLAMP(s) (unsigned char)(((s) < 0) ? 0 : ((s) > 255) ? 255 : (s))
 
 /*

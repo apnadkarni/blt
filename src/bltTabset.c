@@ -586,8 +586,8 @@ struct _Tabset {
 
     int justify;
     int iconPos;
-    int quad;
-    int extraAngle;
+    int quad, lastQuad;
+    int extraQuad;
     /*
      * Focus highlight ring
      */
@@ -905,7 +905,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
         DEF_TABRELIEF, Blt_Offset(Tabset, defStyle.relief), 0},
     {BLT_CONFIG_CUSTOM, "-rotate", "rotate", "Rotate", DEF_ROTATE, 
-        Blt_Offset(Tabset, extraAngle), BLT_CONFIG_DONT_SET_DEFAULT, 
+        Blt_Offset(Tabset, extraQuad), BLT_CONFIG_DONT_SET_DEFAULT, 
         &quadOption},
     {BLT_CONFIG_CUSTOM, "-tabwidth", "tabWidth", "TabWidth",
         DEF_TABWIDTH, Blt_Offset(Tabset, reqTabWidth),
@@ -1231,11 +1231,12 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 }
 
 static void
-RotateIcons(Tcl_Interp *interp, Tabset *setPtr, int quad)
+RotateIcons(Tabset *setPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
+    fprintf(stderr, "RotateIcons quad=%d\n", setPtr->quad);
     for (hPtr = Blt_FirstHashEntry(&setPtr->iconTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
         struct _Icon *iconPtr;
@@ -1246,15 +1247,16 @@ RotateIcons(Tcl_Interp *interp, Tabset *setPtr, int quad)
         if (iconPtr->picture != NULL) {
             Blt_FreePicture(iconPtr->picture);
         }
-        picture = Blt_GetPictureFromImage(interp, iconPtr->tkImage,
+        picture = Blt_GetPictureFromImage(setPtr->interp, iconPtr->tkImage,
                                           &isAllocated);
-        rotated = Blt_RotatePicture(picture, (double)quad);
+        rotated = Blt_RotatePicture(picture, (float)setPtr->quad * 90.0f);
         if (isAllocated) {
             Blt_FreePicture(picture);
         }
         picture = rotated;
         iconPtr->picture = picture;
     }
+    setPtr->lastQuad = setPtr->quad;
 }
 
 static ClientData
@@ -3733,6 +3735,7 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr = Blt_AssertCalloc(1, sizeof(Tabset));
     Tk_SetClass(tkwin, "BltTabset");
     setPtr->borderWidth = setPtr->highlightWidth = 0;
+    setPtr->lastQuad = -1;
     setPtr->corner = CORNER_OFFSET;
     setPtr->defStyle.borderWidth = 1;
     setPtr->defStyle.relief = TK_RELIEF_RAISED;
@@ -3797,7 +3800,9 @@ ConfigureTabset(
     GC newGC;
     int slantLeft, slantRight;
     TabStyle *stylePtr;
+    int oldQuad;
 
+    oldQuad = setPtr->quad;
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, configSpecs, 
            objc, objv, (char *)setPtr, flags) != TCL_OK) {
@@ -3813,17 +3818,16 @@ ConfigureTabset(
         Tk_GeometryRequest(setPtr->tkwin, setPtr->reqWidth, 
                 setPtr->reqHeight);
     }
-    if (setPtr->side == 0) {
-        setPtr->quad = setPtr->extraAngle;
-    } else if (setPtr->side == ROTATE_90) {
-        setPtr->quad = setPtr->extraAngle + 90;
-    } else if (setPtr->side == ROTATE_180) {
-        setPtr->quad = setPtr->extraAngle + 180;
-    } else if (setPtr->side == ROTATE_270) {
-        setPtr->quad = setPtr->extraAngle + 270;
+    
+    setPtr->quad = setPtr->extraQuad;
+    if (setPtr->side == SIDE_RIGHT) {
+        setPtr->quad += 3;
+    } else if (setPtr->side == SIDE_LEFT) {
+        setPtr->quad += 1;
+    } else if (setPtr->side == SIDE_BOTTOM) {
+        setPtr->quad += 2;
     }
-    setPtr->quad %= 360;
-
+    setPtr->quad %= 4;
     /*
      * GC for focus highlight.
      */
@@ -7378,6 +7382,9 @@ DisplayProc(ClientData clientData)    /* Information about widget. */
         ComputeLayout(setPtr);
         setPtr->flags &= ~LAYOUT_PENDING;
     }
+    if (setPtr->quad != setPtr->lastQuad) {
+        RotateIcons(setPtr);
+    }
     if ((setPtr->reqHeight == 0) || (setPtr->reqWidth == 0)) {
         width = height = 0;
         if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
@@ -8232,13 +8239,16 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     if ((tabPtr->icon != NULL) && (IconWidth(tabPtr->icon) > 0) && 
         (IconHeight(tabPtr->icon) > 0)) {
         struct _Icon *iconPtr;
-        int w, h;
 
         iconPtr = tabPtr->icon;
+        fprintf(stderr, "icon=%s x=%d,y=%d, w=%d h=%d pict=%p\n",
+                Blt_Image_Name(iconPtr->tkImage), x + rPtr->x, y + rPtr->y,
+                iconPtr->width,
+                iconPtr->height, iconPtr->picture);
         if (setPtr->painter == NULL) {
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
-        if (setPtr->quad == ROTATE_0 || setPtr->quad == ROTATE_180) {
+        if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
             Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
                                       iconPtr->picture, 0, 0, 
                                       IconWidth(iconPtr), IconHeight(iconPtr), 

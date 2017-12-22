@@ -3259,26 +3259,22 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
      * Handle the easy cases.
      */
     angleInt = (int)angle;
+    fprintf(stderr, "angle=%g angleInt=%d quad=%d, diff=%g\n",
+            angle, angleInt, angleInt / 90, angle - angleInt);
     if ((angle - angleInt) < 0.05) {
-        switch (angleInt) {
-        case 270:                       /* 270 degrees */
+        switch (angleInt / 90) {
+        case ROTATE_270:                /* 270 degrees */
             return Rotate270(srcPtr);
-            break;
             
-        case 90:                        /* 90 degrees */
+        case ROTATE_90:                 /* 90 degrees */
             return Rotate90(srcPtr);
-            break;
             
-        case 180:                       /* 180 degrees */
+        case ROTATE_180:                /* 180 degrees */
             return Rotate180(srcPtr);
-            break;
             
         case ROTATE_0:                  /* 0 degrees */
-            if (angle == 0.0) {
-                /* Just make a copy of the source. */
-                return Blt_ClonePicture(srcPtr);
-            } 
-            break;
+            /* Just make a copy of the source. */
+            return Blt_ClonePicture(srcPtr);
         }
     }
     destPtr = RotateByAreaMapping(srcPtr, -angle, &bg);
