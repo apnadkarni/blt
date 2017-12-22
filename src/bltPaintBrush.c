@@ -612,7 +612,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     PaintBrushCmd *cmdPtr = clientData;
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)cmdPtr->brush;
-    int isPicture;
+    int isAllocated;
 
     /* Get picture from image. */
     if ((brushPtr->tile != NULL) &&
@@ -624,12 +624,12 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
         return;                         /* Image was deleted. */
     }
     brushPtr->tile = Blt_GetPictureFromImage(cmdPtr->dataPtr->interp,
-        brushPtr->tkImage, &isPicture);
+        brushPtr->tkImage, &isAllocated);
     if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
     }
     brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-    if (!isPicture) {
+    if (isAllocated) {
         brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
     }
 }
@@ -1594,19 +1594,19 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     
     if (brushPtr->tkImage != NULL) {
-        int isPicture;
+        int isAllocated;
         
         if ((brushPtr->tile != NULL) &&
             (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
             Blt_FreePicture(brushPtr->tile);
         }
         brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage,
-                &isPicture);
+                &isAllocated);
         if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
             Blt_UnmultiplyColors(brushPtr->tile);
         }
         brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-        if (!isPicture) {
+        if (isAllocated) {
             brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
         }
     }

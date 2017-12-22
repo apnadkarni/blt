@@ -1884,7 +1884,7 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     Graph *graphPtr;
     ImageMarker *imPtr = clientData;
-    int isPicture;
+    int isAllocated;
 
     graphPtr = imPtr->obj.graphPtr;
     if ((imPtr->picture != NULL) && ((imPtr->flags & IMAGE_PICTURE) == 0)) {
@@ -1898,8 +1898,8 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
         return;
     }
     imPtr->picture = Blt_GetPictureFromImage(graphPtr->interp, imPtr->tkImage, 
-                &isPicture);
-    if (isPicture) {
+                &isAllocated);
+    if (isAllocated) {
         imPtr->flags |= IMAGE_PICTURE;
     }
     graphPtr->flags |= CACHE_DIRTY;
@@ -1947,7 +1947,7 @@ ObjToPictImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     ImageMarker *imPtr = (ImageMarker *)widgRec;
     Tk_Image tkImage;
     const char *name;
-    int isPicture;
+    int isAllocated;
 
     name = Tcl_GetString(objPtr);
     tkImage = Tk_GetImage(interp, tkwin, name, ImageChangedProc, imPtr);
@@ -1964,8 +1964,8 @@ ObjToPictImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     *pictPtr = NULL;
     imPtr->tkImage = tkImage;
     graphPtr = imPtr->obj.graphPtr;
-    *pictPtr = Blt_GetPictureFromImage(graphPtr->interp, tkImage, &isPicture);
-    if (isPicture) {
+    *pictPtr = Blt_GetPictureFromImage(graphPtr->interp, tkImage, &isAllocated);
+    if (isAllocated) {
         imPtr->flags |= IMAGE_PICTURE;
     }
     return TCL_OK;

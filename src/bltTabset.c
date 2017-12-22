@@ -340,7 +340,6 @@ typedef struct _Icon {
     Blt_HashEntry *hashPtr;             /* Hash table pointer to the image. */
     Tk_Image tkImage;                   /* The Tk image being cached. */
     Blt_Picture picture;
-    float angle;
     short int width, height;            /* Dimensions of the cached image. */
     int refCount;                       /* Reference counter for this image. */
 } *Icon;
@@ -431,7 +430,10 @@ struct _Tab {
     short int textWidth0, textHeight0;
     short int labelWidth0, labelHeight0;
     short int labelWidth, labelHeight;
-    Blt_Pad iPadX, iPadY;               /* Internal padding around the text */
+    short int iconWidth0, iconHeight0;
+    short int xButtonWidth0, xButtonHeight0;
+    Blt_Pad iPadX, iPadY;               /* Internal padding around the
+                                         * text */
 
     Blt_Font font;
 
@@ -584,13 +586,8 @@ struct _Tabset {
 
     int justify;
     int iconPos;
-
-    float angle;                        /* Angle to rotate tab.  This
-                                         * includes the icon, text, and X
-                                         * buttons. The tab can only be
-                                         * rotated at right angles: 0, 90,
-                                         * 180, 270, etc. */
     int quad;
+    int extraAngle;
     /*
      * Focus highlight ring
      */
@@ -709,6 +706,8 @@ static Blt_OptionParseProc ObjToState;
 static Blt_OptionPrintProc StateToObj;
 static Blt_OptionParseProc ObjToShowTabs;
 static Blt_OptionPrintProc ShowTabsToObj;
+static Blt_OptionParseProc ObjToQuad;
+static Blt_OptionPrintProc QuadToObj;
 
 /*
  * Contains a pointer to the widget that's currently being configured.  This
@@ -737,6 +736,10 @@ static Blt_CustomOption stateOption = {
 
 static Blt_CustomOption showTabsOption = {
     ObjToShowTabs, ShowTabsToObj, NULL, (ClientData)0
+};
+
+static Blt_CustomOption quadOption = {
+    ObjToQuad, QuadToObj, NULL, (ClientData)0,
 };
 
 static Blt_ConfigSpec buttonSpecs[] =
@@ -901,8 +904,9 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Tabset, defStyle.perfCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
         DEF_TABRELIEF, Blt_Offset(Tabset, defStyle.relief), 0},
-    {BLT_CONFIG_FLOAT, "-rotate", "rotate", "Rotate", DEF_ROTATE, 
-        Blt_Offset(Tabset, angle), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-rotate", "rotate", "Rotate", DEF_ROTATE, 
+        Blt_Offset(Tabset, extraAngle), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &quadOption},
     {BLT_CONFIG_CUSTOM, "-tabwidth", "tabWidth", "TabWidth",
         DEF_TABWIDTH, Blt_Offset(Tabset, reqTabWidth),
         BLT_CONFIG_DONT_SET_DEFAULT, &tabWidthOption},
@@ -1154,9 +1158,9 @@ IconChangedProc(
  *
  *      This is a wrapper procedure for Tk_GetImage. The problem is that if
  *      the same image is used repeatedly in the same widget, the separate
- *      instances are saved in a linked list.  This makes it especially slow
- *      to destroy the widget.  As a workaround, this routine hashes the image
- *      and maintains a reference count for it.
+ *      instances are saved in a linked list.  This makes it especially
+ *      slow to destroy the widget.  As a workaround, this routine hashes
+ *      the image and maintains a reference count for it.
  *
  * Results:
  *      Returns a pointer to the new image.
@@ -1173,21 +1177,20 @@ GetIcon(Tabset *setPtr, Tcl_Interp *interp, Tk_Window tkwin, const char *name)
     hPtr = Blt_CreateHashEntry(&setPtr->iconTable, name, &isNew);
     if (isNew) {
         Tk_Image tkImage;
-        int width, height;
+        int w, h;
 
         tkImage = Tk_GetImage(interp, tkwin, name, IconChangedProc, setPtr);
         if (tkImage == NULL) {
             Blt_DeleteHashEntry(&setPtr->iconTable, hPtr);
             return NULL;
         }
-        Tk_SizeOfImage(tkImage, &width, &height);
+        Tk_SizeOfImage(tkImage, &w, &h);
         iconPtr = Blt_AssertMalloc(sizeof(struct _Icon));
         iconPtr->tkImage = tkImage;
         iconPtr->hashPtr = hPtr;
         iconPtr->refCount = 1;
-        iconPtr->width = width;
-        iconPtr->height = height;
-        iconPtr->angle = 0.0;
+        iconPtr->width = w;
+        iconPtr->height = h;
         iconPtr->picture = NULL;
         Blt_SetHashValue(hPtr, iconPtr);
     } else {
@@ -1209,8 +1212,8 @@ GetIcon(Tabset *setPtr, Tcl_Interp *interp, Tk_Window tkwin, const char *name)
  *      None.
  *
  * Side Effects:
- *      The reference count is decremented and the image is freed is it's not
- *      being used anymore.
+ *      The reference count is decremented and the image is freed is it's
+ *      not being used anymore.
  *
  *---------------------------------------------------------------------------
  */
@@ -1227,6 +1230,33 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
     }
 }
 
+static void
+RotateIcons(Tcl_Interp *interp, Tabset *setPtr, int quad)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    for (hPtr = Blt_FirstHashEntry(&setPtr->iconTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        struct _Icon *iconPtr;
+        Blt_Picture  picture, rotated;
+        int isAllocated;
+
+        iconPtr = Blt_GetHashValue(hPtr);
+        if (iconPtr->picture != NULL) {
+            Blt_FreePicture(iconPtr->picture);
+        }
+        picture = Blt_GetPictureFromImage(interp, iconPtr->tkImage,
+                                          &isAllocated);
+        rotated = Blt_RotatePicture(picture, (double)quad);
+        if (isAllocated) {
+            Blt_FreePicture(picture);
+        }
+        picture = rotated;
+        iconPtr->picture = picture;
+    }
+}
+
 static ClientData
 MakeBindTag(Tabset *setPtr, const char *tagName)
 {
@@ -1237,8 +1267,6 @@ MakeBindTag(Tabset *setPtr, const char *tagName)
     return Blt_GetHashKey(&setPtr->bindTagTable, hPtr);
 }
 
-
-
 static void
 DestroyTearoff(Tab *tabPtr)
 {
@@ -1246,7 +1274,8 @@ DestroyTearoff(Tab *tabPtr)
     Tk_Window tkwin;
 
     if (tabPtr->container == NULL) {
-        return;                         /* Tearoff has already been deleted. */
+        return;                         /* Tearoff has already been
+                                         * deleted. */
     }
 
     setPtr = tabPtr->setPtr;
@@ -1749,6 +1778,74 @@ ShowTabsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         objPtr = Tcl_NewStringObj("multiple", 8);       break;
     default: 
         objPtr = Tcl_NewStringObj("???", 3);            break;
+    }
+    return objPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToQuad --
+ *
+ *      Converts a Tcl_Obj to the quadrant that the tabs are rotated.
+ *
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToQuad(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    int *quadPtr = (int *) (widgRec + offset);
+    double angle;
+
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &angle) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    angle = FMOD(angle, 360.0);
+    if (angle < 0.0) {
+        angle += 360.0;
+    }
+    *quadPtr = (int)(angle / 90.0);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * QuadToObj --
+ *
+ *      Converts the quadrant how the tabs are rotated back to a Tcl_Obj.
+ *
+ * Results:
+ *      The angle is returned as a Tcl_Obj.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+QuadToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
+{
+    int quad = *(int *) (widgRec + offset);
+    Tcl_Obj *objPtr;
+
+    switch (quad) {
+    case ROTATE_0:
+        objPtr = Tcl_NewStringObj("0", 1);      break;
+    case ROTATE_90:
+        objPtr = Tcl_NewStringObj("90", 2);     break;
+    case ROTATE_180:
+        objPtr = Tcl_NewStringObj("180", 3);    break;
+    case ROTATE_270:
+        objPtr = Tcl_NewStringObj("270", 3);    break;
+    default:
+        objPtr = Tcl_NewStringObj("???", 3);    break;
     }
     return objPtr;
 }
@@ -3640,7 +3737,6 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->defStyle.borderWidth = 1;
     setPtr->defStyle.relief = TK_RELIEF_RAISED;
     setPtr->iconPos = SIDE_LEFT;
-    setPtr->angle = 0.0f;
     setPtr->justify = TK_JUSTIFY_CENTER;
     setPtr->reqTabWidth = TAB_WIDTH_SAME;
     setPtr->reqTiers = 1;
@@ -3717,6 +3813,17 @@ ConfigureTabset(
         Tk_GeometryRequest(setPtr->tkwin, setPtr->reqWidth, 
                 setPtr->reqHeight);
     }
+    if (setPtr->side == 0) {
+        setPtr->quad = setPtr->extraAngle;
+    } else if (setPtr->side == ROTATE_90) {
+        setPtr->quad = setPtr->extraAngle + 90;
+    } else if (setPtr->side == ROTATE_180) {
+        setPtr->quad = setPtr->extraAngle + 180;
+    } else if (setPtr->side == ROTATE_270) {
+        setPtr->quad = setPtr->extraAngle + 270;
+    }
+    setPtr->quad %= 360;
+
     /*
      * GC for focus highlight.
      */
@@ -3764,11 +3871,6 @@ ConfigureTabset(
     }
     stylePtr->activeGC = newGC;
 
-    setPtr->angle = FMOD(setPtr->angle, 360.0);
-    if (setPtr->angle < 0.0) {
-        setPtr->angle += 360.0;
-    }
-    setPtr->quad = (int)(setPtr->angle / 90.0);
     if (Blt_ConfigModified(configSpecs, "-font", "-*foreground", "-rotate",
                 "-*background", "-side", "-iconposition", "-tiers", "-tabwidth",
                 (char *)NULL)) {
@@ -5962,15 +6064,18 @@ ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
  *
  * ComputeTabGeometry --
  *
- *      |padleft|icon|labelpad|text|labelpad|cbw|xbutton|cbw|padright|
+ *      |ipadx|icon|labelpad|text/image|labelpad|button|ipadx|
+ *
+ *      Always compute tab geometry at 0 degrees.  Computes width and 
+ *      height of tab, icon, and text or image.
+ *
  *---------------------------------------------------------------------------
  */
 static void
 ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
 {
     Blt_Font font;
-    int iconWidth0, iconHeight0;
-    int xButtonWidth0, xButtonHeight0;
+    int iw, ih, bw, bh, tw, th;
     unsigned int w, h;
     int count;
 
@@ -5978,9 +6083,12 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     w = PADDING(tabPtr->iPadX);
     h = PADDING(tabPtr->iPadY);
     count = 0;
-    tabPtr->textWidth0 = tabPtr->textHeight0 = 0;
-    iconWidth0 = iconHeight0 = 0;
-    xButtonWidth0 = xButtonHeight0 = 0;
+    tw = th = iw = ih = bw = bh = 0;
+    if (tabPtr->icon != NULL) {
+        iw = IconWidth(tabPtr->icon);
+        ih = IconHeight(tabPtr->icon);
+        count++;
+    }
     if (tabPtr->text != NULL) {
         TextStyle ts;
 
@@ -5991,25 +6099,26 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
             Blt_Free(tabPtr->layoutPtr);
         }
         tabPtr->layoutPtr = Blt_Ts_CreateLayout(tabPtr->text, -1, &ts);
-        tabPtr->textWidth0  = ODD(tabPtr->layoutPtr->width);
-        tabPtr->textHeight0 = ODD(tabPtr->layoutPtr->height);
-        count++;
-    }
-    if (tabPtr->icon != NULL) {
-        iconWidth0  = IconWidth(tabPtr->icon);
-        iconHeight0 = IconHeight(tabPtr->icon);
+        tw = ODD(tabPtr->layoutPtr->width);
+        th = ODD(tabPtr->layoutPtr->height);
         count++;
     }
     if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
         (setPtr->plusPtr != tabPtr)) {
-        xButtonWidth0 = xButtonHeight0 = setPtr->xButton.width;
+        bw = bh = setPtr->xButton.width;
         count++;
     }
-    w += iconWidth0 + tabPtr->textWidth0 + xButtonWidth0;
-    h += MAX3(iconHeight0, tabPtr->textHeight0, xButtonHeight0);
+    w += iw + tw + bw;
+    h += MAX3(ih, th, bh);
     if (count > 0) {
         w += LABEL_PAD * (count - 1);
     }
+    tabPtr->iconWidth0 = iw;
+    tabPtr->iconHeight0 = ih;
+    tabPtr->textWidth0 = tw;
+    tabPtr->textHeight0 = th;
+    tabPtr->xButtonWidth0 = bw;
+    tabPtr->xButtonHeight0 = bh;
     tabPtr->labelWidth0  = w;
     tabPtr->labelHeight0 = h;
 }
@@ -6021,8 +6130,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
  * ComputeWorldGeometry --
  *
  *      Compute the sizes of the tabset and each tab in world coordinates.
- *      World coordinates are not rotated according to the side the widget 
- *      where the tabs are located.
+ *      World coordinates are always at 0 degrees rotation.
  *
  *---------------------------------------------------------------------------
  */
@@ -6040,10 +6148,10 @@ ComputeWorldGeometry(Tabset *setPtr)
     count = 0;
 
     /*
-     * Step 1:  Figure out the maximum area needed for a label and a
-     *          page.  Both the label and page dimensions are adjusted
-     *          for orientation.  In addition, reset the visibility
-     *          flags and reorder the tabs.
+     * Step 1: Figure out the maximum area needed for a label and a page.
+     *         Both the label and page dimensions are adjusted for
+     *         orientation.  In addition, reset the visibility flags and
+     *         reorder the tabs.
      */
     for (tabPtr = FirstTab(setPtr, 0); tabPtr != NULL; 
          tabPtr = NextTab(tabPtr, 0)) {
@@ -6076,10 +6184,9 @@ ComputeWorldGeometry(Tabset *setPtr)
     }
     setPtr->overlap = 0;
     /*
-     * Step 2:  Set the sizes for each tab.  This is different
-     *          for constant and variable width tabs.  Add the extra space
-     *          needed for slanted tabs, now that we know maximum tab
-     *          height.
+     * Step 2: Set the sizes for each tab.  This is different for constant
+     *         and variable width tabs.  Add the extra space needed for
+     *         slanted tabs, now that we know maximum tab height.
      */
     if (setPtr->reqTabWidth != TAB_WIDTH_VARIABLE) {
         int slant;
@@ -6567,7 +6674,7 @@ ComputeLayout(Tabset *setPtr)
     if (setPtr->flags & HIDE_TABS) {
         setPtr->pageTop = setPtr->borderWidth;
         setPtr->numVisible = 0;
-        return;                         /* Don't bother it there's only 
+        return;                         /* Don't bother if there's only 
                                          * one tab.*/
     }
     if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
@@ -6666,9 +6773,10 @@ ComputeLayout(Tabset *setPtr)
     }
     setPtr->numTiers = numTiers;
     if (numTiers == 1) {
-        /* We only need the extra space at top of the widget for selected tab
-         * if there's only one tier. */
+        /* We only need the extra space at top of the widget for selected
+         * tab if there's only one tier. */
         if ((setPtr->flags & (OVERFULL|SCROLL_TABS)) == OVERFULL) {
+            /* FIXME: Could be VPORTHEIGHT for left or right tabs. */
             if (VPORTWIDTH(setPtr) > 1) {
                 setPtr->worldWidth = VPORTWIDTH(setPtr) - 
                     (setPtr->xSelectPad + setPtr->inset2);
@@ -8022,10 +8130,10 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
                               setPtr->xButton.height,
                               fill.u32, symbol.u32,
                               (tabPtr == setPtr->activeButtonPtr));
-    if (setPtr->angle != 0.0) {
+    if (setPtr->quad != ROTATE_0) {
         Blt_Picture rotated;
 
-        rotated = Blt_RotatePicture(picture, setPtr->angle);
+        rotated = Blt_RotatePicture(picture, (double)setPtr->quad);
         Blt_FreePicture(picture);
         picture = rotated;
     }
@@ -8121,39 +8229,25 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     /* Icon */
     rPtr = &tabPtr->iconRegion;
-    if ((tabPtr->icon != NULL) && (rPtr->w > 0) && (rPtr->h > 0)) {
-        Tk_Image tkImage;
+    if ((tabPtr->icon != NULL) && (IconWidth(tabPtr->icon) > 0) && 
+        (IconHeight(tabPtr->icon) > 0)) {
+        struct _Icon *iconPtr;
+        int w, h;
 
-        tkImage = IconBits(tabPtr->icon);
-        if (setPtr->angle == 0.0) {
-            Tk_RedrawImage(tkImage, 0, 0, rPtr->w, rPtr->h, drawable, 
-                x + rPtr->x, y + rPtr->y);
-        } else {
-            struct _Icon *iconPtr;
-            
-            iconPtr = tabPtr->icon;
-            if (iconPtr->angle != setPtr->angle) {
-                int isPicture;
-                Blt_Picture picture, rotated;
-
-                if (iconPtr->picture != NULL) {
-                    Blt_FreePicture(iconPtr->picture);
-                }
-                picture = Blt_GetPictureFromImage(setPtr->interp, tkImage,
-                        &isPicture);
-                rotated = Blt_RotatePicture(picture, setPtr->angle);
-                iconPtr->picture = rotated;
-                iconPtr->angle = setPtr->angle;
-                if (!isPicture) {
-                    Blt_FreePicture(picture);
-                }
-            }
-            if (setPtr->painter == NULL) {
-                setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
-            }
+        iconPtr = tabPtr->icon;
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        if (setPtr->quad == ROTATE_0 || setPtr->quad == ROTATE_180) {
             Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
-                iconPtr->picture, 0, 0, rPtr->w, rPtr->h, x + rPtr->x, 
-                y + rPtr->y, 0);
+                                      iconPtr->picture, 0, 0, 
+                                      IconWidth(iconPtr), IconHeight(iconPtr), 
+                                      x + rPtr->x, y + rPtr->y, 0);
+        } else {
+            Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
+                                      iconPtr->picture, 0, 0, 
+                                      IconHeight(iconPtr), IconWidth(iconPtr), 
+                                      x + rPtr->x, y + rPtr->y, 0);
         }
         cavityWidth -= rPtr->w;
     }
@@ -8184,7 +8278,7 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
             fgColor = GETATTR(tabPtr, textColor);
         }
         Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetAngle(ts, setPtr->angle);
+        Blt_Ts_SetAngle(ts, (double)setPtr->quad);
         Blt_Ts_SetBackground(ts, bg);
         Blt_Ts_SetFont(ts, font);
         Blt_Ts_SetPadding(ts, 2, 2, 0, 0);

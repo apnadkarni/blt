@@ -328,26 +328,40 @@ bind BltComboEntry <<Copy>> {
 }
 
 bind BltComboEntry <<Paste>> {
-    %W insert insert [selection get]
-    %W see insert
+    global tcl_platform
+    catch {
+	if {[tk windowingsystem] ne "x11"} {
+	    catch {
+		%W delete sel.first sel.last
+	    }
+	}
+	%W insert insert [::tk::GetSelection %W CLIPBOARD]
+	%W see insert
+    }
 }
 
 bind BltComboEntry <<Clear>> {
-    %W delete sel.first sel.last
+    # ignore if there is no selection
+    catch { %W delete sel.first sel.last }
 }
 
 
 bind Entry <<PasteSelection>> {
-    if { $tk_strictMotif || 
-	 ![info exists blt::ComboEntry::_private(mouseMoved)] || 
-	 !$blt::ComboEntry::_private(mouseMoved)} {
-	tk::EntryPaste %W %x
+    global tcl_platform
+    catch {
+	if {[tk windowingsystem] ne "x11"} {
+	    catch {
+		%W delete sel.first sel.last
+	    }
+	}
+	%W insert insert [::tk::GetSelection %W CLIPBOARD]
+	%W see insert
     }
 }
 
 # Paste
 bind BltComboEntry <Control-v> {
-    %W insert insert [selection get]
+    %W insert insert [::tk::GetSelection %W CLIPBOARD]
 }
 
 # Cut

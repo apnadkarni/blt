@@ -9486,14 +9486,16 @@ DrawIcon(Tabset *setPtr, Icon icon, int x, int y, int w, int h)
     } else {
         Blt_Picture src, dest;
 
-        src = Blt_GetPictureFromImage(interp, tkImage, &isPicture);
+        src = Blt_GetPictureFromImage(interp, tkImage, &isAllocated);
         dest = Blt_RotatePicture(src, setPtr->angle);
         if (setPtr->painter == NULL) {
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
         Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
                 dest, 0, 0, iw, ih, ix, iy, 0);
-        Blt_FreePicture(src);
+        if (isAllocated) {
+            Blt_FreePicture(src);
+        }
         Blt_FreePicture(dest);
     }
 }

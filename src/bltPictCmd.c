@@ -1336,18 +1336,18 @@ ImageToPicture(Tcl_Interp *interp, PictImage *imgPtr, const char *imageName)
 {
     Blt_Picture picture;
     Tk_Image tkImage;
-    int isPicture;
+    int isAllocated;
     
     tkImage = Tk_GetImage(interp, Tk_MainWindow(interp), imageName, NULL, 0);
     if (tkImage == NULL) {
         return TCL_ERROR;
     }
-    picture = Blt_GetPictureFromImage(interp, tkImage, &isPicture);
+    picture = Blt_GetPictureFromImage(interp, tkImage, &isAllocated);
     Tk_FreeImage(tkImage);
     if (picture == NULL) {
         return TCL_ERROR;
     }
-    if (isPicture) {
+    if (!isAllocated) {
         picture = Blt_ClonePicture(picture);
     }
     ReplacePicture(imgPtr, picture);
