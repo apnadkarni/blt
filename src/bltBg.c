@@ -673,11 +673,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
 {
     BackgroundObject *corePtr = clientData;
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)corePtr->brush;
-    int isAllocated;
 
     /* Get picture from image. */
-    if ((brushPtr->tile != NULL) &&
-        (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+    if (brushPtr->tile != NULL) {
         Blt_FreePicture(brushPtr->tile);
     }
     if (Blt_Image_IsDeleted(brushPtr->tkImage)) {
@@ -685,13 +683,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
         return;                         /* Image was deleted. */
     }
     brushPtr->tile = Blt_GetPictureFromImage(corePtr->dataPtr->interp,
-        brushPtr->tkImage, &isAllocated);
+        brushPtr->tkImage);
     if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
-    }
-    brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-    if (isAllocated) {
-        brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
     }
 }
 

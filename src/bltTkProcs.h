@@ -478,7 +478,7 @@ BLT_EXTERN struct _Blt_Chain * Blt_GetPicturesFromPictureImage(
 #define Blt_GetPictureFromImage_DECLARED
 /* 79 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromImage(Tcl_Interp *interp,
-				Tk_Image tkImage, int *isAllocatedPtr);
+				Tk_Image tkImage);
 #endif
 #ifndef Blt_GetPictureFromPictureImage_DECLARED
 #define Blt_GetPictureFromPictureImage_DECLARED
@@ -674,7 +674,7 @@ typedef struct BltTkProcs {
     void (*blt_PixelToXColor) (Blt_Pixel *pixelPtr, XColor *colorPtr); /* 76 */
     int (*blt_IsPicture) (Tk_Image tkImage); /* 77 */
     struct _Blt_Chain * (*blt_GetPicturesFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 78 */
-    Blt_Picture (*blt_GetPictureFromImage) (Tcl_Interp *interp, Tk_Image tkImage, int *isPicturePtr); /* 79 */
+    Blt_Picture (*blt_GetPictureFromImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 79 */
     Blt_Picture (*blt_GetPictureFromPictureImage) (Tk_Image tkImage); /* 80 */
     Blt_Picture (*blt_GetPictureFromPhotoImage) (Tk_Image tkImage); /* 81 */
     Blt_Picture (*blt_GetPictureFromBitmapImage) (Tk_Image tkImage); /* 82 */

@@ -955,7 +955,7 @@ Blt_Picture
 Blt_GetPictureFromPictureImage(Tk_Image tkImage)
 {
     PictInstance *instancePtr;
-
+    
     if (!Blt_IsPicture(tkImage)) {
         return NULL;
     }
@@ -1334,23 +1334,21 @@ QueryExternalFormat(
 static int
 ImageToPicture(Tcl_Interp *interp, PictImage *imgPtr, const char *imageName)
 {
-    Blt_Picture picture;
+    Blt_Picture picture, clone;
     Tk_Image tkImage;
-    int isAllocated;
     
     tkImage = Tk_GetImage(interp, Tk_MainWindow(interp), imageName, NULL, 0);
     if (tkImage == NULL) {
         return TCL_ERROR;
     }
-    picture = Blt_GetPictureFromImage(interp, tkImage, &isAllocated);
+    picture = Blt_GetPictureFromImage(interp, tkImage);
     Tk_FreeImage(tkImage);
     if (picture == NULL) {
         return TCL_ERROR;
     }
-    if (!isAllocated) {
-        picture = Blt_ClonePicture(picture);
-    }
-    ReplacePicture(imgPtr, picture);
+    clone = Blt_ClonePicture(picture);
+    Blt_FreePicture(picture);
+    ReplacePicture(imgPtr, clone);
     if (imgPtr->sourceName != NULL) {
         Blt_Free(imgPtr->sourceName);
     }

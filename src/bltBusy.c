@@ -142,8 +142,6 @@ typedef struct {
 #define SNAPSHOT        (1<<3)          /* Indicates whether the busy
                                          * window is a snapshot of the
                                          * parent. */
-#define IMAGE_FREE_PICTURE   (1<<4)     /* Indicates that the original
-                                         * image was a picture image. */
 #define IMAGE_SEQUENCE  (1<<5)          /* Indicates that the image is a
                                          * picture sequence. */
 
@@ -265,24 +263,18 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
                  int imageWidth, int imageHeight)
 {
     Busy *busyPtr = clientData;
-    int isAllocated;
 
-    if ((busyPtr->layer != NULL) && (busyPtr->flags & IMAGE_FREE_PICTURE)) {
+    if (busyPtr->layer != NULL) {
         Blt_FreePicture(busyPtr->layer);
         busyPtr->layer = NULL;
     }
     EventuallyRedraw(busyPtr);
-    busyPtr->flags &= ~IMAGE_FREE_PICTURE;
     if (Blt_Image_IsDeleted(busyPtr->tkImage)) {
         Tk_FreeImage(busyPtr->tkImage);
         busyPtr->tkImage = NULL;
         return;
     }
-    busyPtr->layer = Blt_GetPictureFromImage(busyPtr->interp, 
-        busyPtr->tkImage, &isAllocated);
-    if (isAllocated) {
-        busyPtr->flags |= IMAGE_FREE_PICTURE;
-    }
+    busyPtr->layer = Blt_GetPictureFromImage(busyPtr->interp, busyPtr->tkImage);
 }
 
 /*ARGSUSED*/
@@ -292,7 +284,7 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
 {
     Busy *busyPtr = (Busy *)widgRec;
 
-    if ((busyPtr->layer != NULL) && (busyPtr->flags & IMAGE_FREE_PICTURE)) {
+    if (busyPtr->layer != NULL) {
         Blt_FreePicture(busyPtr->layer);
         busyPtr->layer = NULL;
     }
@@ -301,7 +293,6 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
     }
     busyPtr->tkImage = NULL;
     busyPtr->layer = NULL;
-    busyPtr->flags &= ~IMAGE_FREE_PICTURE;
 }
 
 /*
@@ -324,7 +315,6 @@ ObjToImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Busy *busyPtr = (Busy *)widgRec;
     Tk_Image tkImage;
     const char *name;
-    int isAllocated;
 
     name = Tcl_GetString(objPtr);
     tkImage = Tk_GetImage(interp, tkwin, name, ImageChangedProc, busyPtr);
@@ -334,22 +324,18 @@ ObjToImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (busyPtr->tkImage != NULL) {
         Tk_FreeImage(busyPtr->tkImage);
     }
-    if ((busyPtr->layer != NULL) && (busyPtr->flags & IMAGE_FREE_PICTURE)) {
-        /* Only free the picture if this is not already a picture image. */
+    if (busyPtr->layer != NULL) {
         Blt_FreePicture(busyPtr->layer);
     }
     busyPtr->tkImage = tkImage;
-    busyPtr->layer = Blt_GetPictureFromImage(interp, tkImage, &isAllocated);
-    if (isAllocated) {
-        busyPtr->chain = Blt_GetPicturesFromPictureImage(interp, tkImage);
-        if (busyPtr->chain == NULL) {
-            return TCL_ERROR;
-        }
-        if (Blt_Chain_GetLength(busyPtr->chain) > 1) {
-            busyPtr->flags |= IMAGE_SEQUENCE;
-            busyPtr->link = NULL;
-        }
-        busyPtr->flags |= IMAGE_FREE_PICTURE;
+    busyPtr->layer = Blt_GetPictureFromImage(interp, tkImage);
+    busyPtr->chain = Blt_GetPicturesFromPictureImage(interp, tkImage);
+    if (busyPtr->chain == NULL) {
+        return TCL_ERROR;
+    }
+    if (Blt_Chain_GetLength(busyPtr->chain) > 1) {
+        busyPtr->flags |= IMAGE_SEQUENCE;
+        busyPtr->link = NULL;
     }
     EventuallyRedraw(busyPtr);
     return TCL_OK;

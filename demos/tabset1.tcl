@@ -1,42 +1,46 @@
 #!../src/bltwish
 
 package require BLT
-option add *Tabset.Tab.padY 0
+option add *Tabset*Tab.PadY 0
+option add *Tabset*Tab.PadX 0
+option add *Tabset.Tab.iPadY 0
+option add *Tabset.Tab.iPadX 0
 #option add *Tabset.Tab.background green
 
 image create picture bgTile -file ./images/chalk.gif
 image create picture img1 -file ./images/mini-book1.gif
 image create picture img2 -file ./images/mini-book2.gif
-image create picture img3 -width 10 -height 10
-img3 blank purple
+image create picture img3 -width 10 -height 30
+img3 blank white
 
 blt::tabset .t \
     -outerrelief raised \
+    -side top \
+    -tearoff yes \
+    -slant both \
+    -justify center \
     -tabwidth same \
     -outerborderwidth 0 \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
-    -xbutton yes \
-    -width 7i
-font create myFont -family Arial -size 9
-puts stderr myFont=[font configure myFont]
-puts stderr fm=[font metrics myFont]
-puts stderr meas=[font measure myFont "Hello World"]
+    -xbutton selected \
+    -width 5i
+
 .t add First \
-    -image img1 \
+    -icon img1 \
     -anchor center \
    
-
-
-foreach page { Again Next another test of a widget } {
+if 1 {
+foreach page { Second Third Fourth Fifth } {
     .t add $page \
 	-anchor center \
 	-selectbackground darkolivegreen2 \
-	-image img3
+
+    #	-icon img3
 }
 
-.t add -text Again -selectbackground lightblue 
-
+.t add -text Sixth -selectbackground lightblue 
+}
 set tabcount 0
 proc NewTab { args } {
     global tabcount
@@ -49,7 +53,7 @@ proc NewTab { args } {
 }
 
 .t add "+" \
-    -font "Arial 10" \
+    -font "Arial 9" \
     -anchor center \
     -selectbackground yellow \
     -command NewTab
@@ -63,4 +67,4 @@ blt::table . \
 blt::table configure . r1 -resize none
 focus .t
 
-puts stderr [.t button configure]
+puts stderr [.t configure]

@@ -151,21 +151,27 @@
 #define X_BUTTON           (1<<6)       /* Draw a "x" button on each
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
-#define OVERFULL           (1<<7)       /* Tabset has enough tabs to be
+#define X_BUTTON_SELECTED  (1<<7)       /* Draw a "x" button only on the
+                                         * selected tab. Clicking on the
+                                         * button will automatically close
+                                         * the tab. */
+#define X_BUTTON_NEVER     (0)          /* Never draw the "x" button. */
+#define X_BUTTON_MASK      (X_BUTTON | X_BUTTON_SELECTED) 
+#define OVERFULL           (1<<9)       /* Tabset has enough tabs to be
                                          * scrolled. */
-#define MULTIPLE_TIER      (1<<8)       /* Indicates the tabset is using
+#define MULTIPLE_TIER      (1<<10)       /* Indicates the tabset is using
                                          * multiple tiers of tabs. */
-#define ACTIVE_PERFORATION (1<<9)       /* Indicates if the perforation should
+#define ACTIVE_PERFORATION (1<<11)       /* Indicates if the perforation should
                                          * should be drawn with active
                                          * colors. */
-#define HIDE_TABS          (1<<10)      /* Display tabs. */
-#define SCROLL_TABS        (1<<11)      /* Allow tabs to be scrolled if
+#define HIDE_TABS          (1<<12)      /* Display tabs. */
+#define SCROLL_TABS        (1<<13)      /* Allow tabs to be scrolled if
                                          * needed. Otherwise tab sizes will
                                          * shrink to fit the space. */
 /* Slant flags. */
 #define SLANT_NONE          0
-#define SLANT_LEFT         (1<<11)
-#define SLANT_RIGHT        (1<<12)
+#define SLANT_LEFT         (1<<14)
+#define SLANT_RIGHT        (1<<15)
 #define SLANT_BOTH         (SLANT_LEFT | SLANT_RIGHT)
 
 /* Tab flags. */
@@ -190,12 +196,20 @@
                                          * tab. Clicking on the button will
                                          * automatically close the tab. */
 #endif  /* defined above */
-#define TEAROFF_REDRAW  (1<<7)          /* Indicates that the tab's tearoff
+#define TEAROFF_REDRAW  (1<<8)          /* Indicates that the tab's tearoff
                                          * window needs to be redraw. */
 enum ShowTabs {
     SHOW_TABS_ALWAYS,
     SHOW_TABS_MULTIPLE,
     SHOW_TABS_NEVER
+};
+
+enum LabelParts {
+    PICK_NONE,
+    PICK_TEXT,
+    PICK_ICON,
+    PICK_XBUTTON,
+    PICK_PERFORATION,
 };
 
 #define TAB_LABEL          (ClientData)0
@@ -235,7 +249,7 @@ enum ShowTabs {
 #define DEF_SELECTPADY                  "2"
 #define DEF_SELECTRELIEF                "raised"
 #define DEF_SHADOWCOLOR                 RGB_BLACK
-#define DEF_XBUTTON                     "0"
+#define DEF_XBUTTON                     "never"
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
@@ -250,12 +264,9 @@ enum ShowTabs {
 
 #define DEF_XBUTTON_ACTIVEBACKGROUND "#EE5F5F"
 #define DEF_XBUTTON_ACTIVEFOREGROUND RGB_WHITE
-#define DEF_XBUTTON_ACTIVERELIEF    "raised"
 #define DEF_XBUTTON_BACKGROUND      RGB_GREY82
-#define DEF_XBUTTON_BORDERWIDTH     "0"
 #define DEF_XBUTTON_COMMAND         (char *)NULL
 #define DEF_XBUTTON_FOREGROUND      RGB_GREY50
-#define DEF_XBUTTON_RELIEF          "flat"
 #define DEF_XBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 #define DEF_XBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
 
@@ -265,7 +276,7 @@ enum ShowTabs {
 #define DEF_TAB_BACKGROUND              (char *)NULL
 #define DEF_TAB_BORDERWIDTH             "1"
 #define DEF_TAB_BUTTON                  (char *)NULL
-#define DEF_TAB_XBUTTON             "1"
+#define DEF_TAB_XBUTTON                 "never"
 #define DEF_TAB_COMMAND                 (char *)NULL
 #define DEF_TAB_DATA                    (char *)NULL
 #define DEF_TAB_DELETE_COMMAND          (char *)NULL
@@ -274,7 +285,7 @@ enum ShowTabs {
 #define DEF_TAB_FOREGROUND              (char *)NULL
 #define DEF_TAB_HEIGHT                  "0"
 #define DEF_TAB_HIDE                    "no"
-#define DEF_TAB_IMAGE                   (char *)NULL
+#define DEF_TAB_ICON                    (char *)NULL
 #define DEF_TAB_IPAD                    "0"
 #define DEF_TAB_PAD                     "3"
 #define DEF_TAB_PERFORATION_COMMAND      (char *)NULL
@@ -356,16 +367,11 @@ typedef struct _Icon {
 #define IconBits(i)     ((i)->tkImage)
 
 /*
- * Button --
+ * XButton --
  */
-typedef struct _Button {
-    int borderWidth;                    /* Width of 3D border around this
-                                         * button. */
+typedef struct _XButton {
     int pad;                            /* Amount of extra padding around
                                          * the button. */
-    int relief;                         /* 3D relief of button. */
-    int activeRelief;                   /* 3D relief when the button is
-                                         * active. */
     XColor *normalFg;                   /* Foreground color of the button when
                                          * the button is inactive. */
     XColor *normalBgColor;              /* Background color of the button
@@ -394,7 +400,7 @@ typedef struct _Button {
                                          * when the button is active at 0
                                          * degreees rotation. */
     short int width, height;            /* The dimensions of the button. */
-} Button;
+} XButton;
 
 
 typedef struct {
@@ -434,7 +440,6 @@ struct _Tab {
 
     short int textWidth0, textHeight0;
     short int labelWidth0, labelHeight0;
-    short int labelWidth, labelHeight;
     short int iconWidth0, iconHeight0;
     short int xButtonWidth0, xButtonHeight0;
     Blt_Pad iPadX, iPadY;               /* Internal padding around the
@@ -629,7 +634,7 @@ struct _Tabset {
                                          * selected tab. */
     int outerPad;                       /* Padding around the exterior of
                                          * the tabset and folder. */
-    Button xButton;                     /* X button drawn on right side of
+    XButton xButton;                    /* X button drawn on right side of
                                          * a tab. */
     Tcl_Obj *xCmdObjPtr;                /* Command to be executed when the
                                          * tab is closed. */
@@ -678,7 +683,7 @@ struct _Tabset {
                                          * pointer.  It is displayed with
                                          * its active foreground /
                                          * background colors.  */
-    Tab *activeButtonPtr;               /* Tab where to pointer is located
+    Tab *activeXButtonPtr;              /* Tab where to pointer is located
                                          * over the X button.  The
                                          * button is displayed with its
                                          * active foreground / background
@@ -713,6 +718,8 @@ static Blt_OptionParseProc ObjToShowTabs;
 static Blt_OptionPrintProc ShowTabsToObj;
 static Blt_OptionParseProc ObjToQuad;
 static Blt_OptionPrintProc QuadToObj;
+static Blt_OptionParseProc ObjToXButton;
+static Blt_OptionPrintProc XButtonToObj;
 
 /*
  * Contains a pointer to the widget that's currently being configured.  This
@@ -747,33 +754,29 @@ static Blt_CustomOption quadOption = {
     ObjToQuad, QuadToObj, NULL, (ClientData)0,
 };
 
-static Blt_ConfigSpec buttonSpecs[] =
+static Blt_CustomOption xbuttonOption = {
+    ObjToXButton, XButtonToObj, NULL, (ClientData)0,
+};
+
+static Blt_ConfigSpec xButtonSpecs[] =
 {
     {BLT_CONFIG_COLOR, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_XBUTTON_ACTIVEBACKGROUND, 
-        Blt_Offset(Button, activeBgColor), 0},
+        Blt_Offset(XButton, activeBgColor), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_XBUTTON_ACTIVEFOREGROUND, 
-        Blt_Offset(Button, activeFg), 0},
+        Blt_Offset(XButton, activeFg), 0},
     {BLT_CONFIG_COLOR, "-background", "background", "Background", 
-        DEF_XBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-        DEF_XBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
-    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
-        DEF_XBUTTON_ACTIVERELIEF, Blt_Offset(Button, activeRelief), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+        DEF_XBUTTON_BACKGROUND, Blt_Offset(XButton, normalBgColor), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_XBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_XBUTTON_RELIEF, 
-        Blt_Offset(Button, relief), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
+        DEF_XBUTTON_FOREGROUND, Blt_Offset(XButton, normalFg), 0},
     {BLT_CONFIG_COLOR, "-selectbackground", "selectBackground", 
         "SelectBackground", DEF_XBUTTON_SELECTBACKGROUND, 
-        Blt_Offset(Button, selBgColor), 0},
+        Blt_Offset(XButton, selBgColor), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
         "SelectForeground", DEF_XBUTTON_SELECTFOREGROUND, 
-        Blt_Offset(Button, selFg), 0},
+        Blt_Offset(XButton, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -805,16 +808,16 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TAB_FONT, 
         Blt_Offset(Tab, font), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_TAB_IMAGE, 
+    {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_TAB_ICON, 
         Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
         Blt_Offset(Tab, iPadX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-ipady", "iPadY", "PadY", DEF_TAB_IPAD, 
         Blt_Offset(Tab, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX",   DEF_TAB_PAD, 
-        Blt_Offset(Tab, padX), 0},
+        Blt_Offset(Tab, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_TAB_PAD, 
-        Blt_Offset(Tab, padY), 0},
+        Blt_Offset(Tab, padY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
@@ -841,9 +844,9 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-windowwidth", "windowWidth", "WindowWidth",
         DEF_TAB_WINDOWWIDTH, Blt_Offset(Tab, reqWardWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-xbutton", "xButton", "XButton", 
-        DEF_TAB_XBUTTON, Blt_Offset(Tab, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)X_BUTTON},
+    {BLT_CONFIG_BITMASK, "-xbutton", "xButton", "XButton", DEF_TAB_XBUTTON,
+        Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+       (Blt_CustomOption *)X_BUTTON},
     {BLT_CONFIG_OBJ, "-xbuttoncommand", "xButtonCommand", "XButtonCommand",
         DEF_XBUTTON_COMMAND, Blt_Offset(Tab, xCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
@@ -958,9 +961,8 @@ static Blt_ConfigSpec configSpecs[] =
         DEF_TROUGHCOLOR, Blt_Offset(Tabset, bg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(Tabset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-xbutton", "xButton", "XButton", 
-        DEF_XBUTTON, Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)X_BUTTON},
+    {BLT_CONFIG_CUSTOM, "-xbutton", "xButton", "XButton", DEF_XBUTTON,
+        Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT, &xbuttonOption},
     {BLT_CONFIG_OBJ, "-xbuttoncommand", "xButtonCommand", "XButtonCommand",
         DEF_XBUTTON_COMMAND, Blt_Offset(Tabset, xCmdObjPtr),
         BLT_CONFIG_NULL_OK},
@@ -1052,7 +1054,8 @@ WorldToScreen(Tabset *setPtr, int x, int y, int *xScreenPtr, int *yScreenPtr)
         sy = x;
         break;
     case SIDE_LEFT:
-        sy = x; sx = y;                 /* Flip coordinates */
+        sx = y;
+        sy = Tk_Height(setPtr->tkwin) - x;
         break;
     case SIDE_BOTTOM:
         sx = x;
@@ -1196,6 +1199,7 @@ GetIcon(Tabset *setPtr, Tcl_Interp *interp, Tk_Window tkwin, const char *name)
         iconPtr->refCount = 1;
         iconPtr->width = w;
         iconPtr->height = h;
+        iconPtr->quad = -1;
         iconPtr->picture = NULL;
         Blt_SetHashValue(hPtr, iconPtr);
     } else {
@@ -1240,7 +1244,6 @@ RotateIcon(Tabset *setPtr, Icon icon)
 {
     struct _Icon *iconPtr = icon;
     Blt_Picture  picture, rotated;
-    int isAllocated;
 
     if ((iconPtr->quad == setPtr->quad) && (iconPtr->picture != NULL)) {
         return iconPtr->picture;
@@ -1248,12 +1251,9 @@ RotateIcon(Tabset *setPtr, Icon icon)
     if (iconPtr->picture != NULL) {
         Blt_FreePicture(iconPtr->picture);
     }
-    picture = Blt_GetPictureFromImage(setPtr->interp, iconPtr->tkImage,
-                                      &isAllocated);
+    picture = Blt_GetPictureFromImage(setPtr->interp, iconPtr->tkImage);
     rotated = Blt_RotatePicture(picture, (float)setPtr->quad * 90.0f);
-    if (isAllocated) {
-        Blt_FreePicture(picture);
-    }
+    Blt_FreePicture(picture);
     picture = rotated;
     iconPtr->picture = picture;
     iconPtr->quad = setPtr->quad;
@@ -1802,7 +1802,7 @@ ShowTabsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static int
 ObjToQuad(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     int *quadPtr = (int *) (widgRec + offset);
     const char *string;
@@ -1860,6 +1860,82 @@ QuadToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         objPtr = Tcl_NewStringObj("270", 3);    break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);    break;
+    }
+    return objPtr;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToXButton --
+ *
+ *      Converts a Tcl_Obj to the flags indicating how the X button is
+ *      displayed.
+ *
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToXButton(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    int *flagsPtr = (int *) (widgRec + offset);
+    int flag;
+    const char *string;
+    char c;
+    int length;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'a') && (strncmp(string, "always", length) == 0)) {
+        flag = X_BUTTON;
+    } else if ((c == 's') && (strncmp(string, "selected", length) == 0)) {
+        flag = X_BUTTON_SELECTED;
+    } else if ((c == 'n') && (strncmp(string, "never", length) == 0)) {
+        flag = X_BUTTON_NEVER;
+    } else {
+        Tcl_AppendResult(interp, "unknown xbutton value \"", string,
+                         "\": should be always, selected, or never.",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    *flagsPtr &= ~X_BUTTON_MASK;
+    *flagsPtr |= flag;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XButtonToObj --
+ *
+ *      Converts the quadrant how the tabs are rotated back to a Tcl_Obj.
+ *
+ * Results:
+ *      The angle is returned as a Tcl_Obj.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+XButtonToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
+{
+    int xflags = *(int *) (widgRec + offset);
+    Tcl_Obj *objPtr;
+
+    if (xflags & X_BUTTON) {
+        objPtr = Tcl_NewStringObj("always", 6);
+    } else if (xflags & X_BUTTON_SELECTED) {
+        objPtr = Tcl_NewStringObj("selected", 8);
+    } else {
+        objPtr = Tcl_NewStringObj("never", 5);
     }
     return objPtr;
 }
@@ -2012,6 +2088,77 @@ RenumberTiers(Tabset *setPtr, Tab *tabPtr)
     }
 }
 
+static enum LabelParts 
+IdentifyLabel0(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
+               int w, int h)
+{
+    if ((tabPtr == setPtr->selectPtr) &&
+        ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
+        int px, py;
+        
+        px = x - 2;
+        py = y + h;
+        if ((sx >= px) && (sx < (px + w)) && (sy >= py) && (sy < (py + 7))) {
+            return PICK_PERFORATION;
+        }
+    }
+    /* X Button. */
+    if ((setPtr->plusPtr != tabPtr) &&
+        (((setPtr->flags | tabPtr->flags) & X_BUTTON) ||
+         (((setPtr->flags | tabPtr->flags) & X_BUTTON_SELECTED) &&
+          (setPtr->selectPtr == tabPtr)))) {
+        int bx, by;
+        
+        bx = x + w - tabPtr->xButtonWidth0;
+        by = y;
+        if (h > tabPtr->xButtonHeight0) {
+            by += (h - tabPtr->xButtonHeight0) / 2;
+        }
+        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonWidth0)) &&
+            (sy >= by) && (sy < (by + tabPtr->xButtonHeight0))) {
+            return PICK_XBUTTON;
+        }
+        w -= tabPtr->xButtonWidth0 + LABEL_PAD;
+    }
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        int ix, iy;
+
+        ix = x;
+        iy = y;
+        if (h > tabPtr->iconHeight0) {
+            iy += (h - tabPtr->iconHeight0) / 2;
+        }
+        if ((sx >= ix) && (sx < (ix + tabPtr->iconWidth0)) &&
+            (sy >= iy) && (sy < (iy + tabPtr->iconHeight0))) {
+            return PICK_ICON;
+        }
+        w -= tabPtr->iconWidth0 + LABEL_PAD;
+        x += tabPtr->iconWidth0 + LABEL_PAD;
+    }
+    if ((tabPtr->text != NULL) && (w > 0)) {
+        int tx, ty;
+
+        tx = x;
+        ty = y;
+        if (w > tabPtr->textWidth0) {
+            if (setPtr->justify == TK_JUSTIFY_CENTER) {
+                tx += (w - tabPtr->textWidth0) / 2;
+            } else if (setPtr->justify == TK_JUSTIFY_RIGHT) {
+                tx += (w - tabPtr->textWidth0);
+            }
+        }
+        if (h > tabPtr->textHeight0) {
+            ty += (h - tabPtr->textHeight0) / 2;
+        }
+        if ((sx >= tx) && (sx < (tx + w)) &&
+            (sy >= ty) && (sy < (ty + tabPtr->textHeight0))) {
+            return PICK_TEXT;
+        }
+    }
+    return PICK_NONE;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2066,10 +2213,123 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
     } 
     /* Adjust the label's area according to the tab's slant. */
     if (SIDE_HORIZONTAL(setPtr)) {
-        y -= (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
-    } else {
         x -= (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
+    } else {
+        y -= (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
     }
+    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+         tabPtr = NextTab(tabPtr, HIDDEN)) {
+        GadgetRegion *rPtr;
+
+        if ((tabPtr->flags & VISIBLE) == 0) {
+            continue;
+        }
+        if ((x >= tabPtr->screenX) && (y >= tabPtr->screenY) &&
+            (x <= (tabPtr->screenX + tabPtr->screenWidth)) &&
+            (y < (tabPtr->screenY + tabPtr->screenHeight + 4 + 
+                  setPtr->ySelectPad))) {
+            if (contextPtr != NULL) {
+                *contextPtr = TAB_LABEL;
+            }
+            rPtr = &tabPtr->xButtonRegion;
+            if ((tabPtr->flags & X_BUTTON) && 
+                (x >= (tabPtr->screenX + rPtr->x)) && 
+                 (x < (tabPtr->screenX + rPtr->x + rPtr->w)) && 
+                 (y >= (tabPtr->screenY + rPtr->y)) && 
+                 (y < (tabPtr->screenY + rPtr->y + rPtr->h))) {
+                *contextPtr = TAB_BUTTON;
+            }
+            return tabPtr;
+        }
+    }
+    return NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PickTabProc2 --
+ *
+ *      Searches the tab located within the given screen X-Y coordinates in
+ *      the viewport.  Note that tabs overlap slightly, so that its important
+ *      to search from the innermost tier out.
+ *
+ * Results:
+ *      Returns the pointer to the tab.  If the pointer isn't contained by any
+ *      tab, NULL is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static ClientData
+PickTabProc2(ClientData clientData, int x, int y, ClientData *contextPtr)
+{
+    Tabset *setPtr = clientData;
+    Tab *tabPtr;
+
+    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+         tabPtr = NextTab(tabPtr, HIDDEN)) {
+        int x1, y1, x2, y2;
+        
+        WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY, &x1, &y1);
+        switch (setPtr->side) {
+        case SIDE_TOP:
+            x2 = x1 + tabPtr->worldWidth;
+            y2 = y1 + tabPtr->worldHeight;
+            break;
+            
+        case SIDE_BOTTOM:
+            x2 = x1 + tabPtr->worldWidth;
+            y2 = y1;
+            y1 = y2 + tabPtr->worldHeight;
+            break;
+
+        case SIDE_LEFT:
+            x2 = x1 + tabPtr->worldHeight;
+            y2 = y1;
+            y1 = y2 - tabPtr->worldWidth;
+            break;
+            
+        case SIDE_RIGHT:
+            x2 = x1;
+            x1 = x2 - tabPtr->worldHeight;
+            y2 = y1 + tabPtr->worldWidth;
+            break;
+        }
+        if ((x >= x1) && (y >= y1) && (x < x2) && (y < y2)) {
+            
+        }
+    }
+    if (contextPtr != NULL) {
+        *contextPtr = NULL;
+    }
+    tabPtr = setPtr->selectPtr;
+    if ((tabPtr != NULL) && (setPtr->flags & tabPtr->flags & TEAROFF) &&  
+        (tabPtr->container == NULL) && (tabPtr->tkwin != NULL)) {
+        int top, bottom, left, right;
+        int sx, sy;
+
+        /* Check first for perforation on the selected tab. */
+        WorldToScreen(setPtr, tabPtr->worldX, 
+              tabPtr->worldY + tabPtr->worldHeight + PERF_OFFSET_Y, &sx, &sy);
+        if (SIDE_HORIZONTAL(setPtr)) {
+            left = sx - PERF_OFFSET_X;
+            right = left + tabPtr->screenWidth;
+            top = sy - PERF_OFFSET_Y;
+            bottom = sy + PERF_OFFSET_Y;
+        } else {
+            left = sx - PERF_OFFSET_Y;
+            right = sx + PERF_OFFSET_Y;
+            top = sy - PERF_OFFSET_X;
+            bottom = top + tabPtr->screenHeight;
+        }
+        if ((x >= left) && (y >= top) && (x < right) && (y < bottom)) {
+            if (contextPtr != NULL) {
+                *contextPtr = TAB_PERFORATION;
+            }
+            return setPtr->selectPtr;
+        }
+    } 
     for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
          tabPtr = NextTab(tabPtr, HIDDEN)) {
         GadgetRegion *rPtr;
@@ -3121,7 +3381,7 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     tabPtr->fill = FILL_BOTH;
     tabPtr->anchor = TK_ANCHOR_CENTER;
     tabPtr->container = NULL;
-    tabPtr->flags = NORMAL | X_BUTTON | TEAROFF;
+    tabPtr->flags = NORMAL | TEAROFF;
     tabPtr->name = Blt_GetHashKey(&setPtr->tabTable, hPtr);
     Blt_SetHashValue(hPtr, tabPtr);
     tabPtr->hashPtr = hPtr;
@@ -3194,7 +3454,7 @@ ConfigureTab(Tabset *setPtr, Tab *tabPtr)
     if (tabPtr->bg != NULL) {
         Blt_Bg_SetChangedProc(tabPtr->bg, BackgroundChangedProc, setPtr);
     }
-    if (Blt_ConfigModified(tabSpecs, "-image", "-*pad*", "-state",
+    if (Blt_ConfigModified(tabSpecs, "-icon", "-*pad*", "-state",
                            "-text", "-window*", (char *)NULL)) {
         setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
     }
@@ -3213,28 +3473,15 @@ ConfigureTab(Tabset *setPtr, Tab *tabPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureButton --
- *
- *      This procedure is called to process an objv/objc list, plus the Tk
- *      option database, in order to configure (or reconfigure) the widget.
- *
- * Results:
-
- *      The return value is a standard TCL result.  If TCL_ERROR is returned,
- *      then interp->result contains an error message.
- *
- * Side Effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for setPtr; old resources get freed, if there were any.  The widget
- *      is redisplayed.
+ * DestroyXButton --
  *
  *---------------------------------------------------------------------------
  */
 static void
-DestroyButton(Tabset *setPtr, Button *butPtr)
+DestroyXButton(Tabset *setPtr, XButton *butPtr)
 {
     iconOption.clientData = setPtr;
-    Blt_FreeOptions(buttonSpecs, (char *)butPtr, setPtr->display, 0);
+    Blt_FreeOptions(xButtonSpecs, (char *)butPtr, setPtr->display, 0);
     if (butPtr->active != butPtr->active0) {
         Blt_FreePicture(butPtr->active);
     }
@@ -3252,7 +3499,7 @@ DestroyButton(Tabset *setPtr, Button *butPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureButton --
+ * ConfigureXButton --
  *
  *      This procedure is called to process an objv/objc list, plus the Tk
  *      option database, in order to configure (or reconfigure) the widget.
@@ -3263,14 +3510,14 @@ DestroyButton(Tabset *setPtr, Button *butPtr)
  *      then interp->result contains an error message.
  *
  * Side Effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for setPtr; old resources get freed, if there were any.  The widget
- *      is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for setPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureButton(
+ConfigureXButton(
     Tcl_Interp *interp,                 /* Interpreter to report errors. */
     Tabset *setPtr,                     /* Information about widget; may or
                                          * may not already have values for some
@@ -3279,12 +3526,12 @@ ConfigureButton(
     Tcl_Obj *const *objv,
     int flags)
 {
-    Button *butPtr = &setPtr->xButton;
+    XButton *butPtr = &setPtr->xButton;
     Blt_FontMetrics fm;
 
     iconOption.clientData = setPtr;
-    if (Blt_ConfigureComponentFromObj(interp, setPtr->tkwin, "button", "Button",
-        buttonSpecs, 0, (Tcl_Obj **)NULL, (char *)butPtr, flags) != TCL_OK) {
+    if (Blt_ConfigureComponentFromObj(interp, setPtr->tkwin, "xbutton", "XButton",
+        xButtonSpecs, 0, (Tcl_Obj **)NULL, (char *)butPtr, flags) != TCL_OK) {
         return TCL_ERROR;
     }
     setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
@@ -3294,7 +3541,7 @@ ConfigureButton(
     }
 #endif
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
-    butPtr->width = butPtr->height = 9 * fm.linespace / 10 - (2 * butPtr->borderWidth);
+    butPtr->width = butPtr->height = 9 * fm.linespace / 10;
 #if DEBUG1
 fprintf(stderr, "bw=%d bh=%d linespace=%d\n", butPtr->width, butPtr->height, fm.linespace);
 #endif
@@ -3527,8 +3774,6 @@ GetWindowRectangle(Tab *tabPtr, Tk_Window parent, int hasTearOff,
         cavityWidth = Tk_Width(parent) - (2 * pad);
         cavityHeight = Tk_Height(parent) - (y + pad);
     }
-    cavityWidth -= PADDING(tabPtr->padX);
-    cavityHeight -= PADDING(tabPtr->padY);
     if (cavityWidth < 1) {
         cavityWidth = 1;
     }
@@ -3601,7 +3846,7 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData context,
     if (context == TAB_PERFORATION) {
         Blt_Chain_Append(tags, MakeBindTag(setPtr, "Perforation"));
     } else if (context == TAB_BUTTON) {
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, "Button"));
+        Blt_Chain_Append(tags, MakeBindTag(setPtr, "XButton"));
         Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
     } else if (context == TAB_LABEL) {
         Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
@@ -3721,7 +3966,7 @@ FreeTabset(DestroyData dataPtr)
         DestroyTab(tabPtr);
     }
     Blt_Tags_Reset(&setPtr->tags);
-    DestroyButton(setPtr, &setPtr->xButton);
+    DestroyXButton(setPtr, &setPtr->xButton);
     Blt_Chain_Destroy(setPtr->chain);
     Blt_DestroyBindingTable(setPtr->bindTable);
     Blt_DeleteHashTable(&setPtr->iconTable);
@@ -3761,7 +4006,6 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->scrollUnits = 2;
     setPtr->side = SIDE_TOP;
     setPtr->tkwin = tkwin;
-    setPtr->xButton.borderWidth = 0;
     setPtr->xSelectPad = SELECT_PADX;
     setPtr->ySelectPad = SELECT_PADY;
     setPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, setPtr, 
@@ -3966,8 +4210,8 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * AddOp --
  *
- *      Adds a new tab to the tabset widget.  The tab is automatically placed
- *      on the end of the tab list.
+ *      Adds a new tab to the tabset widget.  The tab is automatically
+ *      placed on the end of the tab list.
  *
  *      pathName add ?label? ?option value ...?
  *
@@ -4044,142 +4288,6 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         objc - 3, objv + 3);
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * ButtonActivateOp --
- *
- *      This procedure is called to highlight the button.
- *
- *        .h button activate tab 
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                 Tcl_Obj *const *objv)
-{
-    Tab *tabPtr;
-    Tabset *setPtr = clientData; 
-    const char *string;
-
-    string = Tcl_GetString(objv[3]);
-    if (string[0] == '\0') {
-        tabPtr = NULL;
-    } else if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
-        tabPtr = NULL;
-    }
-    if (tabPtr != setPtr->activeButtonPtr) {
-        setPtr->activeButtonPtr = tabPtr;
-        EventuallyRedraw(setPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ButtonCgetOp --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Tabset *setPtr = clientData; 
-
-    iconOption.clientData = setPtr;
-    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, buttonSpecs,
-        (char *)&setPtr->xButton, objv[2], 0);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ButtonConfigureOp --
- *
- *      This procedure is called to process an objv/objc list, plus the Tk
- *      option database, in order to configure (or reconfigure) the widget.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
- *
- * Side Effects:
- *      Configuration information, such as text string, colors, font, etc. get
- *      set for setPtr; old resources get freed, if there were any.  The widget
- *      is redisplayed.
- *
- *      pathName button configure ?option value...?
- *---------------------------------------------------------------------------
- */
-static int
-ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                  Tcl_Obj *const *objv)
-{
-    Tabset *setPtr = clientData; 
-
-    iconOption.clientData = setPtr;
-    if (objc == 3) {
-        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
-            (char *)&setPtr->xButton, (Tcl_Obj *)NULL, 0);
-    } else if (objc == 4) {
-        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, buttonSpecs,
-            (char *)&setPtr->xButton, objv[3], 0);
-    }
-    if (ConfigureButton(interp, setPtr, objc - 3, objv + 3, 
-                        BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    setPtr->flags |= REDRAW_ALL;
-    EventuallyRedraw(setPtr);
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ButtonOp --
- *
- *      This procedure handles tab operations.
- *
- * Results:
- *      A standard TCL result.
- *
- *---------------------------------------------------------------------------
- */
-static Blt_OpSpec buttonOps[] =
-{
-    {"activate",  1, ButtonActivateOp,  4, 4, "tab" }, 
-    {"cget",      2, ButtonCgetOp,      4, 4, "option",},
-    {"configure", 2, ButtonConfigureOp, 3, 0, "?option value?...",},
-};
-static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
-
-static int
-ButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
-{
-    Tcl_ObjCmdProc *proc;
-
-    proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, BLT_OP_ARG2, 
-        objc, objv, 0);
-    if (proc == NULL) {
-        return TCL_ERROR;
-    }
-    return (*proc) (clientData, interp, objc, objv);
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -4200,51 +4308,6 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (char *)setPtr, objv[2], 0);
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * CloseOp --
- *
- *      Invokes a TCL command when a tab is closed.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then
- *      interp->result contains an error message.
- *
- *        pathName close tabName
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-CloseOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-        Tcl_Obj *const *objv)
-{
-    Tab *tabPtr;
-    Tabset *setPtr = clientData; 
-    Tcl_Obj *cmdObjPtr;
-
-    if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
-        return TCL_OK;
-    }
-    cmdObjPtr = (tabPtr->xCmdObjPtr == NULL) 
-        ? setPtr->xCmdObjPtr : tabPtr->xCmdObjPtr;
-    if (cmdObjPtr != NULL) {
-        int result;
-
-        cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);
-        Tcl_ListObjAppendElement(interp, cmdObjPtr, 
-                Tcl_NewIntObj(tabPtr->index));
-        Tcl_IncrRefCount(cmdObjPtr);
-        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-        Tcl_DecrRefCount(cmdObjPtr);
-        return result;
-    }
-    return TCL_OK;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -6001,74 +6064,220 @@ TearoffOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
+
 /*
  *---------------------------------------------------------------------------
  *
- * ComputeLabelGeometry --
+ * XButtonActivateOp --
  *
- * I T B  |xpad|icon|pad|ipadx|text|ipadx|labelpad|cbw|xbutton|cbw|xpad|
- * I T    |xpad|icon|pad|ipadx|text|ipadx|xpad|
- * I      |xpad|icon|xpad|
- * T      |xpad|ipadx|text|ipadx|xpad|
- * T B    |xpad|ipadx|text|ipadx|pad|cbw|xbutton|cbw|xpad|
- * I B    |xpad|icon|pad|cbw|xbutton|cbw|xpad|
- * B      |xpad|cbw|xbutton|cbw|xpad|
+ *      This procedure is called to highlight the button.
  *
- *      Let -padx -pady -ipadx -ipady  always work at 0 degrees.
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
+ *
+ *      pathName xbutton activate tabName
+ * 
  *---------------------------------------------------------------------------
  */
-static void
-ComputeLabelGeometry(Tabset *setPtr, Tab *tabPtr)
+/*ARGSUSED*/
+static int
+XButtonActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                 Tcl_Obj *const *objv)
 {
-    Blt_Font font;
-    unsigned int iw, ih, bw, bh, tw, th;
-    unsigned int w, h;
-    int count;
+    Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+    int length;
 
-    /* Compute the geometry unrotated (0 degrees). */
-    font = GETATTR(tabPtr, font);
-    w = PADDING(tabPtr->padX);
-    h = PADDING(tabPtr->padY);
-    count = 0;
-    tw = th = iw = ih = bw = bh = 0;
-    if (tabPtr->text != NULL) {
-        TextStyle ts;
-
-        Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, tabPtr->iPadX.side1, tabPtr->iPadX.side2, 
-             tabPtr->iPadY.side1, tabPtr->iPadY.side2);
-        Blt_Ts_GetExtents(&ts, tabPtr->text, &tw, &th);
-        count++;
+    Tcl_GetStringFromObj(objv[3], &length);
+    if (length == '\0') {
+        tabPtr = NULL;
+    } else if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
+        return TCL_ERROR;
     }
-    if (tabPtr->icon != NULL) {
-        iw = IconWidth(tabPtr->icon);
-        ih = IconHeight(tabPtr->icon);
-        count++;
+    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
+        tabPtr = NULL;
     }
-    if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
-        (setPtr->plusPtr != tabPtr)) {
-        bw = bh = setPtr->xButton.width;
-        count++;
+    if (tabPtr != setPtr->activeXButtonPtr) {
+        setPtr->activeXButtonPtr = tabPtr;
+        EventuallyRedraw(setPtr);
     }
-    w += iw + th + bw;
-    h += MAX3(ih, th, bh);
-    if (count > 0) {
-        w += LABEL_PAD * (count - 1);
-    }
-    tabPtr->textWidth0 = tw;
-    tabPtr->textHeight0 = th;
-    tabPtr->labelWidth0  = w;
-    tabPtr->labelHeight0 = h;
-    if ((setPtr->quad == ROTATE_90) || (setPtr->quad == ROTATE_270)) {
-        tabPtr->labelWidth  = h;
-        tabPtr->labelHeight = w;
-    } else {
-        tabPtr->labelWidth  = w;
-        tabPtr->labelHeight = h;
-    }
+    return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XButtonDeactivateOp --
+ *
+ *      This procedure is called to un-highlight the active tab button.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
+ *
+ *      pathName xbutton deactivate
+ * 
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+XButtonDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                    Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+
+    setPtr->activeXButtonPtr = NULL;
+    EventuallyRedraw(setPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XButtonCgetOp --
+ *
+ *      pathName xbutton cget option
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+XButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+
+    iconOption.clientData = setPtr;
+    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, xButtonSpecs,
+        (char *)&setPtr->xButton, objv[2], 0);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XButtonConfigureOp --
+ *
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ * Side Effects:
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for setPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
+ *
+ *      pathName xbutton configure ?option value...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+XButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                   Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+
+    iconOption.clientData = setPtr;
+    if (objc == 3) {
+        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, xButtonSpecs,
+            (char *)&setPtr->xButton, (Tcl_Obj *)NULL, 0);
+    } else if (objc == 4) {
+        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, xButtonSpecs,
+            (char *)&setPtr->xButton, objv[3], 0);
+    }
+    if (ConfigureXButton(interp, setPtr, objc - 3, objv + 3, 
+                        BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    setPtr->flags |= REDRAW_ALL;
+    EventuallyRedraw(setPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XButtonInvokeOp --
+ *
+ *      Invokes a TCL command when the tab's X button is clicked.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *        pathName xbutton invoke tabName
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+XButtonInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                Tcl_Obj *const *objv)
+{
+    Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+    Tcl_Obj *cmdObjPtr;
+
+    if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
+        return TCL_OK;
+    }
+    cmdObjPtr = (tabPtr->xCmdObjPtr == NULL) 
+        ? setPtr->xCmdObjPtr : tabPtr->xCmdObjPtr;
+    if (cmdObjPtr != NULL) {
+        int result;
+
+        cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, 
+                Tcl_NewIntObj(tabPtr->index));
+        Tcl_IncrRefCount(cmdObjPtr);
+        result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+        Tcl_DecrRefCount(cmdObjPtr);
+        return result;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XButtonOp --
+ *
+ *      This procedure handles tab operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec xbuttonOps[] =
+{
+    {"activate",   1, XButtonActivateOp,   4, 4, "tabName" }, 
+    {"cget",       2, XButtonCgetOp,       4, 4, "option",},
+    {"configure",  2, XButtonConfigureOp,  3, 0, "?option value?...",},
+    {"deactivate", 1, XButtonDeactivateOp, 3, 3, }, 
+    {"invoke",     1, XButtonInvokeOp,     4, 4, "tabName" }, 
+};
+static int numXButtonOps = sizeof(xbuttonOps) / sizeof(Blt_OpSpec);
+
+static int
+XButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    proc = Blt_GetOpFromObj(interp, numXButtonOps, xbuttonOps, BLT_OP_ARG2, 
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc) (clientData, interp, objc, objv);
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -6091,8 +6300,7 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     int count;
 
     font = GETATTR(tabPtr, font);
-    w = PADDING(tabPtr->iPadX);
-    h = PADDING(tabPtr->iPadY);
+    w = h = 0;
     count = 0;
     tw = th = iw = ih = bw = bh = 0;
     if (tabPtr->icon != NULL) {
@@ -6105,11 +6313,12 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
 
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, 2, 2, 2, 2);
+        Blt_Ts_SetPadding(ts, tabPtr->iPadX.side1, tabPtr->iPadX.side2, 
+             tabPtr->iPadY.side1, tabPtr->iPadY.side2);
         Blt_Ts_GetExtents(&ts, tabPtr->text, &tw, &th);
         count++;
     }
-    if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
+    if (((setPtr->flags | tabPtr->flags) & X_BUTTON_MASK) &&
         (setPtr->plusPtr != tabPtr)) {
         bw = bh = setPtr->xButton.width;
         count++;
@@ -6127,6 +6336,8 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     tabPtr->xButtonHeight0 = bh;
     tabPtr->labelWidth0  = w;
     tabPtr->labelHeight0 = h;
+    fprintf(stderr, "tab=%s font=%s lw=%d lh=%d\n", tabPtr->text,
+            Blt_Font_Name(font), tabPtr->labelWidth0, tabPtr->labelHeight0);
 }
 
 
@@ -6161,7 +6372,8 @@ ComputeWorldGeometry(Tabset *setPtr)
      */
     for (tabPtr = FirstTab(setPtr, 0); tabPtr != NULL; 
          tabPtr = NextTab(tabPtr, 0)) {
-
+        int tw, th;
+        
         /* Reset visibility flag and order of tabs. */
         tabPtr->flags &= ~VISIBLE;
         if (tabPtr->flags & HIDDEN) {
@@ -6170,26 +6382,31 @@ ComputeWorldGeometry(Tabset *setPtr)
         ComputeTabGeometry(setPtr, tabPtr);
         count++;
         if (tabPtr->tkwin != NULL) {
-            int w, h;
+            int pw, ph;
 
             /* Track max page width/height. */
-            w = GetReqWidth(tabPtr);
-            if (maxPageWidth < w) {
-                maxPageWidth = w;
+            pw = GetReqWidth(tabPtr);
+            if (maxPageWidth < pw) {
+                maxPageWidth = pw;
             }
-            h = GetReqHeight(tabPtr);
-            if (maxPageHeight < h) {
-                maxPageHeight = h;
+            ph = GetReqHeight(tabPtr);
+            if (maxPageHeight < ph) {
+                maxPageHeight = ph;
             }
         }
-        if (maxTabWidth < tabPtr->labelWidth0) {
-            maxTabWidth = tabPtr->labelWidth0;
+        tw = tabPtr->labelWidth0;
+        th = tabPtr->labelHeight0;
+
+        if (maxTabWidth < tw) {
+            maxTabWidth = tw;
         }
-        if (maxTabHeight < tabPtr->labelHeight0) {
-            maxTabHeight = tabPtr->labelHeight0;
+        if (maxTabHeight < th) {
+            maxTabHeight = th;
         }
     }
     setPtr->overlap = 0;
+    maxTabHeight += 2 * setPtr->inset2;
+    fprintf(stderr, "maxTabHeight=%d inset2=%d\n", maxTabHeight, setPtr->inset2);
     /*
      * Step 2: Set the sizes for each tab.  This is different for constant
      *         and variable width tabs.  Add the extra space needed for
@@ -6216,7 +6433,6 @@ ComputeWorldGeometry(Tabset *setPtr)
         }
         setPtr->tabWidth  = w;
         setPtr->tabHeight = h;
-
         for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL; 
              tabPtr = NextTab(tabPtr, HIDDEN)) {
             if (setPtr->plusPtr == tabPtr) {
@@ -6578,7 +6794,7 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
     startPtr = NULL;
     count = total = 0;
     plus = 0;
-#ifndef notdef
+#ifdef notdef
     if (setPtr->plusPtr != NULL) {
         plus += setPtr->inset2 * 2;
     }
@@ -6890,7 +7106,7 @@ Draw3dFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int side,
     if (tabPtr == setPtr->selectPtr) {
         bg = GETATTR(tabPtr, selBg);
     } else if ((tabPtr == setPtr->activePtr) || 
-               (tabPtr == setPtr->activeButtonPtr)) {
+               (tabPtr == setPtr->activeXButtonPtr)) {
         bg = GETATTR(tabPtr, activeBg);
     } else if (tabPtr->bg != NULL) {
         bg = tabPtr->bg;
@@ -6999,10 +7215,9 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
  *  12+-------------------------+11
  *
  */
-static void
-DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
+static int
+FolderPolygon(Tabset *setPtr, Tab *tabPtr, int isSelected, XPoint *points)
 {
-    XPoint points[16];
     XPoint *pointPtr;
     int width, height;
     int left, bottom, right, top, yBot, yTop;
@@ -7051,12 +7266,7 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     top = yBot - setPtr->inset2 /* - 4 */;
 
     bottom = MAX(height - ySelectPad, yBot);
-    if (setPtr->pageHeight == 0) {
-        top = yBot - 1;
-        yTop = bottom - setPtr->corner;
-        yBot = bottom;
-    } 
-    if (tabPtr != setPtr->selectPtr) {
+    if (!isSelected) {
 
         /*
          * Case 1: Unselected tab
@@ -7300,6 +7510,20 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         points[i].x = x + setPtr->xOffset;
         points[i].y = y + setPtr->yOffset;
     }
+    return numPoints;
+}
+
+static void
+DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
+{
+    XPoint points[16];
+    int numPoints;
+    int isSelected;
+
+    isSelected = (tabPtr == setPtr->selectPtr);
+    fprintf(stderr, "DrawFolder: %s selected=%d\n",
+            tabPtr->text, isSelected);
+    numPoints = FolderPolygon(setPtr, tabPtr, isSelected, points);
     Draw3dFolder(setPtr, tabPtr, drawable, setPtr->side, points, numPoints);
     DrawLabel(setPtr, tabPtr, drawable);
     if (tabPtr->container != NULL) {
@@ -7647,9 +7871,7 @@ static Blt_OpSpec tabsetOps[] =
     {"activate",    2, ActivateOp,    3, 3, "tabName",},
     {"add",         2, AddOp,         2, 0, "?label? ?option-value..?",},
     {"bind",        2, BindOp,        3, 5, "tabName ?sequence command?",},
-    {"button",      2, ButtonOp,      2, 0, "args",},
     {"cget",        2, CgetOp,        3, 3, "option",},
-    {"close",       2, CloseOp,       3, 3, "tabName",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
     {"delete",      3, DeleteOp,      2, 0, "?tabName ...?",},
@@ -7675,6 +7897,7 @@ static Blt_OpSpec tabsetOps[] =
     {"tearoff",     2, TearoffOp,     3, 4, "tabName ?parent?",},
     {"view",        1, ViewOp,        2, 5, 
         "?moveto fract? ?scroll number what?",},
+    {"xbutton",     2, XButtonOp,      2, 0, "args",},
 };
 
 static int numTabsetOps = sizeof(tabsetOps) / sizeof(Blt_OpSpec);
@@ -7805,7 +8028,7 @@ TabsetCmd(
         Tk_DestroyWindow(setPtr->tkwin);
         return TCL_ERROR;
     }
-    if (ConfigureButton(interp, setPtr, 0, NULL, 0) != TCL_OK) {
+    if (ConfigureXButton(interp, setPtr, 0, NULL, 0) != TCL_OK) {
         Tk_DestroyWindow(setPtr->tkwin);
         return TCL_ERROR;
     }
@@ -7959,7 +8182,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
         /* X button is always located on the right side of the tab, it's
          * height is centered. */
         bw = bh = setPtr->xButton.width;
-        bx = x2 - bw - setPtr->xButton.borderWidth;
+        bx = x2 - bw;
         by = y1;
         if (h > bh) {
             by += (h - bh) / 2;
@@ -7979,7 +8202,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
                 tabPtr->xButtonRegion.y, tabPtr->xButtonRegion.width, 
                 tabPtr->xButtonRegion.height);
 #endif
-        x2 -= bw + 2 * setPtr->xButton.borderWidth;
+        x2 -= bw;
     }
 
     /* Label/image and icon. Their positioning is related because of
@@ -8005,7 +8228,7 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     
     labelWidth = tabPtr->labelWidth0;
     if ((tabPtr != setPtr->plusPtr) && 
-        (setPtr->flags & tabPtr->flags & X_BUTTON)) {
+        ((setPtr->flags | tabPtr->flags) & X_BUTTON)) {
         labelWidth -= setPtr->xButton.width;
     }
     if (w > labelWidth) {
@@ -8110,13 +8333,13 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 }
 
 static Blt_Picture
-DrawButton(Tabset *setPtr, Tab *tabPtr)
+DrawXButton(Tabset *setPtr, Tab *tabPtr)
 {
-    Button *butPtr = &setPtr->xButton;
+    XButton *butPtr = &setPtr->xButton;
     Blt_Picture picture;
     Blt_Pixel fill, symbol;
 
-    if (tabPtr == setPtr->activeButtonPtr) {
+    if (tabPtr == setPtr->activeXButtonPtr) {
         fill.u32 = Blt_XColorToPixel(butPtr->activeBgColor);
         symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
     } else {
@@ -8132,7 +8355,7 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
     picture = Blt_PaintDelete(setPtr->xButton.width,
                               setPtr->xButton.height,
                               fill.u32, symbol.u32,
-                              (tabPtr == setPtr->activeButtonPtr));
+                              (tabPtr == setPtr->activeXButtonPtr));
     if (setPtr->quad != ROTATE_0) {
         Blt_Picture rotated;
 
@@ -8147,26 +8370,30 @@ static void
 DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y, 
            int w, int h)
 {
-    Blt_Bg bg;
-    TabStyle *stylePtr;
-
     fprintf(stderr, "DrawLabel0: tab=%s x=%d,y=%d w=%d h=%d\n",
             tabPtr->text, x, y, w, h);
 
-    fprintf(stderr, "DrawLabel0: wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d\n",
+    fprintf(stderr, "DrawLabel0: wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d textwidth=%d textheight=%d\n",
             tabPtr->worldX, tabPtr->worldY, 
             tabPtr->worldWidth, tabPtr->worldHeight, 
-            setPtr->tabWidth, setPtr->tabHeight);
+            setPtr->tabWidth, setPtr->tabHeight,
+            tabPtr->textWidth0, tabPtr->textHeight0);
+    fprintf(stderr, "DrawLabel0: iw=%d,ih=%d,tw=%d,th=%d bw=%d bh=%d lw=%d lh=%d\n",
+            tabPtr->iconWidth0, tabPtr->iconHeight0, 
+            tabPtr->textWidth0, tabPtr->textHeight0, 
+            tabPtr->xButtonWidth0, tabPtr->xButtonHeight0,
+            tabPtr->labelWidth0, tabPtr->labelHeight0);
 
-    stylePtr = &setPtr->defStyle;
-    bg = GETATTR(tabPtr, bg);
+
     /* X Button. */
-    if ((setPtr->flags & tabPtr->flags & X_BUTTON) && 
-        (setPtr->plusPtr != tabPtr)) {
+    if ((setPtr->plusPtr != tabPtr) &&
+        (((setPtr->flags | tabPtr->flags) & X_BUTTON) ||
+         (((setPtr->flags | tabPtr->flags) & X_BUTTON_SELECTED) &&
+          (setPtr->selectPtr == tabPtr)))) {
         Blt_Picture picture;
         int bx, by;
 
-        picture = DrawButton(setPtr, tabPtr);
+        picture = DrawXButton(setPtr, tabPtr);
         if (setPtr->painter == NULL) {
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
@@ -8212,16 +8439,14 @@ DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 
-                   (tabPtr == setPtr->activeButtonPtr)) {
+                   (tabPtr == setPtr->activeXButtonPtr)) {
             fgColor = GETATTR(tabPtr, activeFg);
         } else {
             fgColor = GETATTR(tabPtr, textColor);
         }
         Blt_Ts_InitStyle(ts);
-        Blt_Ts_SetBackground(ts, bg);
         Blt_Ts_SetFont(ts, font);
         Blt_Ts_SetAngle(ts, setPtr->quad * 90.0);
-        Blt_Ts_SetPadding(ts, 2, 2, 0, 0);
         if (tabPtr->flags & DISABLED) {
             Blt_Ts_SetState(ts, STATE_DISABLED);
         } else if (tabPtr->flags & ACTIVE) {
@@ -8231,6 +8456,226 @@ DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
 
         tx = x;
         ty = y;
+        if (w > tabPtr->textWidth0) {
+            if (setPtr->justify == TK_JUSTIFY_CENTER) {
+                tx += (w - tabPtr->textWidth0) / 2;
+            } else if (setPtr->justify == TK_JUSTIFY_RIGHT) {
+                tx += (w - tabPtr->textWidth0);
+            }
+        }
+        if (h > tabPtr->textHeight0) {
+            ty += (h - tabPtr->textHeight0) / 2;
+        }
+        Blt_Ts_SetMaxLength(ts, w);
+        Blt_Ts_DrawText(setPtr->tkwin, drawable, tabPtr->text, -1, &ts, 
+                        tx, ty);
+    }
+}
+
+static void
+DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y, 
+            int w, int h)
+{
+    fprintf(stderr, "DrawLabel90: tab=%s x=%d,y=%d w=%d h=%d\n",
+            tabPtr->text, x, y, w, h);
+
+    fprintf(stderr, "DrawLabel90: wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d textwidth=%d textheight=%d\n",
+            tabPtr->worldX, tabPtr->worldY, 
+            tabPtr->worldWidth, tabPtr->worldHeight, 
+            setPtr->tabWidth, setPtr->tabHeight,
+            tabPtr->textWidth0, tabPtr->textHeight0);
+    fprintf(stderr, "DrawLabel90: iw=%d,ih=%d,tw=%d,th=%d bw=%d bh=%d lw=%d lh=%d\n",
+            tabPtr->iconWidth0, tabPtr->iconHeight0, 
+            tabPtr->textWidth0, tabPtr->textHeight0, 
+            tabPtr->xButtonWidth0, tabPtr->xButtonHeight0,
+            tabPtr->labelWidth0, tabPtr->labelHeight0);
+
+    /* X Button. */
+    if ((setPtr->plusPtr != tabPtr) &&
+        (((setPtr->flags | tabPtr->flags) & X_BUTTON) ||
+         (((setPtr->flags | tabPtr->flags) & X_BUTTON_SELECTED) &&
+          (setPtr->selectPtr == tabPtr)))) {
+        Blt_Picture picture;
+        int bx, by;
+
+        picture = DrawXButton(setPtr, tabPtr);
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        bx = x;
+        by = y - h;
+        if (w > tabPtr->xButtonHeight0) {
+            bx += (w - tabPtr->xButtonHeight0) / 2;
+        }
+        Blt_PaintPicture(setPtr->painter, drawable, picture, 0, 0, 
+                         tabPtr->xButtonHeight0, tabPtr->xButtonWidth0,
+                         bx, by, 0);
+        Blt_FreePicture(picture);
+        h -= tabPtr->xButtonWidth0 + LABEL_PAD;
+    }
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        Blt_Picture picture;
+        int ix, iy;
+
+        ix = x;
+        iy = y - tabPtr->iconWidth0;
+        if (w > tabPtr->iconHeight0) {
+            ix += (w - tabPtr->iconHeight0) / 2;
+        }
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        picture = RotateIcon(setPtr, tabPtr->icon);
+        Blt_PaintPictureWithBlend(setPtr->painter, drawable, picture, 0, 0, 
+             tabPtr->iconHeight0, tabPtr->iconWidth0, ix, iy, 0);
+        y -= tabPtr->iconWidth0 + LABEL_PAD;
+        h -= tabPtr->iconWidth0 + LABEL_PAD;
+    }
+
+    if ((tabPtr->text != NULL) && (w > 0)) {
+        TextStyle ts;
+        XColor *fgColor;
+        Blt_Font font;
+	Blt_FontMetrics fm;
+        int tx, ty;
+
+        font = GETATTR(tabPtr, font);
+        Blt_Font_GetMetrics(font, &fm);
+        if (tabPtr == setPtr->selectPtr) {
+            fgColor = GETATTR(tabPtr, selColor);
+        } else if ((tabPtr == setPtr->activePtr) || 
+                   (tabPtr == setPtr->activeXButtonPtr)) {
+            fgColor = GETATTR(tabPtr, activeFg);
+        } else {
+            fgColor = GETATTR(tabPtr, textColor);
+        }
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetFont(ts, font);
+        Blt_Ts_SetAngle(ts, setPtr->quad * 90.0);
+        if (tabPtr->flags & DISABLED) {
+            Blt_Ts_SetState(ts, STATE_DISABLED);
+        } else if (tabPtr->flags & ACTIVE) {
+            Blt_Ts_SetState(ts, STATE_ACTIVE);
+        }
+        Blt_Ts_SetForeground(ts, fgColor);
+
+        tx = x;
+        ty = y - h;
+        if (h > tabPtr->textWidth0) {
+            if (setPtr->justify == TK_JUSTIFY_CENTER) {
+                ty += (h - tabPtr->textWidth0) / 2;
+            } else if (setPtr->justify == TK_JUSTIFY_LEFT) {
+                ty += (h - tabPtr->textWidth0);
+            }
+        }
+        if (w > tabPtr->textHeight0) {
+            tx += (w - tabPtr->textHeight0) / 2;
+        }
+        Blt_Ts_SetMaxLength(ts, h);
+        Blt_Ts_DrawText(setPtr->tkwin, drawable, tabPtr->text, -1, &ts, 
+                        tx, ty);
+    }
+}
+
+
+static void
+DrawLabel180(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y, 
+           int w, int h)
+{
+    fprintf(stderr, "DrawLabel0: tab=%s x=%d,y=%d w=%d h=%d\n",
+            tabPtr->text, x, y, w, h);
+
+    fprintf(stderr, "DrawLabel0: wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d textwidth=%d textheight=%d\n",
+            tabPtr->worldX, tabPtr->worldY, 
+            tabPtr->worldWidth, tabPtr->worldHeight, 
+            setPtr->tabWidth, setPtr->tabHeight,
+            tabPtr->textWidth0, tabPtr->textHeight0);
+    fprintf(stderr, "DrawLabel0: iw=%d,ih=%d,tw=%d,th=%d bw=%d bh=%d lw=%d lh=%d\n",
+            tabPtr->iconWidth0, tabPtr->iconHeight0, 
+            tabPtr->textWidth0, tabPtr->textHeight0, 
+            tabPtr->xButtonWidth0, tabPtr->xButtonHeight0,
+            tabPtr->labelWidth0, tabPtr->labelHeight0);
+
+
+    /* X Button. */
+    if ((setPtr->plusPtr != tabPtr) &&
+        (((setPtr->flags | tabPtr->flags) & X_BUTTON) ||
+         (((setPtr->flags | tabPtr->flags) & X_BUTTON_SELECTED) &&
+          (setPtr->selectPtr == tabPtr)))) {
+        Blt_Picture picture;
+        int bx, by;
+
+        picture = DrawXButton(setPtr, tabPtr);
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        bx = x + w - tabPtr->xButtonWidth0;
+        by = y;
+        if (h > tabPtr->xButtonHeight0) {
+            by += (h - tabPtr->xButtonHeight0) / 2;
+        }
+        Blt_PaintPicture(setPtr->painter, drawable, picture, 0, 0, 
+                         tabPtr->xButtonWidth0, tabPtr->xButtonHeight0,
+                         bx, by, 0);
+        Blt_FreePicture(picture);
+        w -= tabPtr->xButtonWidth0 + LABEL_PAD;
+    }
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        Blt_Picture picture;
+        int ix, iy;
+
+        ix = x;
+        iy = y;
+        if (h > tabPtr->iconHeight0) {
+            iy += (h - tabPtr->iconHeight0) / 2;
+        }
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        picture = RotateIcon(setPtr, tabPtr->icon);
+        Blt_PaintPictureWithBlend(setPtr->painter, drawable, picture, 0, 0, 
+             IconWidth(tabPtr->icon), IconHeight(tabPtr->icon), ix, iy, 0);
+        w -= tabPtr->iconWidth0 + LABEL_PAD;
+        x += tabPtr->iconWidth0 + LABEL_PAD;
+    }
+    if ((tabPtr->text != NULL) && (w > 0)) {
+        TextStyle ts;
+        XColor *fgColor;
+        Blt_Font font;
+	Blt_FontMetrics fm;
+        int tx, ty;
+
+        font = GETATTR(tabPtr, font);
+        Blt_Font_GetMetrics(font, &fm);
+        if (tabPtr == setPtr->selectPtr) {
+            fgColor = GETATTR(tabPtr, selColor);
+        } else if ((tabPtr == setPtr->activePtr) || 
+                   (tabPtr == setPtr->activeXButtonPtr)) {
+            fgColor = GETATTR(tabPtr, activeFg);
+        } else {
+            fgColor = GETATTR(tabPtr, textColor);
+        }
+        Blt_Ts_InitStyle(ts);
+        Blt_Ts_SetFont(ts, font);
+        Blt_Ts_SetAngle(ts, setPtr->quad * 90.0);
+        if (tabPtr->flags & DISABLED) {
+            Blt_Ts_SetState(ts, STATE_DISABLED);
+        } else if (tabPtr->flags & ACTIVE) {
+            Blt_Ts_SetState(ts, STATE_ACTIVE);
+        }
+        Blt_Ts_SetForeground(ts, fgColor);
+
+        tx = x;
+        ty = y;
+        if (w > tabPtr->textWidth0) {
+            if (setPtr->justify == TK_JUSTIFY_CENTER) {
+                tx += (w - tabPtr->textWidth0) / 2;
+            } else if (setPtr->justify == TK_JUSTIFY_RIGHT) {
+                tx += (w - tabPtr->textWidth0);
+            }
+        }
         if (h > tabPtr->textHeight0) {
             ty += (h - tabPtr->textHeight0) / 2;
         }
@@ -8259,34 +8704,59 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     int xSelPad, ySelPad;
     GadgetRegion *rPtr;
     int cavityWidth, cavityHeight;
-
+    int left, right;
+    int x0, y0;
+    
     if ((tabPtr->flags & VISIBLE) == 0) {
         return;
     }
     ComputeLabelOffsets(setPtr, tabPtr);
 
     /* Get origin of tab. */
-    WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY, &x, &y);
-    x += setPtr->xOffset;               /* Adjust for scroll offsets. */
-    y += setPtr->yOffset;
-    fprintf(stderr, "initial x=%d, y=%d worldX=%d worldY=%d\n", 
-            x, y, tabPtr->worldX, tabPtr->worldY);
+    WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY, &x0, &y0);
+    x = x0 + setPtr->xOffset;               /* Adjust for drawable pixmap
+                                             * offsets. */
+    y = y0 + setPtr->yOffset;
+    fprintf(stderr, "initial tab=%s wx=%d wy=%d ww=%d wh=%d => x=%d y=%d\n", 
+            tabPtr->text, tabPtr->worldX, tabPtr->worldY, tabPtr->worldWidth,
+            tabPtr->worldHeight, x, y);
     /* Adjust according the side. */
+    left = (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight :  setPtr->inset2;
+    right = (setPtr->flags & SLANT_RIGHT) ? setPtr->tabHeight : setPtr->inset2;
+    cavityWidth  = tabPtr->worldWidth;
+    cavityHeight = setPtr->tabHeight;
     if (setPtr->side & SIDE_BOTTOM) {
-        y -= setPtr->tabHeight + tabPtr->padY.side1;
+        y -= setPtr->tabHeight;
+        x += left;
+        cavityWidth -= left + right;
+        cavityHeight -= 2 * setPtr->inset2;
     } else if (setPtr->side & SIDE_LEFT) {
-        /*      y -= tabPtr->worldWidth; */
+        cavityWidth  = setPtr->tabHeight;
+        cavityHeight = tabPtr->worldWidth;
+        y -= right;
+        x += setPtr->inset2;
+        cavityWidth -= 2 * setPtr->inset2;
+        cavityHeight -= left + right;
     } else if (setPtr->side & SIDE_RIGHT) {
-        x -= setPtr->tabHeight + tabPtr->padY.side1;
+        x -= setPtr->tabHeight;
+    } else if (setPtr->side & SIDE_TOP) {
+        x += left;
+        y += setPtr->inset2;
+        cavityWidth -= left + right;
+        cavityHeight -= 2 * setPtr->inset2;
     }
+#ifdef notdef
     /* Adjust the label's area according to the tab's slant. */
     if (setPtr->side & (SIDE_RIGHT | SIDE_LEFT)) {
         y += (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
     } else {
         x += (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
     }
-    cavityWidth  = tabPtr->worldWidth;
-    cavityHeight = tabPtr->worldHeight;
+    fprintf(stderr, "ww=%d inset2=%d\n", tabPtr->worldWidth,
+            setPtr->inset2);
+    cavityWidth  = tabPtr->worldWidth- 2 * setPtr->inset2;
+    cavityHeight = setPtr->tabHeight - 2 * setPtr->inset2;
+#endif
 #if DEBUG0
     fprintf(stderr, "DrawLabel: tab=%s x=%d,y=%d wx=%d,wy=%d,ww=%d,wh=%d tabwidth=%d tabheight=%d\n",
             tabPtr->text, x, y, tabPtr->worldX, tabPtr->worldY, 
@@ -8310,8 +8780,56 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     cavityWidth += xSelPad;
     cavityHeight += ySelPad;
+
+    if ((tabPtr == setPtr->selectPtr) &&
+        (setPtr->flags & setPtr->selectPtr->flags & TEAROFF)) {
+        Blt_Bg perfBg;
+        int px, py, pw;
+        
+        if (setPtr->flags & ACTIVE_PERFORATION) {
+            perfBg = GETATTR(tabPtr, selBg);
+        } else {
+            perfBg = GETATTR(tabPtr, activeBg);
+        }   
+        switch (setPtr->side) {
+        case SIDE_TOP:
+            px = x0;
+            py = y + cavityHeight + setPtr->inset2;
+            pw = tabPtr->worldWidth;
+            break;
+            
+        case SIDE_BOTTOM:
+            px = x0 + tabPtr->worldHeight;
+            py = y - cavityHeight - setPtr->inset2;
+            pw = tabPtr->worldWidth;
+            break;
+
+        case SIDE_LEFT:
+            px = x + setPtr->tabHeight;
+            py = y0 - tabPtr->worldWidth;
+            pw = tabPtr->worldWidth;
+            break;
+        }
+
+        if (SIDE_HORIZONTAL(setPtr)) {
+            Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
+                                 pw, 7, 0, TK_RELIEF_FLAT);
+            XDrawLine(setPtr->display, drawable, setPtr->perfGC, px + 2, py+3,
+                      px + pw -2 , py+3);
+        } else {
+            Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
+                                 7, pw, 0, TK_RELIEF_FLAT);
+            XDrawLine(setPtr->display, drawable, setPtr->perfGC, px + 3, py+2,
+                      px + 3 , py+ pw - 2);
+        }
+    }
+
     if (setPtr->quad == ROTATE_0) {
         DrawLabel0(setPtr, tabPtr, drawable, x, y, cavityWidth, cavityHeight);
+        return;
+    }
+    if (setPtr->quad == ROTATE_90) {
+        DrawLabel90(setPtr, tabPtr, drawable, x, y, cavityWidth, cavityHeight);
         return;
     }
     /* X button */
@@ -8321,7 +8839,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         Blt_Picture picture;
         int bx, by;
 
-        picture = DrawButton(setPtr, tabPtr);
+        picture = DrawXButton(setPtr, tabPtr);
         if (setPtr->painter == NULL) {
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
@@ -8378,7 +8896,7 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 
-                   (tabPtr == setPtr->activeButtonPtr)) {
+                   (tabPtr == setPtr->activeXButtonPtr)) {
             fgColor = GETATTR(tabPtr, activeFg);
         } else {
             fgColor = GETATTR(tabPtr, textColor);
@@ -8387,7 +8905,6 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
         Blt_Ts_SetAngle(ts, (double)setPtr->quad);
         Blt_Ts_SetBackground(ts, bg);
         Blt_Ts_SetFont(ts, font);
-        Blt_Ts_SetPadding(ts, 2, 2, 0, 0);
         if (tabPtr->flags & DISABLED) {
             Blt_Ts_SetState(ts, STATE_DISABLED);
         } else if (tabPtr->flags & ACTIVE) {
@@ -8409,8 +8926,7 @@ fprintf(stderr, "text=%s w=%d h=%d ls=%d\n", tabPtr->text, rPtr->w, rPtr->h, fm.
         maxLength -= tabPtr->iPadX.side2;
         if ((setPtr->flags & tabPtr->flags & X_BUTTON) &&
             (setPtr->plusPtr != tabPtr)) {
-            maxLength -= LABEL_PAD + setPtr->xButton.width + 
-                setPtr->xButton.borderWidth;
+            maxLength -= LABEL_PAD + setPtr->xButton.width;
         }
         if (tabPtr == setPtr->selectPtr) {
             maxLength += setPtr->xSelectPad;

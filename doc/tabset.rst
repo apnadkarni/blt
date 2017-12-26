@@ -153,6 +153,14 @@ available for *tabset* widgets:
   tab may be active at a time.  If *tabName* is "", then no tab will be be
   active.
 
+*pathName* **add** ?\ *label*\ ?  ?\ *value option ...*\ ?
+  Adds a tab to the tabset.  The tab is automatically placed after any
+  existing tabs. If a *label* argument is present, this is the name
+  of the tab.  By default tabs are labeled "tabN" where N is a number.
+  If one or more *option-value* pairs are specified, they modify the given
+  tab option(s) to have the given value(s). *Option* and *value* are
+  described in the **configure** operation below.
+
 *pathName* **bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ? 
   Associates *cmdString* with *tagName* such that whenever the event sequence
   given by *sequence* occurs for a tab with this tag, *cmdString* will be
@@ -170,10 +178,76 @@ available for *tabset* widgets:
   *sequence* are missing then a list of all the event sequences for which
   bindings have been defined for *tagName*.
 
+*pathName* **button activate** *tabName*
+  Activated the tab's X button. The button is drawn in its active colors.
+  See the button's **-activebackground** and **-activeforeground** options.
+  *TabName* is an index, label, or tag but may not refer to more than one
+  tab.  Only one tab button may be active at a time.
+
+*pathName* **button cget** *option*
+  Returns the current value of the button configuration option given by
+  *option*.  *Option* may have any of the values accepted by the
+  **button configure** operation described below.
+
+*pathName* **button configure** ?\ *option*\ ? ?\ *value option value ...*\ ?
+  Query or modify the configuration options of the button.  If no *option*
+  is specified, returns a list describing all the available options for
+  *pathName* (see **Tk_ConfigureInfo** for information on the format of
+  this list).  If *option* is specified with no *value*, then the command
+  returns a list describing the one named option (this list will be
+  identical to the corresponding sublist of the value returned if no
+  *option* is specified).  If one or more \fIoption\-value\fR pairs are
+  specified, then the command modifies the given button option(s) to have
+  the given value(s); in this case the command returns an empty string.
+
+  Button configuration options may be set either by the **button configure** 
+  operation or the Tk **option** command.  The resource class
+  is "Button".  The resource name is "button".
+
+  ::
+
+     option add *Tabset.Button.Foreground white
+     option add *Tabset.Button.Background blue
+
+  *Option* and *value* are described below.
+
+  **-activebackground** *colorName*
+    Sets the default active background color for buttons.  An X button is
+    active when the mouse is positioned over it or set by the **button
+    activate** operation. The default color is "skyblue4".
+    
+  **-activeforeground** *colorName*
+    Sets the default active foreground color for buttons.  An X button is
+    active when the mouse is positioned over it or set by the **button
+    activate** operation. The default color is "white".
+
+  **-background** *colorName*
+    Sets the background color of buttons.  The default color is
+    "grey82".
+
+  **-foreground** *colorName* 
+    Sets the foreground color of tab labels.  The default
+    value is "black".
+
+  **-selectbackground** *colorName*
+    Sets the background color for buttons when the tab is selected.
+    The default color is "skyblue4".
+    
+  **-selectforeground** *colorName*
+    Sets the foreground color for buttons when the tab
+    is selected.  The default color is "white".
+
+*pathName* **button invoke** *tabName*
+  Invokes a command associated with the X button for *tabName*. See the
+  tab or widget **-xbuttoncommand** option.
+  *TabName* is an index, label, or tag but may not refer to more than one
+  tab.  Only one tab button may be invoked at a time.
+
 *pathName* **cget** *option*
   Returns the current value of the widget configuration option given by
   *option*.  *Option* may have any of the values accepted by the
   **configure** operation described below.
+
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value option value ...*\ ?
   Query or modify the configuration options of the widget.  If no *option*

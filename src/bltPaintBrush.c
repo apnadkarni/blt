@@ -612,11 +612,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     PaintBrushCmd *cmdPtr = clientData;
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)cmdPtr->brush;
-    int isAllocated;
 
     /* Get picture from image. */
-    if ((brushPtr->tile != NULL) &&
-        (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+    if (brushPtr->tile != NULL) {
         Blt_FreePicture(brushPtr->tile);
     }
     if (Blt_Image_IsDeleted(brushPtr->tkImage)) {
@@ -624,13 +622,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
         return;                         /* Image was deleted. */
     }
     brushPtr->tile = Blt_GetPictureFromImage(cmdPtr->dataPtr->interp,
-        brushPtr->tkImage, &isAllocated);
+        brushPtr->tkImage);
     if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
-    }
-    brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-    if (isAllocated) {
-        brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
     }
 }
 
@@ -1571,9 +1565,7 @@ TileBrushFreeProc(Blt_PaintBrush brush)
 {
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     
-    if (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE) {
-        Blt_FreePicture(brushPtr->tile);
-    }
+    Blt_FreePicture(brushPtr->tile);
 }
 
 /*
@@ -1594,20 +1586,12 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     
     if (brushPtr->tkImage != NULL) {
-        int isAllocated;
-        
-        if ((brushPtr->tile != NULL) &&
-            (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+        if (brushPtr->tile != NULL) {
             Blt_FreePicture(brushPtr->tile);
         }
-        brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage,
-                &isAllocated);
+        brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage);
         if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
             Blt_UnmultiplyColors(brushPtr->tile);
-        }
-        brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-        if (isAllocated) {
-            brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
         }
     }
     /* This is where you initialize the coloring variables. */

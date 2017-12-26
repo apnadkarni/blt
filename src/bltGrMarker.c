@@ -70,8 +70,6 @@
 
 #define MAX_OUTLINE_POINTS      12
 
-#define IMAGE_FREE_PICTURE      (1<<7)
-
 /* Map graph coordinates to normalized coordinates [0..1] */
 #define NORMALIZE(A,x)  (((x) - (A)->tickRange.min) * (A)->tickRange.scale)
 
@@ -1884,24 +1882,18 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     Graph *graphPtr;
     ImageMarker *imPtr = clientData;
-    int isAllocated;
 
     graphPtr = imPtr->obj.graphPtr;
-    if ((imPtr->picture != NULL) && (imPtr->flags & IMAGE_FREE_PICTURE)) {
+    if (imPtr->picture != NULL) {
         Blt_FreePicture(imPtr->picture);
     }
     imPtr->picture = NULL;
-    imPtr->flags &= ~IMAGE_FREE_PICTURE;
     if (Blt_Image_IsDeleted(imPtr->tkImage)) {
         Tk_FreeImage(imPtr->tkImage);
         imPtr->tkImage = NULL;
         return;
     }
-    imPtr->picture = Blt_GetPictureFromImage(graphPtr->interp, imPtr->tkImage, 
-                &isAllocated);
-    if (isAllocated) {
-        imPtr->flags |= IMAGE_FREE_PICTURE;
-    }
+    imPtr->picture = Blt_GetPictureFromImage(graphPtr->interp, imPtr->tkImage);
     graphPtr->flags |= CACHE_DIRTY;
     imPtr->flags |= MAP_ITEM;
     Blt_EventuallyRedrawGraph(graphPtr);
@@ -1914,7 +1906,7 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
 {
     ImageMarker *imPtr = (ImageMarker *)widgRec;
 
-    if ((imPtr->picture != NULL) && (imPtr->flags & IMAGE_FREE_PICTURE)) {
+    if (imPtr->picture != NULL) {
         Blt_FreePicture(imPtr->picture);
     }
     imPtr->picture = NULL;
@@ -1922,7 +1914,6 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
         Tk_FreeImage(imPtr->tkImage);
     }
     imPtr->tkImage = NULL;
-    imPtr->flags &= ~IMAGE_FREE_PICTURE;
 }
 
 /*
@@ -1947,27 +1938,22 @@ ObjToPictImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     ImageMarker *imPtr = (ImageMarker *)widgRec;
     Tk_Image tkImage;
     const char *name;
-    int isAllocated;
 
     name = Tcl_GetString(objPtr);
     tkImage = Tk_GetImage(interp, tkwin, name, ImageChangedProc, imPtr);
     if (tkImage == NULL) {
         return TCL_ERROR;
     }
-    if ((*pictPtr != NULL) && (imPtr->flags & IMAGE_FREE_PICTURE)) {
+    if (*pictPtr != NULL) {
         Blt_FreePicture(*pictPtr);
     }
     if (imPtr->tkImage != NULL) {
         Tk_FreeImage(imPtr->tkImage);
     }
-    imPtr->flags &= ~IMAGE_FREE_PICTURE;
     *pictPtr = NULL;
     imPtr->tkImage = tkImage;
     graphPtr = imPtr->obj.graphPtr;
-    *pictPtr = Blt_GetPictureFromImage(graphPtr->interp, tkImage, &isAllocated);
-    if (isAllocated) {
-        imPtr->flags |= IMAGE_FREE_PICTURE;
-    }
+    *pictPtr = Blt_GetPictureFromImage(graphPtr->interp, tkImage);
     return TCL_OK;
 }
 

@@ -92,6 +92,7 @@ struct _Blt_Ps;
  */
 struct _Blt_Picture {
     unsigned int flags;                 /* Flags describing the picture. */
+    int refCount;
     short int width, height;            /* Size of the image in pixels. */
     short int pixelsPerRow;             /* Stride of the image. Row width
                                          * plus possible padding to ensure
@@ -158,6 +159,8 @@ struct _Blt_Chain;
 #define Blt_Picture_IsGreyscale(p)     ((p)->flags & BLT_PIC_GREYSCALE)
 #define Blt_Picture_IsPremultiplied(p) ((p)->flags & BLT_PIC_PREMULT_COLORS)
 #define Blt_Picture_SetCompositeFlag(p) ((p)->flags |= BLT_PIC_COMPOSITE)
+#define Blt_Picture_IncrRefCount(p) ((p)->refCount++)
+#define Blt_Picture_DecrRefCount(p) ((p)->refCount--)
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,
@@ -432,7 +435,7 @@ BLT_EXTERN int Blt_IsPicture(Tk_Image tkImage);
 BLT_EXTERN struct _Blt_Chain *Blt_GetPicturesFromPictureImage(
         Tcl_Interp *interp, Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromImage(Tcl_Interp *interp, 
-        Tk_Image tkImage, int *isAllocatedPtr);
+        Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPictureImage(Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromPhotoImage(Tk_Image tkImage);
 BLT_EXTERN Blt_Picture Blt_GetPictureFromBitmapImage(Tk_Image tkImage);

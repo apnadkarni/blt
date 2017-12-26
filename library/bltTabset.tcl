@@ -387,14 +387,14 @@ proc blt::Tabset::Init { w } {
     $w bind Perforation <ButtonRelease-1> { 
 	%W perforation invoke 
     }
-    $w bind Button <Enter> { 
-	%W button activate current 
+    $w bind XButton <Enter> { 
+	%W xbutton activate current 
     }
-    $w bind Button <Leave> { 
-	%W button activate ""
+    $w bind XButton <Leave> { 
+	%W xbutton deactivate
     }
-    $w bind Button <ButtonRelease-1> { 
-	if { [catch {%W close current}] == 0 } {
+    $w bind XButton <ButtonRelease-1> { 
+	if { [catch {%W xbutton invoke current}] == 0 } {
 	    %W delete current
 	}
     }

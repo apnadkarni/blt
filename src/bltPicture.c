@@ -337,7 +337,7 @@ Blt_CreatePicture(int w, int h)
     destPtr->height = h;
     destPtr->flags  = BLT_PIC_UNINITIALIZED;
     destPtr->delay = 0;
-
+    destPtr->refCount = 1;
     /* 
      * Be careful. There's a bunch of picture routines that assume an even
      * number of pixels per row. 
@@ -375,8 +375,11 @@ Blt_CreatePicture(int w, int h)
 void
 Blt_FreePicture(Pict *pictPtr)
 {
-    Blt_Free(pictPtr->buffer);
-    Blt_Free(pictPtr);
+    pictPtr->refCount--;
+    if (pictPtr->refCount <= 0) {
+        Blt_Free(pictPtr->buffer);
+        Blt_Free(pictPtr);
+    }
 }
 
 /* 

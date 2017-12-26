@@ -9485,18 +9485,15 @@ DrawIcon(Tabset *setPtr, Icon icon, int x, int y, int w, int h)
         Tk_RedrawImage(tkImage, 0, 0, iw, ih, drawable, ix, iy);
     } else {
         Blt_Picture src, dest;
-        int isAllocated;
         
-        src = Blt_GetPictureFromImage(interp, tkImage, &isAllocated);
+        src = Blt_GetPictureFromImage(interp, tkImage);
         dest = Blt_RotatePicture(src, setPtr->angle);
         if (setPtr->painter == NULL) {
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
         Blt_PaintPictureWithBlend(setPtr->painter, drawable, 
                 dest, 0, 0, iw, ih, ix, iy, 0);
-        if (isAllocated) {
-            Blt_FreePicture(src);
-        }
+        Blt_FreePicture(src);
         Blt_FreePicture(dest);
     }
 }
