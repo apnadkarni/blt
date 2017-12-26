@@ -15,16 +15,16 @@ img3 blank white
 
 blt::tabset .t \
     -outerrelief raised \
-    -side top \
+    -side bottom \
     -tearoff yes \
-    -slant both \
+    -slant none \
     -justify center \
     -tabwidth same \
     -outerborderwidth 0 \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -xbutton selected \
-    -width 5i
+    -width 7i
 
 .t add First \
     -icon img1 \
@@ -67,4 +67,4 @@ blt::table . \
 blt::table configure . r1 -resize none
 focus .t
 
-puts stderr [.t configure]
+#puts stderr [.t configure]

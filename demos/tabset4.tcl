@@ -85,7 +85,7 @@ foreach f [lrange $files 0 3] {
     set root [file root $tail]
     regsub -all {\.} $root {_} root
     set thumb [ResizePicture $f .5i]
-    .t insert end $f -image $thumb -fill both -text $root
+    .t insert end $f -icon $thumb -fill both -text $root
 }
 
 .t focus 0
