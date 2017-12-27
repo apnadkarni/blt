@@ -1296,16 +1296,18 @@ DrawArrowXPStyle(Scrollbar *scrollPtr, Drawable drawable, int size,
         ay = by + borderWidth;
         break;
     }
-    Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
-                         borderWidth, relief); 
-    picture = GetArrowPicture(scrollPtr, aw, ah, STYLE_XP, direction);
-    if (scrollPtr->painter == NULL) {
-        scrollPtr->painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+    if ((aw > 0)  && (ah > 0)) {
+        Blt_Bg_FillRectangle(scrollPtr->tkwin, drawable, bg, bx, by, size, size,
+                             borderWidth, relief); 
+        picture = GetArrowPicture(scrollPtr, aw, ah, STYLE_XP, direction);
+        if (scrollPtr->painter == NULL) {
+            scrollPtr->painter = Blt_GetPainter(scrollPtr->tkwin, 1.0);
+        }
+        ax += (cavityWidth - aw) / 2;
+        ay += (cavityWidth - ah) / 2;
+        Blt_PaintPicture(scrollPtr->painter, drawable, picture, 0, 0, 
+                         aw, ah, ax, ay, 0);
     }
-    ax += (cavityWidth - aw) / 2;
-    ay += (cavityWidth - ah) / 2;
-    Blt_PaintPicture(scrollPtr->painter, drawable, picture, 0, 0, 
-                     aw, ah, ax, ay, 0);
 }
 
 static void
@@ -1447,14 +1449,15 @@ DisplayScrollbar(ClientData clientData) /* Information about window. */
     if (elementBW < 0) {
         elementBW = scrollPtr->borderWidth;
     }
-
+    if (width <= 0) {
+        return;
+    }
     /*
      * In order to avoid screen flashes, this procedure redraws the scrollbar
      * in a pixmap, then copies the pixmap to the screen in a single
      * operation.  This means that there's no point in time where the on-sreen
      * image has been cleared.
      */
-
     pixmap = Blt_GetPixmap(scrollPtr->display, Tk_WindowId(tkwin),
         Tk_Width(tkwin), Tk_Height(tkwin), Tk_Depth(tkwin));
 

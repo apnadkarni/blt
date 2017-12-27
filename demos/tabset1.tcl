@@ -1,31 +1,35 @@
 #!../src/bltwish
-
 package require BLT
+if 0 {
 option add *Tabset*Tab.PadY 0
 option add *Tabset*Tab.PadX 0
 option add *Tabset.Tab.iPadY 0
 option add *Tabset.Tab.iPadX 0
 #option add *Tabset.Tab.background green
-
-image create picture bgTile -file ./images/chalk.gif
-image create picture img1 -file $blt_library/icons/32x32/filter.png
+}
+if { [blt::winop xdpi] > 150 } {
+  image create picture img1 -file $blt_library/icons/32x32/filter.png
+} else {
+  image create picture img1 -file $blt_library/icons/16x16/filter.png
+}
 image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 30
 img3 blank white
 
+set side left
 blt::tabset .t \
     -outerrelief raised \
-    -side top \
+    -side $side \
     -tearoff yes \
     -slant none \
+    -scrolltabs yes \
     -justify center \
     -tabwidth same \
     -outerborderwidth 0 \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -xbutton selected \
-    -rotate 90 \
-    -height 3i -width 3i
+    -height 5i -width 5i
 
 .t add First \
     -icon img1 \
@@ -63,10 +67,21 @@ proc NewTab { args } {
     -command NewTab
 
 
-blt::tk::scrollbar .s -command { .t view } -orient horizontal
+if { $side == "bottom" || $side == "top" } {
+  set orient "horizontal"
+  set loc 1,0
+  set fill x
+} else {
+  set orient "vertical"
+  set loc 0,1
+  set fill y
+
+}
+
+blt::tk::scrollbar .s -command { .t view } -orient $orient
 blt::table . \
     .t 0,0 -fill both \
-    .s 1,0 -fill x 
+    .s $loc -fill $fill
 
 blt::table configure . r1 -resize none
 focus .t

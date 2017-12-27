@@ -104,8 +104,10 @@
 #define SIDE_TOP                (1<<1)
 #define SIDE_RIGHT              (1<<2)
 #define SIDE_BOTTOM             (1<<3)
-#define SIDE_VERTICAL(s)        ((s)->side & (SIDE_RIGHT | SIDE_LEFT))
-#define SIDE_HORIZONTAL(s)      ((s)->side & (SIDE_TOP | SIDE_BOTTOM))
+#define SIDE_VERTICAL(s) \
+    (((s)->side == SIDE_RIGHT) || ((s)->side == SIDE_LEFT))
+#define SIDE_HORIZONTAL(s) \
+    (((s)->side == SIDE_TOP) || ((s)->side == SIDE_BOTTOM))
 
 #define LABEL_VERTICAL(s) \
        (((s)->quad == ROTATE_90) || ((s)->quad == ROTATE_270))
@@ -118,12 +120,12 @@
     (((s)->flags & SLANT_RIGHT) ? (s)->tabHeight : (s)->inset2)
 
 #define VPORTWIDTH(s)        \
-    ((LABEL_HORIZONTAL((s))) ?                  \
+    ((SIDE_HORIZONTAL((s))) ?                  \
      (Tk_Width((s)->tkwin) - 2 * (s)->inset) :   \
      (Tk_Height((s)->tkwin) - 2 * (s)->inset))
 
 #define VPORTHEIGHT(s)           \
-    ((LABEL_VERTICAL((s))) ?   \
+    ((SIDE_VERTICAL((s))) ?   \
      (Tk_Width((s)->tkwin) - 2 * (s)->inset) :          \
      (Tk_Height((s)->tkwin) - 2 * (s)->inset))
 
@@ -180,9 +182,9 @@
                                          * needed. Otherwise tab sizes will
                                          * shrink to fit the space. */
 /* Slant flags. */
-#define SLANT_NONE          0
-#define SLANT_LEFT          (1<<14)
-#define SLANT_RIGHT         (1<<15)
+#define SLANT_NONE          (0)
+#define SLANT_LEFT          (1<<17)
+#define SLANT_RIGHT         (1<<18)
 #define SLANT_BOTH          (SLANT_LEFT | SLANT_RIGHT)
 
 /* Tab flags. */
@@ -278,7 +280,7 @@ enum LabelParts {
 #define DEF_PERFORATION_COMMAND         (char *)NULL
 #define DEF_PERFORATION_FOREGROUND      RGB_GREY30
 #define DEF_PERFORATION_RELIEF          "flat"
-#define DEF_PERFORATION_ACTIVERELIEF    "raised"
+#define DEF_PERFORATION_ACTIVERELIEF    "flat"
 #define DEF_PERFORATION_BORDERWIDTH     "1"
 
 #define DEF_TAB_PERFORATION_ACTIVEBACKGROUND (char *)NULL
@@ -1088,7 +1090,7 @@ WorldToScreen(Tabset *setPtr, int x, int y, int *xScreenPtr, int *yScreenPtr)
         break;
     case SIDE_LEFT:
         sx = y;
-        sy = Tk_Height(setPtr->tkwin) - x;
+        sy = x;
         break;
     case SIDE_BOTTOM:
         sx = x;
@@ -1842,7 +1844,21 @@ RotateIcon(Tabset *setPtr, Icon icon)
     return picture;
 }
 
-static int
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetPerforationCoordinates --
+ *
+ *      Returns the screen coordinates for the perforation of the given tab.
+ *      The x,y coordinate is always the upper-left corner of the label,
+ *      regardless of the side that it is placed.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
 GetPerforationCoordinates(Tabset *setPtr, int *xPtr, int *yPtr, 
                           int *widthPtr, int *heightPtr)
 {
@@ -1872,7 +1888,7 @@ GetPerforationCoordinates(Tabset *setPtr, int *xPtr, int *yPtr,
         
     case SIDE_LEFT:
         x = sx + setPtr->tabHeight;
-        y = sy - setPtr->selectPtr->worldWidth;
+        y = sy;
         w = setPtr->selectPtr->worldWidth;
         break;
         
@@ -1887,10 +1903,23 @@ GetPerforationCoordinates(Tabset *setPtr, int *xPtr, int *yPtr,
     *yPtr = y;
     *widthPtr = w;
     *heightPtr = h;
-    return TRUE;
 }
 
-static int
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetLabelCoordinates --
+ *
+ *      Returns the screen coordinates for the label of the given tab.
+ *      The x,y coordinate is always the upper-left corner of the label,
+ *      regardless of the side that it is placed.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
 GetLabelCoordinates(Tabset *setPtr, Tab *tabPtr, int *xPtr, int *yPtr, 
                     int *widthPtr, int *heightPtr)
 {
@@ -1928,7 +1957,10 @@ GetLabelCoordinates(Tabset *setPtr, Tab *tabPtr, int *xPtr, int *yPtr,
     case SIDE_LEFT:
         w  = setPtr->tabHeight - (2 * setPtr->inset2);
         h = tabPtr->worldWidth - (left + right);
-        y -= right;
+        y += left;                      /* Left and right slant are
+                                         * swapped, because tabs run
+                                         * top-to-bottom instead of
+                                         * bottom-to-top. */
         x += setPtr->inset2;
         break;
 
@@ -1970,7 +2002,6 @@ GetLabelCoordinates(Tabset *setPtr, Tab *tabPtr, int *xPtr, int *yPtr,
     *yPtr = y;
     *widthPtr = w;
     *heightPtr = h;
-    return TRUE;
 }
 
 
@@ -2111,19 +2142,19 @@ ObjToSlant(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     const char *string;
     char c;
     int *slantPtr = (int *)(widgRec + offset);
-    int slant;
+    int slantFlags;
     int length;
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
-        slant = SLANT_NONE;
+        slantFlags = SLANT_NONE;
     } else if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
-        slant = SLANT_LEFT;
+        slantFlags = SLANT_LEFT;
     } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
-        slant = SLANT_RIGHT;
+        slantFlags = SLANT_RIGHT;
     } else if ((c == 'b') && (strncmp(string, "both", length) == 0)) {
-        slant = SLANT_BOTH;
+        slantFlags = SLANT_BOTH;
     } else {
         Tcl_AppendResult(interp, "bad argument \"", string,
             "\": should be \"none\", \"left\", \"right\", or \"both\"",
@@ -2131,7 +2162,7 @@ ObjToSlant(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     *slantPtr &= ~SLANT_BOTH;
-    *slantPtr |= slant;
+    *slantPtr |= slantFlags;
     return TCL_OK;
 }
 
@@ -2152,15 +2183,20 @@ static Tcl_Obj *
 SlantToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
            char *widgRec, int offset, int flags)  
 {
-    int slant = *(int *)(widgRec + offset);
+    int slantFlags = *(int *)(widgRec + offset);
     const char *string;
 
-    switch (slant & SLANT_BOTH) {
-    case SLANT_LEFT:    string = "left";        break;
-    case SLANT_RIGHT:   string = "right";       break;
-    case SLANT_NONE:    string = "none";        break;
-    case SLANT_BOTH:    string = "both";        break;
-    default:            string = "???";         break;
+    switch (slantFlags & SLANT_BOTH) {
+    case SLANT_LEFT:    
+        string = "left";        break;
+    case SLANT_RIGHT:   
+        string = "right";       break;
+    case SLANT_NONE:    
+        string = "none";        break;
+    case SLANT_BOTH:    
+        string = "both";        break;
+    default:
+        string = "???";         break;
     }
     return Tcl_NewStringObj(string, -1);
 }
@@ -2839,51 +2875,51 @@ static enum LabelParts
 IdentifyLabel90(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
-    /* X Button. */
-    if (HasXButton(setPtr, tabPtr)) {
-        int bx, by;
-        
-        bx = x + w - tabPtr->xButtonWidth0;
-        by = y;
-        if (h > tabPtr->xButtonHeight0) {
-            by += (h - tabPtr->xButtonHeight0) / 2;
-        }
-        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonWidth0)) &&
-            (sy >= by) && (sy < (by + tabPtr->xButtonHeight0))) {
-            return PICK_XBUTTON;
-        }
-        w -= tabPtr->xButtonWidth0 + LABEL_PAD;
-    }
     /* Icon */
     if (tabPtr->icon != NULL) {
         int ix, iy;
 
         ix = x;
-        iy = y;
-        if (h > tabPtr->iconHeight0) {
-            iy += (h - tabPtr->iconHeight0) / 2;
+        iy = y + h - tabPtr->iconWidth0;
+        if (w > tabPtr->iconHeight0) {
+            ix += (w - tabPtr->iconHeight0) / 2;
         }
-        if ((sx >= ix) && (sx < (ix + tabPtr->iconWidth0)) &&
-            (sy >= iy) && (sy < (iy + tabPtr->iconHeight0))) {
+        if ((sx >= ix) && (sx < (ix + tabPtr->iconHeight0)) &&
+            (sy >= iy) && (sy < (iy + tabPtr->iconWidth0))) {
             return PICK_ICON;
         }
-        w -= tabPtr->iconWidth0 + LABEL_PAD;
-        x += tabPtr->iconWidth0 + LABEL_PAD;
+        h -= tabPtr->iconWidth0 + LABEL_PAD;
+    }
+    /* X Button. */
+    if (HasXButton(setPtr, tabPtr)) {
+        int bx, by;
+
+        bx = x;
+        by = y;
+        if (w > tabPtr->xButtonHeight0) {
+            bx += (w - tabPtr->xButtonHeight0) / 2;
+        }
+        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonHeight0)) &&
+            (sy >= by) && (sy < (by + tabPtr->xButtonWidth0))) {
+            return PICK_XBUTTON;
+        }
+        h -= tabPtr->xButtonWidth0 + LABEL_PAD;
+        y += tabPtr->xButtonWidth0 + LABEL_PAD;
     }
     if ((tabPtr->text != NULL) && (w > 0)) {
         int tx, ty;
 
         tx = x;
         ty = y;
-        if (w > tabPtr->textWidth0) {
+        if (h > tabPtr->textWidth0) {
             if (setPtr->justify == TK_JUSTIFY_CENTER) {
-                tx += (w - tabPtr->textWidth0) / 2;
-            } else if (setPtr->justify == TK_JUSTIFY_RIGHT) {
-                tx += (w - tabPtr->textWidth0);
+                ty += (h - tabPtr->textWidth0) / 2;
+            } else if (setPtr->justify == TK_JUSTIFY_LEFT) {
+                ty += (h - tabPtr->textWidth0);
             }
         }
-        if (h > tabPtr->textHeight0) {
-            ty += (h - tabPtr->textHeight0) / 2;
+        if (w > tabPtr->textHeight0) {
+            tx += (w - tabPtr->textHeight0) / 2;
         }
         if ((sx >= tx) && (sx < (tx + w)) &&
             (sy >= ty) && (sy < (ty + tabPtr->textHeight0))) {
@@ -2897,26 +2933,11 @@ static enum LabelParts
 IdentifyLabel180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
-    /* X Button. */
-    if (HasXButton(setPtr, tabPtr)) {
-        int bx, by;
-        
-        bx = x + w - tabPtr->xButtonWidth0;
-        by = y;
-        if (h > tabPtr->xButtonHeight0) {
-            by += (h - tabPtr->xButtonHeight0) / 2;
-        }
-        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonWidth0)) &&
-            (sy >= by) && (sy < (by + tabPtr->xButtonHeight0))) {
-            return PICK_XBUTTON;
-        }
-        w -= tabPtr->xButtonWidth0 + LABEL_PAD;
-    }
     /* Icon */
     if (tabPtr->icon != NULL) {
         int ix, iy;
 
-        ix = x;
+        ix = x + w - tabPtr->iconWidth0;
         iy = y;
         if (h > tabPtr->iconHeight0) {
             iy += (h - tabPtr->iconHeight0) / 2;
@@ -2926,7 +2947,22 @@ IdentifyLabel180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
             return PICK_ICON;
         }
         w -= tabPtr->iconWidth0 + LABEL_PAD;
-        x += tabPtr->iconWidth0 + LABEL_PAD;
+    }
+    /* X Button. */
+    if (HasXButton(setPtr, tabPtr)) {
+        int bx, by;
+
+        bx = x;
+        by = y;
+        if (h > tabPtr->xButtonHeight0) {
+            by += (h - tabPtr->xButtonHeight0) / 2;
+        }
+        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonWidth0)) &&
+            (sy >= by) && (sy < (by + tabPtr->xButtonHeight0))) {
+            return PICK_XBUTTON;
+        }
+        w -= tabPtr->xButtonWidth0 + LABEL_PAD;
+        x += tabPtr->xButtonWidth0 + LABEL_PAD;
     }
     if ((tabPtr->text != NULL) && (w > 0)) {
         int tx, ty;
@@ -2958,48 +2994,49 @@ IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     /* X Button. */
     if (HasXButton(setPtr, tabPtr)) {
         int bx, by;
-        
-        bx = x + w - tabPtr->xButtonWidth0;
-        by = y;
-        if (h > tabPtr->xButtonHeight0) {
-            by += (h - tabPtr->xButtonHeight0) / 2;
+
+        bx = x - w;
+        by = y + h - tabPtr->xButtonWidth0;
+        if (w > tabPtr->xButtonHeight0) {
+            bx += (w - tabPtr->xButtonHeight0) / 2;
         }
-        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonWidth0)) &&
-            (sy >= by) && (sy < (by + tabPtr->xButtonHeight0))) {
+        if ((sx >= bx) && (sx < (bx + tabPtr->xButtonHeight0)) &&
+            (sy >= by) && (sy < (by + tabPtr->xButtonWidth0))) {
             return PICK_XBUTTON;
         }
-        w -= tabPtr->xButtonWidth0 + LABEL_PAD;
+        h -= tabPtr->xButtonWidth0 + LABEL_PAD;
     }
     /* Icon */
     if (tabPtr->icon != NULL) {
         int ix, iy;
 
-        ix = x;
+        ix = x - w;
         iy = y;
-        if (h > tabPtr->iconHeight0) {
-            iy += (h - tabPtr->iconHeight0) / 2;
+        if (w > tabPtr->iconHeight0) {
+            ix += (w - tabPtr->iconHeight0) / 2;
         }
-        if ((sx >= ix) && (sx < (ix + tabPtr->iconWidth0)) &&
-            (sy >= iy) && (sy < (iy + tabPtr->iconHeight0))) {
+        if ((sx >= ix) && (sx < (ix + tabPtr->iconHeight0)) &&
+            (sy >= iy) && (sy < (iy + tabPtr->iconWidth0))) {
             return PICK_ICON;
         }
-        w -= tabPtr->iconWidth0 + LABEL_PAD;
-        x += tabPtr->iconWidth0 + LABEL_PAD;
+        y += tabPtr->iconWidth0 + LABEL_PAD;
+        h -= tabPtr->iconWidth0 + LABEL_PAD;
     }
+
     if ((tabPtr->text != NULL) && (w > 0)) {
         int tx, ty;
 
-        tx = x;
+        tx = x - w;
         ty = y;
-        if (w > tabPtr->textWidth0) {
+        if (h > tabPtr->textWidth0) {
             if (setPtr->justify == TK_JUSTIFY_CENTER) {
-                tx += (w - tabPtr->textWidth0) / 2;
+                ty += (h - tabPtr->textWidth0) / 2;
             } else if (setPtr->justify == TK_JUSTIFY_RIGHT) {
-                tx += (w - tabPtr->textWidth0);
+                ty += (h - tabPtr->textWidth0);
             }
         }
-        if (h > tabPtr->textHeight0) {
-            ty += (h - tabPtr->textHeight0) / 2;
+        if (w > tabPtr->textHeight0) {
+            tx += (w - tabPtr->textHeight0) / 2;
         }
         if ((sx >= tx) && (sx < (tx + w)) &&
             (sy >= ty) && (sy < (ty + tabPtr->textHeight0))) {
@@ -3436,6 +3473,9 @@ PickTabProc(ClientData clientData, int sx, int sy, ClientData *contextPtr)
     if (contextPtr != NULL) {
         *contextPtr = NULL;
     }
+    setPtr->xOffset = setPtr->yOffset = 0;  /* Offset of the window origin
+                                             * from the pixmap created
+                                             * below. */
 
     /* Step 1: Check the perforation on the selected tab. */
     if ((setPtr->selectPtr != NULL) &&
@@ -4479,7 +4519,7 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->defStyle.borderWidth = 1;
     setPtr->defStyle.perfBorderWidth = 1;
     setPtr->defStyle.normalPerfRelief = TK_RELIEF_FLAT;
-    setPtr->defStyle.activePerfRelief = TK_RELIEF_RAISED;
+    setPtr->defStyle.activePerfRelief = TK_RELIEF_FLAT;
     setPtr->defStyle.relief = TK_RELIEF_RAISED;
     setPtr->justify = TK_JUSTIFY_CENTER;
     setPtr->reqTabWidth = TAB_WIDTH_SAME;
@@ -6948,8 +6988,13 @@ ComputeWorldGeometry(Tabset *setPtr)
                 maxPageHeight = ph;
             }
         }
-        tw = tabPtr->labelWidth0;
-        th = tabPtr->labelHeight0;
+        if (SIDE_VERTICAL(setPtr) != LABEL_VERTICAL(setPtr)) {
+            th = tabPtr->labelWidth0;
+            tw = tabPtr->labelHeight0;
+        } else {
+            tw = tabPtr->labelWidth0;
+            th = tabPtr->labelHeight0;
+        } 
 
         if (maxTabWidth < tw) {
             maxTabWidth = tw;
@@ -7834,6 +7879,24 @@ static void
 DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y, 
             int w, int h)
 {
+    /* Icon */
+    if (tabPtr->icon != NULL) {
+        Blt_Picture picture;
+        int ix, iy;
+
+        ix = x;
+        iy = y + h - tabPtr->iconWidth0;
+        if (w > tabPtr->iconHeight0) {
+            ix += (w - tabPtr->iconHeight0) / 2;
+        }
+        if (setPtr->painter == NULL) {
+            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
+        }
+        picture = RotateIcon(setPtr, tabPtr->icon);
+        Blt_PaintPictureWithBlend(setPtr->painter, drawable, picture, 0, 0, 
+             tabPtr->iconHeight0, tabPtr->iconWidth0, ix, iy, 0);
+        h -= tabPtr->iconWidth0 + LABEL_PAD;
+    }
     /* X Button. */
     if (HasXButton(setPtr, tabPtr)) {
         Blt_Picture picture;
@@ -7844,7 +7907,7 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
         bx = x;
-        by = y - h;
+        by = y;
         if (w > tabPtr->xButtonHeight0) {
             bx += (w - tabPtr->xButtonHeight0) / 2;
         }
@@ -7853,25 +7916,7 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
                          bx, by, 0);
         Blt_FreePicture(picture);
         h -= tabPtr->xButtonWidth0 + LABEL_PAD;
-    }
-    /* Icon */
-    if (tabPtr->icon != NULL) {
-        Blt_Picture picture;
-        int ix, iy;
-
-        ix = x;
-        iy = y - tabPtr->iconWidth0;
-        if (w > tabPtr->iconHeight0) {
-            ix += (w - tabPtr->iconHeight0) / 2;
-        }
-        if (setPtr->painter == NULL) {
-            setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
-        }
-        picture = RotateIcon(setPtr, tabPtr->icon);
-        Blt_PaintPictureWithBlend(setPtr->painter, drawable, picture, 0, 0, 
-             tabPtr->iconHeight0, tabPtr->iconWidth0, ix, iy, 0);
-        y -= tabPtr->iconWidth0 + LABEL_PAD;
-        h -= tabPtr->iconWidth0 + LABEL_PAD;
+        y += tabPtr->xButtonWidth0 + LABEL_PAD;
     }
 
     if ((tabPtr->text != NULL) && (w > 0)) {
@@ -7902,7 +7947,7 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         Blt_Ts_SetForeground(ts, fgColor);
 
         tx = x;
-        ty = y - h;
+        ty = y;
         if (h > tabPtr->textWidth0) {
             if (setPtr->justify == TK_JUSTIFY_CENTER) {
                 ty += (h - tabPtr->textWidth0) / 2;
