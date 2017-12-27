@@ -155,19 +155,6 @@ array set side2rotate {
     -command { .ts configure -side $config(-side) -rotate $side2rotate($config(-side)) }
 .side.m select 0
 
-blt::tk::label .iconpos_l -text "-iconposition" 
-blt::combobutton .iconpos -textvariable text(-iconposition) -menu .iconpos.m 
-blt::combomenu .iconpos.m -textvariable text(-iconposition)
-.iconpos.m add -type radiobutton -text [.ts cget -iconposition]
-.iconpos.m add -type separator
-.iconpos.m add -type radiobutton -text "right" 
-.iconpos.m add -type radiobutton -text "left"  
-.iconpos.m add -type radiobutton -text "bottom"
-.iconpos.m add -type radiobutton -text "top"   
-.iconpos.m item configure all -variable config(-iconposition) \
-    -command { .ts configure -iconposition $config(-iconposition) } 
-.iconpos.m select 0
-
 blt::tk::label .slant_l -text "-slant" 
 blt::combobutton .slant -textvariable text(-slant) -menu .slant.m 
 blt::combomenu .slant.m -textvariable text(-slant)
@@ -534,8 +521,6 @@ blt::table . \
     .foreground           6,2 -fill x \
     .highlightthickness_l 7,1 -anchor e \
     .highlightthickness   7,2 -fill x \
-    .iconpos_l            8,1 -anchor e \
-    .iconpos              8,2 -fill x \
     .justify_l            9,1 -anchor e \
     .justify              9,2 -fill x \
     .outerborderwidth_l  10,1 -anchor e \
@@ -576,7 +561,7 @@ blt::table . \
 
 foreach option { 
     borderwidth gap highlightthickness justify outerpad relief rotate 
-    side slant tabwidth tearoff tiers iconposition
+    side slant tabwidth tearoff tiers 
 } {
     set $option [.ts cget -$option]
 }

@@ -44,7 +44,6 @@ blt::tabset .t \
     -font "Arial 8" \
     -outerborderwidth 2 \
     -tearoff yes \
-    -iconposition left \
     -tabwidth same \
     -slant left \
     -tiers 1 \

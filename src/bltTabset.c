@@ -226,7 +226,6 @@ enum LabelParts {
 #define DEF_BORDERWIDTH                 "0"
 #define DEF_COMMAND                     (char *)NULL
 #define DEF_CURSOR                      (char *)NULL
-#define DEF_DASHES                      "1"
 #define DEF_FONT                        STD_FONT_SMALL
 #define DEF_FOREGROUND                  STD_NORMAL_FOREGROUND
 #define DEF_FOREGROUND                  STD_NORMAL_FOREGROUND
@@ -257,11 +256,10 @@ enum LabelParts {
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
-#define DEF_TABRELIEF                   "raised"
+#define DEF_TAB_RELIEF                  "raised"
 #define DEF_TABWIDTH                    "same"
 #define DEF_TAKEFOCUS                   "1"
 #define DEF_TEAROFF                     "no"
-#define DEF_ICONPOSITION                "left"
 #define DEF_TIERS                       "1"
 #define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
@@ -273,6 +271,20 @@ enum LabelParts {
 #define DEF_XBUTTON_FOREGROUND      RGB_GREY50
 #define DEF_XBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 #define DEF_XBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
+
+#define DEF_PERFORATION_ACTIVEBACKGROUND STD_ACTIVE_BACKGROUND
+#define DEF_PERFORATION_ACTIVEFOREGROUND RGB_GREY40
+#define DEF_PERFORATION_BACKGROUND      STD_NORMAL_BACKGROUND
+#define DEF_PERFORATION_COMMAND         (char *)NULL
+#define DEF_PERFORATION_FOREGROUND      RGB_GREY30
+#define DEF_PERFORATION_RELIEF          "flat"
+#define DEF_PERFORATION_ACTIVERELIEF    "raised"
+#define DEF_PERFORATION_BORDERWIDTH     "1"
+
+#define DEF_TAB_PERFORATION_ACTIVEBACKGROUND (char *)NULL
+#define DEF_TAB_PERFORATION_ACTIVEFOREGROUND (char *)NULL
+#define DEF_TAB_PERFORATION_BACKGROUND  (char *)NULL
+#define DEF_TAB_PERFORATION_FOREGROUND  (char *)NULL
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -407,11 +419,6 @@ typedef struct _XButton {
 } XButton;
 
 
-typedef struct {
-    short int x, y;                     /* Location of region. */
-    short int w, h;                     /* Dimensions of region. */
-} GadgetRegion;
-
 struct _Tab {
     const char *name;                   /* Identifier for tab. */
     Blt_HashEntry *hashPtr;
@@ -476,7 +483,7 @@ struct _Tab {
     Tk_Window tkwin;                    /* Widget to be mapped when the tab is
                                          * selected.  If NULL, don't make
                                          * space for the page. */
-    int reqWardWidth, reqWardHeight;  /* If non-zero, overrides the
+    int reqWardWidth, reqWardHeight;    /* If non-zero, overrides the
                                          * requested dimensions of the
                                          * embedded widget. */
     Tk_Window container;                /* The window containing the embedded
@@ -510,12 +517,11 @@ struct _Tab {
                                          * when tab is deleted. */
     GC textGC;
     GC backGC;
+    Blt_Bg activePerfBg;               /* Active perforation background */
+    Blt_Bg normalPerfBg;               /* Normal perforation background. */
+    XColor *activePerfFg;              /* Active perforation foreground. */
+    XColor *normalPerfFg;              /* Normal perforation foreground. */
 
-    /* Gadget positions and locations: */
-    GadgetRegion xButtonRegion;
-    GadgetRegion textRegion;
-    GadgetRegion iconRegion;
-    GadgetRegion focusRegion;
 };
 
 
@@ -538,13 +544,18 @@ typedef struct {
     Blt_Bg bg;                          /* Normal background. */
     Blt_Bg selBg;                       /* Selected background. */
 
-    GC activeGC;
-
-    Blt_Dashes dashes;
     int relief;
     Tcl_Obj *cmdObjPtr;                 /* Command invoked when the tab is
                                          * selected */
     Tcl_Obj *perfCmdObjPtr;     
+    Blt_Bg activePerfBg;               /* Active perforation background */
+    Blt_Bg normalPerfBg;               /* Normal perforation background. */
+    XColor *activePerfFg;              /* Active perforation foreground. */
+    XColor *normalPerfFg;              /* Normal perforation foreground. */
+    int activePerfRelief;              /* Active perforation relief. */
+    int normalPerfRelief;              /* Normal perforation relief. */
+    int perfBorderWidth;               /* Width of 3D border around the tab's
+                                        * perforation. */
 
 } TabStyle;
 
@@ -553,20 +564,15 @@ struct _Tabset {
                                          * NULL means that the window has been
                                          * destroyed but the data structures
                                          * haven't yet been cleaned up.*/
-
     Display *display;                   /* Display containing widget; needed,
                                          * among other things, to release
                                          * resources after tkwin has already
                                          * gone away. */
-
     Tcl_Interp *interp;                 /* Interpreter associated with
                                          * widget. */
-
     Tcl_Command cmdToken;               /* Token for widget's command. */
-
     unsigned int flags;                 /* For bitfield definitions, see
                                          * below */
-
     int showTabs;
     short int inset;                    /* Total width of all borders,
                                          * including traversal highlight and
@@ -574,24 +580,18 @@ struct _Tabset {
                                          * interior stuff must be offset from
                                          * outside edges to leave room for
                                          * borders. */
-
     short int inset2;                   /* Total width of 3-D folder border +
                                          * corner, Indicates how much interior
                                          * stuff  must be offset from outside
                                          * edges of folder.*/
-
     short int ySelectPad2;              /* Extra offset for selected tab. Only
                                          * for single tiers. */
-
     short int pageTop;                  /* Offset from top of tabset to the
                                          * start of the page. */
     short int xOffset, yOffset;         /* Offset of pixmap buffer to top of
                                          * window. */
-
     Blt_Painter painter;
-
     Tk_Cursor cursor;                   /* X Cursor */
-
     Blt_Bg bg;                          /* 3D border surrounding the
                                          * window. */
     int borderWidth;                    /* Width of 3D border. */
@@ -599,7 +599,6 @@ struct _Tabset {
     XColor *shadowColor;                /* Shadow color around folder. */
 
     int justify;
-    int iconPos;
     int quad;
     int reqQuad;
     /*
@@ -793,6 +792,14 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_TAB_ACTIVEFOREGROUND, 
         Blt_Offset(Tab, activeFg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-activeperforationbackground",
+        "activePerforationBackground", "ActivePerforationBackground",
+        DEF_TAB_PERFORATION_ACTIVEBACKGROUND,
+        Blt_Offset(Tab, activePerfBg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-activeperforationforeground",
+        "activePerforationForeground", "ActivePerforationForeground",
+        DEF_TAB_PERFORATION_ACTIVEFOREGROUND, 
+        Blt_Offset(Tab, activePerfFg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_TAB_ANCHOR, 
         Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
@@ -822,9 +829,15 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_TAB_PAD, 
         Blt_Offset(Tab, padY), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
+        "PerforationBackground", DEF_TAB_PERFORATION_BACKGROUND,
+        Blt_Offset(Tab, normalPerfBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-perforationforeground", "perforationForeground",
+        "PerforationForeground", DEF_TAB_PERFORATION_FOREGROUND, 
+        Blt_Offset(Tab, normalPerfFg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
         "Background", DEF_TAB_SELECTBACKGROUND, Blt_Offset(Tab, selBg), 
         BLT_CONFIG_NULL_OK},
@@ -860,11 +873,23 @@ static Blt_ConfigSpec tabSpecs[] =
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-        "activeBackground", DEF_ACTIVEBACKGROUND, 
+        "ActiveBackground", DEF_ACTIVEBACKGROUND, 
         Blt_Offset(Tabset, defStyle.activeBg), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground",
-        "activeForeground", DEF_ACTIVEFOREGROUND, 
+        "ActiveForeground", DEF_ACTIVEFOREGROUND, 
         Blt_Offset(Tabset, defStyle.activeFg), 0},
+    {BLT_CONFIG_BACKGROUND, "-activeperforationbackground",
+        "activePerforationBackground", "ActivePerforationBackground",
+        DEF_PERFORATION_ACTIVEBACKGROUND,
+        Blt_Offset(Tabset, defStyle.activePerfBg), 0},
+    {BLT_CONFIG_COLOR, "-activeperforationforeground",
+        "activePerforationForeground", "ActivePerforationForeground",
+        DEF_PERFORATION_ACTIVEFOREGROUND, 
+        Blt_Offset(Tabset, defStyle.activePerfFg), 0},
+    {BLT_CONFIG_RELIEF, "-activeperforationrelief", "activePerforationRelief",
+        "ActivePerforationRelief", DEF_PERFORATION_ACTIVERELIEF,
+        Blt_Offset(Tabset, defStyle.activePerfRelief),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Tabset, defStyle.bg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
@@ -874,8 +899,6 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_DASHES, 
-        Blt_Offset(Tabset, defStyle.dashes), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
@@ -893,9 +916,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
         "HighlightThickness", DEF_HIGHLIGHTTHICKNESS, 
         Blt_Offset(Tabset, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SIDE, "-iconposition", "iconPosition", "IconPosition", 
-        DEF_ICONPOSITION, Blt_Offset(Tabset, iconPos),
-        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_JUSTIFY, "-justify", "Justify", "Justify", DEF_JUSTIFY, 
         Blt_Offset(Tabset, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-outerborderwidth", "outerBorderWidth", 
@@ -911,11 +931,27 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-pagewidth", "pageWidth", "PageWidth",
         DEF_PAGEWIDTH, Blt_Offset(Tabset, reqPageWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-perforationborderwidth",
+        "perforationBorderWidth", "PerforationBorderWidth",
+        DEF_PERFORATION_BORDERWIDTH,
+        Blt_Offset(Tabset, defStyle.perfBorderWidth),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
+        "PerforationBackground", DEF_PERFORATION_BACKGROUND,
+        Blt_Offset(Tabset, defStyle.normalPerfBg)},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tabset, defStyle.perfCmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-perforationforeground", "perforationForeground",
+        "PerforationForeground", DEF_PERFORATION_FOREGROUND, 
+        Blt_Offset(Tabset, defStyle.normalPerfFg)},
+    {BLT_CONFIG_RELIEF, "-perforationrelief", "perforationRelief",
+        "PerforationRelief", DEF_PERFORATION_RELIEF,
+        Blt_Offset(Tabset, defStyle.normalPerfRelief), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
-        DEF_TABRELIEF, Blt_Offset(Tabset, defStyle.relief), 0},
+        DEF_TAB_RELIEF, Blt_Offset(Tabset, defStyle.relief), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-rotate", "rotate", "Rotate", DEF_ROTATE, 
         Blt_Offset(Tabset, reqQuad), BLT_CONFIG_DONT_SET_DEFAULT, 
         &quadOption},
@@ -2745,16 +2781,6 @@ static enum LabelParts
 IdentifyLabel0(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
-    if ((tabPtr == setPtr->selectPtr) &&
-        ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
-        int px, py;
-        
-        px = x - 2;
-        py = y + h;
-        if ((sx >= px) && (sx < (px + w)) && (sy >= py) && (sy < (py + 7))) {
-            return PICK_PERFORATION;
-        }
-    }
     /* X Button. */
     if (HasXButton(setPtr, tabPtr)) {
         int bx, by;
@@ -2813,16 +2839,6 @@ static enum LabelParts
 IdentifyLabel90(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
-    if ((tabPtr == setPtr->selectPtr) &&
-        ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
-        int px, py;
-        
-        px = x - 2;
-        py = y + h;
-        if ((sx >= px) && (sx < (px + w)) && (sy >= py) && (sy < (py + 7))) {
-            return PICK_PERFORATION;
-        }
-    }
     /* X Button. */
     if (HasXButton(setPtr, tabPtr)) {
         int bx, by;
@@ -2881,16 +2897,6 @@ static enum LabelParts
 IdentifyLabel180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
-    if ((tabPtr == setPtr->selectPtr) &&
-        ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
-        int px, py;
-        
-        px = x - 2;
-        py = y + h;
-        if ((sx >= px) && (sx < (px + w)) && (sy >= py) && (sy < (py + 7))) {
-            return PICK_PERFORATION;
-        }
-    }
     /* X Button. */
     if (HasXButton(setPtr, tabPtr)) {
         int bx, by;
@@ -2949,16 +2955,6 @@ static enum LabelParts
 IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
-    if ((tabPtr == setPtr->selectPtr) &&
-        ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
-        int px, py;
-        
-        px = x - 2;
-        py = y + h;
-        if ((sx >= px) && (sx < (px + w)) && (sy >= py) && (sy < (py + 7))) {
-            return PICK_PERFORATION;
-        }
-    }
     /* X Button. */
     if (HasXButton(setPtr, tabPtr)) {
         int bx, by;
@@ -3448,8 +3444,8 @@ PickTabProc(ClientData clientData, int sx, int sy, ClientData *contextPtr)
         
         GetPerforationCoordinates(setPtr, &px, &py, &pw, &ph);
         if (SIDE_HORIZONTAL(setPtr)) {
-            if ((sx >= px) && (sx < (px + pw)) && 
-                (sy >= py) && (sy < (py + ph))) {
+            if ((sx >= px) && (sx <= (px + pw)) && 
+                (sy >= py) && (sy <= (py + ph))) {
                 if (contextPtr != NULL) {
                     *contextPtr = (ClientData)PICK_PERFORATION;
                 }
@@ -4444,9 +4440,6 @@ FreeTabset(DestroyData dataPtr)
     if (setPtr->perfGC != NULL) {
         Tk_FreeGC(setPtr->display, setPtr->perfGC);
     }
-    if (setPtr->defStyle.activeGC != NULL) {
-        Blt_FreePrivateGC(setPtr->display, setPtr->defStyle.activeGC);
-    }
     if (setPtr->painter != NULL) {
         Blt_FreePainter(setPtr->painter);
     }
@@ -4484,8 +4477,10 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->reqQuad = QUAD_AUTO;
     setPtr->corner = CORNER_OFFSET;
     setPtr->defStyle.borderWidth = 1;
+    setPtr->defStyle.perfBorderWidth = 1;
+    setPtr->defStyle.normalPerfRelief = TK_RELIEF_FLAT;
+    setPtr->defStyle.activePerfRelief = TK_RELIEF_RAISED;
     setPtr->defStyle.relief = TK_RELIEF_RAISED;
-    setPtr->iconPos = SIDE_LEFT;
     setPtr->justify = TK_JUSTIFY_CENTER;
     setPtr->reqTabWidth = TAB_WIDTH_SAME;
     setPtr->reqTiers = 1;
@@ -4545,7 +4540,8 @@ ConfigureTabset(
     int slantLeft, slantRight;
     TabStyle *stylePtr;
     int oldQuad;
-
+    int xdpi, ydpi;
+    
     oldQuad = setPtr->quad;
     iconOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, configSpecs, 
@@ -4553,9 +4549,9 @@ ConfigureTabset(
         return TCL_ERROR;
     }
     if (Blt_ConfigModified(configSpecs, "-width", "-height", "-side", "-gap",
-        "-slant", "-iconposition", "-rotate", "-tiers", "-tabwidth", 
+        "-slant", "-rotate", "-tiers", "-tabwidth", 
         "-scrolltabs", "-showtabs", "-xbutton", "-justify",
-        "-iconposition", (char *)NULL)) {
+        (char *)NULL)) {
         setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
     }
     if ((setPtr->reqHeight > 0) && (setPtr->reqWidth > 0)) {
@@ -4590,10 +4586,16 @@ ConfigureTabset(
     /*
      * GC for performation.
      */
-    gcValues.line_width = 1;
+    Blt_ScreenDPI(setPtr->tkwin, &xdpi, &ydpi);
+    if (xdpi > 150) {
+        gcValues.line_width = 2;
+        gcValues.dashes = 4;
+    } else {
+        gcValues.line_width = 1;
+        gcValues.dashes = 3;
+    }
     gcMask |= (GCLineStyle | GCDashList | GCForeground | GCLineWidth);
     gcValues.line_style = LineOnOffDash;
-    gcValues.dashes = 3;
     gcValues.foreground = Blt_Bg_BorderColor(setPtr->defStyle.bg)->pixel;
 
     newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
@@ -4606,25 +4608,9 @@ ConfigureTabset(
         Blt_Bg_SetChangedProc(setPtr->bg, BackgroundChangedProc, setPtr);
     }
     stylePtr = &setPtr->defStyle;
-    /*
-     * GC for active line.
-     */
-    gcMask = GCForeground | GCLineStyle;
-    gcValues.foreground = setPtr->highlightColor->pixel;
-    gcValues.line_style = (LineIsDashed(stylePtr->dashes))
-        ? LineOnOffDash : LineSolid;
-    newGC = Blt_GetPrivateGC(setPtr->tkwin, gcMask, &gcValues);
-    if (LineIsDashed(stylePtr->dashes)) {
-        stylePtr->dashes.offset = 2;
-        Blt_SetDashes(setPtr->display, newGC, &stylePtr->dashes);
-    }
-    if (stylePtr->activeGC != NULL) {
-        Blt_FreePrivateGC(setPtr->display, stylePtr->activeGC);
-    }
-    stylePtr->activeGC = newGC;
 
     if (Blt_ConfigModified(configSpecs, "-font", "-*foreground", "-rotate",
-                "-*background", "-side", "-iconposition", "-tiers", "-tabwidth",
+                "-*background", "-side", "-tiers", "-tabwidth",
                 (char *)NULL)) {
         Tab *tabPtr;
 
@@ -7021,19 +7007,11 @@ ComputeWorldGeometry(Tabset *setPtr)
         for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
              tabPtr = NextTab(tabPtr, HIDDEN)) {
             int w, h;
-            int slant;
 
-            if (LABEL_VERTICAL(setPtr)) {
-                h = tabPtr->labelWidth0;
-                w = maxTabHeight;
-                slant = h;
-            } else {
-                w = tabPtr->labelWidth0;
-                h = maxTabHeight;
-                slant = w;
-            }
-            w += (setPtr->flags & SLANT_LEFT)  ? slant : setPtr->inset2;
-            w += (setPtr->flags & SLANT_RIGHT) ? slant : setPtr->inset2;
+            w = tabPtr->labelWidth0;
+            h = maxTabHeight;
+            w += (setPtr->flags & SLANT_LEFT)  ? w : setPtr->inset2;
+            w += (setPtr->flags & SLANT_RIGHT) ? w : setPtr->inset2;
             tabPtr->worldWidth = w;
             tabPtr->worldHeight = h;
             if (maxWidth < w) {
@@ -7700,21 +7678,29 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 {
     Blt_Bg perfBg;
     int px, py, pw, ph;
+    int relief;
+    TabStyle *stylePtr;
     
+    stylePtr = &setPtr->defStyle;
     if (setPtr->flags & ACTIVE_PERFORATION) {
-        perfBg = GETATTR(tabPtr, activeBg);
+        perfBg = GETATTR(tabPtr, activePerfBg);
+        relief = stylePtr->activePerfRelief;
     } else {
-        perfBg = GETATTR(tabPtr, selBg);
+        perfBg = GETATTR(tabPtr, normalPerfBg);
+        relief = stylePtr->normalPerfRelief;
     }   
     GetPerforationCoordinates(setPtr, &px, &py, &pw, &ph);
+    if ((pw == 0) || (ph == 0)) {
+        return;
+    }
     if (SIDE_HORIZONTAL(setPtr)) {
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
-                             pw, ph, 0, TK_RELIEF_FLAT);
+                             pw, ph, stylePtr->perfBorderWidth, relief);
         XDrawLine(setPtr->display, drawable, setPtr->perfGC, px + 2, py+3,
                   px + pw -2 , py+3);
     } else {
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
-                             ph, pw, 0, TK_RELIEF_FLAT);
+                             ph, pw, stylePtr->perfBorderWidth, relief);
         XDrawLine(setPtr->display, drawable, setPtr->perfGC, px + 3, py+2,
                   px + 3 , py+ pw - 2);
     }
@@ -7824,6 +7810,7 @@ DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
+        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
 
         tx = x;
         ty = y;
@@ -8348,7 +8335,8 @@ DisplayProc(ClientData clientData)    /* Information about widget. */
             }
         }
         DrawFolder(setPtr, setPtr->selectPtr, pixmap);
-        if ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF) {
+        if ((setPtr->selectPtr != NULL) &&
+            ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
             DrawPerforation(setPtr, setPtr->selectPtr, pixmap);
         }
     }

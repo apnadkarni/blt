@@ -9,8 +9,6 @@ source scripts/stipples.tcl
 blt::tabset .t \
     -side left \
     -justify left \
-    -iconposition bottom \
-    -iconposition left \
     -scrollincrement 10 \
     -scrollcommand { .s set } \
     -selectcommand {  MakePicture .t }  \

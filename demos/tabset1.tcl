@@ -15,7 +15,7 @@ img3 blank white
 
 blt::tabset .t \
     -outerrelief raised \
-    -side bottom \
+    -side top \
     -tearoff yes \
     -slant none \
     -justify center \
@@ -24,7 +24,8 @@ blt::tabset .t \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -xbutton selected \
-    -width 7i
+    -rotate 90 \
+    -height 3i -width 3i
 
 .t add First \
     -icon img1 \
@@ -35,11 +36,14 @@ foreach page { Second Third Fourth Fifth } {
     .t add $page \
 	-anchor center \
 	-selectbackground darkolivegreen2 \
+	-perforationbackground darkolivegreen2 \
 
     #	-icon img3
 }
 
-.t add -text Sixth -selectbackground lightblue 
+.t add -text Sixth \
+    -selectbackground lightblue \
+    -perforationbackground lightblue 
 }
 set tabcount 0
 proc NewTab { args } {

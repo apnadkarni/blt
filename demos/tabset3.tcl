@@ -11,7 +11,6 @@ image create picture label2 -file ./images/mini-book2.gif
 image create picture testImage -file ./images/txtrflag.gif
 
 blt::tabset .t \
-    -iconposition right \
     -slant both \
     -side right \
     -tabwidth same \
