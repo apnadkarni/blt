@@ -8,7 +8,7 @@ option add *Tabset.Tab.iPadX 0
 #option add *Tabset.Tab.background green
 
 image create picture bgTile -file ./images/chalk.gif
-image create picture img1 -file ./images/mini-book1.gif
+image create picture img1 -file $blt_library/icons/32x32/filter.png
 image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 30
 img3 blank white
