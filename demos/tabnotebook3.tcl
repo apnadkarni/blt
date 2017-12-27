@@ -132,7 +132,7 @@ set extra {
 }
 
 foreach label $tabLabels {
-    .ts insert end $label -image label1 -bg $bg
+    .ts insert end $label -icon label1 -bg $bg
 }
 
 blt::tk::scrollbar .s -command { .ts view } -orient horizontal -borderwidth 1

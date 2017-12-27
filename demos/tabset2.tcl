@@ -67,7 +67,7 @@ foreach { entry label color window } $attributes {
 }
 
 foreach page { there bunky another test of a widget } {
-    .t insert end $page -image label2  -ipady 4 \
+    .t insert end $page -icon label2  -ipady 4 \
     	-padx 1 -pady 0 -ipadx 0 -ipady 0 
 }
 
