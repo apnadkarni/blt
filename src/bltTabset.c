@@ -121,8 +121,8 @@
      (Tk_Width((s)->tkwin) - 2 * (s)->inset) :          \
      (Tk_Height((s)->tkwin) - 2 * (s)->inset))
 
-#define GETATTR(t,attr)         \
-   (((t)->attr != NULL) ? (t)->attr : (t)->setPtr->defStyle.attr)
+#define GetTabAttribute(t,attr)         \
+    (((t)->attr != NULL) ? (t)->attr : (t)->setPtr->defTabAttr.attr)
 
 /* Tabset flags. */
 #define LAYOUT_PENDING      (1<<0)      /* Indicates the tabset has been
@@ -244,6 +244,7 @@ typedef enum LabelParts {
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
+#define DEF_STYLE                       (char *)NULL
 #define DEF_TABWIDTH                    "same"
 #define DEF_TAB_RELIEF                  "raised"
 #define DEF_TAKEFOCUS                   "1"
@@ -253,6 +254,7 @@ typedef enum LabelParts {
 #define DEF_WIDTH                       "0"
 #define DEF_XBUTTON                     "never"
 #define DEF_XBUTTON_COMMAND             (char *)NULL
+#define DEF_STIPPLE                     "BLT"
 
 #define DEF_XBUTTON_ACTIVEBACKGROUND "#EE5F5F"
 #define DEF_XBUTTON_ACTIVEFOREGROUND RGB_WHITE
@@ -271,34 +273,21 @@ typedef enum LabelParts {
 #define DEF_PERFORATION_FOREGROUND      RGB_GREY30
 #define DEF_PERFORATION_RELIEF          "flat"
 
-#define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
-#define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
 #define DEF_TAB_ANCHOR                  "center"
-#define DEF_TAB_BACKGROUND              (char *)NULL
 #define DEF_TAB_BORDERWIDTH             "1"
 #define DEF_TAB_BUTTON                  (char *)NULL
 #define DEF_TAB_COMMAND                 (char *)NULL
 #define DEF_TAB_DATA                    (char *)NULL
 #define DEF_TAB_DELETE_COMMAND          (char *)NULL
 #define DEF_TAB_FILL                    "none"
-#define DEF_TAB_FONT                    (char *)NULL
 #define DEF_TAB_FOREGROUND              (char *)NULL
 #define DEF_TAB_HEIGHT                  "0"
 #define DEF_TAB_HIDE                    "no"
 #define DEF_TAB_ICON                    (char *)NULL
 #define DEF_TAB_IPAD                    "0"
 #define DEF_TAB_PAD                     "3"
-#define DEF_TAB_PERFORATION_ACTIVEBACKGROUND (char *)NULL
-#define DEF_TAB_PERFORATION_ACTIVEFOREGROUND (char *)NULL
-#define DEF_TAB_PERFORATION_BACKGROUND  (char *)NULL
-#define DEF_TAB_PERFORATION_COMMAND      (char *)NULL
-#define DEF_TAB_PERFORATION_FOREGROUND  (char *)NULL
-#define DEF_TAB_SELECTBACKGROUND        (char *)NULL
-#define DEF_TAB_SELECTBORDERWIDTH       "1"
-#define DEF_TAB_SELECTFOREGROUND        (char *)NULL
 #define DEF_TAB_SELECT_COMMAND           (char *)NULL
 #define DEF_TAB_STATE                   "normal"
-#define DEF_TAB_STIPPLE                 "BLT"
 #define DEF_TAB_TEAROFF                 "1"
 #define DEF_TAB_TEXT                    (char *)NULL
 #define DEF_TAB_VISUAL                  (char *)NULL
@@ -307,6 +296,7 @@ typedef enum LabelParts {
 #define DEF_TAB_WINDOWHEIGHT            "0"
 #define DEF_TAB_WINDOWWIDTH             "0"
 #define DEF_TAB_XBUTTON                 "never"
+#define DEF_TAB_PERFORATION_COMMAND     (char *)NULL
 
 typedef struct _Tabset Tabset;
 typedef struct _Tab Tab;
@@ -404,6 +394,72 @@ typedef struct _XButton {
 } XButton;
 
 
+/*
+ * TabStyle --
+ */
+typedef struct {
+    const char *name;                   /* Name of tab style. */
+    Blt_HashEntry *hashPtr;
+    Tabset *setPtr;
+    int refCount;                       /* Indicates if the style is
+                                         * currently in use in the tabset
+                                         * widget. */
+    Tk_Window tkwin;                    /* Default window to map pages. */
+
+    int pad;                            /* Extra padding of a tab entry */
+
+    Blt_Font font;
+
+    /*
+     * Normal:
+     */
+    XColor *textColor;                  /* Text color */
+    Blt_Bg bg;                          /* Background color and border for
+                                         * tab. */
+    /*
+     * Selected: Tab is currently selected.
+     */
+    XColor *selColor;                   /* Selected text color */
+    Blt_Bg selBg;                       /* 3D border of selected folder. */
+
+    /*
+     * Active: Mouse passes over the tab.
+     */
+    Blt_Bg activeBg;                    /* Active background color. */
+    XColor *activeFg;                   /* Active text color */
+    Pixmap stipple;                     /* Stipple for outline of embedded
+                                         * window when torn off. */
+
+    /*
+     * Normal perforation:
+     */
+    Blt_Bg normalPerfBg;               /* Normal perforation background. */
+    XColor *normalPerfFg;              /* Normal perforation foreground. */
+
+    /*
+     * Active perforation: Mouse passes over the perforation.
+     */
+    Blt_Bg activePerfBg;               /* Active perforation background */
+    XColor *activePerfFg;              /* Active perforation foreground. */
+
+    GC textGC;
+    GC backGC;
+    GC perfGC;
+
+} TabStyle;
+
+/*
+ * TabAttributes --
+ */
+typedef struct _TabAttributes {
+    Tcl_Obj *perfCmdObjPtr;     
+    Tcl_Obj *cmdObjPtr;     
+    Tcl_Obj *xCmdObjPtr;                /* Command to be executed when the
+                                         * tab is closed. */
+    Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
+                                         * when tab is deleted. */
+} TabAttributes;
+
 struct _Tab {
     const char *name;                   /* Identifier for tab. */
     Blt_HashEntry *hashPtr;
@@ -441,27 +497,8 @@ struct _Tab {
     Blt_Pad iPadX, iPadY;               /* Internal padding around the
                                          * text */
 
-    Blt_Font font;
+    TabStyle *stylePtr;
 
-    /*
-     * Normal:
-     */
-    XColor *textColor;                  /* Text color */
-    Blt_Bg bg;                          /* Background color and border for
-                                         * tab. */
-    /*
-     * Selected: Tab is currently selected.
-     */
-    XColor *selColor;                   /* Selected text color */
-    Blt_Bg selBg;                       /* 3D border of selected folder. */
-
-    /*
-     * Active: Mouse passes over the tab.
-     */
-    Blt_Bg activeBg;                    /* Active background color. */
-    XColor *activeFg;                   /* Active text color */
-    Pixmap stipple;                     /* Stipple for outline of embedded
-                                         * window when torn off. */
     /*
      * Embedded widget information:
      */
@@ -484,65 +521,23 @@ struct _Tab {
     /*
      * Auxillary information:
      */
-    Tcl_Obj *cmdObjPtr;                 /* Command invoked when the tab is
-                                         * selected */
     const char *data;                   /* This value isn't used in C code.
                                          * It may be used by clients in Tcl
                                          * bindings * to associate extra data
                                          * (other than the * label or name)
                                          * with the tab. */
 
+    Blt_ChainLink link;                 /* Pointer to where the tab resides
+                                         * in the list of tabs. */
+
+    /* If non-NULL, these can override the global tabset attribute. */
+    Tcl_Obj *perfCmdObjPtr;     
+    Tcl_Obj *cmdObjPtr;     
     Tcl_Obj *xCmdObjPtr;                /* Command to be executed when the
                                          * tab is closed. */
-    Blt_ChainLink link;                 /* Pointer to where the tab resides in
-                                         * the list of tabs. */
-    Tcl_Obj *perfCmdObjPtr;             /* Command invoked when the tab is
-                                         * selected */
     Tcl_Obj *deleteCmdObjPtr;           /* If non-NULL, Routine to call
                                          * when tab is deleted. */
-    GC textGC;
-    GC backGC;
-    Blt_Bg activePerfBg;               /* Active perforation background */
-    Blt_Bg normalPerfBg;               /* Normal perforation background. */
-    XColor *activePerfFg;              /* Active perforation foreground. */
-    XColor *normalPerfFg;              /* Normal perforation foreground. */
-
 };
-
-
-/*
- * TabStyle --
- */
-typedef struct {
-    Tk_Window tkwin;                    /* Default window to map pages. */
-
-    int borderWidth;                    /* Width of 3D border around the tab's
-                                         * label. */
-    int pad;                            /* Extra padding of a tab entry */
-
-    Blt_Font font;
-
-    XColor *activeFg;                   /* Active foreground. */
-    XColor *textColor;                  /* Normal text foreground. */
-    XColor *selColor;                   /* Selected foreground. */
-    Blt_Bg activeBg;                    /* Active background. */
-    Blt_Bg bg;                          /* Normal background. */
-    Blt_Bg selBg;                       /* Selected background. */
-
-    int relief;
-    Tcl_Obj *cmdObjPtr;                 /* Command invoked when the tab is
-                                         * selected */
-    Tcl_Obj *perfCmdObjPtr;     
-    Blt_Bg activePerfBg;               /* Active perforation background */
-    Blt_Bg normalPerfBg;               /* Normal perforation background. */
-    XColor *activePerfFg;              /* Active perforation foreground. */
-    XColor *normalPerfFg;              /* Normal perforation foreground. */
-    int activePerfRelief;              /* Active perforation relief. */
-    int normalPerfRelief;              /* Normal perforation relief. */
-    int perfBorderWidth;               /* Width of 3D border around the tab's
-                                        * perforation. */
-
-} TabStyle;
 
 struct _Tabset {
     Tk_Window tkwin;                    /* Window that embodies the widget.
@@ -579,12 +574,11 @@ struct _Tabset {
     Tk_Cursor cursor;                   /* X Cursor */
     Blt_Bg troughBg;                    /* Color or trough surrounding the
                                          * 3D folder. */
-    int borderWidth;                    /* Width of 3D border. */
-    int relief;                         /* 3D border relief. */
+    int outerBorderWidth;               /* Width of 3D border. */
+    int outerRelief;                    /* 3D border relief. */
+    int outerPad;                       /* Padding around the exterior of
+                                         * the tabset and folder. */
 
-    int justify;
-    int quad;
-    int reqQuad;
     /*
      * Focus highlight ring
      */
@@ -599,7 +593,6 @@ struct _Tabset {
                                          * highlight. */
 
     GC highlightGC;                     /* GC for focus highlight. */
-    GC perfGC;
 
     const char *takeFocus;              /* Says whether to select this widget
                                          * during tab traveral operations.
@@ -607,26 +600,12 @@ struct _Tabset {
                                          * but for the widget's Tcl
                                          * bindings. */
 
-
-    int side;                           /* Orientation of the tabset: either
-                                         * SIDE_LEFT, SIDE_RIGHT, SIDE_TOP, or
-                                         * SIDE_BOTTOM. */
-    int reqSlant;                       /* Determines slant on either side
-                                         * of tab. */
-    int overlap;                        /* Amount of  */
-    int gap;
-    int reqTabWidth;                    /* Requested tab size. */
-    int tabWidth, tabHeight;
-    int xSelectPad, ySelectPad;         /* Padding around label of the
-                                         * selected tab. */
-    int outerPad;                       /* Padding around the exterior of
-                                         * the tabset and folder. */
     XButton xButton;                    /* X button drawn on right side of
                                          * a tab. */
-    Tcl_Obj *xCmdObjPtr;                /* Command to be executed when the
-                                         * tab is closed. */
     TabStyle defStyle;                  /* Global attribute information
                                          * specific to tabs. */
+    TabAttributes defTabAttr;
+
     int reqWidth, reqHeight;            /* Requested dimensions of the
                                          * tabset window. */
     int pageWidth, pageHeight;          /* Dimensions of a page in the
@@ -687,6 +666,32 @@ struct _Tabset {
     Blt_BindTable bindTable;            /* Tab binding information */
     struct _Blt_Tags tags;
     Blt_HashTable bindTagTable;         /* Table of binding tags. */
+    int nextStyleId;
+    Blt_HashTable styleTable;           /* Table of styles used. */
+
+    /* Global settings for all tabs. */
+    int overlap;                        /* Amount of  */
+    int gap;
+    int reqTabWidth;                    /* Requested tab size. */
+    int tabWidth, tabHeight;
+    int xSelectPad, ySelectPad;         /* Padding around label of the
+                                         * selected tab. */
+    int side;                           /* Orientation of the tabset: either
+                                         * SIDE_LEFT, SIDE_RIGHT, SIDE_TOP, or
+                                         * SIDE_BOTTOM. */
+    int reqSlant;                       /* Determines slant on either side
+                                         * of tab. */
+    int justify;
+    int quad;
+    int reqQuad;
+    int relief;
+    int perfBorderWidth;                /* Width of 3D border around the
+                                         * tab's perforation. */
+    int borderWidth;                    /* Width of 3D border around the
+                                         * tab and folder. */
+    int activePerfRelief;               /* Active perforation relief. */
+    int normalPerfRelief;               /* Normal perforation relief. */
+
 };
 
 
@@ -707,6 +712,8 @@ static Blt_OptionParseProc ObjToQuad;
 static Blt_OptionPrintProc QuadToObj;
 static Blt_OptionParseProc ObjToXButton;
 static Blt_OptionPrintProc XButtonToObj;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 
 /*
  * Contains a pointer to the widget that's currently being configured.  This
@@ -741,6 +748,10 @@ static Blt_CustomOption quadOption = {
     ObjToQuad, QuadToObj, NULL, (ClientData)0,
 };
 
+static Blt_CustomOption styleOption = {
+    ObjToStyle, StyleToObj, NULL, (ClientData)0
+};
+
 static Blt_CustomOption xbuttonOption = {
     ObjToXButton, XButtonToObj, NULL, (ClientData)0,
 };
@@ -764,25 +775,8 @@ static Blt_ConfigSpec xButtonSpecs[] =
 
 static Blt_ConfigSpec tabSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
-        "ActiveBackground", DEF_TAB_ACTIVEBACKGROUND,
-        Blt_Offset(Tab, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
-        "ActiveForeground", DEF_TAB_ACTIVEFOREGROUND, 
-        Blt_Offset(Tab, activeFg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-activeperforationbackground",
-        "activePerforationBackground", "ActivePerforationBackground",
-        DEF_TAB_PERFORATION_ACTIVEBACKGROUND,
-        Blt_Offset(Tab, activePerfBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-activeperforationforeground",
-        "activePerforationForeground", "ActivePerforationForeground",
-        DEF_TAB_PERFORATION_ACTIVEFOREGROUND, 
-        Blt_Offset(Tab, activePerfFg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_TAB_ANCHOR, 
         Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        (char *)NULL, Blt_Offset(Tab, bg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
         Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
@@ -790,13 +784,8 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
         DEF_TAB_DELETE_COMMAND, Blt_Offset(Tab, deleteCmdObjPtr),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_TAB_FILL, 
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", (char *)NULL,
-        Blt_Offset(Tab, textColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TAB_FONT, 
-        Blt_Offset(Tab, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_TAB_ICON, 
         Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
@@ -807,25 +796,13 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_TAB_PAD, 
         Blt_Offset(Tab, padY), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
-        "PerforationBackground", DEF_TAB_PERFORATION_BACKGROUND,
-        Blt_Offset(Tab, normalPerfBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-perforationforeground", "perforationForeground",
-        "PerforationForeground", DEF_TAB_PERFORATION_FOREGROUND, 
-        Blt_Offset(Tab, normalPerfFg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-        "Background", DEF_TAB_SELECTBACKGROUND, Blt_Offset(Tab, selBg), 
-        BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
-        DEF_TAB_SELECTFOREGROUND, Blt_Offset(Tab, selColor), 
-        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_TAB_STATE, 
         Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, &stateOption},
-    {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_TAB_STIPPLE, 
-        Blt_Offset(Tab, stipple), 0},
+    {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_STYLE, 
+        Blt_Offset(Tab, stylePtr), BLT_CONFIG_NULL_OK, &styleOption},
     {BLT_CONFIG_BITMASK, "-tearoff", "tearoff", "Tearoff", DEF_TAB_TEAROFF, 
         Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)TEAROFF},
@@ -866,14 +843,14 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Tabset, defStyle.activePerfFg), 0},
     {BLT_CONFIG_RELIEF, "-activeperforationrelief", "activePerforationRelief",
         "ActivePerforationRelief", DEF_PERFORATION_ACTIVERELIEF,
-        Blt_Offset(Tabset, defStyle.activePerfRelief),
+        Blt_Offset(Tabset, activePerfRelief),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Tabset, defStyle.bg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-        DEF_BORDERWIDTH, Blt_Offset(Tabset, defStyle.borderWidth),
+        DEF_BORDERWIDTH, Blt_Offset(Tabset, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
@@ -897,12 +874,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_JUSTIFY, "-justify", "Justify", "Justify", DEF_JUSTIFY, 
         Blt_Offset(Tabset, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-outerborderwidth", "outerBorderWidth", 
-        "OuterBorderWidth", DEF_BORDERWIDTH, Blt_Offset(Tabset, borderWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+        "OuterBorderWidth", DEF_BORDERWIDTH, 
+        Blt_Offset(Tabset, outerBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-outerpad", "outerPad", "OuterPad", DEF_OUTERPAD,
          Blt_Offset(Tabset, outerPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-outerrelief", "outerRelief", "OuterRelief", 
-        DEF_RELIEF, Blt_Offset(Tabset, relief), 0},
+        DEF_RELIEF, Blt_Offset(Tabset, outerRelief), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-pageheight", "pageHeight", "PageHeight",
         DEF_PAGEHEIGHT, Blt_Offset(Tabset, reqPageHeight),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -912,23 +889,23 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-perforationborderwidth",
         "perforationBorderWidth", "PerforationBorderWidth",
         DEF_PERFORATION_BORDERWIDTH,
-        Blt_Offset(Tabset, defStyle.perfBorderWidth),
+        Blt_Offset(Tabset, perfBorderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
         "PerforationBackground", DEF_PERFORATION_BACKGROUND,
         Blt_Offset(Tabset, defStyle.normalPerfBg)},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
-        Blt_Offset(Tabset, defStyle.perfCmdObjPtr), BLT_CONFIG_NULL_OK},
+        Blt_Offset(Tabset, defTabAttr.perfCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-perforationforeground", "perforationForeground",
         "PerforationForeground", DEF_PERFORATION_FOREGROUND, 
         Blt_Offset(Tabset, defStyle.normalPerfFg)},
     {BLT_CONFIG_RELIEF, "-perforationrelief", "perforationRelief",
         "PerforationRelief", DEF_PERFORATION_RELIEF,
-        Blt_Offset(Tabset, defStyle.normalPerfRelief), 
+        Blt_Offset(Tabset, normalPerfRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief",
-        DEF_TAB_RELIEF, Blt_Offset(Tabset, defStyle.relief), 
+        DEF_TAB_RELIEF, Blt_Offset(Tabset, relief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-rotate", "rotate", "Rotate", DEF_ROTATE, 
         Blt_Offset(Tabset, reqQuad), BLT_CONFIG_DONT_SET_DEFAULT, 
@@ -948,7 +925,7 @@ static Blt_ConfigSpec configSpecs[] =
         "Foreground", DEF_SELECTBACKGROUND, Blt_Offset(Tabset, defStyle.selBg),
         0},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
-        DEF_SELECT_COMMAND, Blt_Offset(Tabset, defStyle.cmdObjPtr),
+        DEF_SELECT_COMMAND, Blt_Offset(Tabset, defTabAttr.cmdObjPtr),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
         DEF_SELECTFOREGROUND, Blt_Offset(Tabset, defStyle.selColor), 0},
@@ -966,6 +943,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-slant", "slant", "Slant", DEF_SLANT, 
         Blt_Offset(Tabset, reqSlant), BLT_CONFIG_DONT_SET_DEFAULT,
         &slantOption},
+    {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_STIPPLE, 
+        Blt_Offset(Tabset, defStyle.stipple)},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Tabset, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-tearoff", "tearoff", "Tearoff", DEF_TEAROFF, 
@@ -980,10 +959,48 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-xbutton", "xButton", "XButton", DEF_XBUTTON,
         Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT, &xbuttonOption},
     {BLT_CONFIG_OBJ, "-xbuttoncommand", "xButtonCommand", "XButtonCommand",
-        DEF_XBUTTON_COMMAND, Blt_Offset(Tabset, xCmdObjPtr),
+        DEF_XBUTTON_COMMAND, Blt_Offset(Tabset, defTabAttr.xCmdObjPtr),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
+};
+
+static Blt_ConfigSpec styleConfigSpecs[] = {
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground",
+        "ActiveBackground", DEF_ACTIVEBACKGROUND,
+        Blt_Offset(TabStyle, activeBg)},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
+        "ActiveForeground", DEF_ACTIVEFOREGROUND, 
+        Blt_Offset(TabStyle, activeFg)},
+    {BLT_CONFIG_BACKGROUND, "-activeperforationbackground",
+        "activePerforationBackground", "ActivePerforationBackground",
+        DEF_PERFORATION_ACTIVEBACKGROUND,
+        Blt_Offset(TabStyle, activePerfBg)},
+    {BLT_CONFIG_COLOR, "-activeperforationforeground",
+        "activePerforationForeground", "ActivePerforationForeground",
+        DEF_PERFORATION_ACTIVEFOREGROUND, 
+        Blt_Offset(TabStyle, activePerfFg)},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+        DEF_BACKGROUND, Blt_Offset(TabStyle, bg)},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
+        DEF_FOREGROUND, Blt_Offset(TabStyle, textColor)},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
+        Blt_Offset(TabStyle, font)},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
+        "PerforationBackground", DEF_PERFORATION_BACKGROUND,
+        Blt_Offset(TabStyle, normalPerfBg)},
+    {BLT_CONFIG_COLOR, "-perforationforeground", "perforationForeground",
+        "PerforationForeground", DEF_PERFORATION_FOREGROUND, 
+        Blt_Offset(TabStyle, normalPerfFg)},
+    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
+        "Background", DEF_SELECTBACKGROUND, Blt_Offset(TabStyle, selBg)},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
+        DEF_SELECTFOREGROUND, Blt_Offset(TabStyle, selColor)},
+    {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_STIPPLE, 
+        Blt_Offset(TabStyle, stipple)},
+    {BLT_CONFIG_END}
 };
 
 /* Forward Declarations */
@@ -1017,6 +1034,15 @@ static void DrawOuterBorders(Tabset *setPtr, Drawable drawable);
 
 static Tab *GetTabByCoordinates(Tabset *setPtr, int x, int y);
 
+
+static INLINE TabStyle*
+GetStyle(Tab *tabPtr)
+{
+    if (tabPtr->stylePtr == NULL) {
+        return &tabPtr->setPtr->defStyle;
+    }
+    return tabPtr->stylePtr;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1644,6 +1670,188 @@ EventuallyRedraw(Tabset *setPtr)
         Tcl_DoWhenIdle(DisplayProc, setPtr);
     }
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BackgroundChangedProc
+ *
+ *      Stub for image change notifications.  Since we immediately draw the
+ *      image into a pixmap, we don't really care about image changes.
+ *
+ *      It would be better if Tk checked for NULL proc pointers.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+BackgroundChangedProc(ClientData clientData)
+{
+    Tabset *setPtr = clientData;
+
+    if (setPtr->tkwin != NULL) {
+        setPtr->flags |= REDRAW_ALL;
+        EventuallyRedraw(setPtr);
+    }
+}
+
+static void
+DestroyStyle(TabStyle *stylePtr)
+{
+    Tabset *setPtr;
+
+    stylePtr->refCount--;
+    if (stylePtr->refCount > 0) {
+        return;
+    }
+    setPtr = stylePtr->setPtr;
+    iconOption.clientData = setPtr;
+    Blt_FreeOptions(styleConfigSpecs, (char *)stylePtr, setPtr->display, 0);
+    if (stylePtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&setPtr->styleTable, stylePtr->hashPtr);
+    }
+    if (stylePtr->textGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->textGC);
+    }
+    if (stylePtr->backGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->backGC);
+    }
+    if (stylePtr->perfGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->perfGC);
+    }
+    if (stylePtr != &stylePtr->setPtr->defStyle) {
+        Blt_Free(stylePtr);
+    }
+        
+}
+
+static TabStyle *
+AddDefaultStyle(Tcl_Interp *interp, Tabset *setPtr)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;
+    TabStyle *stylePtr;
+
+    hPtr = Blt_CreateHashEntry(&setPtr->styleTable, "default", &isNew);
+    if (!isNew) {
+        Tcl_AppendResult(interp, "tabset style \"", "default", 
+                "\" already exists.", (char *)NULL);
+        return NULL;
+    }
+    stylePtr = &setPtr->defStyle;
+    assert(stylePtr);
+    stylePtr->refCount = 1;
+    stylePtr->name = Blt_GetHashKey(&setPtr->styleTable, hPtr);
+    stylePtr->hashPtr = hPtr;
+    stylePtr->setPtr = setPtr;
+    Blt_SetHashValue(hPtr, stylePtr);
+    return TCL_OK;
+}
+
+static void
+DestroyStyles(Tabset *setPtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    for (hPtr = Blt_FirstHashEntry(&setPtr->styleTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        TabStyle *stylePtr;
+
+        stylePtr = Blt_GetHashValue(hPtr);
+        stylePtr->hashPtr = NULL;
+        stylePtr->refCount = 0;
+        DestroyStyle(stylePtr);
+    }
+    Blt_DeleteHashTable(&setPtr->styleTable);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetStyleFromObj --
+ *
+ *      Gets the style associated with the given name.  
+ *
+ *---------------------------------------------------------------------------
+ */
+static int 
+GetStyleFromObj(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
+                TabStyle **stylePtrPtr)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&setPtr->styleTable, Tcl_GetString(objPtr));
+    if (hPtr == NULL) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "can't find style \"", 
+                Tcl_GetString(objPtr), "\" in tabset \"", 
+                Tk_PathName(setPtr->tkwin), "\"", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    *stylePtrPtr = Blt_GetHashValue(hPtr);
+    return TCL_OK;
+}
+
+static void
+ConfigureStyle(Tabset *setPtr, TabStyle *stylePtr)
+{
+    unsigned int gcMask;
+    XGCValues gcValues;
+    GC newGC;
+    XColor *colorPtr;
+    int xdpi, ydpi;
+
+    /* Text */
+    gcMask = GCForeground | GCFont;
+    colorPtr = stylePtr->textColor;
+    gcValues.foreground = colorPtr->pixel;
+    gcValues.font = Blt_Font_Id(stylePtr->font);
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->textGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->textGC);
+    }
+    stylePtr->textGC = newGC;
+
+    /* Backing */
+    gcMask = GCForeground | GCStipple | GCFillStyle;
+    gcValues.fill_style = FillStippled;
+    gcValues.foreground = Blt_Bg_BorderColor(stylePtr->bg)->pixel;
+    gcValues.stipple = stylePtr->stipple;
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->backGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->backGC);
+    }
+    stylePtr->backGC = newGC;
+
+    Blt_Bg_SetChangedProc(stylePtr->bg, BackgroundChangedProc, setPtr);
+
+    /*
+     * GC for performation.
+     */
+    Blt_ScreenDPI(setPtr->tkwin, &xdpi, &ydpi);
+    if (xdpi > 150) {
+        gcValues.line_width = 2;
+        gcValues.dashes = 4;
+    } else {
+        gcValues.line_width = 1;
+        gcValues.dashes = 3;
+    }
+    gcMask |= (GCLineStyle | GCDashList | GCForeground | GCLineWidth);
+    gcValues.line_style = LineOnOffDash;
+    gcValues.foreground = Blt_Bg_BorderColor(stylePtr->bg)->pixel;
+
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->perfGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->perfGC);
+    }
+    stylePtr->perfGC = newGC;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -2889,6 +3097,73 @@ QuadToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return objPtr;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToStyle --
+ *
+ *      Converts the string representation of a tab style.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The style pointer is
+ *      written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+{
+    Tabset *setPtr = clientData;
+    TabStyle **stylePtrPtr = (TabStyle **)(widgRec + offset);
+    TabStyle *stylePtr;
+    int length;
+    
+    Tcl_GetStringFromObj(objPtr, &length);
+    if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
+        stylePtr = NULL;
+    } else if (GetStyleFromObj(interp, setPtr, objPtr, &stylePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    /* Release the old style. */
+    if ((*stylePtrPtr != NULL) && (*stylePtrPtr != &setPtr->defStyle)) {
+        DestroyStyle(*stylePtrPtr);
+    }
+    if (stylePtr != NULL) {
+        stylePtr->refCount++;
+    }
+    *stylePtrPtr = stylePtr;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleToObj --
+ *
+ *      Return the name of the style.
+ *
+ * Results:
+ *      The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
+{
+    TabStyle *stylePtr = *(TabStyle **)(widgRec + offset);
+    Tcl_Obj *objPtr;
+
+    if (stylePtr == NULL) {
+        objPtr = Tcl_NewStringObj("", -1);
+    } else {
+        objPtr = Tcl_NewStringObj(stylePtr->name, -1);
+    }
+    return objPtr;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -3327,6 +3602,7 @@ IdentifyPart(Tabset *setPtr, Tab *tabPtr, int sx, int sy)
     int x, y, w, h;
     LabelPart id;
 
+    id = PICK_NONE;                     /* Suppress compiler warning. */
     GetLabelCoordinates(setPtr, tabPtr, &x, &y, &w, &h);
     switch (setPtr->quad) {
     case ROTATE_0:
@@ -3974,14 +4250,8 @@ DestroyTab(Tab *tabPtr)
     if (tabPtr->text != NULL) {
         Blt_Free(tabPtr->text);
     }
-    if (tabPtr->textGC != NULL) {
-        Tk_FreeGC(setPtr->display, tabPtr->textGC);
-    }
     if (tabPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&setPtr->tabTable, tabPtr->hashPtr);
-    }
-    if (tabPtr->backGC != NULL) {
-        Tk_FreeGC(setPtr->display, tabPtr->backGC);
     }
     if (tabPtr->link != NULL) {
         Blt_Chain_DeleteLink(setPtr->chain, tabPtr->link);
@@ -4192,72 +4462,9 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     return tabPtr;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * BackgroundChangedProc
- *
- *      Stub for image change notifications.  Since we immediately draw the
- *      image into a pixmap, we don't really care about image changes.
- *
- *      It would be better if Tk checked for NULL proc pointers.
- *
- * Results:
- *      None.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static void
-BackgroundChangedProc(ClientData clientData)
-{
-    Tabset *setPtr = clientData;
-
-    if (setPtr->tkwin != NULL) {
-        setPtr->flags |= REDRAW_ALL;
-        EventuallyRedraw(setPtr);
-    }
-}
-
 static int
 ConfigureTab(Tabset *setPtr, Tab *tabPtr)
 {
-    Blt_Bg bg;
-    Blt_Font font;
-    GC newGC;
-    XGCValues gcValues;
-    unsigned long gcMask;
-    
-    font = GETATTR(tabPtr, font);
-    newGC = NULL;
-    if (tabPtr->text != NULL) {
-        XColor *colorPtr;
-
-        gcMask = GCForeground | GCFont;
-        colorPtr = GETATTR(tabPtr, textColor);
-        gcValues.foreground = colorPtr->pixel;
-        gcValues.font = Blt_Font_Id(font);
-        newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
-    }
-    if (tabPtr->textGC != NULL) {
-        Tk_FreeGC(setPtr->display, tabPtr->textGC);
-    }
-    tabPtr->textGC = newGC;
-
-    gcMask = GCForeground | GCStipple | GCFillStyle;
-    gcValues.fill_style = FillStippled;
-    bg = GETATTR(tabPtr, bg);
-    gcValues.foreground = Blt_Bg_BorderColor(bg)->pixel;
-    gcValues.stipple = tabPtr->stipple;
-    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
-    if (tabPtr->backGC != NULL) {
-        Tk_FreeGC(setPtr->display, tabPtr->backGC);
-    }
-    tabPtr->backGC = newGC;
-
-    if (tabPtr->bg != NULL) {
-        Blt_Bg_SetChangedProc(tabPtr->bg, BackgroundChangedProc, setPtr);
-    }
     if (Blt_ConfigModified(tabSpecs, "-icon", "-*pad*", "-state",
                            "-text", "-window*", (char *)NULL)) {
         setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
@@ -4521,9 +4728,6 @@ FreeTabset(DestroyData dataPtr)
     if (setPtr->highlightGC != NULL) {
         Tk_FreeGC(setPtr->display, setPtr->highlightGC);
     }
-    if (setPtr->perfGC != NULL) {
-        Tk_FreeGC(setPtr->display, setPtr->perfGC);
-    }
     if (setPtr->painter != NULL) {
         Blt_FreePainter(setPtr->painter);
     }
@@ -4536,6 +4740,7 @@ FreeTabset(DestroyData dataPtr)
     }
     Blt_Tags_Reset(&setPtr->tags);
     DestroyXButton(setPtr, &setPtr->xButton);
+    DestroyStyles(setPtr);
     Blt_Chain_Destroy(setPtr->chain);
     Blt_DestroyBindingTable(setPtr->bindTable);
     Blt_DeleteHashTable(&setPtr->iconTable);
@@ -4557,23 +4762,24 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
 
     setPtr = Blt_AssertCalloc(1, sizeof(Tabset));
     Tk_SetClass(tkwin, "BltTabset");
-    setPtr->borderWidth = setPtr->highlightWidth = 0;
-    setPtr->reqQuad = QUAD_AUTO;
+    setPtr->activePerfRelief = TK_RELIEF_FLAT;
+    setPtr->borderWidth = 1;
     setPtr->corner = CORNER_OFFSET;
-    setPtr->defStyle.borderWidth = 1;
-    setPtr->defStyle.perfBorderWidth = 1;
-    setPtr->defStyle.normalPerfRelief = TK_RELIEF_FLAT;
-    setPtr->defStyle.activePerfRelief = TK_RELIEF_FLAT;
-    setPtr->defStyle.relief = TK_RELIEF_RAISED;
-    setPtr->justify = TK_JUSTIFY_CENTER;
-    setPtr->reqTabWidth = TAB_WIDTH_SAME;
-    setPtr->reqTiers = 1;
-    setPtr->reqSlant = SLANT_NONE;
     setPtr->display = Tk_Display(tkwin);
     setPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
     setPtr->gap = GAP;
     setPtr->interp = interp;
+    setPtr->justify = TK_JUSTIFY_CENTER;
+    setPtr->normalPerfRelief = TK_RELIEF_FLAT;
+    setPtr->outerBorderWidth = setPtr->highlightWidth = 0;
+    setPtr->outerRelief = TK_RELIEF_RAISED;
+    setPtr->perfBorderWidth = 1;
     setPtr->relief = TK_RELIEF_FLAT;
+    setPtr->relief = TK_RELIEF_RAISED;
+    setPtr->reqQuad = QUAD_AUTO;
+    setPtr->reqSlant = SLANT_NONE;
+    setPtr->reqTabWidth = TAB_WIDTH_SAME;
+    setPtr->reqTiers = 1;
     setPtr->scrollUnits = 2;
     setPtr->side = SIDE_TOP;
     setPtr->tkwin = tkwin;
@@ -4586,7 +4792,9 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&setPtr->tabTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->iconTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->bindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&setPtr->styleTable, BLT_STRING_KEYS);
     Blt_SetWindowInstanceData(tkwin, setPtr);
+    AddDefaultStyle(interp, setPtr);
     return setPtr;
 }
 
@@ -4623,11 +4831,9 @@ ConfigureTabset(
     GC newGC;
     int slantLeft, slantRight;
     TabStyle *stylePtr;
-    int oldQuad;
-    int xdpi, ydpi;
     
-    oldQuad = setPtr->quad;
     iconOption.clientData = setPtr;
+    styleOption.clientData = setPtr;
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, configSpecs, 
            objc, objv, (char *)setPtr, flags) != TCL_OK) {
         return TCL_ERROR;
@@ -4656,6 +4862,7 @@ ConfigureTabset(
             setPtr->quad = ROTATE_0;
         }
     } 
+
     /*
      * GC for focus highlight.
      */
@@ -4666,27 +4873,6 @@ ConfigureTabset(
         Tk_FreeGC(setPtr->display, setPtr->highlightGC);
     }
     setPtr->highlightGC = newGC;
-
-    /*
-     * GC for performation.
-     */
-    Blt_ScreenDPI(setPtr->tkwin, &xdpi, &ydpi);
-    if (xdpi > 150) {
-        gcValues.line_width = 2;
-        gcValues.dashes = 4;
-    } else {
-        gcValues.line_width = 1;
-        gcValues.dashes = 3;
-    }
-    gcMask |= (GCLineStyle | GCDashList | GCForeground | GCLineWidth);
-    gcValues.line_style = LineOnOffDash;
-    gcValues.foreground = Blt_Bg_BorderColor(setPtr->defStyle.bg)->pixel;
-
-    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
-    if (setPtr->perfGC != NULL) {
-        Tk_FreeGC(setPtr->display, setPtr->perfGC);
-    }
-    setPtr->perfGC = newGC;
 
     if (setPtr->troughBg != NULL) {
         Blt_Bg_SetChangedProc(setPtr->troughBg, BackgroundChangedProc, setPtr);
@@ -5366,7 +5552,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     SelectTab(setPtr, tabPtr);
     SeeTab(setPtr, tabPtr);
-    cmdObjPtr = GETATTR(tabPtr, cmdObjPtr);
+    cmdObjPtr = GetTabAttribute(tabPtr, cmdObjPtr);
     if (cmdObjPtr != NULL) {
         Tcl_Obj *objPtr;
         int result;
@@ -5599,6 +5785,195 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     EventuallyRedraw(setPtr);
     return TCL_OK;
+}
+
+static int
+StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData;
+    TabStyle *stylePtr;
+    Blt_HashEntry *hPtr;
+    int isNew;
+    const char *string;
+    char ident[200];
+
+    string = Tcl_GetString(objv[3]);
+    if (string[0] == '-') {
+        Blt_FmtString(ident, 200, "style%d", setPtr->nextStyleId++);
+        string = ident;
+    } else {
+        objc--, objv++;
+    }
+    hPtr = Blt_CreateHashEntry(&setPtr->styleTable, string, &isNew);
+    if (!isNew) {
+        Tcl_AppendResult(interp, "tabset style \"", string,
+                "\" already exists.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    stylePtr = Blt_AssertCalloc(1, sizeof(TabStyle));
+    stylePtr->refCount = 1;
+    stylePtr->name = Blt_GetHashKey(&setPtr->styleTable, hPtr);
+    stylePtr->hashPtr = hPtr;
+    stylePtr->setPtr = setPtr;
+    Blt_SetHashValue(hPtr, stylePtr);
+    iconOption.clientData = setPtr;
+    styleOption.clientData = setPtr;
+    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, styleConfigSpecs, 
+        objc - 3, objv + 3, (char *)stylePtr, 0) != TCL_OK) {
+        DestroyStyle(stylePtr);
+        return TCL_ERROR;
+    }
+    ConfigureStyle(setPtr, stylePtr);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
+    return TCL_OK;
+}
+
+static int
+StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData;
+    TabStyle *stylePtr;
+
+    if (GetStyleFromObj(interp, setPtr, objv[3], &stylePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    iconOption.clientData = setPtr;
+    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, styleConfigSpecs,
+        (char *)stylePtr, objv[4], 0);
+}
+
+static int
+StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                 Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData;
+    int flags;
+    TabStyle *stylePtr;
+
+    if (GetStyleFromObj(interp, setPtr, objv[3], &stylePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    iconOption.clientData = setPtr;
+    styleOption.clientData = setPtr;
+    flags = BLT_CONFIG_OBJV_ONLY;
+    if (objc == 1) {
+        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
+                styleConfigSpecs, (char *)stylePtr, (Tcl_Obj *)NULL, flags);
+    } else if (objc == 2) {
+        return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
+                styleConfigSpecs, (char *)stylePtr, objv[2], flags);
+    }
+    Tcl_Preserve(stylePtr);
+    if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, styleConfigSpecs, 
+        objc - 4, objv + 4, (char *)stylePtr, flags) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    ConfigureStyle(setPtr, stylePtr);
+    Tcl_Release(stylePtr);
+    setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
+    EventuallyRedraw(setPtr);
+    return TCL_OK;
+}
+
+static int
+StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData;
+    TabStyle *stylePtr;
+
+    if (GetStyleFromObj(interp, setPtr, objv[3], &stylePtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (stylePtr->refCount > 0) {
+        Tcl_AppendResult(interp, "can't destroy tabset style \"", 
+                         stylePtr->name, "\": style in use.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    DestroyStyle(stylePtr);
+    return TCL_OK;
+}
+
+static int
+StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData;
+    TabStyle *stylePtr;
+    int state;
+
+    state = FALSE;
+    if (GetStyleFromObj(NULL, setPtr, objv[3], &stylePtr) == TCL_OK) {
+        state = TRUE;
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+static int
+StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Tcl_Obj *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    for (hPtr = Blt_FirstHashEntry(&setPtr->styleTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        TabStyle *stylePtr;
+        int found;
+        int i;
+
+        found = TRUE;
+        stylePtr = Blt_GetHashValue(hPtr);
+        for (i = 3; i < objc; i++) {
+            const char *pattern;
+
+            pattern = Tcl_GetString(objv[i]);
+            found = Tcl_StringMatch(stylePtr->name, pattern);
+            if (found) {
+                break;
+            }
+        }
+        if (found) {
+            Tcl_ListObjAppendElement(interp, listObjPtr,
+                Tcl_NewStringObj(stylePtr->name, -1));
+        }
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+static Blt_OpSpec styleOps[] =
+{
+    {"cget",      2, StyleCgetOp,        5, 5, "styleName option",},
+    {"configure", 2, StyleConfigureOp,   4, 0, "styleName ?option value ...?",},
+    {"create",    2, StyleCreateOp,      4, 0, "styleName ?option value ...?",},
+    {"delete",    1, StyleDeleteOp,      3, 0, "?styleName ...?",},
+    {"exists",    1, StyleExistsOp,      4, 4, "styleName"},
+    {"names",     1, StyleNamesOp,       3, 0, "?pattern ...?",},
+};
+
+static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
+
+static int
+StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numStyleOps, styleOps, BLT_OP_ARG2, 
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    result = (*proc)(clientData, interp, objc, objv);
+    return result;
 }
 
 static int
@@ -5838,7 +6213,7 @@ PerforationInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     tabPtr = setPtr->selectPtr;
-    perfCmdObjPtr = GETATTR(tabPtr, perfCmdObjPtr);
+    perfCmdObjPtr = GetTabAttribute(tabPtr, perfCmdObjPtr);
     if (perfCmdObjPtr != NULL) {
         Tcl_Obj *cmdObjPtr, *objPtr;
         int result;
@@ -6780,8 +7155,7 @@ XButtonInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
         return TCL_OK;
     }
-    cmdObjPtr = (tabPtr->xCmdObjPtr == NULL) 
-        ? setPtr->xCmdObjPtr : tabPtr->xCmdObjPtr;
+    cmdObjPtr = GetTabAttribute(tabPtr, xCmdObjPtr);
     if (cmdObjPtr != NULL) {
         int result;
 
@@ -6851,8 +7225,10 @@ ComputeTabGeometry(Tabset *setPtr, Tab *tabPtr)
     unsigned int iw, ih, bw, bh, tw, th;
     unsigned int w, h;
     int count;
+    TabStyle *stylePtr;
 
-    font = GETATTR(tabPtr, font);
+    stylePtr = GetStyle(tabPtr);
+    font = stylePtr->font;
     w = h = 0;
     count = 0;
     tw = th = iw = ih = bw = bh = 0;
@@ -7395,7 +7771,7 @@ ComputeLayout(Tabset *setPtr)
     int numTiers, numTabs, showTabs;
 
     setPtr->numTiers = 0;
-    setPtr->pageTop = setPtr->borderWidth;
+    setPtr->pageTop = setPtr->outerBorderWidth;
     setPtr->worldWidth = 1;
 
     ReindexTabs(setPtr);
@@ -7416,12 +7792,12 @@ ComputeLayout(Tabset *setPtr)
         setPtr->flags |= HIDE_TABS;
     }
     if (showTabs) {
-        setPtr->inset2 = setPtr->defStyle.borderWidth + setPtr->corner;
-        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth + 
+        setPtr->inset2 = setPtr->borderWidth + setPtr->corner;
+        setPtr->inset = setPtr->highlightWidth + setPtr->outerBorderWidth + 
             setPtr->outerPad;
     } else {
         setPtr->inset2 = 0;
-        setPtr->inset = setPtr->highlightWidth + setPtr->borderWidth;
+        setPtr->inset = setPtr->highlightWidth + setPtr->outerBorderWidth;
     }
 
     if (numTabs == 0) {
@@ -7439,7 +7815,7 @@ ComputeLayout(Tabset *setPtr)
         Blt_SetFocusItem(setPtr->bindTable, setPtr->focusPtr, NULL);
     }
     if (setPtr->flags & HIDE_TABS) {
-        setPtr->pageTop = setPtr->borderWidth;
+        setPtr->pageTop = setPtr->outerBorderWidth;
         setPtr->numVisible = 0;
         return;                         /* Don't bother if there's only 
                                          * one tab.*/
@@ -7649,27 +8025,27 @@ Draw3dFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int side,
 {
     int relief, borderWidth;
     Blt_Bg bg;
+    TabStyle *stylePtr;
 
+    stylePtr = GetStyle(tabPtr);
     if (tabPtr == setPtr->selectPtr) {
-        bg = GETATTR(tabPtr, selBg);
+        bg = stylePtr->selBg;
     } else if ((tabPtr == setPtr->activePtr) || 
                (tabPtr == setPtr->activeXButtonPtr)) {
-        bg = GETATTR(tabPtr, activeBg);
-    } else if (tabPtr->bg != NULL) {
-        bg = tabPtr->bg;
+        bg = stylePtr->activeBg;
     } else {
-        bg = setPtr->defStyle.bg;
+        bg = stylePtr->bg;
     }
-    relief = setPtr->defStyle.relief;
+    relief = setPtr->relief;
     if ((side == SIDE_RIGHT) || (side == SIDE_TOP)) {
-        borderWidth = -setPtr->defStyle.borderWidth;
+        borderWidth = -setPtr->borderWidth;
         if (relief == TK_RELIEF_SUNKEN) {
             relief = TK_RELIEF_RAISED;
         } else if (relief == TK_RELIEF_RAISED) {
             relief = TK_RELIEF_SUNKEN;
         }
     } else {
-        borderWidth = setPtr->defStyle.borderWidth;
+        borderWidth = setPtr->borderWidth;
     }
     Blt_Bg_FillPolygon(setPtr->tkwin, drawable, bg, points, numPoints,
             borderWidth, relief);
@@ -7683,13 +8059,13 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     int relief;
     TabStyle *stylePtr;
     
-    stylePtr = &setPtr->defStyle;
+    stylePtr = GetStyle(tabPtr);
     if (setPtr->flags & ACTIVE_PERFORATION) {
-        perfBg = GETATTR(tabPtr, activePerfBg);
-        relief = stylePtr->activePerfRelief;
+        perfBg = stylePtr->activePerfBg;
+        relief = setPtr->activePerfRelief;
     } else {
-        perfBg = GETATTR(tabPtr, normalPerfBg);
-        relief = stylePtr->normalPerfRelief;
+        perfBg = stylePtr->normalPerfBg;
+        relief = setPtr->normalPerfRelief;
     }   
     GetPerforationCoordinates(setPtr, &px, &py, &pw, &ph);
     if ((pw == 0) || (ph == 0)) {
@@ -7697,13 +8073,13 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     }
     if (SIDE_HORIZONTAL(setPtr)) {
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
-                             pw, ph, stylePtr->perfBorderWidth, relief);
-        XDrawLine(setPtr->display, drawable, setPtr->perfGC, px + 2, py+3,
+                             pw, ph, setPtr->perfBorderWidth, relief);
+        XDrawLine(setPtr->display, drawable, stylePtr->perfGC, px + 2, py+3,
                   px + pw -2 , py+3);
     } else {
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
-                             ph, pw, stylePtr->perfBorderWidth, relief);
-        XDrawLine(setPtr->display, drawable, setPtr->perfGC, px + 3, py+2,
+                             ph, pw, setPtr->perfBorderWidth, relief);
+        XDrawLine(setPtr->display, drawable, stylePtr->perfGC, px + 3, py+2,
                   px + 3 , py+ pw - 2);
     }
 }
@@ -7715,7 +8091,9 @@ PaintXButton(Tabset *setPtr, Tab *tabPtr)
     XButton *butPtr = &setPtr->xButton;
     Blt_Picture picture;
     Blt_Pixel fill, symbol;
+    TabStyle *stylePtr;
 
+    stylePtr = GetStyle(tabPtr);
     if (tabPtr == setPtr->activeXButtonPtr) {
         fill.u32 = Blt_XColorToPixel(butPtr->activeBgColor);
         symbol.u32 = Blt_XColorToPixel(butPtr->activeFg);
@@ -7724,7 +8102,7 @@ PaintXButton(Tabset *setPtr, Tab *tabPtr)
         if (tabPtr == setPtr->selectPtr) {
             symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
         } else if (tabPtr == setPtr->activePtr) {
-            symbol.u32 = Blt_XColorToPixel(GETATTR(tabPtr, activeFg));
+            symbol.u32 = Blt_XColorToPixel(stylePtr->activeFg);
         } else {
             symbol.u32 = Blt_XColorToPixel(butPtr->normalFg);
         }
@@ -7791,15 +8169,17 @@ DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         XColor *fgColor;
         Blt_Font font;
         int tx, ty;
+        TabStyle *stylePtr;
 
-        font = GETATTR(tabPtr, font);
+        stylePtr = GetStyle(tabPtr);
+        font = stylePtr->font;
         if (tabPtr == setPtr->selectPtr) {
-            fgColor = GETATTR(tabPtr, selColor);
+            fgColor = stylePtr->selColor;
         } else if ((tabPtr == setPtr->activePtr) || 
                    (tabPtr == setPtr->activeXButtonPtr)) {
-            fgColor = GETATTR(tabPtr, activeFg);
+            fgColor = stylePtr->activeFg;
         } else {
-            fgColor = GETATTR(tabPtr, textColor);
+            fgColor = stylePtr->textColor;
         }
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
@@ -7810,7 +8190,7 @@ DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
-        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
+        Blt_Ts_SetBackground(ts, stylePtr->bg);
 
         tx = x;
         ty = y;
@@ -7879,15 +8259,17 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         XColor *fgColor;
         Blt_Font font;
         int tx, ty;
+        TabStyle *stylePtr;
 
-        font = GETATTR(tabPtr, font);
+        stylePtr = GetStyle(tabPtr);
+        font = stylePtr->font;
         if (tabPtr == setPtr->selectPtr) {
-            fgColor = GETATTR(tabPtr, selColor);
+            fgColor = stylePtr->selColor;
         } else if ((tabPtr == setPtr->activePtr) || 
                    (tabPtr == setPtr->activeXButtonPtr)) {
-            fgColor = GETATTR(tabPtr, activeFg);
+            fgColor = stylePtr->activeFg;
         } else {
-            fgColor = GETATTR(tabPtr, textColor);
+            fgColor = stylePtr->textColor;
         }
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
@@ -7898,7 +8280,7 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
-        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
+        Blt_Ts_SetBackground(ts, stylePtr->bg);
 
         tx = x;
         ty = y;
@@ -7967,15 +8349,17 @@ DrawLabel180(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         XColor *fgColor;
         Blt_Font font;
         int tx, ty;
+        TabStyle *stylePtr;
 
-        font = GETATTR(tabPtr, font);
+        stylePtr = GetStyle(tabPtr);
+        font = stylePtr->font;
         if (tabPtr == setPtr->selectPtr) {
-            fgColor = GETATTR(tabPtr, selColor);
+            fgColor = stylePtr->selColor;
         } else if ((tabPtr == setPtr->activePtr) || 
                    (tabPtr == setPtr->activeXButtonPtr)) {
-            fgColor = GETATTR(tabPtr, activeFg);
+            fgColor = stylePtr->activeFg;
         } else {
-            fgColor = GETATTR(tabPtr, textColor);
+            fgColor = stylePtr->textColor;
         }
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
@@ -7986,7 +8370,7 @@ DrawLabel180(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
-        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
+        Blt_Ts_SetBackground(ts, stylePtr->bg);
 
         tx = x;
         ty = y;
@@ -8055,15 +8439,17 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         XColor *fgColor;
         Blt_Font font;
         int tx, ty;
+        TabStyle *stylePtr;
 
-        font = GETATTR(tabPtr, font);
+        stylePtr = GetStyle(tabPtr);
+        font = stylePtr->font;
         if (tabPtr == setPtr->selectPtr) {
-            fgColor = GETATTR(tabPtr, selColor);
+            fgColor = stylePtr->selColor;
         } else if ((tabPtr == setPtr->activePtr) || 
                    (tabPtr == setPtr->activeXButtonPtr)) {
-            fgColor = GETATTR(tabPtr, activeFg);
+            fgColor = stylePtr->activeFg;
         } else {
-            fgColor = GETATTR(tabPtr, textColor);
+            fgColor = stylePtr->textColor;
         }
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
@@ -8074,7 +8460,7 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
-        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
+        Blt_Ts_SetBackground(ts, stylePtr->bg);
 
         tx = x;
         ty = y;
@@ -8147,10 +8533,12 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     DrawLabel(setPtr, tabPtr, drawable);
     if (tabPtr->container != NULL) {
         int x, y, w, h;
+        TabStyle *stylePtr;
 
+        stylePtr = GetStyle(tabPtr);
         /* Draw a rectangle covering the spot representing the window  */
         GetWardCoordinates(tabPtr, setPtr->tkwin, FALSE, &x, &y, &w, &h);
-        XFillRectangle(setPtr->display, drawable, tabPtr->backGC, x, y, w, h);
+        XFillRectangle(setPtr->display, drawable, stylePtr->backGC, x, y, w, h);
     }
 }
 
@@ -8162,7 +8550,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
      * border even if the relief is flat so that any tabs that hang over the
      * edge will be clipped.
      */
-    if (setPtr->borderWidth > 0) {
+    if (setPtr->outerBorderWidth > 0) {
         int w, h;
         
         w = Tk_Width(setPtr->tkwin)  - 2 * setPtr->highlightWidth;
@@ -8171,7 +8559,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
             Blt_Bg_DrawRectangle(setPtr->tkwin, drawable, setPtr->troughBg,
                 setPtr->highlightWidth + setPtr->xOffset, 
                 setPtr->highlightWidth + setPtr->yOffset, w, h,
-                setPtr->borderWidth, setPtr->relief);
+                setPtr->outerBorderWidth, setPtr->outerRelief);
         }
     }
     /* Draw focus highlight ring. */
@@ -8458,14 +8846,15 @@ DisplayTearoff(ClientData clientData)
     ArrangeWard(tabPtr->tkwin, wx, wy, ww, wh, TRUE);
 
     /* Draw 3D border. */
-    if ((setPtr->borderWidth > 0) && (setPtr->relief != TK_RELIEF_FLAT)) {
+    if ((setPtr->outerBorderWidth > 0) && 
+        (setPtr->outerRelief != TK_RELIEF_FLAT)) {
         int w, h;
 
         w = Tk_Width(tkwin);
         h = Tk_Height(tkwin);
         if ((w > 0) && (h > 0)) {
             Blt_Bg_DrawRectangle(tkwin, drawable, setPtr->troughBg, 0, 0,
-                w, h, setPtr->borderWidth, setPtr->relief);
+                w, h, setPtr->outerBorderWidth, setPtr->outerRelief);
         }
     }
 }
@@ -8513,6 +8902,7 @@ static Blt_OpSpec tabsetOps[] =
     {"see",         3, SeeOp,         3, 3, "tabName",},
     {"select",      3, SelectOp,      3, 3, "tabName",},
     {"size",        2, SizeOp,        2, 2, "",},
+    {"style",       2, StyleOp,       2, 0, "op ?args ...?",},
     {"tab",         3, TabOp,         2, 0, "oper args",},
     {"tag",         3, TagOp,         2, 0, "oper args",},
     {"tearoff",     2, TearoffOp,     3, 4, "tabName ?parent?",},
@@ -8652,6 +9042,7 @@ TabsetCmd(
         Tk_DestroyWindow(setPtr->tkwin);
         return TCL_ERROR;
     }
+    ConfigureStyle(setPtr, &setPtr->defStyle);
     mask = (ExposureMask | StructureNotifyMask | FocusChangeMask);
     Tk_CreateEventHandler(tkwin, mask, TabsetEventProc, setPtr);
     setPtr->cmdToken = Tcl_CreateObjCommand(interp, pathName, TabsetInstCmd, 

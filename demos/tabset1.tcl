@@ -16,7 +16,7 @@ image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 30
 img3 blank white
 
-set side left
+set side bottom
 blt::tabset .t \
     -outerrelief raised \
     -side $side \
@@ -29,26 +29,29 @@ blt::tabset .t \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
     -rotate auto \
-    -xbutton selected \
-    -height 5i -width 5i
+    -xbutton selected 
 
 .t add First \
     -icon img1 \
     -anchor center \
    
 if 1 {
+.t style create green \
+	-selectbackground darkolivegreen2 \
+	-perforationbackground darkolivegreen2 
+.t style create blue \
+	-selectbackground lightblue \
+	-perforationbackground lightblue 
+
 foreach page { Second Third Fourth Fifth } {
     .t add $page \
 	-anchor center \
-	-selectbackground darkolivegreen2 \
-	-perforationbackground darkolivegreen2 \
-
+	-style green
     #	-icon img3
 }
 
 .t add -text Sixth \
-    -selectbackground lightblue \
-    -perforationbackground lightblue 
+    -style blue
 }
 set tabcount 0
 proc NewTab { args } {
@@ -61,10 +64,11 @@ proc NewTab { args } {
     incr tabcount
 }
 
+.t style create plus \
+    -selectbackground yellow 
 .t add "+" \
-    -font "Arial 9" \
     -anchor center \
-    -selectbackground yellow \
+    -style plus \
     -command NewTab
 
 
