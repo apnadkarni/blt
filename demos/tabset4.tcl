@@ -8,7 +8,6 @@ source scripts/stipples.tcl
 
 blt::tabset .t \
     -side left \
-    -justify left \
     -scrollincrement 10 \
     -scrollcommand { .s set } \
     -selectcommand {  MakePicture .t }  \
@@ -65,7 +64,7 @@ proc MakePicture { w index } {
 	image delete $old
     } else {
 	label $label -image $dst 
-	.t tab configure $index -window $label -padx 4m -pady 4m -fill both 
+	.t tab configure $index -window $label -padx 1i -pady 0m -fill both 
     }
     .t dockall
     image delete $src
@@ -82,7 +81,7 @@ foreach f [lrange $files 0 3] {
     set tail [file tail $f]
     set root [file root $tail]
     regsub -all {\.} $root {_} root
-    set thumb [ResizePicture $f .5i]
+    set thumb [ResizePicture $f .25i]
     .t insert end $f -icon $thumb -fill both -text $root
 }
 

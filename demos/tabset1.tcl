@@ -16,7 +16,7 @@ image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 30
 img3 blank white
 
-set side left
+set side right
 blt::tabset .t \
     -outerrelief raised \
     -side $side \
@@ -28,6 +28,7 @@ blt::tabset .t \
     -outerborderwidth 0 \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
+    -rotate auto \
     -xbutton selected \
     -height 5i -width 5i
 

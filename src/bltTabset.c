@@ -1038,9 +1038,6 @@ static Tk_EventProc TabsetEventProc;
 static Tk_EventProc TearoffEventProc;
 static Tk_ImageChangedProc IconChangedProc;
 
-static void GetWindowRectangle(Tab *tabPtr, Tk_Window parent, int hasTearOff, 
-        XRectangle *rectPtr);
-static void ArrangeWindow(Tk_Window tkwin, XRectangle *rectPtr, int force);
 static void EventuallyRedrawTearoff(Tab *tabPtr);
 static void ComputeLayout(Tabset *setPtr);
 static void DrawOuterBorders(Tabset *setPtr, Drawable drawable);
@@ -1968,7 +1965,7 @@ GetLabelCoordinates(Tabset *setPtr, Tab *tabPtr, int *xPtr, int *yPtr,
         w  = setPtr->tabHeight - (2 * setPtr->inset2);
         h = tabPtr->worldWidth  - (left + right);
         y += left;
-        x -= setPtr->inset2;
+        x -= setPtr->tabHeight - setPtr->inset2;
         break;
     }
     xSelPad = ySelPad = 0;
@@ -2015,6 +2012,238 @@ MakeBindTag(Tabset *setPtr, const char *tagName)
     return Blt_GetHashKey(&setPtr->bindTagTable, hPtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TranslateAnchor --
+ *
+ *      Translate the coordinates of a given bounding box based upon the
+ *      anchor specified.  The anchor indicates where the given xy position
+ *      is in relation to the bounding box.
+ *
+ *              nw --- n --- ne
+ *              |            |     x,y ---+
+ *              w   center   e      |     |
+ *              |            |      +-----+
+ *              sw --- s --- se
+ *
+ * Results:
+ *      The translated coordinates of the bounding box are returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+TranslateAnchor(int dx, int dy, Tk_Anchor anchor, int *xPtr, int *yPtr)
+{
+    int x, y;
+
+    x = y = 0;
+    switch (anchor) {
+    case TK_ANCHOR_NW:          /* Upper left corner */
+        break;
+    case TK_ANCHOR_W:           /* Left center */
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_SW:          /* Lower left corner */
+        y = dy;
+        break;
+    case TK_ANCHOR_N:           /* Top center */
+        x = (dx / 2);
+        break;
+    case TK_ANCHOR_CENTER:      /* Centered */
+        x = (dx / 2);
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_S:           /* Bottom center */
+        x = (dx / 2);
+        y = dy;
+        break;
+    case TK_ANCHOR_NE:          /* Upper right corner */
+        x = dx;
+        break;
+    case TK_ANCHOR_E:           /* Right center */
+        x = dx;
+        y = (dy / 2);
+        break;
+    case TK_ANCHOR_SE:          /* Lower right corner */
+        x = dx;
+        y = dy;
+        break;
+    }
+    *xPtr = (*xPtr) + x;
+    *yPtr = (*yPtr) + y;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetReqWidth --
+ *
+ *      Returns the width requested by the embedded tab window and any
+ *      requested padding around it. This represents the requested width of
+ *      the page.
+ *
+ * Results:
+ *      Returns the requested width of the page.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetReqWidth(Tab *tabPtr)
+{
+    int width;
+    
+    if (tabPtr->reqWardWidth > 0) {
+        width = tabPtr->reqWardWidth;
+    } else {
+        width = Tk_ReqWidth(tabPtr->tkwin);
+    }
+    width += PADDING(tabPtr->padX) + 
+        2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    if (width < 1) {
+        width = 1;
+    }
+    return width;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetReqHeight --
+ *
+ *      Returns the height requested by the window and padding around the
+ *      window. This represents the requested height of the page.
+ *
+ * Results:
+ *      Returns the requested height of the page.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetReqHeight(Tab *tabPtr)
+{
+    int height;
+
+    if (tabPtr->reqWardHeight > 0) {
+        height = tabPtr->reqWardHeight;
+    } else {
+        height = Tk_ReqHeight(tabPtr->tkwin);
+    }
+    height += PADDING(tabPtr->padY) +
+        2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    if (height < 1) {
+        height = 1;
+    }
+    return height;
+}
+
+static void
+GetWardCoordinates(Tab *tabPtr, Tk_Window parent, int isTearOff, 
+                     int *xPtr, int *yPtr, int *widthPtr, int *heightPtr)
+{
+    int pad;
+    Tabset *setPtr;
+    int cavityWidth, cavityHeight;
+    int width, height;
+    int dx, dy;
+    int x, y;
+
+    setPtr = tabPtr->setPtr;
+    pad = setPtr->inset + setPtr->inset2;
+
+    x = y = 0;                  /* Suppress compiler warning. */
+    if (!isTearOff) {
+        switch (setPtr->side) {
+        case SIDE_RIGHT:
+        case SIDE_BOTTOM:
+            x = setPtr->inset + setPtr->inset2;
+            y = setPtr->inset + setPtr->inset2;
+            break;
+
+        case SIDE_LEFT:
+            x = setPtr->pageTop;
+            y = setPtr->inset + setPtr->inset2;
+            break;
+
+        case SIDE_TOP:
+            x = setPtr->inset + setPtr->inset2;
+            y = setPtr->pageTop;
+            break;
+        }
+
+        if (SIDE_VERTICAL(setPtr)) {
+            cavityWidth = Tk_Width(setPtr->tkwin) - (setPtr->pageTop + pad);
+            cavityHeight = Tk_Height(setPtr->tkwin) - (2 * pad);
+        } else {
+            cavityWidth = Tk_Width(setPtr->tkwin) - (2 * pad);
+            cavityHeight = Tk_Height(setPtr->tkwin) - (setPtr->pageTop + pad);
+        }
+
+    } else {
+        x = setPtr->inset + setPtr->inset2;
+#define TEAR_OFF_TAB_SIZE       5
+        y = setPtr->inset + setPtr->inset2 + setPtr->outerPad + 
+            TEAR_OFF_TAB_SIZE;
+        if (setPtr->numTiers == 1) {
+            y += setPtr->ySelectPad;
+        }
+        cavityWidth = Tk_Width(parent) - (2 * pad);
+        cavityHeight = Tk_Height(parent) - (y + pad);
+    }
+    if (cavityWidth < 1) {
+        cavityWidth = 1;
+    }
+    if (cavityHeight < 1) {
+        cavityHeight = 1;
+    }
+    width = GetReqWidth(tabPtr);
+    height = GetReqHeight(tabPtr);
+
+    /*
+     * Resize the embedded window is of the following is true:
+     *
+     *  1) It's been torn off.
+     *  2) The -fill option (horizontal or vertical) is set.
+     *  3) the window is bigger than the cavity.
+     */
+    if ((isTearOff) || (cavityWidth < width) || (tabPtr->fill & FILL_X)) {
+        width = cavityWidth;
+    }
+    if ((isTearOff) || (cavityHeight < height) || (tabPtr->fill & FILL_Y)) {
+        height = cavityHeight;
+    }
+    dx = (cavityWidth - width);
+    dy = (cavityHeight - height);
+    if ((dx > 0) || (dy > 0)) {
+        TranslateAnchor(dx, dy, tabPtr->anchor, &x, &y);
+    }
+    /* Remember that X11 windows must be at least 1 pixel. */
+    if (width < 1) {
+        width = 1;
+    }
+    if (height < 1) {
+        height = 1;
+    }
+    *xPtr = x + tabPtr->padX.side1;
+    *yPtr = y + tabPtr->padY.side1;
+    *widthPtr = width;
+    *heightPtr = height;
+}
+
+static void
+ArrangeWard(Tk_Window tkwin, int x, int y, int w, int h, int force)
+{
+    if ((force) ||
+        (x != Tk_X(tkwin)) || (y != Tk_Y(tkwin)) ||
+        (w != Tk_Width(tkwin)) ||(h != Tk_Height(tkwin))) {
+        Tk_MoveResizeWindow(tkwin, x, y, w, h);
+    }
+    if (!Tk_IsMapped(tkwin)) {
+        Tk_MapWindow(tkwin);
+    }
+}
+
 static void
 DestroyTearoff(Tab *tabPtr)
 {
@@ -2034,12 +2263,12 @@ DestroyTearoff(Tab *tabPtr)
     }
     Tk_DeleteEventHandler(tkwin, StructureNotifyMask, TearoffEventProc, tabPtr);
     if (tabPtr->tkwin != NULL) {
-        XRectangle rect;
+        int x, y, w, h;
         
-        GetWindowRectangle(tabPtr, setPtr->tkwin, FALSE, &rect);
-        Blt_RelinkWindow(tabPtr->tkwin, setPtr->tkwin, rect.x, rect.y);
+        GetWardCoordinates(tabPtr, setPtr->tkwin, FALSE, &x, &y, &w, &h);
+        Blt_RelinkWindow(tabPtr->tkwin, setPtr->tkwin, x, y);
         if (tabPtr == setPtr->selectPtr) {
-            ArrangeWindow(tabPtr->tkwin, &rect, TRUE);
+            ArrangeWard(tabPtr->tkwin, x, y, w, h, TRUE);
         } else {
             Tk_UnmapWindow(tabPtr->tkwin);
         }
@@ -2995,7 +3224,7 @@ IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     if (HasXButton(setPtr, tabPtr)) {
         int bx, by;
 
-        bx = x - w;
+        bx = x;
         by = y + h - tabPtr->xButtonWidth0;
         if (w > tabPtr->xButtonHeight0) {
             bx += (w - tabPtr->xButtonHeight0) / 2;
@@ -3010,7 +3239,7 @@ IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     if (tabPtr->icon != NULL) {
         int ix, iy;
 
-        ix = x - w;
+        ix = x;
         iy = y;
         if (w > tabPtr->iconHeight0) {
             ix += (w - tabPtr->iconHeight0) / 2;
@@ -3026,7 +3255,7 @@ IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     if ((tabPtr->text != NULL) && (w > 0)) {
         int tx, ty;
 
-        tx = x - w;
+        tx = x;
         ty = y;
         if (h > tabPtr->textWidth0) {
             if (setPtr->justify == TK_JUSTIFY_CENTER) {
@@ -4111,240 +4340,6 @@ TearoffEventProc(ClientData clientData, XEvent *eventPtr)
     }
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * GetReqWidth --
- *
- *      Returns the width requested by the embedded tab window and any
- *      requested padding around it. This represents the requested width of
- *      the page.
- *
- * Results:
- *      Returns the requested width of the page.
- *
- *---------------------------------------------------------------------------
- */
-static int
-GetReqWidth(Tab *tabPtr)
-{
-    int width;
-    
-    if (tabPtr->reqWardWidth > 0) {
-        width = tabPtr->reqWardWidth;
-    } else {
-        width = Tk_ReqWidth(tabPtr->tkwin);
-    }
-    width += PADDING(tabPtr->padX) + 
-        2 * Tk_Changes(tabPtr->tkwin)->border_width;
-    if (width < 1) {
-        width = 1;
-    }
-    return width;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GetReqHeight --
- *
- *      Returns the height requested by the window and padding around the
- *      window. This represents the requested height of the page.
- *
- * Results:
- *      Returns the requested height of the page.
- *
- *---------------------------------------------------------------------------
- */
-static int
-GetReqHeight(Tab *tabPtr)
-{
-    int height;
-
-    if (tabPtr->reqWardHeight > 0) {
-        height = tabPtr->reqWardHeight;
-    } else {
-        height = Tk_ReqHeight(tabPtr->tkwin);
-    }
-    height += PADDING(tabPtr->padY) +
-        2 * Tk_Changes(tabPtr->tkwin)->border_width;
-    if (height < 1) {
-        height = 1;
-    }
-    return height;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * TranslateAnchor --
- *
- *      Translate the coordinates of a given bounding box based upon the
- *      anchor specified.  The anchor indicates where the given xy position
- *      is in relation to the bounding box.
- *
- *              nw --- n --- ne
- *              |            |     x,y ---+
- *              w   center   e      |     |
- *              |            |      +-----+
- *              sw --- s --- se
- *
- * Results:
- *      The translated coordinates of the bounding box are returned.
- *
- *---------------------------------------------------------------------------
- */
-static void
-TranslateAnchor(int dx, int dy, Tk_Anchor anchor, int *xPtr, int *yPtr)
-{
-    int x, y;
-
-    x = y = 0;
-    switch (anchor) {
-    case TK_ANCHOR_NW:          /* Upper left corner */
-        break;
-    case TK_ANCHOR_W:           /* Left center */
-        y = (dy / 2);
-        break;
-    case TK_ANCHOR_SW:          /* Lower left corner */
-        y = dy;
-        break;
-    case TK_ANCHOR_N:           /* Top center */
-        x = (dx / 2);
-        break;
-    case TK_ANCHOR_CENTER:      /* Centered */
-        x = (dx / 2);
-        y = (dy / 2);
-        break;
-    case TK_ANCHOR_S:           /* Bottom center */
-        x = (dx / 2);
-        y = dy;
-        break;
-    case TK_ANCHOR_NE:          /* Upper right corner */
-        x = dx;
-        break;
-    case TK_ANCHOR_E:           /* Right center */
-        x = dx;
-        y = (dy / 2);
-        break;
-    case TK_ANCHOR_SE:          /* Lower right corner */
-        x = dx;
-        y = dy;
-        break;
-    }
-    *xPtr = (*xPtr) + x;
-    *yPtr = (*yPtr) + y;
-}
-
-static void
-GetWindowRectangle(Tab *tabPtr, Tk_Window parent, int hasTearOff, 
-                   XRectangle *rectPtr)
-{
-    int pad;
-    Tabset *setPtr;
-    int cavityWidth, cavityHeight;
-    int width, height;
-    int dx, dy;
-    int x, y;
-
-    setPtr = tabPtr->setPtr;
-    pad = setPtr->inset + setPtr->inset2;
-
-    x = y = 0;                  /* Suppress compiler warning. */
-    if (!hasTearOff) {
-        switch (setPtr->side) {
-        case SIDE_RIGHT:
-        case SIDE_BOTTOM:
-            x = setPtr->inset + setPtr->inset2;
-            y = setPtr->inset + setPtr->inset2;
-            break;
-
-        case SIDE_LEFT:
-            x = setPtr->pageTop;
-            y = setPtr->inset + setPtr->inset2;
-            break;
-
-        case SIDE_TOP:
-            x = setPtr->inset + setPtr->inset2;
-            y = setPtr->pageTop;
-            break;
-        }
-
-        if (SIDE_VERTICAL(setPtr)) {
-            cavityWidth = Tk_Width(setPtr->tkwin) - (setPtr->pageTop + pad);
-            cavityHeight = Tk_Height(setPtr->tkwin) - (2 * pad);
-        } else {
-            cavityWidth = Tk_Width(setPtr->tkwin) - (2 * pad);
-            cavityHeight = Tk_Height(setPtr->tkwin) - (setPtr->pageTop + pad);
-        }
-
-    } else {
-        x = setPtr->inset + setPtr->inset2;
-#define TEAR_OFF_TAB_SIZE       5
-        y = setPtr->inset + setPtr->inset2 + setPtr->outerPad + 
-            TEAR_OFF_TAB_SIZE;
-        if (setPtr->numTiers == 1) {
-            y += setPtr->ySelectPad;
-        }
-        cavityWidth = Tk_Width(parent) - (2 * pad);
-        cavityHeight = Tk_Height(parent) - (y + pad);
-    }
-    if (cavityWidth < 1) {
-        cavityWidth = 1;
-    }
-    if (cavityHeight < 1) {
-        cavityHeight = 1;
-    }
-    width = GetReqWidth(tabPtr);
-    height = GetReqHeight(tabPtr);
-
-    /*
-     * Resize the embedded window is of the following is true:
-     *
-     *  1) It's been torn off.
-     *  2) The -fill option (horizontal or vertical) is set.
-     *  3) the window is bigger than the cavity.
-     */
-    if ((hasTearOff) || (cavityWidth < width) || (tabPtr->fill & FILL_X)) {
-        width = cavityWidth;
-    }
-    if ((hasTearOff) || (cavityHeight < height) || (tabPtr->fill & FILL_Y)) {
-        height = cavityHeight;
-    }
-    dx = (cavityWidth - width);
-    dy = (cavityHeight - height);
-    if ((dx > 0) || (dy > 0)) {
-        TranslateAnchor(dx, dy, tabPtr->anchor, &x, &y);
-    }
-    /* Remember that X11 windows must be at least 1 pixel. */
-    if (width < 1) {
-        width = 1;
-    }
-    if (height < 1) {
-        height = 1;
-    }
-    rectPtr->x = (short)(x + tabPtr->padX.side1);
-    rectPtr->y = (short)(y + tabPtr->padY.side1);
-    rectPtr->width = (short)width;
-    rectPtr->height = (short)height;
-}
-
-static void
-ArrangeWindow(Tk_Window tkwin, XRectangle *rectPtr, int force)
-{
-    if ((force) ||
-        (rectPtr->x != Tk_X(tkwin)) || 
-        (rectPtr->y != Tk_Y(tkwin)) ||
-        (rectPtr->width != Tk_Width(tkwin)) ||
-        (rectPtr->height != Tk_Height(tkwin))) {
-        Tk_MoveResizeWindow(tkwin, rectPtr->x, rectPtr->y, 
-                            rectPtr->width, rectPtr->height);
-    }
-    if (!Tk_IsMapped(tkwin)) {
-        Tk_MapWindow(tkwin);
-    }
-}
-
 
 /*ARGSUSED*/
 static void
@@ -4369,12 +4364,7 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData context,
         Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
         break;
     case PICK_ICON:
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, "Icon"));
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
-        break;
     case PICK_TEXT:
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, "Text"));
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
     case PICK_NONE:
         Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
         Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, tags);
@@ -4954,7 +4944,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DockallOp --
  *
- *        .h dockall
+ *        pathName dockall
  *
  *---------------------------------------------------------------------------
  */
@@ -5342,7 +5332,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a selection command.
  *
- *        .h invoke index
+ *        pathName invoke tabName
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -5461,7 +5451,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *        .h names pattern
+ *        pathName names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5535,7 +5525,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to select a tab.
  *
- *        .h select index
+ *        pathName select tabName
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -5687,7 +5677,7 @@ NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
  *
  * TabCgetOp --
  *
- *        .h tab cget index option
+ *        pathName tab cget tabName option
  *
  *---------------------------------------------------------------------------
  */
@@ -5722,7 +5712,7 @@ TabCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      database, in order to reconfigure the options for one or more tabs in
  *      the widget.
  *
- *        .h tab configure index ?index...? ?option value?...
+ *        pathName tab configure tabName ?option value?...
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -5825,7 +5815,7 @@ TabOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *      This procedure is called to highlight the perforation.
  *
- *        .h perforation activate boolean
+ *        pathName perforation activate boolean
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
@@ -6083,7 +6073,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagAddOp --
  *
- *      pathName tag add tag ?tabName ...?
+ *      pathName tag add tagName ?tabName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -8066,7 +8056,7 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         if (setPtr->painter == NULL) {
             setPtr->painter = Blt_GetPainter(setPtr->tkwin, 1.0);
         }
-        bx = x - w;
+        bx = x;
         by = y + h - tabPtr->xButtonWidth0;
         if (w > tabPtr->xButtonHeight0) {
             bx += (w - tabPtr->xButtonHeight0) / 2;
@@ -8082,7 +8072,7 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         Blt_Picture picture;
         int ix, iy;
 
-        ix = x - w;
+        ix = x;
         iy = y;
         if (w > tabPtr->iconHeight0) {
             ix += (w - tabPtr->iconHeight0) / 2;
@@ -8124,7 +8114,7 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         }
         Blt_Ts_SetForeground(ts, fgColor);
 
-        tx = x - w;
+        tx = x;
         ty = y;
         if (h > tabPtr->textWidth0) {
             if (setPtr->justify == TK_JUSTIFY_CENTER) {
@@ -8194,12 +8184,11 @@ DrawFolder(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     Draw3dFolder(setPtr, tabPtr, drawable, setPtr->side, points, numPoints);
     DrawLabel(setPtr, tabPtr, drawable);
     if (tabPtr->container != NULL) {
-        XRectangle rect;
+        int x, y, w, h;
 
         /* Draw a rectangle covering the spot representing the window  */
-        GetWindowRectangle(tabPtr, setPtr->tkwin, FALSE, &rect);
-        XFillRectangles(setPtr->display, drawable, tabPtr->backGC,
-            &rect, 1);
+        GetWardCoordinates(tabPtr, setPtr->tkwin, FALSE, &x, &y, &w, &h);
+        XFillRectangle(setPtr->display, drawable, tabPtr->backGC, x, y, w, h);
     }
 }
 
@@ -8387,10 +8376,11 @@ DisplayProc(ClientData clientData)    /* Information about widget. */
     }
     if ((setPtr->selectPtr != NULL) && (setPtr->selectPtr->tkwin != NULL) && 
         (setPtr->selectPtr->container == NULL)) {
-        XRectangle rect;
+        int x, y, w, h;
         
-        GetWindowRectangle(setPtr->selectPtr, setPtr->tkwin, FALSE, &rect);
-        ArrangeWindow(setPtr->selectPtr->tkwin, &rect, 0);
+        GetWardCoordinates(setPtr->selectPtr, setPtr->tkwin, FALSE, 
+                &x, &y, &w, &h);
+        ArrangeWard(setPtr->selectPtr->tkwin, x, y, w, h, FALSE);
     }
     DrawOuterBorders(setPtr, pixmap);
     XCopyArea(setPtr->display, pixmap, Tk_WindowId(setPtr->tkwin),
@@ -8444,7 +8434,7 @@ DisplayTearoff(ClientData clientData)
     int numPoints;
     Tk_Window tkwin;
     Tk_Window parent;
-    XRectangle rect;
+    int wx, wy, ww, wh;
 
     tabPtr = clientData;
     if (tabPtr == NULL) {
@@ -8502,8 +8492,8 @@ DisplayTearoff(ClientData clientData)
     Draw3dFolder(setPtr, tabPtr, drawable, SIDE_TOP, points, numPoints);
 
     parent = (tabPtr->container == NULL) ? setPtr->tkwin : tabPtr->container;
-    GetWindowRectangle(tabPtr, parent, TRUE, &rect);
-    ArrangeWindow(tabPtr->tkwin, &rect, TRUE);
+    GetWardCoordinates(tabPtr, parent, TRUE, &wx, &wy, &ww, &wh);
+    ArrangeWard(tabPtr->tkwin, wx, wy, ww, wh, TRUE);
 
     /* Draw 3D border. */
     if ((setPtr->borderWidth > 0) && (setPtr->relief != TK_RELIEF_FLAT)) {
