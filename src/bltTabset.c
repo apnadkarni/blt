@@ -4340,6 +4340,7 @@ ConfigureXButton(
     }
     setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
+    fprintf(stderr, "linespace=%d\n", fm.linespace);
     butPtr->width = butPtr->height = 9 * fm.linespace / 10;
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
@@ -7790,11 +7791,9 @@ DrawLabel0(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         TextStyle ts;
         XColor *fgColor;
         Blt_Font font;
-	Blt_FontMetrics fm;
         int tx, ty;
 
         font = GETATTR(tabPtr, font);
-        Blt_Font_GetMetrics(font, &fm);
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 
@@ -7880,11 +7879,9 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         TextStyle ts;
         XColor *fgColor;
         Blt_Font font;
-	Blt_FontMetrics fm;
         int tx, ty;
 
         font = GETATTR(tabPtr, font);
-        Blt_Font_GetMetrics(font, &fm);
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 
@@ -7970,11 +7967,9 @@ DrawLabel180(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         TextStyle ts;
         XColor *fgColor;
         Blt_Font font;
-	Blt_FontMetrics fm;
         int tx, ty;
 
         font = GETATTR(tabPtr, font);
-        Blt_Font_GetMetrics(font, &fm);
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 
@@ -8060,11 +8055,9 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
         TextStyle ts;
         XColor *fgColor;
         Blt_Font font;
-	Blt_FontMetrics fm;
         int tx, ty;
 
         font = GETATTR(tabPtr, font);
-        Blt_Font_GetMetrics(font, &fm);
         if (tabPtr == setPtr->selectPtr) {
             fgColor = GETATTR(tabPtr, selColor);
         } else if ((tabPtr == setPtr->activePtr) || 

@@ -788,6 +788,17 @@ Blt_GetChildrenFromWindow(Display *display, Window window)
     return NULL;
 }
 
+void
+Blt_ScreenDPI(Tk_Window tkwin, int *xPtr, int *yPtr) 
+{
+    Screen *screen;
+
+#define MM_INCH         25.4
+    screen = Tk_Screen(tkwin);
+    *xPtr = (int)((WidthOfScreen(screen) * MM_INCH)/WidthMMOfScreen(screen));
+    *yPtr = (int)((HeightOfScreen(screen) * MM_INCH)/HeightMMOfScreen(screen));
+}
+
 
 #ifdef notdef
 Pixmap

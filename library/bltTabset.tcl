@@ -333,7 +333,7 @@ proc blt::Tabset::ToggleTearoff { w index } {
     $w invoke $tab
     set win [$w tearoff $index]
     if { $win == "$w" } {
-	foreach { x1 y1 x2 y2 } [$w extents $tab] break
+	foreach { x1 y1 x2 y2 } [$w bbox $tab] break
 	CreateTearoff $w $tab $x1 $y1
     } elseif { $win != "" } {
 	DestroyTearoff $w $tab

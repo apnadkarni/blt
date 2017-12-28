@@ -162,13 +162,20 @@ available for *tabset* widgets:
   tab option(s) to have the given value(s). *Option* and *value* are
   described in the **configure** operation below.
 
-*pathName* **bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ? 
-  Associates *cmdString* with *tagName* such that whenever the event sequence
-  given by *sequence* occurs for a tab with this tag, *cmdString* will be
-  invoked.  The syntax is similar to the **bind** command except that it
-  operates on tabs, rather than widgets. See the **bind** manual entry for
-  complete details on *sequence* and the substitutions performed on
-  *cmdString*.
+*pathName* **bbox** *tabName*
+  Returns the bounding box of *tabName*.  *TabName* may be an index, tag,
+  name, or label but may not refer to more than one tab.  This command
+  returns a list of 4 numbers that represent the coordinates of the
+  upper-left and lower-right corners of the bounding box of the tab (but
+  not its folder) in root coordinates.
+
+*pathName* **bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ?
+  Associates *cmdString* with *tagName* such that whenever the event
+  sequence given by *sequence* occurs for a tab with this tag, *cmdString*
+  will be invoked.  The syntax is similar to the **bind** command except
+  that it operates on tabs, rather than widgets. See the **bind** manual
+  entry for complete details on *sequence* and the substitutions performed
+  on *cmdString*.
   
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
@@ -474,9 +481,11 @@ available for *tabset* widgets:
 
     The default is "same".
 
-  **-troughbackground** *bgName*
-    Sets the background color of the trough under the tabs.  
-    FIXME
+  **-troughcolor** *bgName*
+    Sets the background color of the trough surrounding the folder.  
+    *BgName** may be a color name or the name of a background
+    object created by the **blt::background** command. 
+    The default is "grey60".
 
   **-outerborderwidth** *numPixels*
     Sets the width of the 3\-D border around the outside edge of the

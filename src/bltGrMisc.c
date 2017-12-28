@@ -897,17 +897,6 @@ Blt_SetDashes(Display *display, GC gc, Blt_Dashes *dashesPtr)
 #endif
 
 void
-Blt_ScreenDPI(Tk_Window tkwin, int *xPtr, int *yPtr) 
-{
-    Screen *screen;
-
-#define MM_INCH         25.4
-    screen = Tk_Screen(tkwin);
-    *xPtr = (int)((WidthOfScreen(screen) * MM_INCH)/WidthMMOfScreen(screen));
-    *yPtr = (int)((HeightOfScreen(screen) * MM_INCH)/HeightMMOfScreen(screen));
-}
-
-void
 Blt_DrawSegments2d(
     Display *display,
     Drawable drawable,

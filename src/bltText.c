@@ -122,27 +122,22 @@ Blt_GetTextExtents(
     unsigned int *widthPtr, 
     unsigned int *heightPtr)
 {
-    unsigned int lineHeight;
+    unsigned int maxWidth, maxHeight;
 
-    if (text == NULL) {
-        return;                         /* NULL string? */
-    }
-    {
+    maxWidth = maxHeight = 0;
+    if (text != NULL) {
+        int i;
         Blt_FontMetrics fm;
-
-        Blt_Font_GetMetrics(font, &fm);
-        lineHeight = fm.linespace;
-    }
-    if (textLen < 0) {
-        textLen = strlen(text);
-    }
-    { 
         unsigned int lineLen;           /* # of characters on each line */
         const char *p, *pend;
         const char *line;
-        unsigned int maxWidth, maxHeight;
+        unsigned int lineHeight;
 
-        maxWidth = maxHeight = 0;
+        Blt_Font_GetMetrics(font, &fm);
+        lineHeight = fm.linespace;
+        if (textLen < 0) {
+            textLen = strlen(text);
+        }
         lineLen = 0;
         for (p = line = text, pend = text + textLen; p < pend; p++) {
             if (*p == '\n') {
@@ -172,9 +167,9 @@ Blt_GetTextExtents(
                 maxWidth = lineWidth;
             }
         }
-        *widthPtr = maxWidth;
-        *heightPtr = maxHeight;
     }
+    *widthPtr = maxWidth;
+    *heightPtr = maxHeight;
 }
 
 /*

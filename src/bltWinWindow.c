@@ -636,3 +636,18 @@ Blt_DrawToMetaFile(Tcl_Interp *interp, Tk_Window tkwin, int emf,
     TkWinReleaseDrawableDC(drawable, hRefDC, &state);
     return result;
 }
+
+void
+Blt_ScreenDPI(Tk_Window tkwin, int *xPtr, int *yPtr) 
+{
+    HDC hDC;
+    TkWinDCState state;
+
+    if (Tk_WindowId(tkwin) == None) {
+        Tk_MakeWindowExist(tkwin);
+    }
+    hDC = TkWinGetDrawableDC(Tk_Display(tkwin), Tk_WindowId(tkwin), &state);
+    *xPtr = GetDeviceCaps (hDC, LOGPIXELSX);
+    *yPtr = GetDeviceCaps (hDC, LOGPIXELSY);
+    TkWinReleaseDrawableDC(Tk_WindowId(tkwin), hDC, &state);
+}
