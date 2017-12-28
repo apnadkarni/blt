@@ -2100,13 +2100,13 @@ DrawValues(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
 
         count++;
         if (penPtr->valueShow == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueShow == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueShow == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         if (graphPtr->flags & INVERTED) {
             anchorPos.y = rp->y + rp->height * 0.5;
@@ -2352,13 +2352,13 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
         y = elemPtr->y.values[barToData[count]];
         count++;
         if (penPtr->valueShow == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueShow == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueShow == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         if (graphPtr->flags & INVERTED) {
             anchorPos.y = rp->y + rp->height * 0.5;

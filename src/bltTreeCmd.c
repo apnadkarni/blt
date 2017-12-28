@@ -1915,7 +1915,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 
         Tcl_DStringInit(&ds);
         Tcl_DStringAppend(&ds, prefix, -1);
-        Blt_FormatString(string, 200, "tree%d", i);
+        Blt_FmtString(string, 200, "tree%d", i);
         Tcl_DStringAppend(&ds, string, -1);
         Tcl_DStringAppend(&ds, suffix, -1);
         if (!Blt_ParseObjectName(interp, Tcl_DStringValue(&ds), &objName, 0)) {
@@ -5479,7 +5479,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (switches.label == NULL) {
         char string[200];
 
-        Blt_FormatString(string, 200, "node%ld", Blt_Tree_NodeId(child));
+        Blt_FmtString(string, 200, "node%ld", Blt_Tree_NodeId(child));
         Blt_Tree_RelabelNodeWithoutNotify(child, string);
     } 
     if (switches.tagsObjPtr != NULL) {
@@ -6117,7 +6117,7 @@ NotifyCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char string[200];
         int isNew;
 
-        Blt_FormatString(string, 200, "notify%d", cmdPtr->notifyCounter++);
+        Blt_FmtString(string, 200, "notify%d", cmdPtr->notifyCounter++);
         hPtr = Blt_CreateHashEntry(&cmdPtr->notifyTable, string, &isNew);
         assert(isNew);
         notifyPtr->link = Blt_Chain_Append(cmdPtr->notifiers, notifyPtr);
@@ -7630,7 +7630,7 @@ TraceCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char string[200];
         int isNew;
 
-        Blt_FormatString(string, 200, "trace%d", cmdPtr->traceCounter++);
+        Blt_FmtString(string, 200, "trace%d", cmdPtr->traceCounter++);
         hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, string, &isNew);
         Blt_SetHashValue(hPtr, tracePtr);
         Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
@@ -8256,9 +8256,9 @@ TreeLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_DStringAppend(&libName, BLT_SO_EXT, -1);
 
     initProcName = Blt_AssertMalloc(8 + length + 4 + 1);
-    Blt_FormatString(initProcName, 8 + length + 4 + 1, "Blt_Tree%sInit", fmt);
+    Blt_FmtString(initProcName, 8 + length + 4 + 1, "Blt_Tree%sInit", fmt);
     safeProcName = Blt_AssertMalloc(8 + length + 8 + 1);
-    Blt_FormatString(safeProcName, 8 + length + 8 + 1, "Blt_Tree%sSafeInit",
+    Blt_FmtString(safeProcName, 8 + length + 8 + 1, "Blt_Tree%sSafeInit",
                      fmt);
     result = Blt_LoadLibrary(interp, Tcl_DStringValue(&libName), initProcName, 
         safeProcName); 

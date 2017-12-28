@@ -168,7 +168,7 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_SetDoubleObj, /* 158 */
     Blt_NewDoubleObj, /* 159 */
     Blt_IsDoubleObj, /* 160 */
-    Blt_FormatString, /* 161 */
+    Blt_FmtString, /* 161 */
     Blt_LowerCase, /* 162 */
     Blt_UpperCase, /* 163 */
     Blt_GetPlatformId, /* 164 */

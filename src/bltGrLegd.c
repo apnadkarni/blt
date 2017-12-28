@@ -796,7 +796,7 @@ PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         {
             char string[200];
 
-            Blt_FormatString(string, 200, "@%d,%d", legendPtr->xReq, 
+            Blt_FmtString(string, 200, "@%d,%d", legendPtr->xReq, 
                              legendPtr->yReq);
             objPtr = Tcl_NewStringObj(string, -1);
         }

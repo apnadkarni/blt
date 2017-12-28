@@ -2079,7 +2079,7 @@ ConfigureDnd(Tcl_Interp *interp, Dnd *dndPtr)
          */
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             Tcl_AddErrorInfo(interp,
-                     "\n    (while loading bindings for blt::drag&drop)");
+                     "\n\t(while loading bindings for blt::drag&drop)");
             return TCL_ERROR;
         }
     }
@@ -3460,7 +3460,7 @@ AddTargetProperty(Dnd *dndPtr)  /* drag&drop target window data */
     if (dndPtr->motionCmd != NULL) {
         eventFlags |= WATCH_MOTION;
     }
-    Blt_FormatString(string, 200, "0x%x", eventFlags);
+    Blt_FmtString(string, 200, "0x%x", eventFlags);
     Tcl_DStringAppendElement(&ds, string);
     for (hPtr = Blt_FirstHashEntry(&dndPtr->setDataTable, &cursor);
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {

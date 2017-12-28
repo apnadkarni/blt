@@ -1465,7 +1465,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 
         Tcl_DStringInit(&ds);
         Tcl_DStringAppend(&ds, prefix, -1);
-        Blt_FormatString(string, 200, "datatable%d", n);
+        Blt_FmtString(string, 200, "datatable%d", n);
         Tcl_DStringAppend(&ds, string, -1);
         Tcl_DStringAppend(&ds, suffix, -1);
         if (!Blt_ParseObjectName(interp, Tcl_DStringValue(&ds), 
@@ -8286,7 +8286,7 @@ TraceCellOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
 
         do {
-            Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
+            Blt_FmtString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
             cmdPtr->nextTraceId++;
             hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, &isNew);
         } while (!isNew);
@@ -8390,7 +8390,7 @@ TraceColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char traceId[200];
         int isNew;
 
-        Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
+        Blt_FmtString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
         cmdPtr->nextTraceId++;
         tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
                 &isNew);
@@ -8630,7 +8630,7 @@ TraceRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char traceId[200];
         int isNew;
 
-        Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
+        Blt_FmtString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
         cmdPtr->nextTraceId++;
         tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
                 &isNew);
@@ -8827,7 +8827,7 @@ WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
         int isNew;
 
-        Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+        Blt_FmtString(name, 200, "watch%d", cmdPtr->nextWatch++);
         hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
         assert(isNew);
         Blt_SetHashValue(hPtr, watchPtr);
@@ -9100,7 +9100,7 @@ WatchRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
         int isNew;
 
-        Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+        Blt_FmtString(name, 200, "watch%d", cmdPtr->nextWatch++);
         hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
         assert(isNew);
         Blt_SetHashValue(hPtr, watchPtr);
@@ -9533,9 +9533,9 @@ TableLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     initProcName = Blt_AssertMalloc(11 + length + 5 + 1);
-    Blt_FormatString(initProcName, 11 + length + 5 + 1, "blt_table_%s_init", fmt);
+    Blt_FmtString(initProcName, 11 + length + 5 + 1, "blt_table_%s_init", fmt);
     safeProcName = Blt_AssertMalloc(11 + length + 9 + 1);
-    Blt_FormatString(safeProcName, 11 + length + 9+1, "blt_table_%s_safe_init", fmt);
+    Blt_FmtString(safeProcName, 11 + length + 9+1, "blt_table_%s_safe_init", fmt);
 
     Tcl_DStringAppend(&libName, "/", -1);
     Tcl_UtfToTitle((char *)fmt);

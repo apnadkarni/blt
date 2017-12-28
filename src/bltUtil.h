@@ -92,7 +92,7 @@ BLT_EXTERN int TclGetLong(Tcl_Interp *interp, const char *s, long *longPtr);
 #endif  /*USE_TCL_STUBS*/
 
 #ifndef HAVE_SPRINTF_S
-BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, /*args*/ ...);
+BLT_EXTERN int Blt_FmtString(char *s, size_t size, const char *fmt, /*args*/ ...);
 #endif  /* HAVE_SPRINTF_S */
 
 #endif /*BLT_UTIL_H*/

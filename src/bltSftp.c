@@ -2335,7 +2335,7 @@ GenerateName(Tcl_Interp *interp, SftpCmdInterpData *dataPtr, const char *prefix,
 
         Tcl_DStringInit(&ds);
         Tcl_DStringAppend(&ds, prefix, -1);
-        Blt_FormatString(string, 200, "sftp%d", dataPtr->nextId);
+        Blt_FmtString(string, 200, "sftp%d", dataPtr->nextId);
         dataPtr->nextId++;
         Tcl_DStringAppend(&ds, string, -1);
         Tcl_DStringAppend(&ds, suffix, -1);

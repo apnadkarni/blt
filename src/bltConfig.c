@@ -2044,7 +2044,7 @@ Blt_ConfigureWidgetFromObj(
         if (DoConfig(interp, tkwin, sp, objv[1], widgRec, flags) != TCL_OK) {
             char msg[100];
 
-            Blt_FormatString(msg, 100, "\n    (processing \"%.40s\" option)",
+            Blt_FmtString(msg, 100, "\n    (processing \"%.40s\" option)",
                     sp->switchName);
             Tcl_AddErrorInfo(interp, msg);
             return TCL_ERROR;
@@ -2094,7 +2094,7 @@ Blt_ConfigureWidgetFromObj(
                 if (result != TCL_OK) {
                     char msg[200];
     
-                    Blt_FormatString(msg, 200, 
+                    Blt_FmtString(msg, 200, 
                         "\n    (%s \"%.50s\" in widget \"%.50s\")",
                         "database entry for", sp->dbName, Tk_PathName(tkwin));
                     Tcl_AddErrorInfo(interp, msg);
@@ -2112,7 +2112,7 @@ Blt_ConfigureWidgetFromObj(
                 if (result != TCL_OK) {
                     char msg[200];
                     
-                    Blt_FormatString(msg, 200, 
+                    Blt_FmtString(msg, 200, 
                         "\n    (%s \"%.50s\" in widget \"%.50s\")",
                         "default value for", sp->dbName, Tk_PathName(tkwin));
                     Tcl_AddErrorInfo(interp, msg);

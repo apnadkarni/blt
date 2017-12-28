@@ -891,7 +891,7 @@ BitmapDataToString(
         char string[200];
 
         separator = (i % BYTES_PER_OUTPUT_LINE) ? " " : "\n    ";
-        Blt_FormatString(string, 200, "%s%02x", separator, bits[i]);
+        Blt_FmtString(string, 200, "%s%02x", separator, bits[i]);
         Tcl_DStringAppend(resultPtr, string, -1);
     }
     if (bits != NULL) {

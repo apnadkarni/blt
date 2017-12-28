@@ -1711,7 +1711,7 @@ DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
     if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
         char info[2000];
 
-        Blt_FormatString(info, 2000, "\n    (while loading palettes)");
+        Blt_FmtString(info, 2000, "\n\t(while loading palettes)");
         Tcl_AddErrorInfo(interp, info);
         Tcl_BackgroundError(interp);
         return TCL_ERROR;
@@ -1824,7 +1824,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* If no name was given for the palette, generate one. */
     if (name == NULL) {
         do {
-            Blt_FormatString(ident, 200, "palette%d", dataPtr->nextId++);
+            Blt_FmtString(ident, 200, "palette%d", dataPtr->nextId++);
         } while (Blt_FindHashEntry(&dataPtr->paletteTable, ident));
         name = ident;
     }

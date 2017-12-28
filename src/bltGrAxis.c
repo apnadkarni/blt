@@ -1806,7 +1806,7 @@ MakeLabel(Axis *axisPtr, double value)
         Tcl_DStringGetResult(interp, &ds);
         string = Tcl_DStringValue(&ds);
     } else if (IsLogScale(axisPtr)) {
-        Blt_FormatString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
+        Blt_FmtString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
         string = buffer;
     } else if ((IsTimeScale(axisPtr)) && (axisPtr->major.ticks.fmt != NULL)) {
         Blt_DateTime date;
@@ -1820,7 +1820,7 @@ MakeLabel(Axis *axisPtr, double value)
             value = fmod(value, 60.0);
             value = UROUND(value, axisPtr->major.ticks.step);
         }
-        Blt_FormatString(buffer, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
+        Blt_FmtString(buffer, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
         string = buffer;
     }
     labelPtr = Blt_AssertMalloc(sizeof(TickLabel) + strlen(string));
@@ -4570,7 +4570,7 @@ ConfigureAxis(Axis *axisPtr)
     if (((DEFINED(axisPtr->reqMin)) && (DEFINED(axisPtr->reqMax))) &&
         (axisPtr->reqMin >= axisPtr->reqMax)) {
         char msg[200];
-        Blt_FormatString(msg, 200, 
+        Blt_FmtString(msg, 200, 
                   "impossible axis limits (-min %g >= -max %g) for \"%s\"",
                   axisPtr->reqMin, axisPtr->reqMax, axisPtr->obj.name);
         Tcl_AppendResult(graphPtr->interp, msg, (char *)NULL);
@@ -7031,11 +7031,11 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
         }
         if (minFmt[0] != '\0') {
             minPtr = minString;
-            Blt_FormatString(minString, 200, minFmt, axisPtr->tickMin);
+            Blt_FmtString(minString, 200, minFmt, axisPtr->tickMin);
         }
         if (maxFmt[0] != '\0') {
             maxPtr = maxString;
-            Blt_FormatString(maxString, 200, maxFmt, axisPtr->tickMax);
+            Blt_FmtString(maxString, 200, maxFmt, axisPtr->tickMax);
         }
         if (axisPtr->decreasing) {
             char *tmp;
@@ -7111,7 +7111,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             maxFmt = Tcl_GetString(objv[1]);
         }
         if (*maxFmt != '\0') {
-            Blt_FormatString(string, 200, maxFmt, axisPtr->tickMax);
+            Blt_FmtString(string, 200, maxFmt, axisPtr->tickMax);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -7131,7 +7131,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             }
         }
         if (*minFmt != '\0') {
-            Blt_FormatString(string, 200, minFmt, axisPtr->tickMin);
+            Blt_FmtString(string, 200, minFmt, axisPtr->tickMin);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {

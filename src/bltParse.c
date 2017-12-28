@@ -609,7 +609,7 @@ Blt_ParseQuotes(
             char buf[10];
 
             Tcl_ResetResult(interp);
-            Blt_FormatString(buf, 10, "missing %c", termChar);
+            Blt_FmtString(buf, 10, "missing %c", termChar);
             Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, 9);
             *termPtr = string - 1;
             return TCL_ERROR;

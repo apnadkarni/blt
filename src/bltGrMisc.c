@@ -201,7 +201,7 @@ PointToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if ((pointPtr->x != -SHRT_MAX) && (pointPtr->y != -SHRT_MAX)) {
         char string[200];
 
-        Blt_FormatString(string, 200, "@%d,%d", pointPtr->x, pointPtr->y);
+        Blt_FmtString(string, 200, "@%d,%d", pointPtr->x, pointPtr->y);
         objPtr = Tcl_NewStringObj(string, -1);
     } else { 
         objPtr = Tcl_NewStringObj("", -1);

@@ -961,10 +961,10 @@ BLT_EXTERN Tcl_Obj *	Blt_NewDoubleObj(double value);
 /* 160 */
 BLT_EXTERN int		Blt_IsDoubleObj(Tcl_Obj *objPtr);
 #endif
-#ifndef Blt_FormatString_DECLARED
-#define Blt_FormatString_DECLARED
+#ifndef Blt_FmtString_DECLARED
+#define Blt_FmtString_DECLARED
 /* 161 */
-BLT_EXTERN int		Blt_FormatString(char *s, size_t size,
+BLT_EXTERN int		Blt_FmtString(char *s, size_t size,
 				const char *fmt, ...);
 #endif
 #ifndef Blt_LowerCase_DECLARED
@@ -1852,8 +1852,8 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_IsDoubleObj \
 	(bltTclIntProcsPtr->blt_IsDoubleObj) /* 160 */
 #endif
-#ifndef Blt_FormatString
-#define Blt_FormatString \
+#ifndef Blt_FmtString
+#define Blt_FmtString \
 	(bltTclIntProcsPtr->blt_FormatString) /* 161 */
 #endif
 #ifndef Blt_LowerCase

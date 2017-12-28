@@ -1425,7 +1425,7 @@ Blt_Ps_TextString(Blt_Ps ps, const char *string, int numBytes)
             count += 2;
         } else if ((c < ' ') || (c > '~')) {
             /* Convert non-printable characters into octal. */
-            Blt_FormatString(dst, 5, "\\%03o", c);
+            Blt_FmtString(dst, 5, "\\%03o", c);
             dst += 4;
             count += 4;
         } else {
@@ -1513,7 +1513,7 @@ TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
                 count += 2;
             } else if ((c < ' ') || (c > '~')) {
                 /* Convert non-printable characters into octal. */
-                Blt_FormatString(dst, 5, "\\%03o", c);
+                Blt_FmtString(dst, 5, "\\%03o", c);
                 dst += 4;
                 count += 4;
             } else {

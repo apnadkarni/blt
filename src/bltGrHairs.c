@@ -162,7 +162,7 @@ PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Crosshairs *chPtr = (Crosshairs *)widgRec;
     char string[200];
     
-    Blt_FormatString(string, 200, "@%d,%d", chPtr->x, chPtr->y);
+    Blt_FmtString(string, 200, "@%d,%d", chPtr->x, chPtr->y);
     return Tcl_NewStringObj(string, -1);
 }
 

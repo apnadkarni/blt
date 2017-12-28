@@ -341,7 +341,7 @@ NameOfId(
         if ((tkwin != NULL) && (Tk_PathName(tkwin) != NULL)) {
             return Tk_PathName(tkwin); 
         } 
-        Blt_FormatString(string, 200, "0x%lx", (unsigned long)window);
+        Blt_FmtString(string, 200, "0x%lx", (unsigned long)window);
         return string;
     }
     return "";                          /* Return empty string if XID is

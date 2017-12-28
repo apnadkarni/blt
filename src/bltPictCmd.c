@@ -5815,9 +5815,9 @@ PictureLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_DStringAppend(&lib, BLT_SO_EXT, -1);
 
     initProcName = Blt_AssertMalloc(11 + length + 4 + 1);
-    Blt_FormatString(initProcName, 11 + length + 4 + 1, "Blt_Picture%sInit", fmt);
+    Blt_FmtString(initProcName, 11 + length + 4 + 1, "Blt_Picture%sInit", fmt);
     safeProcName = Blt_AssertMalloc(11 + length + 8 + 1);
-    Blt_FormatString(safeProcName, 11 + length + 8 + 1, "Blt_Picture%sSafeInit", fmt);
+    Blt_FmtString(safeProcName, 11 + length + 8 + 1, "Blt_Picture%sSafeInit", fmt);
 
     result = Blt_LoadLibrary(interp, Tcl_DStringValue(&lib), initProcName, 
         safeProcName); 

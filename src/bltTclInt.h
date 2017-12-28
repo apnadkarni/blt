@@ -303,7 +303,7 @@ BLT_EXTERN int Blt_SetDoubleObj(Tcl_Obj *objPtr, double value);
 BLT_EXTERN Tcl_Obj *Blt_NewDoubleObj(double value);
 BLT_EXTERN int Blt_IsDoubleObj(Tcl_Obj *objPtr);
 
-BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);
+BLT_EXTERN int Blt_FmtString(char *s, size_t size, const char *fmt, ...);
 BLT_EXTERN void Blt_LowerCase(char *s);
 BLT_EXTERN void Blt_UpperCase(char *s);
 

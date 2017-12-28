@@ -4472,13 +4472,13 @@ DrawValues(Graph *graphPtr, Drawable drawable, Trace *tracePtr, LinePen *penPtr)
         x = tracePtr->elemPtr->x.values[p->index];
         y = tracePtr->elemPtr->y.values[p->index];
         if (penPtr->valueFlags == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueFlags == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueFlags == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_DrawText(graphPtr->tkwin, drawable, string, 
              &penPtr->valueStyle, ROUND(p->x), ROUND(p->y));
@@ -5349,13 +5349,13 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
         x = tracePtr->elemPtr->x.values[p->index];
         y = tracePtr->elemPtr->y.values[p->index];
         if (penPtr->valueFlags == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueFlags == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueFlags == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_Ps_DrawText(ps, string, &penPtr->valueStyle, x, y);
     }

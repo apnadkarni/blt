@@ -1026,7 +1026,7 @@ UpdateToken(ClientData clientData)      /* widget data */
         int result;
         SubstDescriptors subs[2];
         
-        Blt_FormatString(buffer, 200, "%d", tokenPtr->active);
+        Blt_FmtString(buffer, 200, "%d", tokenPtr->active);
         subs[0].letter = 's';
         subs[0].value = buffer;
         subs[1].letter = 't';
@@ -1145,7 +1145,7 @@ CreateToken(
     unsigned int mask;
     Token *tokenPtr = &srcPtr->token;
 
-    Blt_FormatString(string, 200, "dd-token%d", ++nextTokenId);
+    Blt_FmtString(string, 200, "dd-token%d", ++nextTokenId);
 
     /* Create toplevel on parent's screen. */
     tkwin = Tk_CreateWindow(interp, srcPtr->tkwin, string, "");
@@ -1432,7 +1432,7 @@ ConfigureSource(
 
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             Tcl_AddErrorInfo(interp,
-                    "\n    (while loading bindings for blt::drag&drop)");
+                    "\n\t(while loading bindings for blt::drag&drop)");
             return TCL_ERROR;
         }
     }

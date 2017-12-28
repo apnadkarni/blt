@@ -1012,7 +1012,7 @@ NewBusy(Tcl_Interp *interp, Tk_Window tkRef)
     }
     length = strlen(Tk_Name(tkRef));
     name = Blt_AssertMalloc(length + 6);
-    Blt_FormatString(name, length + 6, fmt, Tk_Name(tkRef));
+    Blt_FmtString(name, length + 6, fmt, Tk_Name(tkRef));
     tkBusy = Tk_CreateWindow(interp, tkParent, name, (char *)NULL);
     Blt_Free(name);
 

@@ -2069,7 +2069,7 @@ SetErrorCode(Tcl_Interp *interp, int lastPid, WAIT_STATUS_TYPE lastStatus,
         mesg = Tcl_SignalMsg((int)(WSTOPSIG(lastStatus)));
         break;
     case PROCESS_UNKNOWN:
-        Blt_FormatString(string, 200,
+        Blt_FmtString(string, 200,
                          "child completed with unknown status 0x%x",
                          *((int *)&lastStatus));
         mesg = string;

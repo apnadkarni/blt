@@ -1274,7 +1274,7 @@ GetTextPosition(
         if (lindex < 0) {
             char string[200];
 
-            Blt_FormatString(string, 200, 
+            Blt_FmtString(string, 200, 
                 "can't determine line number from index \"%d\"", tindex);
             Tcl_AppendResult(htPtr->interp, string, (char *)NULL);
             return TCL_ERROR;
@@ -2216,12 +2216,12 @@ TextVarProc(
             if (lineNum < 0) {
                 lineNum = 0;
             }
-            Blt_FormatString(buf, 200, "%d", lineNum);
+            Blt_FmtString(buf, 200, "%d", lineNum);
             Tcl_SetVar2(interp, name1, name2, buf, flags);
         } else if ((c == 'i') && (strcmp(name2, "index") == 0)) {
             char buf[200];
 
-            Blt_FormatString(buf, 200, "%d", htPtr->numChars - 1);
+            Blt_FmtString(buf, 200, "%d", htPtr->numChars - 1);
             Tcl_SetVar2(interp, name1, name2, buf, flags);
         } else if ((c == 'f') && (strcmp(name2, "file") == 0)) {
             const char *fileName;
@@ -3445,7 +3445,7 @@ SelectLine(
     if (lineNum < 0) {
         char string[200];
 
-        Blt_FormatString(string, 200, "can't determine line number from index \"%d\"",
+        Blt_FmtString(string, 200, "can't determine line number from index \"%d\"",
             tindex);
         Tcl_AppendResult(htPtr->interp, string, (char *)NULL);
         return TCL_ERROR;
@@ -3739,7 +3739,7 @@ GotoOp(
         if (line < 0) {
             char string[200];
 
-            Blt_FormatString(string, 200, 
+            Blt_FmtString(string, 200, 
                 "can't determine line number from index \"%d\"", tindex);
             Tcl_AppendResult(htPtr->interp, string, (char *)NULL);
             return TCL_ERROR;
@@ -4312,7 +4312,7 @@ LinePosOp(
     if (GetTextPosition(htPtr, tindex, &line, &cpos) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_FormatString(string, 200, "%d.%d", line, cpos);
+    Blt_FmtString(string, 200, "%d.%d", line, cpos);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
     return TCL_OK;
 }

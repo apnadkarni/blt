@@ -1983,7 +1983,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ObjectName objName;
         char ident[256];
 
-        Blt_FormatString(ident, 255, "mesh%d", dataPtr->nextMeshId++);
+        Blt_FmtString(ident, 255, "mesh%d", dataPtr->nextMeshId++);
         if (!Blt_ParseObjectName(interp, ident, &objName, 0)) {
             return TCL_ERROR;
         }

@@ -5549,7 +5549,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* If no name was given for the marker, make up one. */
     if (name == NULL) {
-        Blt_FormatString(ident, 200, "marker%d", graphPtr->nextMarkerId++);
+        Blt_FmtString(ident, 200, "marker%d", graphPtr->nextMarkerId++);
         name = ident;
     } else if (name[0] == '-') {
         Tcl_AppendResult(interp, "name of marker \"", name, 

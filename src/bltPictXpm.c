@@ -455,7 +455,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
             size *= 16;
             cpp++;
         }
-        Blt_FormatString(fmt, 20, "%%0%dx", cpp);
+        Blt_FmtString(fmt, 20, "%%0%dx", cpp);
         /* Write the header line */
         Blt_DBuffer_Format(buffer, "/* XPM */\n");
         Blt_DBuffer_Format(buffer, "static char * image_name[] = {\n");

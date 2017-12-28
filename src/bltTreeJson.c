@@ -221,7 +221,7 @@ JsonError(JsonReader *readerPtr, const char *fmt, ...)
     va_list args;
 
     va_start(args, fmt);
-    Blt_FormatString(string, 200, "line %d: ", readerPtr->lineNum);
+    Blt_FmtString(string, 200, "line %d: ", readerPtr->lineNum);
     Tcl_DStringAppend(&readerPtr->errors, string, -1);
     length = vsnprintf(string, BUFSIZ, fmt, args);
     if (length > BUFSIZ) {
@@ -626,7 +626,7 @@ ParseArray(JsonReader *readerPtr, Blt_TreeNode node)
         char string[200];
     
         count++;
-        Blt_FormatString(string, 200, "item%d", count);
+        Blt_FmtString(string, 200, "item%d", count);
         ParseValue(readerPtr, node, string);
         if (readerPtr->token == JSON_CLOSE_ARRAY) {
             break;

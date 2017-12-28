@@ -1335,7 +1335,7 @@ Blt_Vec_Create(
         do {                            /* Generate a unique vector name. */
             char string[200];
 
-            Blt_FormatString(string, 200, "vector%d", dataPtr->nextId++);
+            Blt_FmtString(string, 200, "vector%d", dataPtr->nextId++);
             objName.name = string;
             qualName = Blt_MakeQualifiedName(&objName, &ds);
             hPtr = Blt_FindHashEntry(&dataPtr->vectorTable, qualName);
@@ -1695,7 +1695,7 @@ GenerateName(VectorCmdInterpData *dataPtr, Tcl_Interp *interp,
         dataPtr->nextId++;
         Tcl_DStringInit(&ds);
         Tcl_DStringAppend(&ds, prefix, -1);
-        Blt_FormatString(string, 200, "vector%d", dataPtr->nextId);
+        Blt_FmtString(string, 200, "vector%d", dataPtr->nextId);
         Tcl_DStringAppend(&ds, string, -1);
         Tcl_DStringAppend(&ds, suffix, -1);
         if (!Blt_ParseObjectName(interp, Tcl_DStringValue(&ds), &objName, 0)) {

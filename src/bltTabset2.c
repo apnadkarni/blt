@@ -3054,7 +3054,7 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     char string[200];
 
     if (tabName == NULL) {
-        Blt_FormatString(string, 200, "tab%d", setPtr->nextId++);
+        Blt_FmtString(string, 200, "tab%d", setPtr->nextId++);
         tabName = string;
     }
     hPtr = Blt_CreateHashEntry(&setPtr->tabTable, tabName, &isNew);
@@ -9390,7 +9390,7 @@ TabsetCmd(
         if (Tcl_GlobalEval(interp, initCmd) != TCL_OK) {
             char info[200];
 
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %s)", 
+            Blt_FmtString(info, 200, "\n\t(while loading bindings for %s)", 
                 Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             Tk_DestroyWindow(tkwin);

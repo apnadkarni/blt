@@ -789,7 +789,7 @@ Blt_DStringAppendElements(Tcl_DString *dsPtr, ...)
 
 /*ARGSUSED*/
 int 
-Blt_FormatString(char *s, size_t size, const char *fmt, /*args*/ ...) 
+Blt_FmtString(char *s, size_t size, const char *fmt, /*args*/ ...) 
 {
     va_list ap;
     int n;
@@ -808,21 +808,21 @@ static char stringRep[200];
 const char *
 Blt_Itoa(int value)
 {
-    Blt_FormatString(stringRep, 200, "%d", value);
+    Blt_FmtString(stringRep, 200, "%d", value);
     return stringRep;
 }
 
 const char *
 Blt_Ltoa(long value)
 {
-    Blt_FormatString(stringRep, 200, "%ld", value);
+    Blt_FmtString(stringRep, 200, "%ld", value);
     return stringRep;
 }
 
 const char *
 Blt_Utoa(unsigned int value)
 {
-    Blt_FormatString(stringRep, 200, "%u", value);
+    Blt_FmtString(stringRep, 200, "%u", value);
     return stringRep;
 }
 

@@ -73,16 +73,9 @@
 #define DEBUG1                  0
 #define DEBUG2                  0
 
-#define INVALID_FAIL            0
-#define INVALID_OK              1
-
 #define TAB_WIDTH_SAME           -1
 #define TAB_WIDTH_VARIABLE       0
 
-#define PERF_OFFSET_X           2
-#define PERF_OFFSET_Y           4
-
-#define PHOTO_ICON              1
 #define QUAD_AUTO               -1
 
 #define FCLAMP(x)               ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
@@ -98,7 +91,6 @@
 #define TAB_SCROLL_OFFSET       10
 
 #define END                     (-1)
-#define ODD(x)                  ((x) | 0x01)
 
 #define SIDE_LEFT               (1<<0)
 #define SIDE_TOP                (1<<1)
@@ -202,25 +194,21 @@
                                          * deleted and will be freed when
                                          * the widget is no longer in
                                          * use. */
-#ifdef notdef
-#define TEAROFF         (1<<5)          /* Indicates the tab will have a
-                                         * perforation drawn.*/
-#endif  /* defined above */
 #define TEAROFF_REDRAW  (1<<8)          /* Indicates that the tab's tearoff
                                          * window needs to be redraw. */
-enum ShowTabs {
+typedef enum ShowTabs {
     SHOW_TABS_ALWAYS,
     SHOW_TABS_MULTIPLE,
     SHOW_TABS_NEVER
-};
+} ShowTab;
 
-enum LabelParts {
+typedef enum LabelParts {
     PICK_NONE,
     PICK_TEXT,
     PICK_ICON,
     PICK_XBUTTON,
     PICK_PERFORATION,
-};
+} LabelPart;
 
 #define DEF_ACTIVEBACKGROUND            RGB_SKYBLUE4
 #define DEF_ACTIVEFOREGROUND            RGB_WHITE
@@ -263,7 +251,6 @@ enum LabelParts {
 #define DEF_TAKEFOCUS                   "1"
 #define DEF_TEAROFF                     "no"
 #define DEF_TIERS                       "1"
-#define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
 
 #define DEF_XBUTTON_ACTIVEBACKGROUND "#EE5F5F"
@@ -571,7 +558,7 @@ struct _Tabset {
     Tcl_Command cmdToken;               /* Token for widget's command. */
     unsigned int flags;                 /* For bitfield definitions, see
                                          * below */
-    int showTabs;
+    ShowTab showTabs;
     short int inset;                    /* Total width of all borders,
                                          * including traversal highlight and
                                          * 3-D border.  Indicates how much
@@ -594,7 +581,6 @@ struct _Tabset {
                                          * window. */
     int borderWidth;                    /* Width of 3D border. */
     int relief;                         /* 3D border relief. */
-    XColor *shadowColor;                /* Shadow color around folder. */
 
     int justify;
     int quad;
@@ -972,8 +958,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-selectpady", "selectPad", "SelectPad",
         DEF_SELECTPADY, Blt_Offset(Tabset, ySelectPad),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_COLOR, "-shadowcolor", "shadowColor", "ShadowColor",
-        DEF_SHADOWCOLOR, Blt_Offset(Tabset, shadowColor), 0},
     {BLT_CONFIG_CUSTOM, "-showtabs", "showTabs", "ShowTabs", DEF_SHOW_TABS, 
         Blt_Offset(Tabset, showTabs), BLT_CONFIG_DONT_SET_DEFAULT, 
         &showTabsOption},
@@ -989,8 +973,6 @@ static Blt_ConfigSpec configSpecs[] =
         (Blt_CustomOption *)TEAROFF},
     {BLT_CONFIG_INT_POS, "-tiers", "tiers", "Tiers", DEF_TIERS, 
         Blt_Offset(Tabset, reqTiers), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-troughcolor", "troughColor", "TroughColor",
-        DEF_TROUGHCOLOR, Blt_Offset(Tabset, bg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(Tabset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-xbutton", "xButton", "XButton", DEF_XBUTTON,
@@ -3032,8 +3014,8 @@ RenumberTiers(Tabset *setPtr, Tab *tabPtr)
     }
 }
 
-static enum LabelParts 
-IdentifyLabel0(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
+static LabelPart
+IdentifyPart0(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
     /* X Button. */
@@ -3090,8 +3072,8 @@ IdentifyLabel0(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     return PICK_NONE;
 }
 
-static enum LabelParts 
-IdentifyLabel90(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
+static LabelPart 
+IdentifyPart90(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
     /* Icon */
@@ -3148,8 +3130,8 @@ IdentifyLabel90(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     return PICK_NONE;
 }
 
-static enum LabelParts 
-IdentifyLabel180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
+static LabelPart 
+IdentifyPart180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
     /* Icon */
@@ -3206,8 +3188,8 @@ IdentifyLabel180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
     return PICK_NONE;
 }
 
-static enum LabelParts 
-IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
+static LabelPart 
+IdentifyPart270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
                int w, int h)
 {
     /* X Button. */
@@ -3263,6 +3245,30 @@ IdentifyLabel270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
         }
     }
     return PICK_NONE;
+}
+
+static LabelPart 
+IdentifyPart(Tabset *setPtr, Tab *tabPtr, int sx, int sy)
+{
+    int x, y, w, h;
+    LabelPart id;
+
+    GetLabelCoordinates(setPtr, tabPtr, &x, &y, &w, &h);
+    switch (setPtr->quad) {
+    case ROTATE_0:
+        id = IdentifyPart0(setPtr, tabPtr, sx, sy, x, y, w, h);
+        break;
+    case ROTATE_90:
+        id = IdentifyPart90(setPtr, tabPtr, sx, sy, x, y, w, h);
+        break;
+    case ROTATE_180:
+        id = IdentifyPart180(setPtr, tabPtr, sx, sy, x, y, w, h);
+        break;
+    case ROTATE_270:
+        id = IdentifyPart270(setPtr, tabPtr, sx, sy, x, y, w, h);
+        break;
+    }
+    return id;
 }
 
 #define NextPoint(px, py) \
@@ -3731,25 +3737,9 @@ PickTabProc(ClientData clientData, int sx, int sy, ClientData *contextPtr)
     /* Found the tab.  Now identify the part that the pointer is over. */
 
     if (contextPtr != NULL) {
-        int x, y, w, h;
-        enum LabelParts id;
+        LabelPart id;
 
-        id = PICK_NONE;
-        GetLabelCoordinates(setPtr, tabPtr, &x, &y, &w, &h);
-        switch (setPtr->quad) {
-        case ROTATE_0:
-            id = IdentifyLabel0(setPtr, tabPtr, sx, sy, x, y, w, h);
-            break;
-        case ROTATE_90:
-            id = IdentifyLabel90(setPtr, tabPtr, sx, sy, x, y, w, h); 
-            break;
-        case ROTATE_180:
-            id = IdentifyLabel180(setPtr, tabPtr, sx, sy, x, y, w, h);
-            break;
-        case ROTATE_270:
-            id = IdentifyLabel270(setPtr, tabPtr, sx, sy, x, y, w, h);
-            break;
-        }
+        id = IdentifyPart(setPtr, tabPtr, sx, sy);
         *contextPtr = (ClientData)id;
     }
     return tabPtr;
@@ -4100,7 +4090,7 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     char string[200];
 
     if (tabName == NULL) {
-        Blt_FormatString(string, 200, "tab%d", setPtr->nextId++);
+        Blt_FmtString(string, 200, "tab%d", setPtr->nextId++);
         tabName = string;
     }
     hPtr = Blt_CreateHashEntry(&setPtr->tabTable, tabName, &isNew);
@@ -4338,12 +4328,12 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData context,
 {
     Tab *tabPtr = (Tab *)object;
     Tabset *setPtr;
-    enum LabelParts id;
+    LabelPart id;
 
     if (tabPtr->flags & DELETED) {
         return;                         /* Tab has been deleted. */
     }
-    id = (enum LabelParts)context;
+    id = (LabelPart)context;
     setPtr = table->clientData;
     switch (id) {
     case PICK_PERFORATION:
@@ -5128,7 +5118,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tab *tabPtr;
     Tabset *setPtr = clientData; 
     Tcl_Obj *objPtr;
-    enum LabelParts id;
+    LabelPart id;
     int sx, sy;
     int x, y, w, h;
 
@@ -5145,21 +5135,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], &sy) != TCL_OK)) {
         return TCL_ERROR;
     }
-    GetLabelCoordinates(setPtr, tabPtr, &x, &y, &w, &h);
-    switch (setPtr->quad) {
-    case ROTATE_0:
-        id = IdentifyLabel0(setPtr, tabPtr, sx, sy, x, y, w, h);
-        break;
-    case ROTATE_90:
-        id = IdentifyLabel90(setPtr, tabPtr, sx, sy, x, y, w, h);
-        break;
-    case ROTATE_180:
-        id = IdentifyLabel180(setPtr, tabPtr, sx, sy, x, y, w, h);
-        break;
-    case ROTATE_270:
-        id = IdentifyLabel270(setPtr, tabPtr, sx, sy, x, y, w, h);
-        break;
-    }
+    id = IdentifyPart(setPtr, tabPtr, sx, sy);
     objPtr = Tcl_GetObjResult(interp);
     switch (id) {
     case PICK_PERFORATION:
@@ -8669,8 +8645,7 @@ TabsetCmd(
         if (Tcl_GlobalEval(interp, initCmd) != TCL_OK) {
             char info[200];
 
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %s)", 
-                Tcl_GetString(objv[0]));
+            Blt_FmtString(info, 200, "\n\t(while loading bindings for %s)",                Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             Tk_DestroyWindow(tkwin);
             return TCL_ERROR;

@@ -265,7 +265,7 @@ PadToString(
     const char *result;
     char string[200];
 
-    Blt_FormatString(string, 200, "%d %d", padPtr->side1, padPtr->side2);
+    Blt_FmtString(string, 200, "%d %d", padPtr->side1, padPtr->side2);
     result = Blt_AssertStrdup(string);
     *freeProcPtr = (Tcl_FreeProc *)Blt_Free;
     return (CONST86 char *)result;

@@ -899,7 +899,7 @@ NameOfControl(float control)
     } else {
         static char string[TCL_DOUBLE_SPACE];
 
-        Blt_FormatString(string, TCL_DOUBLE_SPACE, "%g", (double)control);
+        Blt_FmtString(string, TCL_DOUBLE_SPACE, "%g", (double)control);
         return string;
     }
 }
@@ -1741,7 +1741,7 @@ ConfigureRowColumn(Table *tablePtr, PartitionInfo *piPtr, const char *pattern,
         char string[200];
 
         rcPtr = Blt_Chain_GetValue(link);
-        Blt_FormatString(string, 200, "%c%d", pattern[0], rcPtr->index);
+        Blt_FmtString(string, 200, "%c%d", pattern[0], rcPtr->index);
         if (Tcl_StringMatch(string, pattern)) {
             if (objc == 0) {
                 return Blt_ConfigureInfoFromObj(tablePtr->interp, 
@@ -4050,7 +4050,7 @@ ConfigureColumn(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *patternObjPtr,
         char string[200];
 
         rcPtr = Blt_Chain_GetValue(link);
-        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        Blt_FmtString(string, 200, "%d", rcPtr->index);
         if (Tcl_StringMatch(string, pattern)) {
             if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
                 piPtr->configSpecs, objc, objv, (char *)rcPtr,
@@ -4354,7 +4354,7 @@ ColumnInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char string[200];
 
         rcPtr = Blt_Chain_GetValue(link);
-        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        Blt_FmtString(string, 200, "%d", rcPtr->index);
         if (Tcl_StringMatch(string, pattern)) {
             Blt_DBuffer_Format(dbuffer, "%d", rcPtr->index);
             PrintRowColumn(interp, piPtr, rcPtr, dbuffer);
@@ -4991,7 +4991,7 @@ ConfigureRow(Tcl_Interp *interp, Table *tablePtr, Tcl_Obj *patternObjPtr,
         char string[200];
 
         rcPtr = Blt_Chain_GetValue(link);
-        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        Blt_FmtString(string, 200, "%d", rcPtr->index);
         if (Tcl_StringMatch(string, pattern)) {
             if (Blt_ConfigureWidgetFromObj(interp, tablePtr->tkwin,
                 piPtr->configSpecs, objc, objv, (char *)rcPtr,
@@ -5302,7 +5302,7 @@ RowInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char string[200];
 
         rcPtr = Blt_Chain_GetValue(link);
-        Blt_FormatString(string, 200, "%d", rcPtr->index);
+        Blt_FmtString(string, 200, "%d", rcPtr->index);
         if (Tcl_StringMatch(string, pattern)) {
             Blt_DBuffer_Format(dbuffer, "%d", rcPtr->index);
             PrintRowColumn(interp, piPtr, rcPtr, dbuffer);

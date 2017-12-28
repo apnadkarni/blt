@@ -906,7 +906,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (name == NULL) {
-        Blt_FormatString(ident, 200, "isoline%d", graphPtr->nextIsolineId++);
+        Blt_FmtString(ident, 200, "isoline%d", graphPtr->nextIsolineId++);
         name = ident;
     }
     isoPtr = NewIsoline(interp, graphPtr, name);

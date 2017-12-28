@@ -234,7 +234,7 @@ Blt_Tree_NodeIdAscii(Node *nodePtr)
 {
     static char stringRep[200];
 
-    Blt_FormatString(stringRep, 200, "%ld", nodePtr->inode);
+    Blt_FmtString(stringRep, 200, "%ld", nodePtr->inode);
     return stringRep;
 }
 
@@ -2542,7 +2542,7 @@ MakeTreeName(TreeInterpData *dataPtr, char *string)
 {
     /* Generate a unique tree name in the current namespace. */
     do  {
-        Blt_FormatString(string, 200, "tree%d", dataPtr->nextId++);
+        Blt_FmtString(string, 200, "tree%d", dataPtr->nextId++);
     } while (GetTree(dataPtr, string, NS_SEARCH_CURRENT) != NULL);
     return string;
 } 

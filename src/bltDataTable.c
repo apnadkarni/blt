@@ -422,7 +422,7 @@ GetNextRowLabel(Rows *rowsPtr, Row *rowPtr)
     for(;;) {
         Blt_HashEntry *hPtr;
 
-        Blt_FormatString(label, 200, LABEL_FMT, "r", rowsPtr->nextRowId++);
+        Blt_FmtString(label, 200, LABEL_FMT, "r", rowsPtr->nextRowId++);
         hPtr = Blt_FindHashEntry(&rowsPtr->labelTable, label);
         if (hPtr == NULL) {
             SetRowLabel(rowsPtr, rowPtr, label);
@@ -439,7 +439,7 @@ GetNextColumnLabel(Columns *columnsPtr, Column *colPtr)
     for(;;) {
         Blt_HashEntry *hPtr;
 
-        Blt_FormatString(label, 200, LABEL_FMT, "c",
+        Blt_FmtString(label, 200, LABEL_FMT, "c",
                          columnsPtr->nextColumnId++);
         hPtr = Blt_FindHashEntry(&columnsPtr->labelTable, label);
         if (hPtr == NULL) {
@@ -5102,7 +5102,7 @@ blt_table_create(
     } else {
         /* Generate a unique name in the current namespace. */
         do  {
-            Blt_FormatString(string, 200, "datatable%d", dataPtr->nextId++);
+            Blt_FmtString(string, 200, "datatable%d", dataPtr->nextId++);
         } while (GetTable(dataPtr, name, NS_SEARCH_CURRENT) != NULL);
         name = string;
     } 

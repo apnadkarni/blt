@@ -430,7 +430,7 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
         if (Tcl_GlobalEval(interp,
                 "source [file join $blt_library bltTimeStamp.tcl]") != TCL_OK) {
             const char *errmsg =
-                "\n    (while loading timezones for timestamp command)";
+                "\n\t(while loading timezones for timestamp command)";
             Tcl_AddErrorInfo(interp, errmsg);
             return NULL;
         }

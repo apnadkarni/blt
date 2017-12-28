@@ -772,7 +772,7 @@ Crc32Op(ClientData clientData, Tcl_Interp *interp, int objc,
         char buf[200];
         crc = crc ^ 0xffffffffUL;
 
-        Blt_FormatString(buf, 200, "%lx", crc);
+        Blt_FmtString(buf, 200, "%lx", crc);
         Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, -1);
     }
     Blt_FreeSwitches(checksumSwitches, (char *)&args, 0);

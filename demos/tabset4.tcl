@@ -45,7 +45,7 @@ proc ResizePicture { file maxSize } {
 }
 
 proc MakePicture { w index } {
-    set file [$w id $index]
+    set file [$w nameof $index]
     set src [image create picture -file $file]
     set tail [file tail $file]
     set root [file root $tail]

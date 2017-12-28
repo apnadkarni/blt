@@ -731,7 +731,7 @@ Blt_ParseSwitches(
             if (DoSwitch(interp, sp, objv[count], record) != TCL_OK) {
                 char msg[200];
 
-                Blt_FormatString(msg, 200, "\n    (processing \"%.40s\" switch)", 
+                Blt_FmtString(msg, 200, "\n    (processing \"%.40s\" switch)", 
                         sp->switchName);
                 Tcl_AddErrorInfo(interp, msg);
                 return -1;
@@ -769,7 +769,7 @@ Blt_ParseSwitches(
                 if (result != TCL_OK) {
                     char msg[200];
                     
-                    Blt_FormatString(msg, 200, "\n    (processing \"%.40s\" switch)", 
+                    Blt_FmtString(msg, 200, "\n    (processing \"%.40s\" switch)", 
                               sp->switchName);
                     Tcl_AddErrorInfo(interp, msg);
                     return -1;

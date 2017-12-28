@@ -286,7 +286,7 @@ TraceCmdProc(
         }
     }
     Tcl_DStringInit(&ds);
-    Blt_FormatString(prompt, 200, "%-2d-> ", level);
+    Blt_FmtString(prompt, 200, "%-2d-> ", level);
     p = command;
     /* Skip leading spaces in command line. */
     while(isspace(UCHAR(*p))) {
@@ -344,7 +344,7 @@ TraceCmdProc(
         string = Tcl_GetString(objPtr);
     }
     lineStart = string;
-    Blt_FormatString(prompt, 200, "  <- ");
+    Blt_FmtString(prompt, 200, "  <- ");
     count = 0;
     for (p = string; *p != '\0'; /* empty */) {
         if (*p == '\n') {

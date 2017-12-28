@@ -2511,7 +2511,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         /* Generate a unique name for the paintbrush.  */
         do {
-            Blt_FormatString(name, 200, "background%d", dataPtr->nextId++);
+            Blt_FmtString(name, 200, "background%d", dataPtr->nextId++);
             hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
         } while (!isNew);
     } 

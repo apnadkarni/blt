@@ -1861,7 +1861,7 @@ CreateElement(Graph *graphPtr, Tcl_Interp *interp, int objc,
             int isNew;
 
             /* Generate an element name. */
-            Blt_FormatString(ident, 200, "%s%d", prefix, i);
+            Blt_FmtString(ident, 200, "%s%d", prefix, i);
             hPtr = Blt_CreateHashEntry(&graphPtr->elements.nameTable, ident, 
                 &isNew);
             if (isNew) {
