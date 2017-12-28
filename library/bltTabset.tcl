@@ -237,7 +237,7 @@ proc blt::Tabset::MoveFocus { w tab } {
 #
 # ----------------------------------------------------------------------
 proc blt::Tabset::DestroyTearoff { w tab } {
-    set id [$w id $tab]
+    set id [$w nameof $tab]
     regsub -all {\.} $id {_} id
     set top "$w.toplevel-$id"
     if { [winfo exists $top] } {
@@ -285,7 +285,7 @@ proc blt::Tabset::CreateTearoff { w tab rootX rootY } {
     if { ($focus == $w) || ([string match  ${win}.* $focus]) } {
 	focus -force $w
     }
-    set id [$w id $index]
+    set id [$w nameof $index]
     regsub -all {\.} $id {_} id
     set top "$w.toplevel-$id"
     toplevel $top

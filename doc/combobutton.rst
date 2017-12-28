@@ -150,7 +150,7 @@ command.  The following operations are available for *combobutton* widgets:
     Specifies the color of the text when *pathName* is disabled.  The
     default is "grey70".
 
-  **-font** *colorName* 
+  **-font** *fontName* 
     Specifies the font of the text.  The default is "{Sans Serif} 11".
 
   **-foreground** *colorName* 

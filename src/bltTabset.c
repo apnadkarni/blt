@@ -398,10 +398,6 @@ typedef struct _XButton {
                                          * when the button is active. */
     XColor *activeBgColor;              /* Background color of the button
                                          * when the button is active. */
-    XColor *selFg;                      /* Foreground color of the button
-                                         * when the button is selected. */
-    XColor *selBgColor;                 /* Background color of the button
-                                         * when the button is selected. */
     Tcl_Obj *cmdObjPtr;                 /* Command to be executed when the the
                                          * button is invoked. */
     Blt_Picture normal0;                /* Contains the image to be displayed
@@ -776,12 +772,6 @@ static Blt_ConfigSpec xButtonSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
         DEF_XBUTTON_FOREGROUND, Blt_Offset(XButton, normalFg), 0},
-    {BLT_CONFIG_COLOR, "-selectbackground", "selectBackground", 
-        "SelectBackground", DEF_XBUTTON_SELECTBACKGROUND, 
-        Blt_Offset(XButton, selBgColor), 0},
-    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
-        "SelectForeground", DEF_XBUTTON_SELECTFOREGROUND, 
-        Blt_Offset(XButton, selFg), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
         (char *)NULL, 0, 0}
 };
@@ -902,10 +892,10 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_CURSOR, Blt_Offset(Tabset, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-        DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
         Blt_Offset(Tabset, defStyle.font), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
+        DEF_FOREGROUND, Blt_Offset(Tabset, defStyle.textColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
         Blt_Offset(Tabset, gap), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
@@ -5195,40 +5185,6 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * IdOp --
- *
- *      Converts a tab index into the tab identifier.
- *
- * Results:
- *      A standard TCL result.  Interp->result will contain the identifier of
- *      each index found. If an index could not be found, then the serial
- *      identifier will be the empty string.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-IdOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
-{
-    Tab *tabPtr;
-    Tabset *setPtr = clientData; 
-
-    if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (tabPtr == NULL) {
-        Tcl_AppendResult(interp, "can't find a tab \"", 
-                Tcl_GetString(objv[2]), "\" in \"", Tk_PathName(setPtr->tkwin), 
-                "\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), tabPtr->name, -1);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * InsertOp --
  *
  *      Add new entries into a tab set.
@@ -5443,6 +5399,41 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
     EventuallyRedraw(setPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NameOfOp --
+ *
+ *      Returns the name of the tab.
+ *
+ * Results:
+ *      A standard TCL result.  Interp->result will contain the name of the
+ *      tab. If the tab could not be found, then the name will be the empty
+ *      string.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+NameOfOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
+{
+    Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+
+    if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (tabPtr == NULL) {
+        Tcl_AppendResult(interp, "can't find a tab \"", 
+                Tcl_GetString(objv[2]), "\" in \"", Tk_PathName(setPtr->tkwin), 
+                "\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), tabPtr->name, -1);
     return TCL_OK;
 }
 
@@ -7935,6 +7926,7 @@ DrawLabel90(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
+        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
 
         tx = x;
         ty = y;
@@ -8024,6 +8016,7 @@ DrawLabel180(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
+        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
 
         tx = x;
         ty = y;
@@ -8113,6 +8106,7 @@ DrawLabel270(Tabset *setPtr, Tab *tabPtr, Drawable drawable, int x, int y,
             Blt_Ts_SetState(ts, STATE_ACTIVE);
         }
         Blt_Ts_SetForeground(ts, fgColor);
+        Blt_Ts_SetBackground(ts, GETATTR(tabPtr, bg));
 
         tx = x;
         ty = y;
@@ -8538,12 +8532,13 @@ static Blt_OpSpec tabsetOps[] =
     {"extents",     3, ExtentsOp,     3, 3, "tabName",},
     {"focus",       1, FocusOp,       2, 3, "?tabName?",},
     {"highlight",   1, ActivateOp,    3, 3, "tabName",},
-    {"id",          2, IdOp,          3, 3, "tabName",},
-    {"index",       3, IndexOp,       3, 3, "tabName",},
+    {"identify",    2, IdentifyOp,    5, 5, "tabName x y",},
+    {"index",       5, IndexOp,       3, 3, "tabName",},
     {"insert",      3, InsertOp,      3, 0, "position ?option value?",},
     {"invoke",      3, InvokeOp,      3, 3, "tabName",},
     {"move",        1, MoveOp,        5, 5, "destTab firstTab lastTab ?switches?",},
-    {"names",       2, NamesOp,       2, 0, "?pattern...?",},
+    {"nameof",      5, NameOfOp,      3, 3, "tabName",},
+    {"names",       5, NamesOp,       2, 0, "?pattern...?",},
     {"nearest",     2, NearestOp,     4, 4, "x y",},
     {"perforation", 1, PerforationOp, 2, 0, "args",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},

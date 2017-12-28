@@ -16,7 +16,7 @@ image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 30
 img3 blank white
 
-set side right
+set side left
 blt::tabset .t \
     -outerrelief raised \
     -side $side \
