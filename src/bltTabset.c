@@ -234,46 +234,42 @@ typedef enum LabelParts {
 #define DEF_SCROLLTABS                  "0"
 #define DEF_SELECTBACKGROUND            STD_NORMAL_BACKGROUND
 #define DEF_SELECTBORDERWIDTH           "1"
-#define DEF_SELECT_COMMAND              (char *)NULL
-#define DEF_XBUTTON_COMMAND             (char *)NULL
 #define DEF_SELECTFOREGROUND            RGB_BLACK
 #define DEF_SELECTMODE                  "multiple"
 #define DEF_SELECTPADX                  "4"
 #define DEF_SELECTPADY                  "2"
 #define DEF_SELECTRELIEF                "raised"
+#define DEF_SELECT_COMMAND              (char *)NULL
 #define DEF_SHADOWCOLOR                 RGB_BLACK
-#define DEF_XBUTTON                     "never"
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
-#define DEF_TAB_RELIEF                  "raised"
 #define DEF_TABWIDTH                    "same"
+#define DEF_TAB_RELIEF                  "raised"
 #define DEF_TAKEFOCUS                   "1"
 #define DEF_TEAROFF                     "no"
 #define DEF_TIERS                       "1"
+#define DEF_TROUGHCOLOR                 "grey60"
 #define DEF_WIDTH                       "0"
+#define DEF_XBUTTON                     "never"
+#define DEF_XBUTTON_COMMAND             (char *)NULL
 
 #define DEF_XBUTTON_ACTIVEBACKGROUND "#EE5F5F"
 #define DEF_XBUTTON_ACTIVEFOREGROUND RGB_WHITE
 #define DEF_XBUTTON_BACKGROUND      RGB_GREY82
 #define DEF_XBUTTON_COMMAND         (char *)NULL
 #define DEF_XBUTTON_FOREGROUND      RGB_GREY50
-#define DEF_XBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 #define DEF_XBUTTON_SELECTBACKGROUND RGB_SKYBLUE4
+#define DEF_XBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 
 #define DEF_PERFORATION_ACTIVEBACKGROUND STD_ACTIVE_BACKGROUND
 #define DEF_PERFORATION_ACTIVEFOREGROUND RGB_GREY40
+#define DEF_PERFORATION_ACTIVERELIEF    "flat"
 #define DEF_PERFORATION_BACKGROUND      STD_NORMAL_BACKGROUND
+#define DEF_PERFORATION_BORDERWIDTH     "1"
 #define DEF_PERFORATION_COMMAND         (char *)NULL
 #define DEF_PERFORATION_FOREGROUND      RGB_GREY30
 #define DEF_PERFORATION_RELIEF          "flat"
-#define DEF_PERFORATION_ACTIVERELIEF    "flat"
-#define DEF_PERFORATION_BORDERWIDTH     "1"
-
-#define DEF_TAB_PERFORATION_ACTIVEBACKGROUND (char *)NULL
-#define DEF_TAB_PERFORATION_ACTIVEFOREGROUND (char *)NULL
-#define DEF_TAB_PERFORATION_BACKGROUND  (char *)NULL
-#define DEF_TAB_PERFORATION_FOREGROUND  (char *)NULL
 
 #define DEF_TAB_ACTIVEBACKGROUND        (char *)NULL
 #define DEF_TAB_ACTIVEFOREGROUND        (char *)NULL
@@ -281,7 +277,6 @@ typedef enum LabelParts {
 #define DEF_TAB_BACKGROUND              (char *)NULL
 #define DEF_TAB_BORDERWIDTH             "1"
 #define DEF_TAB_BUTTON                  (char *)NULL
-#define DEF_TAB_XBUTTON                 "never"
 #define DEF_TAB_COMMAND                 (char *)NULL
 #define DEF_TAB_DATA                    (char *)NULL
 #define DEF_TAB_DELETE_COMMAND          (char *)NULL
@@ -293,11 +288,15 @@ typedef enum LabelParts {
 #define DEF_TAB_ICON                    (char *)NULL
 #define DEF_TAB_IPAD                    "0"
 #define DEF_TAB_PAD                     "3"
+#define DEF_TAB_PERFORATION_ACTIVEBACKGROUND (char *)NULL
+#define DEF_TAB_PERFORATION_ACTIVEFOREGROUND (char *)NULL
+#define DEF_TAB_PERFORATION_BACKGROUND  (char *)NULL
 #define DEF_TAB_PERFORATION_COMMAND      (char *)NULL
+#define DEF_TAB_PERFORATION_FOREGROUND  (char *)NULL
 #define DEF_TAB_SELECTBACKGROUND        (char *)NULL
 #define DEF_TAB_SELECTBORDERWIDTH       "1"
-#define DEF_TAB_SELECT_COMMAND           (char *)NULL
 #define DEF_TAB_SELECTFOREGROUND        (char *)NULL
+#define DEF_TAB_SELECT_COMMAND           (char *)NULL
 #define DEF_TAB_STATE                   "normal"
 #define DEF_TAB_STIPPLE                 "BLT"
 #define DEF_TAB_TEAROFF                 "1"
@@ -307,6 +306,7 @@ typedef enum LabelParts {
 #define DEF_TAB_WINDOW                  (char *)NULL
 #define DEF_TAB_WINDOWHEIGHT            "0"
 #define DEF_TAB_WINDOWWIDTH             "0"
+#define DEF_TAB_XBUTTON                 "never"
 
 typedef struct _Tabset Tabset;
 typedef struct _Tab Tab;
@@ -577,8 +577,8 @@ struct _Tabset {
                                          * window. */
     Blt_Painter painter;
     Tk_Cursor cursor;                   /* X Cursor */
-    Blt_Bg bg;                          /* 3D border surrounding the
-                                         * window. */
+    Blt_Bg troughBg;                    /* Color or trough surrounding the
+                                         * 3D folder. */
     int borderWidth;                    /* Width of 3D border. */
     int relief;                         /* 3D border relief. */
 
@@ -973,6 +973,8 @@ static Blt_ConfigSpec configSpecs[] =
         (Blt_CustomOption *)TEAROFF},
     {BLT_CONFIG_INT_POS, "-tiers", "tiers", "Tiers", DEF_TIERS, 
         Blt_Offset(Tabset, reqTiers), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-troughcolor", "troughColor", "TroughColor",
+        DEF_TROUGHCOLOR, Blt_Offset(Tabset, troughBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
         Blt_Offset(Tabset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-xbutton", "xButton", "XButton", DEF_XBUTTON,
@@ -4614,8 +4616,8 @@ ConfigureTabset(
     }
     setPtr->perfGC = newGC;
 
-    if (setPtr->bg != NULL) {
-        Blt_Bg_SetChangedProc(setPtr->bg, BackgroundChangedProc, setPtr);
+    if (setPtr->troughBg != NULL) {
+        Blt_Bg_SetChangedProc(setPtr->troughBg, BackgroundChangedProc, setPtr);
     }
     stylePtr = &setPtr->defStyle;
 
@@ -8176,7 +8178,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
         w = Tk_Width(setPtr->tkwin)  - 2 * setPtr->highlightWidth;
         h = Tk_Height(setPtr->tkwin) - 2 * setPtr->highlightWidth;
         if ((w > 0) && (h > 0)) {
-            Blt_Bg_DrawRectangle(setPtr->tkwin, drawable, setPtr->bg,
+            Blt_Bg_DrawRectangle(setPtr->tkwin, drawable, setPtr->troughBg,
                 setPtr->highlightWidth + setPtr->xOffset, 
                 setPtr->highlightWidth + setPtr->yOffset, w, h,
                 setPtr->borderWidth, setPtr->relief);
@@ -8317,7 +8319,7 @@ DisplayProc(ClientData clientData)    /* Information about widget. */
      * Clear the background either by tiling a pixmap or filling with a solid
      * color. Tiling takes precedence.
      */
-    Blt_Bg_FillRectangle(setPtr->tkwin, pixmap, setPtr->bg, 
+    Blt_Bg_FillRectangle(setPtr->tkwin, pixmap, setPtr->troughBg, 
         setPtr->xOffset, setPtr->yOffset, 
         Tk_Width(setPtr->tkwin), Tk_Height(setPtr->tkwin), 
         0, TK_RELIEF_FLAT);
@@ -8418,7 +8420,7 @@ DisplayTearoff(ClientData clientData)
     tkwin = tabPtr->container;
     drawable = Tk_WindowId(tkwin);
 
-    Blt_Bg_FillRectangle(tkwin, drawable, setPtr->bg, 0, 0, 
+    Blt_Bg_FillRectangle(tkwin, drawable, setPtr->troughBg, 0, 0, 
         Tk_Width(tkwin), Tk_Height(tkwin), 0, TK_RELIEF_FLAT);
 
     width = Tk_Width(tkwin) - 2 * setPtr->inset;
@@ -8472,7 +8474,7 @@ DisplayTearoff(ClientData clientData)
         w = Tk_Width(tkwin);
         h = Tk_Height(tkwin);
         if ((w > 0) && (h > 0)) {
-            Blt_Bg_DrawRectangle(tkwin, drawable, setPtr->bg, 0, 0,
+            Blt_Bg_DrawRectangle(tkwin, drawable, setPtr->troughBg, 0, 0,
                 w, h, setPtr->borderWidth, setPtr->relief);
         }
     }
@@ -8645,7 +8647,8 @@ TabsetCmd(
         if (Tcl_GlobalEval(interp, initCmd) != TCL_OK) {
             char info[200];
 
-            Blt_FmtString(info, 200, "\n\t(while loading bindings for %s)",                Tcl_GetString(objv[0]));
+            Blt_FmtString(info, 200, "\n\t(while loading bindings for %s)",
+                          Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             Tk_DestroyWindow(tkwin);
             return TCL_ERROR;
