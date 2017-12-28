@@ -4340,8 +4340,7 @@ ConfigureXButton(
     }
     setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
     Blt_Font_GetMetrics(setPtr->defStyle.font, &fm);
-    fprintf(stderr, "linespace=%d\n", fm.linespace);
-    butPtr->width = butPtr->height = 9 * fm.linespace / 10;
+    butPtr->width = butPtr->height = (9 * fm.linespace) / 10;
     setPtr->flags |= REDRAW_ALL;
     EventuallyRedraw(setPtr);
     return TCL_OK;
