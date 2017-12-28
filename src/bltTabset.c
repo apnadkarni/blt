@@ -142,7 +142,7 @@
                                          * deactivate, scroll, etc).  This
                                          * avoids drawing the folder
                                          * again. */
-#define FOCUS               (1<<4)      /* Indicates the tabset/tab has
+#define FOCUS               (1<<4)      /* Indicates the tabset has
                                          * focus. The widget is receiving
                                          * keyboard events.  Draw the focus
                                          * highlight border around the
@@ -1002,7 +1002,6 @@ static Blt_BindAppendTagsProc AppendTagsProc;
 static Tcl_CmdDeleteProc TabsetInstDeletedCmd;
 static Tcl_FreeProc FreeTabset;
 static Tcl_FreeProc FreeTab;
-static Tcl_IdleProc AdoptWindowProc;
 static Tcl_IdleProc DisplayProc;
 static Tcl_IdleProc DisplayTearoff;
 static Tcl_ObjCmdProc TabsetCmd;
@@ -2216,6 +2215,79 @@ ArrangeWard(Tk_Window tkwin, int x, int y, int w, int h, int force)
     if (!Tk_IsMapped(tkwin)) {
         Tk_MapWindow(tkwin);
     }
+}
+
+
+static void
+AdoptWindowProc(ClientData clientData)
+{
+    Tab *tabPtr = clientData;
+    int x, y;
+    Tabset *setPtr = tabPtr->setPtr;
+
+    x = setPtr->inset + setPtr->inset2 + tabPtr->padX.side1;
+#define TEAR_OFF_TAB_SIZE       5
+    y = setPtr->inset + setPtr->inset2 + setPtr->outerPad + 
+        TEAR_OFF_TAB_SIZE + tabPtr->padX.side1;
+    if (setPtr->numTiers == 1) {
+        y += setPtr->ySelectPad;
+    }
+    Blt_RelinkWindow(tabPtr->tkwin, tabPtr->container, x, y);
+    Tk_MapWindow(tabPtr->tkwin);
+}
+
+
+static int
+NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
+{
+    Tk_Window tkwin;
+    const char *name;
+    int w, h;
+
+    name = Tcl_GetString(objPtr);
+    tkwin = Tk_CreateWindowFromPath(setPtr->interp, setPtr->tkwin, name,
+        (char *)NULL);
+    if (tkwin == NULL) {
+        return TCL_ERROR;
+    }
+    tabPtr->container = tkwin;
+    if (Tk_WindowId(tkwin) == None) {
+        Tk_MakeWindowExist(tkwin);
+    }
+    Tk_SetClass(tkwin, "BltTabsetTearoff");
+    Tk_CreateEventHandler(tkwin, (ExposureMask | StructureNotifyMask),
+        TearoffEventProc, tabPtr);
+    if (Tk_WindowId(tabPtr->tkwin) == None) {
+        Tk_MakeWindowExist(tabPtr->tkwin);
+    }
+    w = Tk_Width(tabPtr->tkwin);
+    if (w < 2) {
+        w = (tabPtr->reqWardWidth > 0) 
+            ? tabPtr->reqWardWidth : Tk_ReqWidth(tabPtr->tkwin);
+    }
+    w += PADDING(tabPtr->padX) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    w += 2 * (setPtr->inset2 + setPtr->inset);
+#define TEAR_OFF_TAB_SIZE       5
+    h = Tk_Height(tabPtr->tkwin);
+    if (h < 2) {
+        h = (tabPtr->reqWardHeight > 0)
+            ? tabPtr->reqWardHeight : Tk_ReqHeight(tabPtr->tkwin);
+    }
+    h += PADDING(tabPtr->padY) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
+    h += setPtr->inset + setPtr->inset2 + TEAR_OFF_TAB_SIZE + setPtr->outerPad;
+    if (setPtr->numTiers == 1) {
+        h += setPtr->ySelectPad;
+    }
+    Tk_GeometryRequest(tkwin, w, h);
+    Tk_UnmapWindow(tabPtr->tkwin);
+    /* Tk_MoveWindow(tabPtr->tkwin, 0, 0); */
+#ifdef WIN32
+    AdoptWindowProc(tabPtr);
+#else
+    Tcl_DoWhenIdle(AdoptWindowProc, tabPtr);
+#endif
+    Tcl_SetStringObj(Tcl_GetObjResult(setPtr->interp), Tk_PathName(tkwin), -1);
+    return TCL_OK;
 }
 
 static void
@@ -4759,6 +4831,51 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
+ * BboxOp --
+ *
+ *      Returns the bounding box of the tab in root coordinates.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+BboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    Tab *tabPtr;
+
+    if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (tabPtr == NULL) {
+        Tcl_AppendResult(interp, "can't find a tab \"", 
+                Tcl_GetString(objv[2]), "\" in \"", Tk_PathName(setPtr->tkwin), 
+                "\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (tabPtr->flags & VISIBLE) {
+        Tcl_Obj *listObjPtr, *objPtr;
+        int rootX, rootY;
+        
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+        Tk_GetRootCoords(setPtr->tkwin, &rootX, &rootY);
+        objPtr = Tcl_NewIntObj(tabPtr->screenX + rootX);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(tabPtr->screenY + rootY);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(tabPtr->screenX + rootX + tabPtr->screenWidth);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(tabPtr->screenY + rootY + tabPtr->screenHeight);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        Tcl_SetObjResult(interp, listObjPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * BindOp --
  *
  *        pathName bind index sequence command
@@ -4985,55 +5102,9 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ExtentsOp --
- *
- *      Returns the extents of the tab in root coordinates.  
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-          Tcl_Obj *const *objv)
-{
-    Tabset *setPtr = clientData; 
-    Tab *tabPtr;
-
-    if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (tabPtr == NULL) {
-        Tcl_AppendResult(interp, "can't find a tab \"", 
-                Tcl_GetString(objv[2]), "\" in \"", Tk_PathName(setPtr->tkwin), 
-                "\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    if (tabPtr->flags & VISIBLE) {
-        Tcl_Obj *listObjPtr, *objPtr;
-        int rootX, rootY;
-        
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        Tk_GetRootCoords(setPtr->tkwin, &rootX, &rootY);
-        objPtr = Tcl_NewIntObj(tabPtr->screenX + rootX);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewIntObj(tabPtr->screenY + rootY);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewIntObj(tabPtr->screenX + rootX + tabPtr->screenWidth);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        objPtr = Tcl_NewIntObj(tabPtr->screenY + rootY + tabPtr->screenHeight);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        Tcl_SetObjResult(interp, listObjPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * FocusOp --
  *
- *      Sets focus on the specified tab.  A dotted outline will be drawn
- *      around this tab.
+ *      Sets focus on the specified tab.  
  *
  *---------------------------------------------------------------------------
  */
@@ -5122,7 +5193,6 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *objPtr;
     LabelPart id;
     int sx, sy;
-    int x, y, w, h;
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5569,78 +5639,6 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 
-static void
-AdoptWindowProc(ClientData clientData)
-{
-    Tab *tabPtr = clientData;
-    int x, y;
-    Tabset *setPtr = tabPtr->setPtr;
-
-    x = setPtr->inset + setPtr->inset2 + tabPtr->padX.side1;
-#define TEAR_OFF_TAB_SIZE       5
-    y = setPtr->inset + setPtr->inset2 + setPtr->outerPad + 
-        TEAR_OFF_TAB_SIZE + tabPtr->padX.side1;
-    if (setPtr->numTiers == 1) {
-        y += setPtr->ySelectPad;
-    }
-    Blt_RelinkWindow(tabPtr->tkwin, tabPtr->container, x, y);
-    Tk_MapWindow(tabPtr->tkwin);
-}
-
-
-static int
-NewTearoff(Tabset *setPtr, Tcl_Obj *objPtr, Tab *tabPtr)
-{
-    Tk_Window tkwin;
-    const char *name;
-    int w, h;
-
-    name = Tcl_GetString(objPtr);
-    tkwin = Tk_CreateWindowFromPath(setPtr->interp, setPtr->tkwin, name,
-        (char *)NULL);
-    if (tkwin == NULL) {
-        return TCL_ERROR;
-    }
-    tabPtr->container = tkwin;
-    if (Tk_WindowId(tkwin) == None) {
-        Tk_MakeWindowExist(tkwin);
-    }
-    Tk_SetClass(tkwin, "BltTabsetTearoff");
-    Tk_CreateEventHandler(tkwin, (ExposureMask | StructureNotifyMask),
-        TearoffEventProc, tabPtr);
-    if (Tk_WindowId(tabPtr->tkwin) == None) {
-        Tk_MakeWindowExist(tabPtr->tkwin);
-    }
-    w = Tk_Width(tabPtr->tkwin);
-    if (w < 2) {
-        w = (tabPtr->reqWardWidth > 0) 
-            ? tabPtr->reqWardWidth : Tk_ReqWidth(tabPtr->tkwin);
-    }
-    w += PADDING(tabPtr->padX) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
-    w += 2 * (setPtr->inset2 + setPtr->inset);
-#define TEAR_OFF_TAB_SIZE       5
-    h = Tk_Height(tabPtr->tkwin);
-    if (h < 2) {
-        h = (tabPtr->reqWardHeight > 0)
-            ? tabPtr->reqWardHeight : Tk_ReqHeight(tabPtr->tkwin);
-    }
-    h += PADDING(tabPtr->padY) + 2 * Tk_Changes(tabPtr->tkwin)->border_width;
-    h += setPtr->inset + setPtr->inset2 + TEAR_OFF_TAB_SIZE + setPtr->outerPad;
-    if (setPtr->numTiers == 1) {
-        h += setPtr->ySelectPad;
-    }
-    Tk_GeometryRequest(tkwin, w, h);
-    Tk_UnmapWindow(tabPtr->tkwin);
-    /* Tk_MoveWindow(tabPtr->tkwin, 0, 0); */
-#ifdef WIN32
-    AdoptWindowProc(tabPtr);
-#else
-    Tcl_DoWhenIdle(AdoptWindowProc, tabPtr);
-#endif
-    Tcl_SetStringObj(Tcl_GetObjResult(setPtr->interp), Tk_PathName(tkwin), -1);
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -5758,8 +5756,8 @@ TabConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec tabOps[] =
 {
-    {"cget",      2, TabCgetOp,      5, 5, "tab option",},
-    {"configure", 2, TabConfigureOp, 4, 0, "tab ?option value?...",},
+    {"cget",      2, TabCgetOp,      5, 5, "tabName option",},
+    {"configure", 2, TabConfigureOp, 4, 0, "tabName ?option value?...",},
 };
 
 static int numTabOps = sizeof(tabOps) / sizeof(Blt_OpSpec);
@@ -8500,18 +8498,18 @@ static Blt_OpSpec tabsetOps[] =
 {
     {"activate",    2, ActivateOp,    3, 3, "tabName",},
     {"add",         2, AddOp,         2, 0, "?label? ?option-value..?",},
+    {"bbox",        2, BboxOp,        3, 3, "tabName",},
     {"bind",        2, BindOp,        3, 5, "tabName ?sequence command?",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
     {"delete",      3, DeleteOp,      2, 0, "?tabName ...?",},
     {"dockall",     2, DockallOp,     2, 2, "" }, 
-    {"exists",      3, ExistsOp,      3, 3, "tabName",},
-    {"extents",     3, ExtentsOp,     3, 3, "tabName",},
+    {"exists",      1, ExistsOp,      3, 3, "tabName",},
     {"focus",       1, FocusOp,       2, 3, "?tabName?",},
     {"highlight",   1, ActivateOp,    3, 3, "tabName",},
     {"identify",    2, IdentifyOp,    5, 5, "tabName x y",},
-    {"index",       5, IndexOp,       3, 3, "tabName",},
+    {"index",       3, IndexOp,       3, 3, "tabName",},
     {"insert",      3, InsertOp,      3, 0, "position ?option value?",},
     {"invoke",      3, InvokeOp,      3, 3, "tabName",},
     {"move",        1, MoveOp,        5, 5, "destTab firstTab lastTab ?switches?",},
@@ -8526,8 +8524,7 @@ static Blt_OpSpec tabsetOps[] =
     {"tab",         3, TabOp,         2, 0, "oper args",},
     {"tag",         3, TagOp,         2, 0, "oper args",},
     {"tearoff",     2, TearoffOp,     3, 4, "tabName ?parent?",},
-    {"view",        1, ViewOp,        2, 5, 
-        "?moveto fract? ?scroll number what?",},
+    {"view",        1, ViewOp,        2, 5, "?moveto fract? ?scroll number what?",},
     {"xbutton",     2, XButtonOp,      2, 0, "args",},
 };
 
