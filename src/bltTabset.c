@@ -220,7 +220,6 @@ typedef struct _BindTag {
 #define DEF_ACTIVEFOREGROUND            RGB_WHITE
 #define DEF_BACKGROUND                  RGB_GREY77
 #define DEF_BORDERWIDTH                 "0"
-#define DEF_COMMAND                     (char *)NULL
 #define DEF_CURSOR                      (char *)NULL
 #define DEF_FONT                        STD_FONT_SMALL
 #define DEF_FOREGROUND                  STD_NORMAL_FOREGROUND
@@ -245,7 +244,7 @@ typedef struct _BindTag {
 #define DEF_SELECTPADX                  "4"
 #define DEF_SELECTPADY                  "2"
 #define DEF_SELECTRELIEF                "raised"
-#define DEF_SELECT_COMMAND              (char *)NULL
+#define DEF_SELECTCOMMAND               (char *)NULL
 #define DEF_SHADOWCOLOR                 RGB_BLACK
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
@@ -282,7 +281,7 @@ typedef struct _BindTag {
 #define DEF_TAB_ANCHOR                  "center"
 #define DEF_TAB_BORDERWIDTH             "1"
 #define DEF_TAB_BUTTON                  (char *)NULL
-#define DEF_TAB_COMMAND                 (char *)NULL
+#define DEF_TAB_SELECTCOMMAND           (char *)NULL
 #define DEF_TAB_DATA                    (char *)NULL
 #define DEF_TAB_DELETE_COMMAND          (char *)NULL
 #define DEF_TAB_FILL                    "none"
@@ -293,7 +292,6 @@ typedef struct _BindTag {
 #define DEF_TAB_IPADX                   "0"
 #define DEF_TAB_IPADY                   "0"
 #define DEF_TAB_PAD                     "3"
-#define DEF_TAB_SELECT_COMMAND           (char *)NULL
 #define DEF_TAB_STATE                   "normal"
 #define DEF_TAB_TEAROFF                 "1"
 #define DEF_TAB_TEXT                    (char *)NULL
@@ -790,8 +788,6 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-bindtags", "bindTags", "BindTags", DEF_TAB_BINDTAGS, 
         Blt_Offset(Tab, bindTagsObjPtr), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
-        Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
         Blt_Offset(Tab, data), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
@@ -812,6 +808,8 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tab, perfCmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand", 
+        DEF_TAB_SELECTCOMMAND, Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_TAB_STATE, 
         Blt_Offset(Tab, flags), BLT_CONFIG_DONT_SET_DEFAULT, &stateOption},
     {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_STYLE, 
@@ -935,7 +933,7 @@ static Blt_ConfigSpec configSpecs[] =
         "Foreground", DEF_SELECTBACKGROUND, Blt_Offset(Tabset, defStyle.selBg),
         0},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
-        DEF_SELECT_COMMAND, Blt_Offset(Tabset, defTabAttr.cmdObjPtr),
+        DEF_TAB_SELECTCOMMAND, Blt_Offset(Tabset, defTabAttr.cmdObjPtr),
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
         DEF_SELECTFOREGROUND, Blt_Offset(Tabset, defStyle.selColor), 0},

@@ -444,7 +444,7 @@ available for *tabset* widgets:
   **-selectcommand** *cmdString*
     Specifies a TCL script to be associated with tabs.  This command is
     typically invoked when left mouse button is released over the tab.
-    Individual tabs may override this with the tab's **-command**
+    Individual tabs may override this with the tab's **-selectcommand**
     option. The default is "".
 
   **-selectforeground** *colorName*
@@ -629,11 +629,10 @@ available for *tabset* widgets:
 
 *pathName* **invoke** *tabName*
   Selects *tabName*, displaying its folder in the tabset.  In addtion the
-  TCL command associated with the tab (see the tabset's **-selectcommand**
-  option or the tab's **-command** option) is invoked, if there is one.
-  *TabName* may be an index, tag, or label but may not refer to more than one
-  tab.  This command is ignored if the tab's state (see the **-state**
-  option) is "disabled".
+  TCL command associated with the tab (see the **-selectcommand** option)
+  is invoked.  *TabName* may be an index, tag, or label but may not refer
+  to more than one tab.  This command is ignored if the tab's state is
+  "disabled" (see the **-state** option).
 
 *pathName* **move** *tabName* *how* *destTabName*
   Moves the *tabName* to a new position in the tabset. *How* is either
@@ -840,14 +839,9 @@ available for *tabset* widgets:
   **-bindtags** *tagList*
     Specifies the binding tags for *tabName*.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
-    are handled for tabs.  Each tag in the list matching the current
+    are handled for the tab.  Each tag in the list matching the current
     event sequence will have its TCL command executed.  The default 
     is "all".
-
-  **-command** *cmdString*
-    Specifies a TCL script to be associated with *tabName*.  This command
-    is typically invoked when left mouse button is released over the tab.
-    Setting this option overrides the widget's **-selectcommand** option.
 
   **-data** *dataString*
     Specifies a string to be associated with *tabName*.  This value
@@ -922,6 +916,13 @@ available for *tabset* widgets:
     released over the tab perforation.  The standard action is to tear-off
     the page and place it into a new toplevel window.
     This overrides the widgets **-perforationcommand** option.
+
+  **-selectcommand** *cmdString*
+    Specifies a TCL script to be associated with *tabName*.  This command
+    is typically invoked when left mouse button is released over the tab.
+    Setting this option overrides the widget's **-selectcommand** option.
+    If *cmdString* is "" then the widget's **-selectcommand* option value
+    is used.  The default is "".
 
   **-state** *stateName*
     Sets the state of the tab. *StateName* must be one of the following.
@@ -1132,7 +1133,7 @@ for tabsets (via the class bind tag "BltTabset"):
 
 **<ButtonRelease-1>**
   Clicking with the left mouse button on a tab causes the tab to be
-  selected and its TCL script (see the **-command** or **-selectcommand**
+  selected and its TCL script (see the **-selectcommand**
   options) to be invoked.  The folder and any embedded widget (if one is
   specified) is automatically mapped.
 
@@ -1268,16 +1269,16 @@ of its own.  Clicking again on the right mouse button puts it back into
 the folder.
 
 If you want to share a page between two different folders, the
-**-command** option lets you specify a TCL command to be invoked
+**-selectcommand** option lets you specify a TCL command to be invoked
 whenever the folder is selected.  You can reset the **-window**
 option for the tab whenever it's clicked.
 
   ::
 
-    .ts tab configure "f2" -command { 
+    .ts tab configure "f2" -selectcommand { 
          .ts tab configure "f2" -window ".ts.graph"
      }
-     .ts tab configure "f1" -command { 
+     .ts tab configure "f1" -selectcommand { 
          .ts tab configure "f1" -window ".ts.graph"
      }
 

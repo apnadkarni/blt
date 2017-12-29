@@ -68,7 +68,7 @@ proc NewTab { args } {
 .t add "+" \
     -anchor center \
     -style plus \
-    -command NewTab
+    -selectcommand NewTab
 
 
 if { $side == "bottom" || $side == "top" } {
