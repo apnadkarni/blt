@@ -63,14 +63,14 @@ namespace eval blt {
 
 if { [blt::winop xdpi] > 150 } {
     image create picture ::blt::ComboTree::closeIcon \
-        -file $blt_library/icons/32x32/folder.png 
+        -file $blt_library/icons/32x32/folder.tga 
     image create picture ::blt::ComboTree::openIcon \
-        -file $blt_library/icons/32x32/folder-open.png
+        -file $blt_library/icons/32x32/folder-open.tga
 } else {
     image create picture ::blt::ComboTree::closeIcon \
-        -file $blt_library/icons/16x16/folder.png 
+        -file $blt_library/icons/16x16/folder.tga 
     image create picture ::blt::ComboTree::openIcon \
-        -file $blt_library/icons/16x16/folder-open.png
+        -file $blt_library/icons/16x16/folder-open.tga
 }    
 
 # Left

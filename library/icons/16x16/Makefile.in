@@ -23,7 +23,10 @@ MKDIR_P =	@MKDIR_P@
 
 ICONS =		filter.png \
 		folder.png \
-		folder-open.png 
+		folder-open.png  \
+		filter.tga \
+		folder.tga \
+		folder-open.tga
 
 all: 
 

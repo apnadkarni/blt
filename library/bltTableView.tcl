@@ -93,10 +93,10 @@ image create picture blt::TableView::filter -data {
 
 if { [blt::winop xdpi] > 150 } {
   image create picture blt::TableView::filter \
-      -file $blt_library/icons/32x32/filter.png
+      -file $blt_library/icons/32x32/filter.tga
 } else {
   image create picture blt::TableView::filter \
-      -file $blt_library/icons/16x16/filter.png
+      -file $blt_library/icons/16x16/filter.tga
 }
 
 image create picture blt::TableView::xbutton -data {
