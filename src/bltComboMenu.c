@@ -6152,7 +6152,7 @@ ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetItemFromObj(NULL, comboPtr, objv[2], &itemPtr) != TCL_OK) {
         return TCL_OK;
     }
-    if (itemPtr == NULL) {
+    if (itemPtr != NULL) {
         SeeItem(comboPtr, itemPtr, TK_ANCHOR_W);
     }
     comboPtr->selectPtr = itemPtr;

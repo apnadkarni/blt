@@ -268,7 +268,6 @@ FeatureVariableProc(ClientData clientData, Tcl_Interp *interp,
     int varFlags;
 #define MAX_ERR_MSG     1023
     static char message[MAX_ERR_MSG + 1];
-    fprintf(stderr, "In FeatureVariableProc %s/%s\n", part1, part2);
 
     varFlags = TCL_LEAVE_ERR_MSG | (TCL_GLOBAL_ONLY & flags);
     if (flags & TCL_TRACE_WRITES) {

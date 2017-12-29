@@ -4454,6 +4454,108 @@ PrintFlags(ComboTree *comboPtr, char *string)
 #endif
 
 static void
+MapAncestors(ComboTree *comboPtr, Entry *entryPtr)
+{
+    while (entryPtr != comboPtr->rootPtr) {
+        entryPtr = ParentEntry(entryPtr);
+        if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
+            comboPtr->flags |= LAYOUT_PENDING;
+            entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDE);
+        } 
+    }
+}
+
+static int 
+SeeEntry(ComboTree *comboPtr, Entry *entryPtr, Tk_Anchor anchor)
+{
+    int width, height;
+    int x, y;
+    int left, right, top, bottom;
+
+    if (entryPtr->flags & ENTRY_HIDE) {
+        MapAncestors(comboPtr, entryPtr);
+        comboPtr->flags |= SCROLL_PENDING;
+        /*
+         * If the entry wasn't previously exposed, its world coordinates
+         * aren't likely to be valid.  So re-compute the layout before we
+         * try to see the viewport to the entry's location.
+         */
+        ComputeComboGeometry(comboPtr);
+    }
+    width = VPORTWIDTH(comboPtr);
+    height = VPORTHEIGHT(comboPtr);
+
+    /*
+     * XVIEW: If the entry is left or right of the current view, adjust the
+     *        offset.  If the entry is nearby, adjust the view just a bit.
+     *        Otherwise, center the entry.
+     */
+    left = comboPtr->xOffset;
+    right = comboPtr->xOffset + width;
+
+    switch (anchor) {
+    case TK_ANCHOR_W:
+    case TK_ANCHOR_NW:
+    case TK_ANCHOR_SW:
+        x = 0;
+        break;
+    case TK_ANCHOR_E:
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_SE:
+        x = entryPtr->worldX + entryPtr->width + 
+            ICONWIDTH(Blt_Tree_NodeDepth(entryPtr->node)) - width;
+        break;
+    default:
+        if (entryPtr->worldX < left) {
+            x = entryPtr->worldX;
+        } else if ((entryPtr->worldX + entryPtr->width) > right) {
+            x = entryPtr->worldX + entryPtr->width - width;
+        } else {
+            x = comboPtr->xOffset;
+        }
+        break;
+    }
+    /*
+     * YVIEW: If the entry is above or below the current view, adjust the
+     *        offset.  If the entry is nearby, adjust the view just a bit.
+     *        Otherwise, center the entry.
+     */
+    top = comboPtr->yOffset;
+    bottom = comboPtr->yOffset + height;
+
+    switch (anchor) {
+    case TK_ANCHOR_N:
+        y = comboPtr->yOffset;
+        break;
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_NW:
+        y = entryPtr->worldY - (height / 2);
+        break;
+    case TK_ANCHOR_S:
+    case TK_ANCHOR_SE:
+    case TK_ANCHOR_SW:
+        y = entryPtr->worldY + entryPtr->height - height;
+        break;
+    default:
+        if (entryPtr->worldY < top) {
+            y = entryPtr->worldY;
+        } else if ((entryPtr->worldY + entryPtr->height) > bottom) {
+            y = entryPtr->worldY + entryPtr->height - height;
+        } else {
+            y = comboPtr->yOffset;
+        }
+        break;
+    }
+    if ((y != comboPtr->yOffset) || (x != comboPtr->xOffset)) {
+        /* comboPtr->xOffset = x; */
+        comboPtr->yOffset = y;
+        comboPtr->flags |= SCROLL_PENDING;
+    }
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+static void
 FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
 {
     int x, y, w, h;
@@ -6098,18 +6200,6 @@ HideEntryApplyProc(ComboTree *comboPtr, Entry *entryPtr)
     return TCL_OK;
 }
 
-static void
-MapAncestors(ComboTree *comboPtr, Entry *entryPtr)
-{
-    while (entryPtr != comboPtr->rootPtr) {
-        entryPtr = ParentEntry(entryPtr);
-        if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
-            comboPtr->flags |= LAYOUT_PENDING;
-            entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDE);
-        } 
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -6963,6 +7053,55 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ResetOp --
+ *
+ *      Invokes the reset command if one is configured.  This is typically
+ *      called by ComboButton or ComboEntry code to reset the menu before
+ *      it's being used.
+ *
+ * Results:
+ *      Always returns TCL_OK;
+ *
+ *      pathName reset string
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    Entry *entryPtr;
+    
+    if (GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) != TCL_OK) {
+        entryPtr = comboPtr->rootPtr;
+        if (comboPtr->flags & HIDE_ROOT) {
+            entryPtr = NextEntry(entryPtr, ENTRY_MASK);
+        }
+    }
+    if (entryPtr != NULL) {
+        SeeEntry(comboPtr, entryPtr, TK_ANCHOR_E);
+    }
+#ifdef notdef
+    comboPtr->selectPtr = itemPtr;
+    if (UpdateTextAndIconVars(interp, comboPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+#endif
+    /* Deactivate any active item. */
+    ActivateEntry(comboPtr, NULL);
+    comboPtr->activePtr = NULL;
+    if (entryPtr != NULL) {
+        ActivateEntry(comboPtr, entryPtr);
+        comboPtr->activePtr = entryPtr;
+    }
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ScanOp --
  *
  *      Implements the quick scan.
@@ -7045,10 +7184,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     ComboTree *comboPtr = clientData;
     Entry *entryPtr;
-    int width, height;
-    int x, y;
     Tk_Anchor anchor;
-    int left, right, top, bottom;
     const char *string;
 
     string = Tcl_GetString(objv[2]);
@@ -7075,86 +7211,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (entryPtr == NULL) {
         return TCL_OK;
     }
-    if (entryPtr->flags & ENTRY_HIDE) {
-        MapAncestors(comboPtr, entryPtr);
-        comboPtr->flags |= SCROLL_PENDING;
-        /*
-         * If the entry wasn't previously exposed, its world coordinates
-         * aren't likely to be valid.  So re-compute the layout before we
-         * try to see the viewport to the entry's location.
-         */
-        ComputeComboGeometry(comboPtr);
-    }
-    width = VPORTWIDTH(comboPtr);
-    height = VPORTHEIGHT(comboPtr);
-
-    /*
-     * XVIEW: If the entry is left or right of the current view, adjust the
-     *        offset.  If the entry is nearby, adjust the view just a bit.
-     *        Otherwise, center the entry.
-     */
-    left = comboPtr->xOffset;
-    right = comboPtr->xOffset + width;
-
-    switch (anchor) {
-    case TK_ANCHOR_W:
-    case TK_ANCHOR_NW:
-    case TK_ANCHOR_SW:
-        x = 0;
-        break;
-    case TK_ANCHOR_E:
-    case TK_ANCHOR_NE:
-    case TK_ANCHOR_SE:
-        x = entryPtr->worldX + entryPtr->width + 
-            ICONWIDTH(Blt_Tree_NodeDepth(entryPtr->node)) - width;
-        break;
-    default:
-        if (entryPtr->worldX < left) {
-            x = entryPtr->worldX;
-        } else if ((entryPtr->worldX + entryPtr->width) > right) {
-            x = entryPtr->worldX + entryPtr->width - width;
-        } else {
-            x = comboPtr->xOffset;
-        }
-        break;
-    }
-    /*
-     * YVIEW: If the entry is above or below the current view, adjust the
-     *        offset.  If the entry is nearby, adjust the view just a bit.
-     *        Otherwise, center the entry.
-     */
-    top = comboPtr->yOffset;
-    bottom = comboPtr->yOffset + height;
-
-    switch (anchor) {
-    case TK_ANCHOR_N:
-        y = comboPtr->yOffset;
-        break;
-    case TK_ANCHOR_NE:
-    case TK_ANCHOR_NW:
-        y = entryPtr->worldY - (height / 2);
-        break;
-    case TK_ANCHOR_S:
-    case TK_ANCHOR_SE:
-    case TK_ANCHOR_SW:
-        y = entryPtr->worldY + entryPtr->height - height;
-        break;
-    default:
-        if (entryPtr->worldY < top) {
-            y = entryPtr->worldY;
-        } else if ((entryPtr->worldY + entryPtr->height) > bottom) {
-            y = entryPtr->worldY + entryPtr->height - height;
-        } else {
-            y = comboPtr->yOffset;
-        }
-        break;
-    }
-    if ((y != comboPtr->yOffset) || (x != comboPtr->xOffset)) {
-        /* comboPtr->xOffset = x; */
-        comboPtr->yOffset = y;
-        comboPtr->flags |= SCROLL_PENDING;
-    }
-    EventuallyRedraw(comboPtr);
+    SeeEntry(comboPtr, entryPtr, anchor);
     return TCL_OK;
 }
 
@@ -7502,7 +7559,8 @@ static Blt_OpSpec comboOps[] =
     {"nearest",   1, NearestOp,   4, 5, "x y ?varName?",}, 
     {"open",      2, OpenOp,      2, 4, "?-recurse? entryName",}, 
     {"overbutton",2, OverButtonOp,4, 4, "x y",},
-    {"post",      1, PostOp,     2, 0, "switches",},
+    {"post",      1, PostOp,      2, 0, "switches",},
+    {"reset",     1, ResetOp,     3, 3, "entryName",},
     {"scan",      2, ScanOp,      5, 5, "dragto|mark x y",},
     {"see",       2, SeeOp,       3, 0, "?-anchor anchor? entry",},
     {"show",      2, ShowOp,      2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entryName ...?",},

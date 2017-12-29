@@ -30,7 +30,6 @@ blt::tabset .t \
     -scrollcommand { .s set } \
     -rotate auto \
     -xbutton selected 
-
 .t add First \
     -icon img1 \
     -anchor center \
@@ -38,7 +37,7 @@ blt::tabset .t \
 if 1 {
 .t style create green \
 	-selectbackground darkolivegreen2 \
-	-perforationbackground darkolivegreen2 
+	-perforationbackground darkolivegreen2  
 .t style create blue \
 	-selectbackground lightblue \
 	-perforationbackground lightblue 

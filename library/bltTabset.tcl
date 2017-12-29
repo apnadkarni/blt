@@ -340,6 +340,16 @@ proc blt::Tabset::ToggleTearoff { w index } {
     }
 }
 
+proc blt::Tabset::PointerOverTab { w tab x y } {
+    foreach {x1 y1 x2 y2} [$w bbox $tab] break
+    if { ($x < $x1) || ($x >= $x2) || ($y < $y1) || ($y >= $y2) } {
+        return 0
+    } else {
+        return 1
+    }
+}
+
+
 # ----------------------------------------------------------------------
 #
 # Init
@@ -365,37 +375,39 @@ proc blt::Tabset::ToggleTearoff { w index } {
 # ----------------------------------------------------------------------
 
 proc blt::Tabset::Init { w } {
-    $w bind all <Enter> { 
+    $w bind all label <Enter> { 
 	if { $::blt::Tabset::_private(activate) } {
 	    %W activate current
         }
     }
-    $w bind all <Leave> { 
+    $w bind all label <Leave> { 
         %W activate "" 
     }
-    $w bind all <ButtonPress-1> { 
+    $w bind all label <ButtonRelease-1> { 
+      if { [blt::Tabset::PointerOverTab %W "current" %X %Y] } {
 	blt::Tabset::Select %W "current"
+      }
     }
-    $w bind all <Control-ButtonPress-1> { 
+    $w bind all label <Control-ButtonRelease-1> { 
 	blt::Tabset::ToggleTearoff %W active
     }
     $w configure -perforationcommand [list blt::Tabset::ToggleTearoff $w]
-    $w bind Perforation <Enter> { 
+    $w bind all perforation <Enter> { 
 	%W perforation activate on
     }
-    $w bind Perforation <Leave> { 
+    $w bind all perforation <Leave> { 
 	%W perforation activate off
     }
-    $w bind Perforation <ButtonRelease-1> { 
+    $w bind all perforation <ButtonRelease-1> { 
 	%W perforation invoke 
     }
-    $w bind XButton <Enter> { 
+    $w bind all xbutton <Enter> { 
 	%W xbutton activate current 
     }
-    $w bind XButton <Leave> { 
+    $w bind all xbutton <Leave> { 
 	%W xbutton deactivate
     }
-    $w bind XButton <ButtonRelease-1> { 
+    $w bind all xbutton <ButtonRelease-1> { 
 	if { [catch {%W xbutton invoke current}] == 0 } {
 	    %W delete current
 	}

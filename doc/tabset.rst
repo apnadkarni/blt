@@ -133,6 +133,20 @@ name, tag or text label.
   tabs.
 
 
+STYLES
+------
+
+Tabs can be displayed with different styles.  A *style* is collection of
+tab attributes that affect how the tab is displayed.  There is a built-in
+style call "default" that tabs by default use.  When you set some widget
+configuration options (such as **-background** and **-foreground**), you
+are changing the "default" style.  This is the same are globally changing
+the style for all tabs, since they by default use that style.
+
+You can create new styles with the **style create** operation.  You can
+specify the style for individual tabs using the tab **-style** option.
+More than one tab can use the same style.
+
 OPERATIONS
 ----------
 
@@ -216,6 +230,32 @@ available for *tabset* widgets:
      option add *BltTabset.Background blue
 
   *Option* and *value* are described below.
+
+  **-activebackground** *bgName*
+    Sets the active background color for the "default" style.  A tab is
+    active when the mouse is positioned over it or set by the **activate**
+    operation.  *BgName** may be a color name or the name of a background
+    object created by the **blt::background** command.  The default is
+    "skyblue4".
+    
+  **-activeforeground** *colorName*
+    Sets the active foreground color for tabs for the "default" style.  A
+    tab is active when the mouse is positioned over it or set by the
+    **activate** operation.  The default is "white".
+
+  **-activeperforationbackground** *bgName*
+    Sets the active background color for perforations for the "default"
+    style.  A perforation is active when the mouse is positioned over the
+    perforation on the selected tab or by setting the **perforation
+    activate** operation.  *BgName** may be a color name or the name of a
+    background object created by the **blt::background** command.  The
+    default is "grey90".
+    
+  **-activeperforationforeground** *colorName*
+    Sets the active foreground color for perforations for the "default"
+    style.  A perforation is active when the mouse is positioned over the
+    perforation on the selected tab or by setting the **perforation
+    activate** operation.  The default is "grey50".
 
   **-activeperforationrelief** *reliefName*
     Specifies the 3-D effect for a perforation when it is active.
@@ -327,7 +367,7 @@ available for *tabset* widgets:
 
   **-perforationforeground** *colorName*
     Sets the color for dotted line for perforations for the "default"
-    style.  The default is "grey30".
+    style.  The default is "grey64".
 
   **-perforationcommand** *cmdString*
     Specifies a TCL script to be invoked to tear off the current page in
@@ -403,23 +443,23 @@ available for *tabset* widgets:
     The default is "black".
 
   **-selectpadx** *numPixels*
-    Specifies extra padding to be displayed around the selected tab.  The
-    default is "3".
+    Specifies extra padding to be displayed on the left and right side of
+    the selected tab (no rotation).  The default is "4".
 
   **-selectpady** *numPixels*
-    Specifies extra padding to be displayed around the selected tab.  The
-    default is "3".
+    Specifies extra padding to be displayed above and below the selected
+    tab (no rotation).  The default is "2".
 
   **-showtabs** *how*
-    Specifies how to display tabs.  *How* can be one of the
-    following:
+    Specifies how to display tabs.  *How* can be one of the following:
 
     **always**
-      Always display tabs. 
+      Always display tabs and the folder outline of the selected folder. 
 
     **never**
-      Do not display tabs.  No folder outline will be displayed. Tabs can
-      still be selected to display different folders.
+      Do not display tabs or the folder outline. Only the embedded window
+      for the selected tab will be displayed.  You can use the **select**
+      operation to change the selected tab.
 
     **multiple**
       Display tabs when there is more than one tab. 
@@ -687,7 +727,7 @@ available for *tabset* widgets:
     Sets the active foreground color for perforations.  A perforation is
     active when the mouse is positioned over the perforation on the
     selected tab or by setting the **perforation activate** operation.  The
-    default is "grey40".
+    default is "grey50".
 
   **-background** *bgName*
     Sets the background color of the tab and folder.  *BgName** may be a
@@ -707,7 +747,7 @@ available for *tabset* widgets:
     
   **-perforationforeground** *colorName*
     Sets the color for dotted line for perforations.  The default is
-    "grey30".
+    "grey64".
 
   **-selectbackground** *bgName*
     Sets the color to display for background of the selected tab and

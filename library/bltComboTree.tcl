@@ -61,16 +61,17 @@ namespace eval blt {
     }
 }
 
-image create picture ::blt::ComboTree::openIcon -data {
-    R0lGODlhEAANAMIAAAAAAH9/f///////AL+/vwAA/wAAAAAAACH5BAEAAAUALAAAAAAQAA0A
-    AAM8WBrM+rAEQWmIb5KxiWjNInCkV32AJHRlGQBgDA7vdN4vUa8tC78qlrCWmvRKsJTquHkp
-    ZTKAsiCtWq0JADs=
-}
-image create picture ::blt::ComboTree::closeIcon -data {
-    R0lGODlhEAANAMIAAAAAAH9/f///////AL+/vwAA/wAAAAAAACH5BAEAAAUALAAAAAAQAA0A
-    AAM1WBrM+rAEMigJ8c3Kb3OSII6kGABhp1JnaK1VGwjwKwtvHqNzzd263M3H4n2OH1QBwGw6
-    nQkAOw==
-}
+if { [blt::winop xdpi] > 150 } {
+    image create picture ::blt::ComboTree::closeIcon \
+        -file $blt_library/icons/32x32/folder.png 
+    image create picture ::blt::ComboTree::openIcon \
+        -file $blt_library/icons/32x32/folder-open.png
+} else {
+    image create picture ::blt::ComboTree::closeIcon \
+        -file $blt_library/icons/16x16/folder.png 
+    image create picture ::blt::ComboTree::openIcon \
+        -file $blt_library/icons/16x16/folder-open.png
+}    
 
 # Left
 #   Close the current node.

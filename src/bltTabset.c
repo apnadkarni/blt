@@ -208,7 +208,13 @@ typedef enum LabelParts {
     PICK_ICON,
     PICK_XBUTTON,
     PICK_PERFORATION,
+    PICK_LABEL,
 } LabelPart;
+
+typedef struct _BindTag {
+    ClientData clientData;
+    int type;
+} *BindTag;
 
 #define DEF_ACTIVEBACKGROUND            RGB_SKYBLUE4
 #define DEF_ACTIVEFOREGROUND            RGB_WHITE
@@ -265,12 +271,12 @@ typedef enum LabelParts {
 #define DEF_XBUTTON_SELECTFOREGROUND RGB_SKYBLUE0
 
 #define DEF_PERFORATION_ACTIVEBACKGROUND STD_ACTIVE_BACKGROUND
-#define DEF_PERFORATION_ACTIVEFOREGROUND RGB_GREY40
+#define DEF_PERFORATION_ACTIVEFOREGROUND RGB_GREY50
 #define DEF_PERFORATION_ACTIVERELIEF    "flat"
 #define DEF_PERFORATION_BACKGROUND      STD_NORMAL_BACKGROUND
 #define DEF_PERFORATION_BORDERWIDTH     "1"
 #define DEF_PERFORATION_COMMAND         (char *)NULL
-#define DEF_PERFORATION_FOREGROUND      RGB_GREY30
+#define DEF_PERFORATION_FOREGROUND      RGB_GREY64
 #define DEF_PERFORATION_RELIEF          "flat"
 
 #define DEF_TAB_ANCHOR                  "center"
@@ -298,6 +304,7 @@ typedef enum LabelParts {
 #define DEF_TAB_WINDOWWIDTH             "0"
 #define DEF_TAB_XBUTTON                 "never"
 #define DEF_TAB_PERFORATION_COMMAND     (char *)NULL
+#define DEF_TAB_BINDTAGS                "all"
 
 typedef struct _Tabset Tabset;
 typedef struct _Tab Tab;
@@ -436,16 +443,16 @@ typedef struct {
      */
     Blt_Bg normalPerfBg;               /* Normal perforation background. */
     XColor *normalPerfFg;              /* Normal perforation foreground. */
+    GC normalPerfGC;
 
     /*
      * Active perforation: Mouse passes over the perforation.
      */
     Blt_Bg activePerfBg;               /* Active perforation background */
     XColor *activePerfFg;              /* Active perforation foreground. */
+    GC activePerfGC;
 
-    GC textGC;
     GC backGC;
-    GC perfGC;
 
 } TabStyle;
 
@@ -531,6 +538,8 @@ struct _Tab {
     Blt_ChainLink link;                 /* Pointer to where the tab resides
                                          * in the list of tabs. */
 
+    Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
+                                         * row. */
     /* If non-NULL, these can override the global tabset attribute. */
     Tcl_Obj *perfCmdObjPtr;     
     Tcl_Obj *cmdObjPtr;     
@@ -667,8 +676,9 @@ struct _Tabset {
     Blt_BindTable bindTable;            /* Tab binding information */
     struct _Blt_Tags tags;
     Blt_HashTable bindTagTable;         /* Table of binding tags. */
-    int nextStyleId;
+    Blt_HashTable uidTable;             /* Table of strings. */
     Blt_HashTable styleTable;           /* Table of styles used. */
+    int nextStyleId;
 
     /* Global settings for all tabs. */
     int overlap;                        /* Amount of  */
@@ -778,6 +788,8 @@ static Blt_ConfigSpec tabSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_TAB_ANCHOR, 
         Blt_Offset(Tab, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-bindtags", "bindTags", "BindTags", DEF_TAB_BINDTAGS, 
+        Blt_Offset(Tab, bindTagsObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
         Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
@@ -1714,14 +1726,14 @@ DestroyStyle(TabStyle *stylePtr)
     if (stylePtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&setPtr->styleTable, stylePtr->hashPtr);
     }
-    if (stylePtr->textGC != NULL) {
-        Tk_FreeGC(setPtr->display, stylePtr->textGC);
-    }
     if (stylePtr->backGC != NULL) {
         Tk_FreeGC(setPtr->display, stylePtr->backGC);
     }
-    if (stylePtr->perfGC != NULL) {
-        Tk_FreeGC(setPtr->display, stylePtr->perfGC);
+    if (stylePtr->activePerfGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->activePerfGC);
+    }
+    if (stylePtr->normalPerfGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->normalPerfGC);
     }
     if (stylePtr != &stylePtr->setPtr->defStyle) {
         Blt_Free(stylePtr);
@@ -1804,19 +1816,39 @@ ConfigureStyle(Tabset *setPtr, TabStyle *stylePtr)
     unsigned int gcMask;
     XGCValues gcValues;
     GC newGC;
-    XColor *colorPtr;
     int xdpi, ydpi;
 
-    /* Text */
-    gcMask = GCForeground | GCFont;
-    colorPtr = stylePtr->textColor;
-    gcValues.foreground = colorPtr->pixel;
-    gcValues.font = Blt_Font_Id(stylePtr->font);
-    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->textGC != NULL) {
-        Tk_FreeGC(setPtr->display, stylePtr->textGC);
+    /*
+     * GCs for perforation.
+     */
+    Blt_ScreenDPI(setPtr->tkwin, &xdpi, &ydpi);
+    if (xdpi > 150) {
+        gcValues.line_width = 2;
+        gcValues.dashes = 4;
+    } else {
+        gcValues.line_width = 1;
+        gcValues.dashes = 3;
     }
-    stylePtr->textGC = newGC;
+    /* Normal perforation. */
+    gcMask = (GCLineStyle | GCDashList | GCForeground | GCLineWidth);
+    gcValues.line_style = LineOnOffDash;
+    gcValues.foreground = stylePtr->normalPerfFg->pixel;
+
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->normalPerfGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->normalPerfGC);
+    }
+    stylePtr->normalPerfGC = newGC;
+
+    /* Active perforation. */
+    gcMask = (GCLineStyle | GCDashList | GCForeground | GCLineWidth);
+    gcValues.line_style = LineOnOffDash;
+    gcValues.foreground = stylePtr->activePerfFg->pixel;
+    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->activePerfGC != NULL) {
+        Tk_FreeGC(setPtr->display, stylePtr->activePerfGC);
+    }
+    stylePtr->activePerfGC = newGC;
 
     /* Backing */
     gcMask = GCForeground | GCStipple | GCFillStyle;
@@ -1831,26 +1863,6 @@ ConfigureStyle(Tabset *setPtr, TabStyle *stylePtr)
 
     Blt_Bg_SetChangedProc(stylePtr->bg, BackgroundChangedProc, setPtr);
 
-    /*
-     * GC for performation.
-     */
-    Blt_ScreenDPI(setPtr->tkwin, &xdpi, &ydpi);
-    if (xdpi > 150) {
-        gcValues.line_width = 2;
-        gcValues.dashes = 4;
-    } else {
-        gcValues.line_width = 1;
-        gcValues.dashes = 3;
-    }
-    gcMask |= (GCLineStyle | GCDashList | GCForeground | GCLineWidth);
-    gcValues.line_style = LineOnOffDash;
-    gcValues.foreground = Blt_Bg_BorderColor(stylePtr->bg)->pixel;
-
-    newGC = Tk_GetGC(setPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->perfGC != NULL) {
-        Tk_FreeGC(setPtr->display, stylePtr->perfGC);
-    }
-    stylePtr->perfGC = newGC;
 }
 
 
@@ -2183,15 +2195,47 @@ GetLabelCoordinates(Tabset *setPtr, Tab *tabPtr, int *xPtr, int *yPtr,
     *heightPtr = h;
 }
 
-
-static ClientData
-MakeBindTag(Tabset *setPtr, const char *tagName)
+static BindTag 
+MakeBindTag(Tabset *setPtr, ClientData clientData, LabelPart id)
 {
     Blt_HashEntry *hPtr;
-    int isNew;
+    int isNew;                          /* Not used. */
+    struct _BindTag tag;
 
-    hPtr = Blt_CreateHashEntry(&setPtr->bindTagTable, tagName, &isNew);
+    memset(&tag, 0, sizeof(tag));
+    tag.type = id;
+    tag.clientData = clientData;
+    hPtr = Blt_CreateHashEntry(&setPtr->bindTagTable, &tag, &isNew);
     return Blt_GetHashKey(&setPtr->bindTagTable, hPtr);
+}
+
+static BindTag
+MakeStringBindTag(Tabset *setPtr, const char *string, LabelPart id)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;                          /* Not used. */
+
+    hPtr = Blt_CreateHashEntry(&setPtr->uidTable, string, &isNew);
+    return MakeBindTag(setPtr, Blt_GetHashKey(&setPtr->uidTable, hPtr), id);
+}
+
+
+static void
+AddBindTags(Tabset *setPtr, Blt_Chain tags, Tcl_Obj *objPtr, LabelPart id)
+{
+    int objc;
+    Tcl_Obj **objv;
+    
+    if (Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) == TCL_OK) {
+        int i;
+
+        for (i = 0; i < objc; i++) {
+            const char *string;
+
+            string = Tcl_GetString(objv[i]);
+            Blt_Chain_Append(tags, MakeStringBindTag(setPtr, string, id));
+        }
+    }
 }
 
 /*
@@ -3419,7 +3463,7 @@ IdentifyPart0(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
             return PICK_TEXT;
         }
     }
-    return PICK_NONE;
+    return PICK_LABEL;
 }
 
 static LabelPart 
@@ -3477,7 +3521,7 @@ IdentifyPart90(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
             return PICK_TEXT;
         }
     }
-    return PICK_NONE;
+    return PICK_LABEL;
 }
 
 static LabelPart 
@@ -3535,7 +3579,7 @@ IdentifyPart180(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
             return PICK_TEXT;
         }
     }
-    return PICK_NONE;
+    return PICK_LABEL;
 }
 
 static LabelPart 
@@ -3594,7 +3638,7 @@ IdentifyPart270(Tabset *setPtr, Tab *tabPtr, int sx, int sy, int x, int y,
             return PICK_TEXT;
         }
     }
-    return PICK_NONE;
+    return PICK_LABEL;
 }
 
 static LabelPart 
@@ -3603,7 +3647,7 @@ IdentifyPart(Tabset *setPtr, Tab *tabPtr, int sx, int sy)
     int x, y, w, h;
     LabelPart id;
 
-    id = PICK_NONE;                     /* Suppress compiler warning. */
+    id = PICK_LABEL;                    /* Suppress compiler warning. */
     GetLabelCoordinates(setPtr, tabPtr, &x, &y, &w, &h);
     switch (setPtr->quad) {
     case ROTATE_0:
@@ -4055,7 +4099,7 @@ PickTabProc(ClientData clientData, int sx, int sy, ClientData *contextPtr)
 
     /* Step 1: Check the perforation on the selected tab. */
     if ((setPtr->selectPtr != NULL) &&
-        (setPtr->flags | setPtr->selectPtr->flags) & TEAROFF) {
+        (setPtr->flags & setPtr->selectPtr->flags & TEAROFF)) {
         int px, py, pw, ph;
         
         GetPerforationCoordinates(setPtr, &px, &py, &pw, &ph);
@@ -4456,6 +4500,8 @@ NewTab(Tcl_Interp *interp, Tabset *setPtr, const char *tabName)
     tabPtr->fill = FILL_BOTH;
     tabPtr->anchor = TK_ANCHOR_CENTER;
     tabPtr->container = NULL;
+    /* By default, tabs are set to be torn off.  Just need global flag to
+     * be set. */
     tabPtr->flags = NORMAL | TEAROFF;
     tabPtr->name = Blt_GetHashKey(&setPtr->tabTable, hPtr);
     Blt_SetHashValue(hPtr, tabPtr);
@@ -4618,19 +4664,22 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData context,
     id = (LabelPart)context;
     setPtr = table->clientData;
     switch (id) {
-    case PICK_PERFORATION:
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, "Perforation"));
+    case PICK_TEXT:
+    case PICK_ICON:
+    case PICK_LABEL:
+        Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr, PICK_LABEL));
+        if (tabPtr->bindTagsObjPtr != NULL) {
+            AddBindTags(setPtr, tags, tabPtr->bindTagsObjPtr, PICK_LABEL);
+        }
         break;
     case PICK_XBUTTON:
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, "XButton"));
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
+    case PICK_PERFORATION:
+        Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr, id));
+        if (tabPtr->bindTagsObjPtr != NULL) {
+            AddBindTags(setPtr, tags, tabPtr->bindTagsObjPtr, id);
+        }
         break;
-    case PICK_ICON:
-    case PICK_TEXT:
     case PICK_NONE:
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
-        Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, tags);
-        Blt_Chain_Append(tags, MakeBindTag(setPtr, "all"));
         break;
     }
 }
@@ -4746,6 +4795,7 @@ FreeTabset(DestroyData dataPtr)
     Blt_DestroyBindingTable(setPtr->bindTable);
     Blt_DeleteHashTable(&setPtr->iconTable);
     Blt_DeleteHashTable(&setPtr->bindTagTable);
+    Blt_DeleteHashTable(&setPtr->uidTable);
     Blt_Free(setPtr);
 }
 
@@ -4791,7 +4841,9 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_Tags_Init(&setPtr->tags);
     Blt_InitHashTable(&setPtr->tabTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->iconTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&setPtr->bindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&setPtr->bindTagTable,
+                      sizeof(struct _BindTag)/sizeof(int));
+    Blt_InitHashTable(&setPtr->uidTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->styleTable, BLT_STRING_KEYS);
     Blt_SetWindowInstanceData(tkwin, setPtr);
     AddDefaultStyle(interp, setPtr);
@@ -5064,7 +5116,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BindOp --
  *
- *        pathName bind index sequence command
+ *        pathName bind tabName type sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -5073,12 +5125,40 @@ static int
 BindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
-    ClientData tag;
+    LabelPart id;
+    Tab *tabPtr;
     Tabset *setPtr = clientData; 
+    char c;
+    const char *string;
+    int length;
+    BindTag tag;
 
-    tag = MakeBindTag(setPtr, Tcl_GetString(objv[2]));
+    string = Tcl_GetStringFromObj(objv[3], &length);
+    c = string[0];
+    if ((c == 'l') && (strncmp(string, "label", length) == 0)) {
+        id = PICK_LABEL;
+    } else if ((c == 'x') && (strncmp(string, "xbutton", length) == 0)) {
+        id = PICK_XBUTTON;
+    } else if ((c == 'p') && (strncmp(string, "perforation", length) == 0)) {
+        id = PICK_PERFORATION;
+    } else {
+        Tcl_AppendResult(interp, "Bad tab bind tag type \"", string, "\"",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    /*
+     * Tabs are selected by name only.  All other strings are interpreted as
+     * a binding tag.
+     */
+    if ((GetTabFromObj(NULL, setPtr, objv[2], &tabPtr) == TCL_OK) &&
+        (tabPtr != NULL)) {
+        tag = MakeBindTag(setPtr, tabPtr, id);
+    } else {
+        /* Assume that this is a binding tag. */
+        tag = MakeStringBindTag(setPtr, Tcl_GetString(objv[2]), id);
+    } 
     return Blt_ConfigureBindingsFromObj(interp, setPtr->bindTable, tag, 
-        objc - 3, objv + 3);
+         objc - 4, objv + 4);
 }
 
 
@@ -5393,6 +5473,9 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], &sy) != TCL_OK)) {
         return TCL_ERROR;
     }
+    if (!PointInTab(setPtr, tabPtr, sx, sy)) {
+        return TCL_OK;
+    }
     id = IdentifyPart(setPtr, tabPtr, sx, sy);
     objPtr = Tcl_GetObjResult(interp);
     switch (id) {
@@ -5408,8 +5491,11 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     case PICK_TEXT:
         Tcl_SetStringObj(objPtr, "text", 4);
         break;
+    case PICK_LABEL:
+        Tcl_SetStringObj(objPtr, "label", 5);
+        break;
     default:
-        Tcl_SetStringObj(Tcl_GetObjResult(interp), "???", -1);
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), "", -1);
         break;
     }
     return TCL_OK;
@@ -6865,8 +6951,8 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagUnsetOp --
  *
- *      Removes one or more tags from a given tab. If a tag doesn't exist or
- *      is a reserved tag ("all"), nothing will be done and no error
+ *      Removes one or more tags from a given tab. If a tag doesn't exist
+ *      or is a reserved tag ("all"), nothing will be done and no error
  *      message will be returned.
  *
  *      pathName tag unset tabName ?tag ...?
@@ -8058,14 +8144,17 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     int px, py, pw, ph;
     int relief;
     TabStyle *stylePtr;
-    
+    GC gc;
+
     stylePtr = GetStyle(tabPtr);
     if (setPtr->flags & ACTIVE_PERFORATION) {
         perfBg = stylePtr->activePerfBg;
         relief = setPtr->activePerfRelief;
+        gc = stylePtr->activePerfGC;
     } else {
         perfBg = stylePtr->normalPerfBg;
         relief = setPtr->normalPerfRelief;
+        gc = stylePtr->normalPerfGC;
     }   
     GetPerforationCoordinates(setPtr, &px, &py, &pw, &ph);
     if ((pw == 0) || (ph == 0)) {
@@ -8074,12 +8163,12 @@ DrawPerforation(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
     if (SIDE_HORIZONTAL(setPtr)) {
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
                              pw, ph, setPtr->perfBorderWidth, relief);
-        XDrawLine(setPtr->display, drawable, stylePtr->perfGC, px + 2, py+3,
+        XDrawLine(setPtr->display, drawable, gc, px + 2, py+3,
                   px + pw -2 , py+3);
     } else {
         Blt_Bg_FillRectangle(setPtr->tkwin, drawable, perfBg, px, py, 
                              ph, pw, setPtr->perfBorderWidth, relief);
-        XDrawLine(setPtr->display, drawable, stylePtr->perfGC, px + 3, py+2,
+        XDrawLine(setPtr->display, drawable, gc, px + 3, py+2,
                   px + 3 , py+ pw - 2);
     }
 }
@@ -8499,7 +8588,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
         return;
     }
     if ((tabPtr == setPtr->selectPtr) &&
-        ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
+        (setPtr->flags & setPtr->selectPtr->flags & TEAROFF)) {
         DrawPerforation(setPtr, tabPtr, drawable);
     }
 
@@ -8720,7 +8809,7 @@ DisplayProc(ClientData clientData)    /* Information about widget. */
         }
         DrawFolder(setPtr, setPtr->selectPtr, pixmap);
         if ((setPtr->selectPtr != NULL) &&
-            ((setPtr->flags | setPtr->selectPtr->flags) & TEAROFF)) {
+            (setPtr->flags & setPtr->selectPtr->flags & TEAROFF)) {
             DrawPerforation(setPtr, setPtr->selectPtr, pixmap);
         }
     }
@@ -8880,7 +8969,7 @@ static Blt_OpSpec tabsetOps[] =
     {"activate",    2, ActivateOp,    3, 3, "tabName",},
     {"add",         2, AddOp,         2, 0, "?label? ?option-value..?",},
     {"bbox",        2, BboxOp,        3, 3, "tabName",},
-    {"bind",        2, BindOp,        3, 5, "tabName ?sequence command?",},
+    {"bind",        2, BindOp,        4, 6, "tabName type ?sequence command?",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"deactivate",  3, DeactivateOp,  2, 2, "",},
@@ -9060,11 +9149,10 @@ TabsetCmd(
 int
 Blt_TabsetCmdInitProc(Tcl_Interp *interp)
 {
-    static Blt_CmdSpec cmdSpecs[2] = { 
-        { "tabset", TabsetCmd, },
-        { "tabnotebook", TabsetCmd, },
+    static Blt_CmdSpec cmdSpec = { 
+        "tabset", TabsetCmd
     };
-    return Blt_InitCmds(interp, "::blt", cmdSpecs, 2);
+    return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
 
 
