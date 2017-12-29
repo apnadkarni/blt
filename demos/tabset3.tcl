@@ -36,14 +36,19 @@ set attributes {
 }
 
 foreach { name label color } $attributes {
-    .t insert end $name -text $label \
+    .t style create $name \
 	-selectbackground ${color}3  \
 	-background ${color}3 \
 	-activebackground ${color}2
+    .t insert end $name -text $label \
+	-style $name
 }
 
-.t insert end Image -selectbackground salmon2 -background salmon3 \
-    -selectbackground salmon3 -activebackground salmon2 -window .t.l
+.t style create salmon \
+    -selectbackground salmon2 -background salmon3 \
+    -selectbackground salmon3 -activebackground salmon2
+
+.t insert end Image -window .t.l -style salmon
 
 set tabLabels { 
     Aarhus Aaron Ababa aback abaft abandon abandoned abandoning
@@ -132,8 +137,9 @@ set tabLabels {
     acquiring acquisition acquisitions
 }
 
+.t style configure default -selectbackground $bg
 for { set i 0 } { $i < 500 } { incr i } {
-    .t insert end [lindex $tabLabels $i] -state normal -selectbackground $bg
+    .t insert end [lindex $tabLabels $i] -state normal 
 }
 
 blt::tk::scrollbar .s -command { .t view } -orient horizontal
