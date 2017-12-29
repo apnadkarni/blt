@@ -186,13 +186,22 @@ available for *tabset* widgets:
   upper-left and lower-right corners of the bounding box of the tab (but
   not its folder) in root coordinates.
 
-*pathName* **bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ?
-  Associates *cmdString* with *tagName* such that whenever the event
+*pathName* **bind** *tagName* *type* ?\ *sequence*\ ? ?\ *cmdString*\ ?
+  Associates *cmdString* with *tagName* and *type* such that whenever the event
   sequence given by *sequence* occurs for a tab with this tag, *cmdString*
   will be invoked.  The syntax is similar to the **bind** command except
   that it operates on tabs, rather than widgets. See the **bind** manual
   entry for complete details on *sequence* and the substitutions performed
   on *cmdString*.
+
+  *Type* is the area of the tab. It can be one of the following.
+
+  **perforation**
+    Matches the area under the perforation.
+  **xbutton**
+    Matches the area under the X button.
+  **label**
+    Matches all other areas of the tab label.
   
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
@@ -827,6 +836,13 @@ available for *tabset* widgets:
     is centered in the folder ; if *anchorName* is "w" then the window will
     be aligned with the leftmost edge of the folder. The default is
     "center".
+
+  **-bindtags** *tagList*
+    Specifies the binding tags for *tabName*.  *TagList* is a list of
+    binding tag names.  The tags and their order will determine how events
+    are handled for tabs.  Each tag in the list matching the current
+    event sequence will have its TCL command executed.  The default 
+    is "all".
 
   **-command** *cmdString*
     Specifies a TCL script to be associated with *tabName*.  This command
