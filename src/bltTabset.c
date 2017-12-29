@@ -284,7 +284,8 @@ typedef enum LabelParts {
 #define DEF_TAB_HEIGHT                  "0"
 #define DEF_TAB_HIDE                    "no"
 #define DEF_TAB_ICON                    (char *)NULL
-#define DEF_TAB_IPAD                    "0"
+#define DEF_TAB_IPADX                   "0"
+#define DEF_TAB_IPADY                   "0"
 #define DEF_TAB_PAD                     "3"
 #define DEF_TAB_SELECT_COMMAND           (char *)NULL
 #define DEF_TAB_STATE                   "normal"
@@ -788,9 +789,9 @@ static Blt_ConfigSpec tabSpecs[] =
         Blt_Offset(Tab, fill), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_TAB_ICON, 
         Blt_Offset(Tab, icon), BLT_CONFIG_NULL_OK, &iconOption},
-    {BLT_CONFIG_PAD, "-ipadx", "iPadX", "PadX", DEF_TAB_IPAD, 
+    {BLT_CONFIG_PAD, "-ipadx", "iPadX", "IPadX", DEF_TAB_IPADX, 
         Blt_Offset(Tab, iPadX), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PAD, "-ipady", "iPadY", "PadY", DEF_TAB_IPAD, 
+    {BLT_CONFIG_PAD, "-ipady", "iPadY", "IPadY", DEF_TAB_IPADY, 
         Blt_Offset(Tab, iPadY), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX",   DEF_TAB_PAD, 
         Blt_Offset(Tab, padX), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -886,14 +887,14 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-pagewidth", "pageWidth", "PageWidth",
         DEF_PAGEWIDTH, Blt_Offset(Tabset, reqPageWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
+        "PerforationBackground", DEF_PERFORATION_BACKGROUND,
+        Blt_Offset(Tabset, defStyle.normalPerfBg)},
     {BLT_CONFIG_PIXELS_NNEG, "-perforationborderwidth",
         "perforationBorderWidth", "PerforationBorderWidth",
         DEF_PERFORATION_BORDERWIDTH,
         Blt_Offset(Tabset, perfBorderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-perforationbackground", "perforationBackground",
-        "PerforationBackground", DEF_PERFORATION_BACKGROUND,
-        Blt_Offset(Tabset, defStyle.normalPerfBg)},
     {BLT_CONFIG_OBJ, "-perforationcommand", "perforationcommand", 
         "PerforationCommand", DEF_TAB_PERFORATION_COMMAND, 
         Blt_Offset(Tabset, defTabAttr.perfCmdObjPtr), BLT_CONFIG_NULL_OK},
@@ -910,9 +911,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-rotate", "rotate", "Rotate", DEF_ROTATE, 
         Blt_Offset(Tabset, reqQuad), BLT_CONFIG_DONT_SET_DEFAULT, 
         &quadOption},
-    {BLT_CONFIG_CUSTOM, "-tabwidth", "tabWidth", "TabWidth",
-        DEF_TABWIDTH, Blt_Offset(Tabset, reqTabWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT, &tabWidthOption},
     {BLT_CONFIG_OBJ, "-scrollcommand", "scrollCommand", "ScrollCommand",
         (char *)NULL, Blt_Offset(Tabset, scrollCmdObjPtr),BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement",
@@ -932,7 +930,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-selectpadx", "selectPadX", "SelectPadX",
         DEF_SELECTPADX, Blt_Offset(Tabset, xSelectPad),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-selectpady", "selectPad", "SelectPad",
+    {BLT_CONFIG_PIXELS_NNEG, "-selectpady", "selectPadY", "SelectPadY",
         DEF_SELECTPADY, Blt_Offset(Tabset, ySelectPad),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-showtabs", "showTabs", "ShowTabs", DEF_SHOW_TABS, 
@@ -945,6 +943,9 @@ static Blt_ConfigSpec configSpecs[] =
         &slantOption},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_STIPPLE, 
         Blt_Offset(Tabset, defStyle.stipple)},
+    {BLT_CONFIG_CUSTOM, "-tabwidth", "tabWidth", "TabWidth",
+        DEF_TABWIDTH, Blt_Offset(Tabset, reqTabWidth),
+        BLT_CONFIG_DONT_SET_DEFAULT, &tabWidthOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
         DEF_TAKEFOCUS, Blt_Offset(Tabset, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-tearoff", "tearoff", "Tearoff", DEF_TEAROFF, 
@@ -4774,7 +4775,6 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->outerBorderWidth = setPtr->highlightWidth = 0;
     setPtr->outerRelief = TK_RELIEF_RAISED;
     setPtr->perfBorderWidth = 1;
-    setPtr->relief = TK_RELIEF_FLAT;
     setPtr->relief = TK_RELIEF_RAISED;
     setPtr->reqQuad = QUAD_AUTO;
     setPtr->reqSlant = SLANT_NONE;
