@@ -126,7 +126,6 @@ Blt_GetTextExtents(
 
     maxWidth = maxHeight = 0;
     if (text != NULL) {
-        int i;
         Blt_FontMetrics fm;
         unsigned int lineLen;           /* # of characters on each line */
         const char *p, *pend;

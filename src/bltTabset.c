@@ -4880,7 +4880,6 @@ ConfigureTabset(
     unsigned long gcMask;
     GC newGC;
     int slantLeft, slantRight;
-    TabStyle *stylePtr;
     
     iconOption.clientData = setPtr;
     styleOption.clientData = setPtr;
@@ -4927,8 +4926,7 @@ ConfigureTabset(
     if (setPtr->troughBg != NULL) {
         Blt_Bg_SetChangedProc(setPtr->troughBg, BackgroundChangedProc, setPtr);
     }
-    stylePtr = &setPtr->defStyle;
-
+    ConfigureStyle(setPtr,  &setPtr->defStyle);
     if (Blt_ConfigModified(configSpecs, "-font", "-*foreground", "-rotate",
                 "-*background", "-side", "-tiers", "-tabwidth",
                 (char *)NULL)) {

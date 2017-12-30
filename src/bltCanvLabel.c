@@ -893,35 +893,12 @@ ComputeGeometry(LabelItem *labelPtr)
     }
     labelPtr->outlinePts[4] = labelPtr->outlinePts[0];
 
-#if DEBUG
-    fprintf(stderr, "4. ComputeGeometry %s: Setting rw=%g rh=%g\n", 
-            labelPtr->text, rw, rh);
-#endif
     /* The label's x,y position is in world coordinates. This point and the
      * anchor tell us where is the anchor position of the label, which is
      * the upper-left corner of the bounding box around the possibly
      * rotated item. */
     labelPtr->anchorPos = Blt_AnchorPoint(labelPtr->x, labelPtr->y, rw, rh, 
                                           labelPtr->anchor);
-#if DEBUG
-    fprintf(stderr, "5. x1=%g y1=%g x2=%g y2=%g rw=%g, rh=%g, x2r=%g y2r=%g\n", 
-            labelPtr->anchorPos.x, labelPtr->anchorPos.y,
-            labelPtr->anchorPos.x + labelPtr->width, 
-            labelPtr->anchorPos.y + labelPtr->height,
-            labelPtr->rotWidth, labelPtr->rotHeight,
-            labelPtr->anchorPos.x + labelPtr->rotWidth, 
-            labelPtr->anchorPos.y + labelPtr->rotHeight);
-    fprintf(stderr, "6. ComputeGeometry: after x=%g, y=%g w=%g h=%g ix=%d iy=%d iw=%d ih=%d ix2=%d iy2=%d\n", 
-            labelPtr->anchorPos.x,  labelPtr->anchorPos.y, 
-            labelPtr->rotWidth, labelPtr->rotHeight,
-            ROUND(labelPtr->anchorPos.x),  ROUND(labelPtr->anchorPos.y), 
-            ROUND(labelPtr->rotWidth), ROUND(labelPtr->rotHeight),
-            ROUND(labelPtr->anchorPos.x + labelPtr->rotWidth), 
-            ROUND(labelPtr->anchorPos.y + labelPtr->rotHeight));
-    fprintf(stderr, "7. ComputeGeometry: after rh=%g, irh=%d rh2=%d\n",
-            labelPtr->rotHeight, (int)labelPtr->rotHeight,
-            ROUND(labelPtr->rotHeight));
-#endif
     for (i = 0; i < 4; i++) {
         labelPtr->outlinePts[i].x += rw * 0.5;
         labelPtr->outlinePts[i].y += rh * 0.5;
@@ -1036,9 +1013,6 @@ MapLabel(Tk_Canvas canvas, LabelItem *labelPtr)
 {
     int i;
     
-#if DEBUG
-    fprintf(stderr, "Enter MapLabel label=%s\n", labelPtr->text);
-#endif
     /* Map the outline relative to the screen anchor point. */
     for (i = 0; i < 5; i++) {
         short int x, y;
@@ -1198,9 +1172,6 @@ DeleteProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
 
-#if DEBUG
-    fprintf(stderr, "Enter DeleteProc label=%s\n", labelPtr->text);
-#endif
     Tk_FreeOptions(configSpecs, (char *)labelPtr, display, 0);
     if (labelPtr->scaledFont != NULL) {
         Blt_Font_Free(labelPtr->scaledFont);
@@ -1269,10 +1240,6 @@ ConfigureProc(
     XColor *colorPtr;
     StateAttributes *attrPtr;
     
-#if DEBUG
-    fprintf(stderr, "Enter ConfigureProc label=%s flags=%x\n", 
-            labelPtr->text, flags);
-#endif
     tkwin = Tk_CanvasTkwin(canvas);
     if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (const char**)argv,
                 (char *)labelPtr, flags) != TCL_OK) {
@@ -1295,7 +1262,6 @@ ConfigureProc(
         labelPtr->numBytes = strlen(labelPtr->text);
     }
     labelPtr->fontSize = Blt_Font_PointSize(labelPtr->baseFont);
-    fprintf(stderr, "base font size is %g\n", labelPtr->fontSize);
     if (labelPtr->angle != 0.0) {
         if (!Blt_Font_CanRotate(labelPtr->baseFont, labelPtr->angle)) {
             fprintf(stderr, "can't rotate font %s\n", 
@@ -1367,9 +1333,6 @@ CreateProc(
     Tk_Window tkwin;
     double x, y;
 
-#if DEBUG
-    fprintf(stderr, "Enter CreateProc\n");
-#endif
     if (!initialized) {
         Blt_InitHashTable(&gcTable, sizeof(LabelGCKey) / sizeof(int));
         initialized = TRUE;
@@ -1442,9 +1405,6 @@ CoordsProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
 
-#if DEBUG
-    fprintf(stderr, "Enter CoordsProc label=%s\n", labelPtr->text);
-#endif
     if ((argc != 0) && (argc != 2)) {
         Tcl_AppendResult(interp, "wrong # coordinates: expected 0 or 2, got ",
             Blt_Itoa(argc), (char *)NULL);
@@ -1565,10 +1525,6 @@ AreaProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
 
-#if DEBUG
-    fprintf(stderr, "Enter AreaProc label=%s x1=%g, y1=%g x2=%g y2=%g\n", 
-            labelPtr->text, pts[0], pts[1], pts[2], pts[3]);
-#endif
     if ((labelPtr->state == TK_STATE_DISABLED) ||
         (labelPtr->state == TK_STATE_HIDDEN)) {
         return -1;
@@ -1649,11 +1605,6 @@ ScaleProc(
 
     newFontSize = MIN(labelPtr->xScale, labelPtr->yScale) *
         Blt_Font_PointSize(labelPtr->baseFont);
-#if DEBUG
-    fprintf(stderr, "Enter ScaleProc label=%s xOrigin=%g, yOrigin=%g xScale=%g yScale=%g new=%g,%g, newFontSize=%g\n", 
-            labelPtr->text, xOrigin, yOrigin, xScale, yScale, labelPtr->xScale,
-            labelPtr->yScale, newFontSize);
-#endif
     labelPtr->flags |= DISPLAY_TEXT;
     if ((labelPtr->minFontSize > 0) && (newFontSize < labelPtr->minFontSize)) {
         labelPtr->flags &= ~DISPLAY_TEXT;
@@ -1684,13 +1635,6 @@ ScaleProc(
     } 
     x = xOrigin + xScale * (labelPtr->x - xOrigin);
     y = yOrigin + yScale * (labelPtr->y - yOrigin);
-#if DEBUG
-    fprintf(stderr, "ScaleProc label=%s x=%g y=%g, xO=%g, yO=%g xs=%g ys=%g x=%g y=%g\n", 
-            labelPtr->text, 
-            labelPtr->x, labelPtr->y,
-            xOrigin, yOrigin, xScale, yScale, 
-            x, y);
-#endif
     labelPtr->x = x;
     labelPtr->y = y;
     ComputeGeometry(labelPtr);
@@ -1721,10 +1665,6 @@ TranslateProc(
 {
     LabelItem *labelPtr = (LabelItem *)itemPtr;
     
-#if DEBUG
-    fprintf(stderr, "Enter TranslateProc label=%s dx=%g, dy=%g\n", 
-            labelPtr->text, dx, dy);
-#endif
     /* Move the item by translating the anchor. */
     labelPtr->anchorPos.x += dx;
     labelPtr->anchorPos.y += dy;
@@ -1770,6 +1710,7 @@ DisplayProc(
     Tk_Window tkwin;
     short int x, y;
     StateAttributes *attrPtr;
+
 #if DEBUG
     fprintf(stderr, "Enter DisplayProc region x=%d, y=%d, w=%d h=%d\n",
             rx, ry, rw, rh);
@@ -1812,9 +1753,6 @@ DisplayProc(
             labelPtr->scaledFont : labelPtr->baseFont;
         clipRegion = GetClipRegion(canvas, labelPtr);
         if (clipRegion != None) {
-#if DEBUG
-            fprintf(stderr, "setting clipRegion to font\n");
-#endif
             Blt_Font_SetClipRegion(font, clipRegion);
         }
         XSetFont(display, attrPtr->labelGC->gc, Blt_Font_Id(font));
@@ -1864,11 +1802,12 @@ PostScriptProc(
     PageSetup setup;
     StateAttributes *attrPtr;
     TextLayout *layoutPtr;
-    double x, y, w, h, rw, rh;
+    double y, w, h, rw, rh;
     int xOffset, yOffset;
     Point2d anchorPos;
     Tk_Window tkwin;
     double cx, cy, x0, y0, y2;
+
 #if DEBUG
     fprintf(stderr, "Enter PostScriptProc label=%s prepass=%d\n",  
             labelPtr->text, prepass);
@@ -1896,8 +1835,6 @@ PostScriptProc(
         Blt_Ts_SetPadding(ts, labelPtr->xPad.side1, labelPtr->xPad.side2,
                           labelPtr->yPad.side1, labelPtr->yPad.side2);
         layoutPtr = Blt_Ts_CreateLayout(labelPtr->text, labelPtr->numBytes, &ts);
-        fprintf(stderr, "text=%s w=%d,h=%d\n", labelPtr->text,
-                layoutPtr->width, layoutPtr->height);
         /* Let the requested width and height override the computed size. */
         w = (labelPtr->reqWidth > 0.0) ? labelPtr->reqWidth : layoutPtr->width;
         h = (labelPtr->reqHeight > 0.0) ? labelPtr->reqHeight : layoutPtr->height;
@@ -1905,7 +1842,6 @@ PostScriptProc(
     Blt_Ps_SetPrinting(ps, FALSE);
 
     /* Lower left corner of item on page. */
-    x = labelPtr->anchorPos.x;
     y = Tk_CanvasPsY(canvas, labelPtr->anchorPos.y);
 
     w *= labelPtr->xScale;
@@ -2048,10 +1984,6 @@ PostScriptProc(
             
             fragPtr = layoutPtr->fragments + i;
             if (fragPtr->numBytes > 0) {
-                fprintf(stderr, "text=%s moveto x0=%g fragPtr->rx=%g xOffset=%d w=%g layoutPtr->width=%dx%d\n",
-                        fragPtr->text, x0, fragPtr->rx,
-                        xOffset, w, layoutPtr->width,
-                        layoutPtr->height);
                 Blt_Ps_Format(ps, "%g %g moveto\n",
                               x0 + fragPtr->rx + xOffset, 
    Tk_CanvasPsY(canvas, y0 + fragPtr->ry + yOffset));
