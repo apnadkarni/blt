@@ -921,7 +921,7 @@ available for *tabset* widgets:
     Specifies a TCL script to be associated with *tabName*.  This command
     is typically invoked when left mouse button is released over the tab.
     Setting this option overrides the widget's **-selectcommand** option.
-    If *cmdString* is "" then the widget's **-selectcommand* option value
+    If *cmdString* is "" then the widget's **-selectcommand** option value
     is used.  The default is "".
 
   **-state** *stateName*
