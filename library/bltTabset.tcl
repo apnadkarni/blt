@@ -45,6 +45,9 @@ namespace eval blt {
 	variable _private
 	array set _private {
 	    activate yes
+            lastx -1
+            lasty -1
+            drag 0
 	}
     }
 }
@@ -349,6 +352,10 @@ proc blt::Tabset::PointerOverTab { w tab x y } {
     }
 }
 
+proc blt::Tabset::HandleButtonRelease { w x y } {
+    variable _private
+    
+}
 
 # ----------------------------------------------------------------------
 #
@@ -383,10 +390,19 @@ proc blt::Tabset::Init { w } {
     $w bind all label <Leave> { 
         %W activate "" 
     }
+    $w bind all label <ButtonPress-1> { 
+        %W slide anchor current %X %Y
+    }
+    $w bind all label <B1-Motion> { 
+        %W slide mark %X %Y
+    }
     $w bind all label <ButtonRelease-1> { 
-      if { [blt::Tabset::PointerOverTab %W "current" %X %Y] } {
-	blt::Tabset::Select %W "current"
-      }
+        if { [%W slide isactive] } {
+            %W slide mark %X %Y
+            %W slide stop
+        } elseif { [blt::Tabset::PointerOverTab %W "current" %X %Y] } {
+            blt::Tabset::Select %W "current"
+        }
     }
     $w bind all label <Control-ButtonRelease-1> { 
 	blt::Tabset::ToggleTearoff %W active

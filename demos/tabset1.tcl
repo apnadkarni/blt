@@ -21,7 +21,8 @@ blt::tabset .t \
     -outerrelief raised \
     -side $side \
     -tearoff yes \
-    -slant none \
+    -slide yes \
+    -slant both \
     -scrolltabs yes \
     -justify center \
     -tabwidth same \
@@ -90,4 +91,3 @@ blt::table . \
 blt::table configure . r1 -resize none
 focus .t
 
-#puts stderr [.t configure]

@@ -173,6 +173,10 @@
 #define SCROLL_TABS         (1<<13)     /* Allow tabs to be scrolled if
                                          * needed. Otherwise tab sizes will
                                          * shrink to fit the space. */
+#define SLIDE               (1<<14)     /* Indicates that tabs can be slide
+                                         * to be reordered. */ 
+#define SLIDE_ACTIVE        (1<<15)     /* Indicates that we are currently
+                                         * in tab sliding mode. */
 /* Slant flags. */
 #define SLANT_NONE          (0)
 #define SLANT_LEFT          (1<<17)
@@ -249,6 +253,7 @@ typedef struct _BindTag {
 #define DEF_SHOW_TABS                   "always"
 #define DEF_SIDE                        "top"
 #define DEF_SLANT                       "none"
+#define DEF_SLIDE                       "0"
 #define DEF_STYLE                       (char *)NULL
 #define DEF_TABWIDTH                    "same"
 #define DEF_TAB_RELIEF                  "raised"
@@ -664,6 +669,10 @@ struct _Tabset {
                                          * colors.  */
     Tab *focusPtr;                      /* Tab currently receiving focus. */
     Tab *startPtr;                      /* The first tab on the first tier. */
+    Tab *slidePtr;
+    
+    int slideOffset;
+    int slideX, slideY;
     Blt_Chain chain;                    /* List of tab entries. Used to
                                          * arrange placement of tabs. */
     Blt_HashTable tabTable;             /* Hash table of tab entries. Used
@@ -951,6 +960,9 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-slant", "slant", "Slant", DEF_SLANT, 
         Blt_Offset(Tabset, reqSlant), BLT_CONFIG_DONT_SET_DEFAULT,
         &slantOption},
+    {BLT_CONFIG_BITMASK, "-slide", "slide", "Slide", DEF_SLIDE, 
+        Blt_Offset(Tabset, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+       (Blt_CustomOption *)SLIDE},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_STIPPLE, 
         Blt_Offset(Tabset, defStyle.stipple)},
     {BLT_CONFIG_CUSTOM, "-tabwidth", "tabWidth", "TabWidth",
@@ -1422,7 +1434,7 @@ GetTabByName(Tabset *setPtr, const char *string)
  *      
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.  The
- *      pointer to the node is returned via tabPtrPtr.  Otherwise, TCL_ERROR
+ *      pointer to the tab is returned via tabPtrPtr.  Otherwise, TCL_ERROR
  *      is returned and an error message is left in interpreter's result
  *      field.
  *
@@ -2053,10 +2065,15 @@ GetPerforationCoordinates(Tabset *setPtr, int *xPtr, int *yPtr,
 {
     int x, y, w, h;
     int sx, sy;
+    int worldX;
     
     x = y = w = h = 0;
-    WorldToScreen(setPtr, setPtr->selectPtr->worldX, setPtr->selectPtr->worldY,
-         &sx, &sy);
+    worldX = setPtr->selectPtr->worldX;
+    if ((setPtr->flags & SLIDE_ACTIVE) &&
+        (setPtr->selectPtr == setPtr->slidePtr)) {
+        worldX += setPtr->slideOffset;
+    }
+    WorldToScreen(setPtr, worldX, setPtr->selectPtr->worldY, &sx, &sy);
     sx += setPtr->xOffset;               /* Adjust for drawable pixmap
                                           * offsets. */
     sy += setPtr->yOffset;
@@ -2116,10 +2133,15 @@ GetLabelCoordinates(Tabset *setPtr, Tab *tabPtr, int *xPtr, int *yPtr,
     int x0, y0;
     int x, y, w, h;
     int left, right;
-
+    int worldX;
+    
     x = y = w = h = 0;
     /* Get origin of tab. */
-    WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY, &x0, &y0);
+    worldX = tabPtr->worldX;
+    if ((setPtr->flags & SLIDE_ACTIVE) && (tabPtr == setPtr->slidePtr)) {
+        worldX += setPtr->slideOffset;
+    }
+    WorldToScreen(setPtr, worldX, tabPtr->worldY, &x0, &y0);
     x0 += setPtr->xOffset;               /* Adjust for drawable pixmap
                                           * offsets. */
     y0 += setPtr->yOffset;
@@ -3732,7 +3754,9 @@ FolderPolygon(Tabset *setPtr, Tab *tabPtr, int isSelected, XPoint *points)
 
     x = tabPtr->worldX;
     y = tabPtr->worldY;
-
+    if ((setPtr->flags & SLIDE_ACTIVE) && (tabPtr == setPtr->slidePtr)) {
+        x += setPtr->slideOffset;
+    }
     numPoints = 0;
     pointPtr = points;
 
@@ -5251,7 +5275,7 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * DeleteOp --
  *
  *      Deletes tab from the set. Deletes either a range of tabs or a single
- *      node.
+ *      tab.
  *
  *---------------------------------------------------------------------------
  */
@@ -5328,6 +5352,267 @@ DockallOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     return TCL_OK;
 }
+
+
+#ifndef notdef
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideAnchorOp --
+ *
+ *      This procedure is called to start a drag operation.
+ *
+ *        pathName slide anchor tabName x y
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+    int x, y;
+    
+    if ((setPtr->flags & SLIDE) == 0)  {
+        return TCL_OK;
+    }
+    if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
+        return TCL_ERROR;               /* Can't find tab. */
+    }
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], PIXELS_ANY, 
+                &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[5], PIXELS_ANY, 
+                &y) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (setPtr->numTiers > 1) {
+        Tcl_AppendResult(interp,
+                         "can't slide tab when there is more than 1 tier.",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    setPtr->slidePtr = tabPtr;
+    setPtr->slideX = x;
+    setPtr->slideY = y;
+    setPtr->slideOffset = 0;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideMarkOp --
+ *
+ *      This procedure is called to start a drag operation.
+ *
+ *        pathName slide mark x y
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Tab *tabPtr;
+    Tabset *setPtr = clientData; 
+    int x, y, dx, dy;
+    int offset;
+
+    if ((setPtr->flags & SLIDE) == 0)  {
+        return TCL_OK;
+    }
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[3], PIXELS_ANY, 
+                &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], PIXELS_ANY, 
+                &y) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (setPtr->slidePtr == NULL) {
+        Tcl_AppendResult(interp, "No tab designated for sliding.  "
+                         "Must call \"slide anchor\" first.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    dx = x - setPtr->slideX;
+    dy = y - setPtr->slideY;
+    if ((setPtr->flags & SLIDE_ACTIVE) == 0) {
+        if ((SIDE_VERTICAL(setPtr)) && (ABS(dy) > 10)) {
+            setPtr->flags |= SLIDE_ACTIVE;
+        } else if ((SIDE_HORIZONTAL(setPtr)) && (ABS(dx) > 10)) {
+            setPtr->flags |= SLIDE_ACTIVE;
+        }
+    }        
+    if ((setPtr->flags & SLIDE_ACTIVE) == 0)  {
+        return TCL_OK;
+    }
+    setPtr->slideX = x;
+    setPtr->slideY = y;
+    offset = setPtr->slideOffset + ((SIDE_VERTICAL(setPtr)) ? dy : dx);
+    tabPtr = setPtr->slidePtr;
+    if (offset < 0) {
+        Tab *prevPtr;
+        int d;
+        
+        prevPtr = PrevTab(tabPtr, HIDDEN | DISABLED);
+        if (prevPtr == NULL) {
+            return TCL_OK;          /* Don't move tab, there's no tab
+                                       before this one. */
+        }
+        d = -prevPtr->worldWidth;
+        if (offset < (d / 2)) {
+            /* swap tab positions and reset dragOffset. */
+            setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
+            Blt_Chain_UnlinkLink(setPtr->chain, tabPtr->link);
+            Blt_Chain_LinkBefore(setPtr->chain, tabPtr->link, prevPtr->link);
+            offset -= d;
+        }
+    } else {
+        Tab *nextPtr;
+        int d;
+
+        nextPtr = NextTab(tabPtr, HIDDEN | DISABLED);
+        if (nextPtr == NULL) {
+            return TCL_OK;                  /* Don't move tab, there's no tab
+                                               after this one. */
+        }
+        d = nextPtr->worldWidth;
+        if (offset > (d / 2)) {
+            /* swap tab positions and reset dragOffset. */
+            setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
+            Blt_Chain_UnlinkLink(setPtr->chain, tabPtr->link);
+            Blt_Chain_LinkAfter(setPtr->chain, tabPtr->link, nextPtr->link);
+            offset -= d;
+        }
+    }
+    setPtr->slideOffset = offset;
+    EventuallyRedraw(setPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideIsActiveOp --
+ *
+ *      This procedure is called to end the drag operation.
+ *
+ *        pathName isactive
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideIsActiveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    int state;
+    
+    state = ((setPtr->flags & SLIDE_ACTIVE) != 0);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideStopOp --
+ *
+ *      This procedure is called to end the drag operation.
+ *
+ *        pathName slide stop
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideStopOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    
+    setPtr->slideOffset = 0;
+    setPtr->slidePtr = NULL;
+    setPtr->flags &= ~SLIDE_ACTIVE;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideOp --
+ *
+ *      This procedure handles tab operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *      pathName slide anchor tabName x y
+ *              Indicates the start of a drag operation for the tab.
+ *              Possibly draw other tabs in non-active colors.
+ *      pathName slide mark x y
+ *              Indicates if the tab is over a drop site. Draw the right
+ *              side of the site specially.
+ *      pathName slide isactive
+ *              Indicates to drop the tab over the current drop site.
+ *      pathName slide stop
+ *              Indicates to drop the tab over the current drop site.
+ *
+ *      Moving before or after all the tabs?  [If more than halfway, swap
+ *      positions.]
+ *      Moving among tiered tabs?  [1. Don't allow moves with multi-tier or 
+ *                                  2. Can only move on the same tier.]
+ *      Moving more than one tab?  [Make moving single tabs easy first.]
+ *      Use toplevel window for token? [First try opaque moves.]
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec slideOps[] =
+{
+    {"anchor",   1, SlideAnchorOp,    6, 6, "tabName x y" }, 
+    {"isactive", 1, SlideIsActiveOp,  3, 3, "" }, 
+    {"mark",     1, SlideMarkOp,      5, 5, "x y" }, 
+    {"stop",     1, SlideStopOp,      3, 3, "" }, 
+};
+
+static int numSlideOps = sizeof(slideOps) / sizeof(Blt_OpSpec);
+
+static int
+SlideOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    proc = Blt_GetOpFromObj(interp, numSlideOps, slideOps, BLT_OP_ARG2,
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc)(clientData, interp, objc, objv);
+}
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -6160,7 +6445,7 @@ TabConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     iconOption.clientData = setPtr;
     if ((objc == 4) || (objc == 5)) {
         if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
-            return TCL_ERROR;   /* Can't find node. */
+            return TCL_ERROR;   /* Can't find tab. */
         }
         if (tabPtr == NULL) {
             Tcl_AppendResult(interp, "can't find a tab \"", 
@@ -6178,7 +6463,7 @@ TabConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (GetTabIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
-        return TCL_ERROR;       /* Can't find node. */
+        return TCL_ERROR;       /* Can't find tab. */
     }
     for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
          tabPtr = NextTaggedTab(&iter)) {
@@ -6347,57 +6632,6 @@ PerforationOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc)(clientData, interp, objc, objv);
 }
 
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DragOp --
- *
- *      This procedure handles tab operations.
- *
- * Results:
- *      A standard TCL result.
- *
- *      pathName drag start tabName x y
- *              Indicates the start of a drag operation for the tab.
- *              Possibly draw other tabs in non-active colors.
- *      pathName drag continue tabName x y
- *              Indicates if the tab is over a drop site. Draw the right
- *              side of the site specially.
- *      pathName drag finish tabName x y
- *              Indicates to drop the tab over the current drop site.
- *
- *      Moving before or after all the tabs?
- *      Moving among tiered tabs?  Can only move on the same tier.
- *      Moving more than one tab?
- *      Use toplevel window for token?
- *
- *---------------------------------------------------------------------------
- */
-static Blt_OpSpec dragOps[] =
-{
-    {"continue", 1, DragContinueOp, 5, 5, "tabName x y" }, 
-    {"finish",   1, DragFinishOp,   5, 5, "tabName x y" }, 
-    {"start",    1, DragStartOp,    5, 5, "tabName x y" }, 
-};
-
-static int numDragOps = sizeof(dragOps) / sizeof(Blt_OpSpec);
-
-static int
-DragOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv)
-{
-    Tcl_ObjCmdProc *proc;
-
-    proc = Blt_GetOpFromObj(interp, numDragOps, dragOps, BLT_OP_ARG2,
-        objc, objv, 0);
-    if (proc == NULL) {
-        return TCL_ERROR;
-    }
-    return (*proc)(clientData, interp, objc, objv);
-}
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -6522,7 +6756,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     if (objc == 4) {
-        /* No nodes specified.  Just add the tag. */
+        /* No tabs specified.  Just add the tag. */
         Blt_Tags_AddTag(&setPtr->tags, string);
     } else {
         int i;
@@ -6595,8 +6829,8 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagExistsOp --
  *
- *      Returns the existence of the one or more tags in the given node.
- *      If the node has any the tags, true is return in the interpreter.
+ *      Returns the existence of the one or more tags in the given tab.
+ *      If the tab has any the tags, true is return in the interpreter.
  *
  *      pathName tag exists tab ?tagName ...?
  *
@@ -6669,7 +6903,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagGetOp --
  *
- *      Returns tag names for a given node.  If one of more pattern arguments
+ *      Returns tag names for a given tab.  If one of more pattern arguments
  *      are provided, then only those matching tags are returned.
  *
  *      pathName tag get tabName ?pattern ...?
@@ -6746,8 +6980,8 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * TagNamesOp --
  *
  *      Returns the names of all the tags in the tabset.  If one of more
- *      node arguments are provided, then only the tags found in those
- *      nodes are returned.
+ *      tab arguments are provided, then only the tags found in those
+ *      tabs are returned.
  *
  *      pathName tag names ?tagName ...?
  *
@@ -6898,9 +7132,9 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagSetOp --
  *
- *      Sets one or more tags for a given tab.  Tag names can't start with a
- *      digit (to distinquish them from node ids) and can't be a reserved tag
- *      ("all").
+ *      Sets one or more tags for a given tab.  Tag names can't start with
+ *      a digit (to distinquish them from tab ids) and can't be a reserved
+ *      tag ("all").
  *
  *      pathName tag set tabName ?tag ...?
  *
@@ -8987,6 +9221,7 @@ static Blt_OpSpec tabsetOps[] =
     {"see",         3, SeeOp,         3, 3, "tabName",},
     {"select",      3, SelectOp,      3, 3, "tabName",},
     {"size",        2, SizeOp,        2, 2, "",},
+    {"slide",       2, SlideOp,       2, 0, "args" }, 
     {"style",       2, StyleOp,       2, 0, "op ?args ...?",},
     {"tab",         3, TabOp,         2, 0, "oper args",},
     {"tag",         3, TagOp,         2, 0, "oper args",},
