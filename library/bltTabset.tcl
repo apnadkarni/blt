@@ -45,9 +45,13 @@ namespace eval blt {
 	variable _private
 	array set _private {
 	    activate yes
+            afterId -1
             lastx -1
             lasty -1
             drag 0
+            scroll 0
+            x -1
+            y -1
 	}
     }
 }
@@ -96,6 +100,27 @@ bind BltTabset <ButtonRelease-3> {
     %W configure -cursor $blt::Tabset::_private(cursor)
     set blt::Tabset::_private(activate) yes
     %W activate @%x,%y
+}
+
+# B1 Enter
+#   Stop auto-scrolling
+bind BltTabset <B1-Enter> {
+    after cancel $blt::Tabset::_private(afterId)
+    set blt::Tabset::_private(afterId) -1
+}
+
+bind BltTabset <B1-Motion> {
+    set blt::Tabset::_private(x) %x
+    set blt::Tabset::_private(y) %y
+    set blt::Tabset::_private(scroll) 1
+}
+
+# B1 Leave
+#   Start auto-scrolling
+bind BltTabset <B1-Leave> {
+    if { $blt::Tabset::_private(scroll) } {
+        blt::Tabset::AutoScroll %W 
+    }
 }
 
 # ----------------------------------------------------------------------
@@ -429,5 +454,42 @@ proc blt::Tabset::Init { w } {
 	}
     }
     set _private(cursor) [$w cget -cursor]
+}
+
+#
+# AutoScroll --
+#
+#   Invoked when the user is selecting a tab in a tabset widget and drags
+#   the mouse pointer outside of the widget.  Scrolls the view in the
+#   direction of the pointer.
+#
+proc blt::Tabset::AutoScroll { w } {
+    variable _private
+
+    if { ![winfo exists $w] } {
+        return
+    }
+    if { !$_private(scroll) } {
+        return 
+    }
+    set x $_private(x)
+    set y $_private(y)
+    if 0 {
+    if {$y >= [winfo height $w]} {
+        $w yview scroll 1 units
+        set neighbor down
+    } elseif {$y < 0} {
+        $w yview scroll -1 units
+        set neighbor up
+    }
+    }
+    if {$x >= [winfo width $w]} {
+        $w view scroll 20 units
+        set neighbor left
+    } elseif {$x < 0} {
+        $w view scroll -20 units
+        set neighbor right
+    }
+    set _private(afterId) [after 50 blt::Tabset::AutoScroll $w]
 }
 

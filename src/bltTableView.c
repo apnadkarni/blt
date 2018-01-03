@@ -7580,121 +7580,6 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return Blt_ConfigureValueFromObj(interp, viewPtr->tkwin, tableSpecs,
         (char *)viewPtr, objv[2], 0);
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * ConfigureOp --
- *
- *      This procedure is called to process an objv/objc list, plus the Tk
- *      option database, in order to configure (or reconfigure) the widget.
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *      contains an error message.
- *
- * Side effects:
- *      Configuration information, such as text string, colors, font,
- *      etc. get set for viewPtr; old resources get freed, if there were
- *      any.  The widget is redisplayed. 
- *
- *---------------------------------------------------------------------------
- */
-static int
-ConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
-{
-    iconOption.clientData = viewPtr;
-    styleOption.clientData = viewPtr;
-    tableOption.clientData = viewPtr;
-    if (objc == 2) {
-        return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, tableSpecs, 
-                (char *)viewPtr, (Tcl_Obj *)NULL, 0);
-    } else if (objc == 3) {
-        return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, tableSpecs,
-                (char *)viewPtr, objv[2], 0);
-    } 
-    if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, tableSpecs, 
-        objc - 2, objv + 2, (char *)viewPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    if (ConfigureTableView(interp, viewPtr) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    EventuallyRedraw(viewPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * CurselectionOp --
- *
- *      pathName curselection
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
-{
-    Tcl_Obj *listObjPtr;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    switch (viewPtr->selectMode) {
-    case SELECT_CELLS:
-        {
-            Blt_HashEntry *hPtr;
-            Blt_HashSearch iter;
-            CellSelection *selPtr = &viewPtr->selectCells;
-
-            for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
-                 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-                CellKey *keyPtr;
-                Tcl_Obj *objPtr, *subListObjPtr;
-                
-                keyPtr = Blt_GetHashValue(hPtr);
-                subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-                objPtr = GetRowIndexObj(viewPtr, keyPtr->rowPtr);
-                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
-                objPtr = GetColumnIndexObj(viewPtr, keyPtr->colPtr);
-                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
-                Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
-            }
-        }
-        break;
-    case SELECT_SINGLE_ROW:
-    case SELECT_MULTIPLE_ROWS:
-        if (viewPtr->flags & SELECT_SORTED) {
-            Blt_ChainLink link;
-            
-            for (link = Blt_Chain_FirstLink(viewPtr->selectRows.list); 
-                 link != NULL; link = Blt_Chain_NextLink(link)) {
-                Row *rowPtr;
-                Tcl_Obj *objPtr;
-                
-                rowPtr = Blt_Chain_GetValue(link);
-                objPtr = GetRowIndexObj(viewPtr, rowPtr);
-                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-            }
-        } else {
-            Row *rowPtr;
-            
-            for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
-                 rowPtr = rowPtr->nextPtr) {
-                if (rowPtr->flags & SELECTED) {
-                    Tcl_Obj *objPtr;
-                    
-                    objPtr = GetRowIndexObj(viewPtr, rowPtr);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                }
-            }
-        }
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -8320,7 +8205,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      This procedure is called to invoke a column command.
  *
- *        pathName column invoke columnName
+ *        pathName column invoke colName
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
@@ -8518,7 +8403,7 @@ UpdateColumnMark(TableView *viewPtr, int newMark)
  *
  *      Turns on/off the resize cursor.
  *
- *      pathName column resize activate col 
+ *      pathName column resize activate colName
  *
  *---------------------------------------------------------------------------
  */
@@ -8761,6 +8646,234 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+#ifdef notdef
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColumnSlideAnchorOp --
+ *
+ *      This procedure is called to start a drag operation.
+ *
+ *        pathName column slide anchor colName x
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ColumnSlideAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                    Tcl_Obj *const *objv)
+{
+    Column *colPtr;
+    TableView *viewPtr = clientData; 
+    int x, y;
+    
+    if ((viewPtr->flags & SLIDE_COLUMN) == 0)  {
+        return TCL_OK;
+    }
+    if (GetColumn(interp, viewPtr, objv[4], &colPtr) != TCL_OK) {
+        return TCL_ERROR;               /* Can't find column. */
+    }
+    if (colPtr == NULL) {
+        fprintf(stderr, "ColumnSlideAnchor: Column %s is NULL\n", 
+                Tcl_GetString(objv[3])); 
+        return TCL_OK;
+    }
+    if (Blt_GetPixelsFromObj(interp, viewPtr->tkwin, objv[5], PIXELS_ANY, 
+                &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    viewPtr->colSlidePtr = colPtr;
+    viewPtr->colSlideAnchor = x;
+    viewPtr->colSlideOffset = 0;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColumnSlideMarkOp --
+ *
+ *      This procedure is called to start a drag operation.
+ *
+ *        pathName column slide mark x
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ColumnSlideMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Column *colPtr;
+    TableView *viewPtr = clientData; 
+    int x, dx;
+    int offset;
+
+    if ((viewPtr->flags & SLIDE_COLUMNS) == 0)  {
+        return TCL_OK;
+    }
+    if (Blt_GetPixelsFromObj(interp, viewPtr->tkwin, objv[3], PIXELS_ANY, 
+                &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (viewPtr->colSlidePtr == NULL) {
+        Tcl_AppendResult(interp, "No column designated for sliding.  "
+               "Must call \"column slide anchor\" first.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    dx = x - viewPtr->colSlideAnchor;
+    if ((viewPtr->flags & COLUMN_SLIDE_ACTIVE) == 0) {
+        if (ABS(dx) > 10) {
+            viewPtr->flags |= COLUMN_SLIDE_ACTIVE;
+        }
+    }        
+    if ((viewPtr->flags & COLUMN_SLIDE_ACTIVE) == 0)  {
+        return TCL_OK;
+    }
+    viewPtr->colSlideAnchor = x;
+    offset = viewPtr->slideOffset + dx
+    colPtr = viewPtr->colSlidePtr;
+    if (offset < 0) {
+        Column *prevPtr;
+        int d;
+        
+        prevPtr = GetPrevColumn(colPtr);
+        if (prevPtr == NULL) {
+            return TCL_OK;          /* Don't move column, there's no column
+                                       before this one. */
+        }
+        d = -prevPtr->width;
+        if (offset < (d / 2)) {
+            MoveColumns(viewPtr, prevPtr, colPtr, colPtr, FALSE);
+            offset -= d;
+        }
+    } else {
+        Column *nextPtr;
+        int d;
+
+        nextPtr = NextColumn(colPtr);
+        if (nextPtr == NULL) {
+            return TCL_OK;                  /* Don't move column, there's
+                                             * no column after this one. */
+        }
+        d = nextPtr->width;
+        if (offset > (d / 2)) {
+            /* swap tab positions and reset dragOffset. */
+            viewPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
+            MoveColumns(viewPtr, nextPtr, colPtr, colPtr, TRUE);
+            offset -= d;
+        }
+    }
+    viewPtr->colSlideOffset = offset;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColumnSlideIsActiveOp --
+ *
+ *      This procedure is called to end the drag operation.
+ *
+ *        pathName column slide isactive
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ColumnSlideIsActiveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                      Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData; 
+    int state;
+    
+    state = ((viewPtr->flags & COLUMN_SLIDE_ACTIVE) != 0);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColumnSlideStopOp --
+ *
+ *      This procedure is called to end the drag operation.
+ *
+ *        pathName column slide stop
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ColumnSlideStopOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData; 
+    
+    viewPtr->colSlideOffset = 0;
+    viewPtr->colSlidePtr = NULL;
+    viewPtr->flags &= ~COLUMN_SLIDE_ACTIVE;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColumnSlideOp --
+ *
+ *      This procedure handles sliding column operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *      pathName column slide anchor colName x
+ *      pathName column slide mark x
+ *      pathName column slide isactive
+ *      pathName column slide stop
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec columnSlideOps[] =
+{
+    {"anchor",   1, ColumnSlideAnchorOp,    6, 6, "colName x" }, 
+    {"isactive", 1, ColumnSlideIsActiveOp,  4, 4, "" }, 
+    {"mark",     1, ColumnSlideMarkOp,      5, 5, "x" }, 
+    {"stop",     1, ColumnSlideStopOp,      4, 4, "" }, 
+};
+
+static int numColumnSlideOps = sizeof(columnSlideOps) / sizeof(Blt_OpSpec);
+
+static int
+ColumnSlideOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    proc = Blt_GetOpFromObj(interp, numColumnSlideOps, columnSlideOps, 
+        BLT_OP_ARG2, objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc)(clientData, interp, objc, objv);
+}
+#endif
+
 static Blt_OpSpec columnOps[] = {
     {"activate",   1, ColumnActivateOp,   4, 4, "colName",}, 
     {"bind",       1, ColumnBindOp,       5, 7, "tagName type ?sequence command?",},
@@ -8803,6 +8916,121 @@ ColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     return (*proc) (clientData, interp, objc, objv);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureOp --
+ *
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
+ *
+ * Side effects:
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for viewPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed. 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    iconOption.clientData = viewPtr;
+    styleOption.clientData = viewPtr;
+    tableOption.clientData = viewPtr;
+    if (objc == 2) {
+        return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, tableSpecs, 
+                (char *)viewPtr, (Tcl_Obj *)NULL, 0);
+    } else if (objc == 3) {
+        return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, tableSpecs,
+                (char *)viewPtr, objv[2], 0);
+    } 
+    if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, tableSpecs, 
+        objc - 2, objv + 2, (char *)viewPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (ConfigureTableView(interp, viewPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CurselectionOp --
+ *
+ *      pathName curselection
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
+{
+    Tcl_Obj *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    switch (viewPtr->selectMode) {
+    case SELECT_CELLS:
+        {
+            Blt_HashEntry *hPtr;
+            Blt_HashSearch iter;
+            CellSelection *selPtr = &viewPtr->selectCells;
+
+            for (hPtr = Blt_FirstHashEntry(&selPtr->cellTable, &iter); 
+                 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+                CellKey *keyPtr;
+                Tcl_Obj *objPtr, *subListObjPtr;
+                
+                keyPtr = Blt_GetHashValue(hPtr);
+                subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+                objPtr = GetRowIndexObj(viewPtr, keyPtr->rowPtr);
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+                objPtr = GetColumnIndexObj(viewPtr, keyPtr->colPtr);
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+                Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+            }
+        }
+        break;
+    case SELECT_SINGLE_ROW:
+    case SELECT_MULTIPLE_ROWS:
+        if (viewPtr->flags & SELECT_SORTED) {
+            Blt_ChainLink link;
+            
+            for (link = Blt_Chain_FirstLink(viewPtr->selectRows.list); 
+                 link != NULL; link = Blt_Chain_NextLink(link)) {
+                Row *rowPtr;
+                Tcl_Obj *objPtr;
+                
+                rowPtr = Blt_Chain_GetValue(link);
+                objPtr = GetRowIndexObj(viewPtr, rowPtr);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+        } else {
+            Row *rowPtr;
+            
+            for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+                 rowPtr = rowPtr->nextPtr) {
+                if (rowPtr->flags & SELECTED) {
+                    Tcl_Obj *objPtr;
+                    
+                    objPtr = GetRowIndexObj(viewPtr, rowPtr);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                }
+            }
+        }
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
 }
 
 /*

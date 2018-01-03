@@ -22,7 +22,7 @@ blt::tabset .t \
     -side $side \
     -tearoff yes \
     -slide yes \
-    -slant both \
+    -slant none \
     -scrolltabs yes \
     -justify center \
     -tabwidth same \

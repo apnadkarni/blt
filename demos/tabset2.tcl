@@ -39,13 +39,14 @@ image create picture label1 -file ./images/mini-book1.gif
 image create picture testImage -file ./images/txtrflag.gif
 blt::tk::scrollbar .s -command { .t view } -orient horizontal
 blt::tabset .t \
-    -scrolltabs no \
+    -scrolltabs yes \
+    -slide yes \
     -outerrelief flat \
     -font "Arial 8" \
     -outerborderwidth 2 \
     -tearoff yes \
     -tabwidth same \
-    -slant left \
+    -slant none \
     -tiers 1 \
     -scrollcommand { .s set } \
     -scrollincrement 1 
