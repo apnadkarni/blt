@@ -89,7 +89,6 @@ instdirs =		$(prefix) \
 			$(pkgdir) \
 			$(scriptdir)
 
- 
 # ------------------------------------------------------------------------
 # 	Directories containing Tcl and Tk include files and libraries
 # ------------------------------------------------------------------------
@@ -274,7 +273,7 @@ ifneq ("$(TIF_LIB_SPEC)", "")
    blt_tk_pkgs += $(blt_pict_tif_so) 
 endif
 ifneq ("$(FT2_LIB_SPEC)", "")
-   blt_tcl_pkgs += $(blt_pict_text_so) 
+   blt_tk_pkgs += $(blt_pict_text_so) 
 endif
 
 ifneq ("$(TCL_STUBS_SPEC)", "")
@@ -415,8 +414,8 @@ BLT_TCL_OBJS =		$(BLT_TCL_SO_OBJS) \
 
 BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			$(PICTURE_OBJS) \
-			$(TREEVIEW_OBJS) \
 			$(TABLEVIEW_OBJS) \
+			$(TREEVIEW_OBJS) \
 			bltAfm.o \
 			bltArcBall.o \
 			bltBeep.o \
@@ -438,6 +437,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltDragdrop.o \
 			bltDrawerset.o \
 			bltFilmstrip.o \
+			bltGeomUtil.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \
@@ -469,8 +469,8 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			$(TK_OBJS)
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
-			bltTkPkgsInit.o \
 			bltStaticInit.o \
+			bltTkPkgsInit.o\
 			$(PICTURE_PKG_OBJS) 
 
 
@@ -762,7 +762,7 @@ BLT_TCL_INT_HEADERS =	\
 BLT_TCL_HEADERS = \
 		$(srcdir)/bltAlloc.h \
 		$(srcdir)/bltChain.h \
-		$(srcdir)/bltHash.h \
+		bltHash.h \
 		$(srcdir)/bltTags.h \
 		$(srcdir)/bltList.h \
 		$(srcdir)/bltPool.h \
@@ -773,6 +773,7 @@ BLT_TCL_HEADERS = \
 BLT_TK_INT_HEADERS = \
 		$(srcdir)/bltTkInt.h \
 		$(srcdir)/bltFont.h \
+		$(srcdir)/bltGeomUtil.h \
 		$(srcdir)/bltPaintBrush.h \
 		$(srcdir)/bltBg.h \
 		$(srcdir)/bltBind.h \
@@ -887,7 +888,6 @@ bltDataTableXml.o: $(srcdir)/bltDataTableXml.c
 
 bltTree.o: $(srcdir)/bltTree.c
 	$(CC) -c $(CC_OPTS) $(EXPAT_INC_SPEC) $?
-
 bltTreeXml.o: $(srcdir)/bltTreeXml.c
 	$(CC) -c $(CC_OPTS) $(EXPAT_INC_SPEC) $?
 
@@ -904,6 +904,7 @@ bltPictPng.o: $(srcdir)/bltPictPng.c
 	$(CC) -c $(CC_OPTS) $(PNG_INC_SPEC) $?
 bltPictXpm.o: $(srcdir)/bltPictXpm.c       
 	$(CC) -c $(CC_OPTS) $(XPM_INC_SPEC) $?
+
 bltTclInit.o: $(srcdir)/bltTclInit.c       
 	$(CC) -c $(CC_OPTS) -DTCL_ONLY -DBLT_LIBRARY=\"$(BLT_LIBRARY)\" \
 		$(srcdir)/bltTclInit.c

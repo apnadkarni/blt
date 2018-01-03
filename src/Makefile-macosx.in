@@ -90,7 +90,6 @@ instdirs =		$(prefix) \
 			$(pkgdir) \
 			$(scriptdir)
 
- 
 # ------------------------------------------------------------------------
 # 	Directories containing Tcl and Tk include files and libraries
 # ------------------------------------------------------------------------
@@ -417,6 +416,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltDragdrop.o \
 			bltDrawerset.o \
 			bltFilmstrip.o \
+			bltGeomUtil.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \
@@ -696,7 +696,7 @@ BLT_TCL_INT_HEADERS =	\
 BLT_TCL_HEADERS = \
 		$(srcdir)/bltAlloc.h \
 		$(srcdir)/bltChain.h \
-		$(srcdir)/bltHash.h \
+		bltHash.h \
 		$(srcdir)/bltTags.h \
 		$(srcdir)/bltList.h \
 		$(srcdir)/bltPool.h \
@@ -707,6 +707,7 @@ BLT_TCL_HEADERS = \
 BLT_TK_INT_HEADERS = \
 		$(srcdir)/bltTkInt.h \
 		$(srcdir)/bltFont.h \
+		$(srcdir)/bltGeomUtil.h \
 		$(srcdir)/bltPaintBrush.h \
 		$(srcdir)/bltBg.h \
 		$(srcdir)/bltBind.h \
