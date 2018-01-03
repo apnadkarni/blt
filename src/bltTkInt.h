@@ -243,10 +243,6 @@ BLT_EXTERN const char *Blt_NameOfResize(int resize);
 BLT_EXTERN int Blt_GetXY (Tcl_Interp *interp, Tk_Window tkwin, 
         const char *string, int *xPtr, int *yPtr);
 
-BLT_EXTERN Point2d Blt_GetProjection(double x, double y, Point2d *p, Point2d *q);
-BLT_EXTERN Point2d Blt_GetProjection2(double x, double y, double x1, double y1,
-                                      double x2, double y2);
-
 BLT_EXTERN void Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, 
         int x, int y, int w, int h, int borderWidth, int orientation);
 

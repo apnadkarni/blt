@@ -378,6 +378,8 @@ Tk_AllocColorFromObj(
 }
 #endif  /* _TK_VERSION < 8.1.0 */
 
+/* Converters that require Tk. */
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -391,13 +393,8 @@ Tk_AllocColorFromObj(
  *---------------------------------------------------------------------------
  */
 int
-Blt_GetPixelsFromObj(
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    Tcl_Obj *objPtr,
-    int check,                          /* Can be PIXELS_POS, PIXELS_NNEG,
-                                         * or PIXELS_ANY, */
-    int *valuePtr)
+Blt_GetPixelsFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
+                     int check, int *valuePtr)
 {
     int length;
 
@@ -433,6 +430,16 @@ Blt_GetPixelsFromObj(
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetPadFromObj --
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
 int
 Blt_GetPadFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
                   Blt_Pad *padPtr)
@@ -462,185 +469,6 @@ Blt_GetPadFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
     /* Don't update the pad structure until we know both values are okay. */
     padPtr->side1 = side1;
     padPtr->side2 = side2;
-    return TCL_OK;
-}
-
-int
-Blt_GetStateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *statePtr)
-{
-    char c;
-    const char *string;
-    int length;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
-        *statePtr = STATE_NORMAL;
-    } else if ((c == 'd') && (strncmp(string, "disabled", length) == 0)) {
-        *statePtr = STATE_DISABLED;
-    } else if ((c == 'a') && (strncmp(string, "active", length) == 0)) {
-        *statePtr = STATE_ACTIVE;
-    } else {
-        Tcl_AppendResult(interp, "bad state \"", string,
-            "\": should be normal, active, or disabled", (char *)NULL);
-        return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
-const char *
-Blt_NameOfState(int state)
-{
-    switch (state) {
-    case STATE_ACTIVE:
-        return "active";
-    case STATE_DISABLED:
-        return "disabled";
-    case STATE_NORMAL:
-        return "normal";
-    default:
-        return "???";
-    }
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_NameOfFill --
- *
- *      Converts the integer representing the fill style into a string.
- *
- *---------------------------------------------------------------------------
- */
-const char *
-Blt_NameOfFill(int fill)
-{
-    switch (fill) {
-    case FILL_X:
-        return "x";
-    case FILL_Y:
-        return "y";
-    case FILL_NONE:
-        return "none";
-    case FILL_BOTH:
-        return "both";
-    default:
-        return "unknown value";
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetFillFromObj --
- *
- *      Converts the fill style string into its numeric representation.
- *
- *      Valid style strings are:
- *
- *        "none"   Use neither plane.
- *        "x"      X-coordinate plane.
- *        "y"      Y-coordinate plane.
- *        "both"   Use both coordinate planes.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-int
-Blt_GetFillFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *fillPtr)
-{
-    char c;
-    const char *string;
-    int length;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
-        *fillPtr = FILL_NONE;
-    } else if ((c == 'x') && (strncmp(string, "x", length) == 0)) {
-        *fillPtr = FILL_X;
-    } else if ((c == 'y') && (strncmp(string, "y", length) == 0)) {
-        *fillPtr = FILL_Y;
-    } else if ((c == 'b') && (strncmp(string, "both", length) == 0)) {
-        *fillPtr = FILL_BOTH;
-    } else {
-        Tcl_AppendResult(interp, "bad argument \"", string,
-            "\": should be \"none\", \"x\", \"y\", or \"both\"", (char *)NULL);
-        return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_NameOfResize --
- *
- *      Converts the resize value into its string representation.
- *
- * Results:
- *      Returns a pointer to the static name string.
- *
- *---------------------------------------------------------------------------
- */
-const char *
-Blt_NameOfResize(int resize)
-{
-    switch (resize & RESIZE_BOTH) {
-    case RESIZE_NONE:
-        return "none";
-    case RESIZE_EXPAND:
-        return "expand";
-    case RESIZE_SHRINK:
-        return "shrink";
-    case RESIZE_BOTH:
-        return "both";
-    default:
-        return "unknown resize value";
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetResizeFromObj --
- *
- *      Converts the resize string into its numeric representation.
- *
- *      Valid style strings are:
- *
- *        "none"   
- *        "expand" 
- *        "shrink" 
- *        "both"   
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-int
-Blt_GetResizeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *resizePtr)
-{
-    char c;
-    const char *string;
-    int length;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
-        *resizePtr = RESIZE_NONE;
-    } else if ((c == 'b') && (strncmp(string, "both", length) == 0)) {
-        *resizePtr = RESIZE_BOTH;
-    } else if ((c == 'e') && (strncmp(string, "expand", length) == 0)) {
-        *resizePtr = RESIZE_EXPAND;
-    } else if ((c == 's') && (strncmp(string, "shrink", length) == 0)) {
-        *resizePtr = RESIZE_SHRINK;
-    } else {
-        Tcl_AppendResult(interp, "bad resize argument \"", string,
-            "\": should be \"none\", \"expand\", \"shrink\", or \"both\"",
-            (char *)NULL);
-        return TCL_ERROR;
-    }
     return TCL_OK;
 }
 

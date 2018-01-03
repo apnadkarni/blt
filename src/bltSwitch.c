@@ -52,6 +52,338 @@
 #include "bltAlloc.h"
 #include "bltSwitch.h"
 
+
+
+int 
+Blt_ExprDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
+{
+    /* First try to extract the value as a double precision number. */
+    if (Tcl_GetDoubleFromObj((Tcl_Interp *)NULL, objPtr, valuePtr) == TCL_OK) {
+        return TCL_OK;
+    }
+    /* Then try to parse it as an expression. */
+    if (Tcl_ExprDouble(interp, Tcl_GetString(objPtr), valuePtr) == TCL_OK) {
+        return TCL_OK;
+    }
+    return TCL_ERROR;
+}
+
+int 
+Blt_ExprIntFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *valuePtr)
+{
+    long lvalue;
+
+    /* First try to extract the value as a simple integer. */
+    if (Tcl_GetIntFromObj((Tcl_Interp *)NULL, objPtr, valuePtr) == TCL_OK) {
+        return TCL_OK;
+    }
+    /* Otherwise try to parse it as an expression. */
+    if (Tcl_ExprLong(interp, Tcl_GetString(objPtr), &lvalue) == TCL_OK) {
+        *valuePtr = lvalue;
+        return TCL_OK;
+    }
+    return TCL_ERROR;
+}
+
+int
+Blt_GetStateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *statePtr)
+{
+    char c;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
+        *statePtr = STATE_NORMAL;
+    } else if ((c == 'd') && (strncmp(string, "disabled", length) == 0)) {
+        *statePtr = STATE_DISABLED;
+    } else if ((c == 'a') && (strncmp(string, "active", length) == 0)) {
+        *statePtr = STATE_ACTIVE;
+    } else {
+        Tcl_AppendResult(interp, "bad state \"", string,
+            "\": should be normal, active, or disabled", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+const char *
+Blt_NameOfState(int state)
+{
+    switch (state) {
+    case STATE_ACTIVE:
+        return "active";
+    case STATE_DISABLED:
+        return "disabled";
+    case STATE_NORMAL:
+        return "normal";
+    default:
+        return "???";
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_NameOfFill --
+ *
+ *      Converts the integer representing the fill style into a string.
+ *
+ *---------------------------------------------------------------------------
+ */
+const char *
+Blt_NameOfFill(int fill)
+{
+    switch (fill) {
+    case FILL_X:
+        return "x";
+    case FILL_Y:
+        return "y";
+    case FILL_NONE:
+        return "none";
+    case FILL_BOTH:
+        return "both";
+    default:
+        return "unknown value";
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetFillFromObj --
+ *
+ *      Converts the fill style string into its numeric representation.
+ *
+ *      Valid style strings are:
+ *
+ *        "none"   Use neither plane.
+ *        "x"      X-coordinate plane.
+ *        "y"      Y-coordinate plane.
+ *        "both"   Use both coordinate planes.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+int
+Blt_GetFillFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *fillPtr)
+{
+    char c;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
+        *fillPtr = FILL_NONE;
+    } else if ((c == 'x') && (strncmp(string, "x", length) == 0)) {
+        *fillPtr = FILL_X;
+    } else if ((c == 'y') && (strncmp(string, "y", length) == 0)) {
+        *fillPtr = FILL_Y;
+    } else if ((c == 'b') && (strncmp(string, "both", length) == 0)) {
+        *fillPtr = FILL_BOTH;
+    } else {
+        Tcl_AppendResult(interp, "bad argument \"", string,
+            "\": should be \"none\", \"x\", \"y\", or \"both\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_NameOfResize --
+ *
+ *      Converts the resize value into its string representation.
+ *
+ * Results:
+ *      Returns a pointer to the static name string.
+ *
+ *---------------------------------------------------------------------------
+ */
+const char *
+Blt_NameOfResize(int resize)
+{
+    switch (resize & RESIZE_BOTH) {
+    case RESIZE_NONE:
+        return "none";
+    case RESIZE_EXPAND:
+        return "expand";
+    case RESIZE_SHRINK:
+        return "shrink";
+    case RESIZE_BOTH:
+        return "both";
+    default:
+        return "unknown resize value";
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetResizeFromObj --
+ *
+ *      Converts the resize string into its numeric representation.
+ *
+ *      Valid style strings are:
+ *
+ *        "none"   
+ *        "expand" 
+ *        "shrink" 
+ *        "both"   
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+int
+Blt_GetResizeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *resizePtr)
+{
+    char c;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
+        *resizePtr = RESIZE_NONE;
+    } else if ((c == 'b') && (strncmp(string, "both", length) == 0)) {
+        *resizePtr = RESIZE_BOTH;
+    } else if ((c == 'e') && (strncmp(string, "expand", length) == 0)) {
+        *resizePtr = RESIZE_EXPAND;
+    } else if ((c == 's') && (strncmp(string, "shrink", length) == 0)) {
+        *resizePtr = RESIZE_SHRINK;
+    } else {
+        Tcl_AppendResult(interp, "bad resize argument \"", string,
+            "\": should be \"none\", \"expand\", \"shrink\", or \"both\"",
+            (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+
+const char *
+Blt_NameOfSide(int side)
+{
+    switch (side) {
+    case SIDE_LEFT:
+        return "left";
+    case SIDE_RIGHT:
+        return "right";
+    case SIDE_BOTTOM:
+        return "bottom";
+    case SIDE_TOP:
+        return "top";
+    }
+    return "unknown side value";
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetSideFromObj --
+ *
+ *      Converts the fill style string into its numeric representation.
+ *
+ *      Valid style strings are "left", "right", "top", or  "bottom".
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED */
+int
+Blt_GetSideFromObj(
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tcl_Obj *objPtr,                    /* Value string */
+    int *sidePtr)                       /* (out) Token representing side:
+                                         * either SIDE_LEFT, SIDE_RIGHT,
+                                         * SIDE_TOP, or SIDE_BOTTOM. */
+{
+    char c;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
+        *sidePtr = SIDE_LEFT;
+    } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
+        *sidePtr = SIDE_RIGHT;
+    } else if ((c == 't') && (strncmp(string, "top", length) == 0)) {
+        *sidePtr = SIDE_TOP;
+    } else if ((c == 'b') && (strncmp(string, "bottom", length) == 0)) {
+        *sidePtr = SIDE_BOTTOM;
+    } else {
+        Tcl_AppendResult(interp, "bad side \"", string,
+            "\": should be left, right, top, or bottom", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+int
+Blt_GetCount(Tcl_Interp *interp, const char *string, int check,
+             long *valuePtr)
+{
+    long lvalue;
+
+    if (Blt_GetLong(interp, string, &lvalue) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (lvalue < 0) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad value \"", string, 
+                             "\": can't be negative", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (check == COUNT_POS) {
+        if (lvalue <= 0) {
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad value \"", string, 
+                                 "\": must be positive", (char *)NULL);
+            }
+            return TCL_ERROR;
+        }
+    }
+    *valuePtr = lvalue;
+    return TCL_OK;
+}
+
+int
+Blt_GetCountFromObj(
+    Tcl_Interp *interp,
+    Tcl_Obj *objPtr,
+    int check,                          /* Can be COUNT_POS or COUNT_NNEG */
+    long *valuePtr)
+{
+    long lvalue;
+
+    if (Blt_GetLongFromObj(interp, objPtr, &lvalue) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (lvalue < 0) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
+                             "\": can't be negative", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    if (check == COUNT_POS) {
+        if (lvalue <= 0) {
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
+                                 "\": must be positive", (char *)NULL);
+            }
+            return TCL_ERROR;
+        }
+    }
+    *valuePtr = lvalue;
+    return TCL_OK;
+}
+
 static void
 DoHelp(Tcl_Interp *interp, Blt_SwitchSpec *specs)
 {
@@ -80,11 +412,12 @@ DoHelp(Tcl_Interp *interp, Blt_SwitchSpec *specs)
  *      This procedure formats the current value of a configuration option.
  *
  * Results:
- *      The return value is the formatted value of the option given by specPtr
- *      and record.  If the value is static, so that it need not be freed,
- *      *freeProcPtr will be set to NULL; otherwise *freeProcPtr will be set
- *      to the address of a procedure to free the result, and the caller must
- *      invoke this procedure when it is finished with the result.
+ *      The return value is the formatted value of the option given by
+ *      specPtr and record.  If the value is static, so that it need not be
+ *      freed, *freeProcPtr will be set to NULL; otherwise *freeProcPtr
+ *      will be set to the address of a procedure to free the result, and
+ *      the caller must invoke this procedure when it is finished with the
+ *      result.
  *
  * Side effects:
  *      None.
@@ -263,20 +596,23 @@ FormatSwitchInfo(
  */
 static Blt_SwitchSpec *
 FindSwitchSpec(
-    Tcl_Interp *interp,         /* Used for reporting errors. */
-    Blt_SwitchSpec *specs,      /* Pointer to table of configuration
-                                 * specifications for a widget. */
-    Tcl_Obj *objPtr,            /* Name identifying a particular switch. */
-    int needFlags,              /* Flags that must be present in matching
-                                 * entry. */
-    int hateFlags)              /* Flags that must NOT be present in matching
-                                 * entry. */
+    Tcl_Interp *interp,                 /* Used for reporting errors. */
+    Blt_SwitchSpec *specs,              /* Pointer to table of
+                                         * configuration specifications for
+                                         * a widget. */
+    Tcl_Obj *objPtr,                    /* Name identifying a particular
+                                         * switch. */
+    int needFlags,                      /* Flags that must be present in
+                                         * matching entry. */
+    int hateFlags)                      /* Flags that must NOT be present
+                                         * in matching entry. */
 {
     Blt_SwitchSpec *sp;
-    char c;                     /* First character of current argument. */
-    Blt_SwitchSpec *matchPtr;   /* Matching spec, or NULL. */
+    char c;                             /* First character of current
+                                         * argument. */
+    Blt_SwitchSpec *matchPtr;           /* Matching spec, or NULL. */
     const char *name;
-    int length;                 /* Length of name. */
+    int length;                         /* Length of name. */
 
     name = Tcl_GetStringFromObj(objPtr, &length);
     c = name[1];
@@ -634,9 +970,9 @@ DoSwitch(
  *      resources and other parameters.
  *
  * Results:
- *      Returns the number of arguments comsumed by parsing the command line.
- *      If an error occurred, -1 will be returned and an error messages can be
- *      found as the interpreter result.
+ *      Returns the number of arguments comsumed by parsing the command
+ *      line.  If an error occurred, -1 will be returned and an error
+ *      messages can be found as the interpreter result.
  *
  * Side effects:
  *      The fields of record get filled in with information from argc/argv.
@@ -686,8 +1022,8 @@ Blt_ParseSwitches(
         arg = Tcl_GetStringFromObj(objv[count], &length);
         if (flags & BLT_SWITCH_OBJV_PARTIAL) {
             /* 
-             * If the argument doesn't start with a '-' (not a switch) or is
-             * '--', stop processing and return the number of arguments
+             * If the argument doesn't start with a '-' (not a switch) or
+             * is '--', stop processing and return the number of arguments
              * comsumed.
              */
             if (arg[0] != '-') {
@@ -741,9 +1077,10 @@ Blt_ParseSwitches(
     }
 
     /*
-     * Pass three: scan through all of the specs again; if no command-line
-     * argument matched a spec, then check for info in the option database.
-     * If there was nothing in the database, then use the default.
+     * Pass 3: Scan through all of the specs again; if no command-line
+     *         argument matched a spec, then check for info in the option
+     *         database.  If there was nothing in the database, then use
+     *         the default.
      */
     if (flags & BLT_SWITCH_INITIALIZE) {
         Tcl_Obj *objPtr;
@@ -785,22 +1122,22 @@ Blt_ParseSwitches(
  *
  * Blt_SwitchInfo --
  *
- *      Return information about the configuration options for a window, and
- *      their current values.
+ *      Return information about the configuration options for a window,
+ *      and their current values.
  *
  * Results:
  *      Always returns TCL_OK.  The interp's result will be modified hold a
  *      description of either a single configuration option available for
- *      "record" via "specs", or all the configuration options available.  In
- *      the "all" case, the result will available for "record" via "specs".
- *      The result will be a list, each of whose entries describes one option.
- *      Each entry will itself be a list containing the option's name for use
- *      on command lines, database name, database class, default value, and
- *      current value (empty string if none).  For options that are synonyms,
- *      the list will contain only two values: name and synonym name.  If the
- *      "name" argument is non-NULL, then the only information returned is
- *      that for the named argument (i.e. the corresponding entry in the
- *      overall list is returned).
+ *      "record" via "specs", or all the configuration options available.
+ *      In the "all" case, the result will available for "record" via
+ *      "specs".  The result will be a list, each of whose entries
+ *      describes one option.  Each entry will itself be a list containing
+ *      the option's name for use on command lines, database name, database
+ *      class, default value, and current value (empty string if none).
+ *      For options that are synonyms, the list will contain only two
+ *      values: name and synonym name.  If the "name" argument is non-NULL,
+ *      then the only information returned is that for the named argument
+ *      (i.e. the corresponding entry in the overall list is returned).
  *
  * Side effects:
  *      None.
@@ -809,17 +1146,19 @@ Blt_ParseSwitches(
  */
 int
 Blt_SwitchInfo(
-    Tcl_Interp *interp,                 /* Interpreter for error reporting. */
+    Tcl_Interp *interp,                 /* Interpreter for error
+                                         * reporting. */
     Blt_SwitchSpec *specs,              /* Describes legal options. */
-    void *record,                       /* Record whose fields contain current
-                                         * values for options. */
+    void *record,                       /* Record whose fields contain
+                                         * current values for options. */
     Tcl_Obj *objPtr,                    /* If non-NULL, indicates a single
                                          * option whose info is to be
                                          * returned.  Otherwise info is
                                          * returned for all options. */
     int flags)                          /* Used to specify additional flags
-                                         * that must be present in config specs
-                                         * for them to be considered. */
+                                         * that must be present in config
+                                         * specs for them to be
+                                         * considered. */
 {
     Blt_SwitchSpec *sp;
     Tcl_Obj *listObjPtr, *valueObjPtr;
@@ -1024,35 +1363,3 @@ Blt_SwitchChanged(Blt_SwitchSpec *specs, ...)
     va_end(args);
     return 0;
 }
-
-int 
-Blt_ExprDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
-{
-    /* First try to extract the value as a double precision number. */
-    if (Tcl_GetDoubleFromObj((Tcl_Interp *)NULL, objPtr, valuePtr) == TCL_OK) {
-        return TCL_OK;
-    }
-    /* Then try to parse it as an expression. */
-    if (Tcl_ExprDouble(interp, Tcl_GetString(objPtr), valuePtr) == TCL_OK) {
-        return TCL_OK;
-    }
-    return TCL_ERROR;
-}
-
-int 
-Blt_ExprIntFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *valuePtr)
-{
-    long lvalue;
-
-    /* First try to extract the value as a simple integer. */
-    if (Tcl_GetIntFromObj((Tcl_Interp *)NULL, objPtr, valuePtr) == TCL_OK) {
-        return TCL_OK;
-    }
-    /* Otherwise try to parse it as an expression. */
-    if (Tcl_ExprLong(interp, Tcl_GetString(objPtr), &lvalue) == TCL_OK) {
-        *valuePtr = lvalue;
-        return TCL_OK;
-    }
-    return TCL_ERROR;
-}
-

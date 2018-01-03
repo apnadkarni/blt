@@ -142,43 +142,38 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_GetPositionFromObj, /* 132 */
     Blt_GetCount, /* 133 */
     Blt_GetCountFromObj, /* 134 */
-    Blt_SimplifyLine, /* 135 */
-    Blt_PointInPolygon, /* 136 */
-    Blt_PolygonInRegion, /* 137 */
-    Blt_PointInSegments, /* 138 */
-    Blt_PolyRectClip, /* 139 */
-    Blt_ObjIsInteger, /* 140 */
-    Blt_GetLong, /* 141 */
-    Blt_GetLongFromObj, /* 142 */
-    Blt_SetLongObj, /* 143 */
-    Blt_NewLongObj, /* 144 */
-    Blt_IsLongObj, /* 145 */
-    Blt_GetUnsignedLong, /* 146 */
-    Blt_GetUnsignedLongFromObj, /* 147 */
-    Blt_SetUnsignedLongObj, /* 148 */
-    Blt_NewUnsignedLongObj, /* 149 */
-    Blt_IsUnsignedLongObj, /* 150 */
-    Blt_GetInt64, /* 151 */
-    Blt_GetInt64FromObj, /* 152 */
-    Blt_SetInt64Obj, /* 153 */
-    Blt_NewInt64Obj, /* 154 */
-    Blt_IsInt64Obj, /* 155 */
-    Blt_GetDouble, /* 156 */
-    Blt_GetDoubleFromObj, /* 157 */
-    Blt_SetDoubleObj, /* 158 */
-    Blt_NewDoubleObj, /* 159 */
-    Blt_IsDoubleObj, /* 160 */
-    Blt_FmtString, /* 161 */
-    Blt_LowerCase, /* 162 */
-    Blt_UpperCase, /* 163 */
-    Blt_GetPlatformId, /* 164 */
-    Blt_LastError, /* 165 */
-    Blt_NaN, /* 166 */
-    Blt_AlmostEquals, /* 167 */
-    Blt_ConvertListToList, /* 168 */
-    Blt_RegisterObjTypes, /* 169 */
-    Blt_GetCachedVar, /* 170 */
-    Blt_FreeCachedVars, /* 171 */
+    Blt_ObjIsInteger, /* 135 */
+    Blt_GetLong, /* 136 */
+    Blt_GetLongFromObj, /* 137 */
+    Blt_SetLongObj, /* 138 */
+    Blt_NewLongObj, /* 139 */
+    Blt_IsLongObj, /* 140 */
+    Blt_GetUnsignedLong, /* 141 */
+    Blt_GetUnsignedLongFromObj, /* 142 */
+    Blt_SetUnsignedLongObj, /* 143 */
+    Blt_NewUnsignedLongObj, /* 144 */
+    Blt_IsUnsignedLongObj, /* 145 */
+    Blt_GetInt64, /* 146 */
+    Blt_GetInt64FromObj, /* 147 */
+    Blt_SetInt64Obj, /* 148 */
+    Blt_NewInt64Obj, /* 149 */
+    Blt_IsInt64Obj, /* 150 */
+    Blt_GetDouble, /* 151 */
+    Blt_GetDoubleFromObj, /* 152 */
+    Blt_SetDoubleObj, /* 153 */
+    Blt_NewDoubleObj, /* 154 */
+    Blt_IsDoubleObj, /* 155 */
+    Blt_FmtString, /* 156 */
+    Blt_LowerCase, /* 157 */
+    Blt_UpperCase, /* 158 */
+    Blt_GetPlatformId, /* 159 */
+    Blt_LastError, /* 160 */
+    Blt_NaN, /* 161 */
+    Blt_AlmostEquals, /* 162 */
+    Blt_ConvertListToList, /* 163 */
+    Blt_RegisterObjTypes, /* 164 */
+    Blt_GetCachedVar, /* 165 */
+    Blt_FreeCachedVars, /* 166 */
 };
 
 /* !END!: Do not edit above this line. */

@@ -460,12 +460,16 @@ AC_CHECK_HEADERS([X11/extensions/Xrandr.h])
 
 # FREETYPE2 header
 if test "${blt_with_ft2_include_dir}" != "no" ; then
-  ft2_inc_spec=`freetype-config --cflags`
+  AC_CHECK_PROG([blt_freetype_config], [freetype-config], "yes", "no")
+  if test "${blt_freetype_config}" = "yes" ; then 
+    ft2_inc_spec=`freetype-config --cflags`
+  else
+    ft2_inc_spec="-I/usr/include/freetype2"
+  fi 
   save_CPPFLAGS=$CPPFLAGS
   CPPFLAGS="${ft2_inc_spec}"
   AC_CHECK_HEADERS(ft2build.h, FT2_INC_SPEC=${ft2_inc_spec}, FT2_INC_SPEC="")
   CPPFLAGS=${save_CPPFLAGS}
-
   # Xft header
   if test "${blt_with_xft_include_dir}" != "no" ; then
     BLT_CHECK_HEADER(XFT, X11/Xft/Xft.h, $blt_with_xft_include_dir, ${ft2_inc_spec})
