@@ -8,9 +8,9 @@ option add *Tabset.Tab.iPadX 0
 #option add *Tabset.Tab.background green
 }
 if { [blt::winop xdpi] > 150 } {
-  image create picture img1 -file $blt_library/icons/32x32/filter.png
+  image create picture img1 -file $blt_library/icons/32x32/filter.tga
 } else {
-  image create picture img1 -file $blt_library/icons/16x16/filter.png
+  image create picture img1 -file $blt_library/icons/16x16/filter.tga
 }
 image create picture img2 -file ./images/mini-book2.gif
 image create picture img3 -width 10 -height 30

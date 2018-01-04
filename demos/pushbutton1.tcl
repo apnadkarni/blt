@@ -4,13 +4,13 @@ package require BLT
 option add *Font "Arial 9"
 
 if { [blt::winop xdpi] > 150 } {
-    set offFile $blt_library/icons/32x32/folder.png 
-    set onFile $blt_library/icons/32x32/folder-open.png
-    set filterFile $blt_library/icons/32x32/filter.png
+    set offFile $blt_library/icons/32x32/folder.tga 
+    set onFile $blt_library/icons/32x32/folder-open.tga
+    set filterFile $blt_library/icons/32x32/filter.tga
 } else {
-    set offFile $blt_library/icons/16x16/folder.png 
-    set onFile $blt_library/icons/16x16/folder-open.png
-    set filterFile $blt_library/icons/16x16/filter.png
+    set offFile $blt_library/icons/16x16/folder.tga 
+    set onFile $blt_library/icons/16x16/folder-open.tga
+    set filterFile $blt_library/icons/16x16/filter.tga
 }    
 
 blt::tk::frame .f0
