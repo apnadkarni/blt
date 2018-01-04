@@ -408,13 +408,17 @@ the command.  The operations available for pictures are listed below.
 
 *imageName* **crop** *x1*  *y1* ?\ *x2*  *y2*\ ?
   Crops *imageName* to specified rectangular region.  The region is defined
-  by the coordinates *x1*,  *y1*, *x2*, *y2* (where *x1*, *y1* and *x2*, *y2*
-  describe opposite corners of a rectangle) is cut out and saved in
-  *imageName*. If no *x2* and *y2* coordinates are specified, then the
-  region is from the point *x1*, *y1* to the lower right corner of
-  *imageName*. *ImageName* will be resized to the new size.  All the
-  coordinates are clamped to reside within the image.  For example if *x2*
-  is "10000" and the image width is 50, the value will be clamped to 49.
+  by the coordinates *x1*, *y1*, *x2*, *y2* (where *x1*, *y1* and *x2*,
+  *y2* describe opposite corners of a crop rectangle).  *ImageName* will be
+  resized to the new size.  
+
+  All coordinates are interior to the crop rectangle.  So if *x1* is 0 and
+  *x2* is 10 the width of the image is 11 pixels. Coordinates outside the
+  image will be clamped.  For example if *x2* is "10000" and the image
+  width is 50, it will be clamped to 49.
+
+  If no *x2* and *y2* coordinates are specified, then the region is from
+  the point *x1*, *y1* to the lower right corner of *imageName*.
 
 *imageName* **crossfade** *fromImage* *toImage* ?\ *switches* ... ?
   Cross fades *toImage* into *fromImage*, saving the result in

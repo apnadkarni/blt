@@ -155,7 +155,7 @@ the command.  The operations available for *datatables* are listed below.
   using it.  The current set of tags, watches, and traces in *tableName*
   are discarded.
 
-*tableName* **column copy** *srcColumn* *destColumn* ?\ *switches* ... ?
+*tableName* **column copy** *destColumn* *srcColumn* ?\ *switches* ... ?
   Copies the values and tags from *srcColumn* into *destColumn*.
   *SrcColumn* and *destColumn* may be a column label, index, or tag, but
   may not represent more than one column.  If a column *destColumn* doesn't
@@ -176,7 +176,7 @@ the command.  The operations available for *datatables* are listed below.
 
   **-table** *srcTable*
     Copy the column *srcColumn* from the datatable *srcTable*.  By default
-    to *tableName* is also the source table.
+    *tableName* is the source table.
 
 *tableName* **column create** ?\ *switches* ... ?
   Creates a new column in *tableName*. The cells of the new column
@@ -290,12 +290,20 @@ the command.  The operations available for *datatables* are listed below.
   *labelList* argument is present, then the column labels are set from the
   list of labels.
 
-*tableName* **column move** *srcColumn* *destColumn* ?\ *numColumns*\ ?
-  Move *numColumns* columns in *tableName.  *SrcColumn* and *destColumn* may
-  be a label, index, or tag, but may not represent more than one column.
-  If a *numColumns* argument isn't specified then only 1 column is moved.
-  Moves cannot overlap.
-  
+*tableName* **column move** *destColumn* *firstColumn* *lastColumn* ?\ *switches* ... ?
+  Move one or more columns in *tableName.  *DestColumn*, *firstColumn*, and
+  *lastColumn* are columns in *tableName*.  Each may be a label, index, or
+  tag, but may not represent more than one column.  *FirstColumn and
+  *lastColumn* designate a range of columns to move.  To move one column,
+  specify *firstColumn* and *lastColumn* as the same column.  *DestColumn*
+  is the destination location where to move the columns.  It can not be in
+  the designated range of columns.  The following *switches* are available.
+
+  **-after** 
+    Specifies that the destination location is the column after *destColumn*.
+    The default is to position the columns before *destColumn*.  This allows
+    you to move columns to the end.
+
 *tableName* **column names**  ?\ *pattern* ... ?
   Returns the labels of the columns in *tableName*.  If one of *pattern*
   arguments are present, then the label of any column matching one
@@ -676,7 +684,7 @@ the command.  The operations available for *datatables* are listed below.
   **-overwrite**  
     Overwrite any rows or columns.
 
-*tableName* **row copy** *srcRow* *destRow* ?\ *switches* ... ?
+*tableName* **row copy** *destRow* *srcRow* ?\ *switches* ... ?
   Copies the values and tags from *srcRow* into *destRow*.  *SrcRow* and
   *destRow* may be a row label, index, or tag, but may not represent more
   than one row.  If a row *destRow* doesn't already exist in *tableName*,
@@ -695,7 +703,7 @@ the command.  The operations available for *datatables* are listed below.
 
   **-table** *srcTable*
     Copy the row *srcRow* from the datatable *srcTable*.  By default
-    to *tableName* is also the source table.
+    *tableName* is the source table.
 
 *tableName* **row create** ?\ *switches* ... ?
   Creates a new row in *tableName*. The cells of the new row is initially
@@ -798,12 +806,20 @@ the command.  The operations available for *datatables* are listed below.
   index, or tag, but may not represent more than one row. If a *labelList*
   argument is present, then the row labels are set from the list of labels.
 
-*tableName* **row move** *srcRow* *destRow* ?\ *numRows*\ ?
-  Move *numRows* rows in *tableName.  *SrcRow* and *destRow* may be a
-  label, index, or tag, but may not represent more than one row.  If a
-  *numRows* argument isn't specified then only 1 row is moved.  Moves
-  cannot overlap.
-  
+*tableName* **row move** *destRow* *firstRow* *lastRow* ?\ *switches* ... ?
+  Move one or more rows in *tableName.  *DestRow*, *firstRow*, and
+  *lastRow* are rows in *tableName*.  Each may be a label, index, or
+  tag, but may not represent more than one row.  *FirstRow and
+  *lastRow* designate a range of rows to move.  To move one row,
+  specify *firstRow* and *lastRow* as the same row.  *DestRow*
+  is the destination location where to move the rows.  It can not be in
+  the designated range of rows.  The following *switches* are available.
+
+  **-after** 
+    Specifies that the destination location is the row after *destRow*.
+    The default is to position the rows before *destRow*.  This allows
+    you to move rows to the end.
+
 *tableName* **row names**  ?\ *pattern* ... ?
   Returns the labels of the rows in *tableName*.  If one of *pattern*
   arguments are present, then the label of any row matching one of the
@@ -813,6 +829,11 @@ the command.  The operations available for *datatables* are listed below.
 *tableName* **row nonempty**  *rowName*
   Returns the column indices of the non-empty cells in the row.  *RowName* may
   be a label, index, or tag, but may not represent more than one row.
+
+*tableName* **row reorder**  *rowList*
+  Reorders the rows in table according to *rowList*.  *RowList* is a list
+  of row labels or indices. It must contain as many elements as there are
+  rows in the table.
 
 *tableName* **row set**  *rowName* ?\ *columnName* *value* ... ? 
   Sets values for cells in the specified row. *RowName* may be a label,
@@ -917,28 +938,38 @@ the command.  The operations available for *datatables* are listed below.
   fails, an error will be returned.
 
 *tableName* **sort** ?\ *switches* ... ?
-  Sorts the table.  Column are compared in order. The type comparison is
-  determined from the column type.  But you can use **-ascii** or
-  **-dictionary** switch to sort the rows.  If the **-list**,
-  **-nonempty**, **-unique**, or **-values** switches are present, a list
-  of the sorted rows is returned instead of rearranging the rows in the
-  table. *Switches* can be one of the following:
+  Sorts the rows of the table.  Each column is compared in order.  
+  By default, this command returns the indices of the sorted rows.  You
+  can use the **-labels** or **-values** switches to return the row labels
+  or values instead.
+
+  *Switches* can be one of the following:
+
+  **-alter** 
+    Indicates to reorder the rows in the table.  By default, the indices of
+    the sorted rows is returned, but the rows are not reordered.  This
+    switch changes the order of the table.  This switch is can not be used
+    with the **-nonempty**, **-unique**, or **-rows** switches.
 
   **-ascii**
-    Uses string comparison with Unicode code-point collation order (the name
-    is for backward-compatibility reasons.)  The string representation of
-    the values are compared.   
+    Uses string comparison with Unicode code-point collation order (the
+    name is for backward-compatibility reasons).  The string representation
+    of the values are compared.  By default, the column type is used to
+    determine how to compare values.
+
+  **-byfrequency** 
+    Sorts rows according to the frequency of their values.  
 
   **-columns** *columnList*
-    Compares the cells in order of the columns in *columnList*.
+    Specifies the column order to compare the rows in the table.
     *ColumnList* is a list of column specifiers. Each specifier may be a
     column label, index, or tag and may refer to multiple columns (example:
-    "all"). By default all columns are compared in their order in the
-    datatable.
+    "all").  The extra columns act as tiebreakers.  If two rows in a column
+    are equal, then the next column in the list is compared.
 
   **-decreasing** 
-    Sorts rows highest to lowest. By default rows are sorted lowest to
-    highest.
+    Sorts rows highest value to lowest value. By default rows are sorted
+    lowest to highest.
 
   **-dictionary** 
     Uses dictionary-style comparison. This is the same as **-ascii**
@@ -946,40 +977,36 @@ the command.  The operations available for *datatables* are listed below.
     strings contain embedded numbers, the numbers compare as integers, not
     characters.  For example, in **-dictionary** mode, "bigBoy" sorts
     between "bigbang" and "bigboy", and "x10y" sorts between "x9y" and
-    "x11y".
+    "x11y". By default, the column type is used to determine how to
+    compare values.
 
-  **-frequency** 
-    Sorts rows according to the frequency of their values.  The rows
-    of *tableName* will not be rearranged.  A list of the row
-    indices will be returned instead.
+  **-indices** 
+    Indicates to return the index for each sorted row.  This is the
+    default.
 
-  **-list** 
-    Returns a list of the sorted rows instead of rearranging the rows
-    in the table.  The rows of *tableName* will not be
-    rearranged.  This switch is implied when the **-frequency**,
-    **-nonempty**, **-unique**, or **-values** switches are used.
+  **-labels** 
+    Indicates to return the labels for each sorted row.
 
   **-nocase** 
     Ignores case when comparing values.  This only has affect when the
-    **-ascii** switch is present.
+    **-ascii** switch is used.
 
   **-nonempty** 
-    Sorts only non-empty cells. The rows of *tableName* will not be
-    rearranged.  A list of the row indices will be returned instead.
+    Sort only non-empty cells.  Empty cells in the primary sorting column
+    are ignored.  The switch can not be used with the **-alter** switch.
 
   **-rows** *rowList*
-    Consider only the rows in *rowList*.  *RowList* is a list of
+    Sort only the rows in *rowList*.  *RowList* is a list of
     of row labels, indices, or tags that may refer to multiple rows.
-    The list of rows will be returned.
+    The switch can not be used with the **-alter** switch.
 
   **-unique** 
-    Returns a list of the unique rows.  The rows of *tableName* will not be
-    rearranged.  A list of the row indices will be returned instead.
+    Returns only the unique rows.  The switch can not be used with the
+    **-alter** switch.
 
   **-values** 
-    Returns the row values instead of their indices.  The rows of
-    *tableName* will not be rearranged.  A list of the row values
-    will be returned instead.
+    Indicates to return the sorted values for each row,column,
+    where column is the primary sorting key. 
 
 *tableName* **trace cell** *rowName* *columnName* *ops* *cmdPrefix*
   Registers a command to be invoked when the cell (designated by *rowName*

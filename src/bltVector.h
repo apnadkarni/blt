@@ -137,7 +137,7 @@ BLT_EXTERN int Blt_DeleteVectorByName(Tcl_Interp *interp, const char *vecName);
 
 BLT_EXTERN int Blt_DeleteVector(Blt_Vector *vecPtr);
 
-BLT_EXTERN int Blt_ExprVector(Tcl_Interp *interp, char *expr, 
+BLT_EXTERN int Blt_ExprVector(Tcl_Interp *interp, char *expr,
         Blt_Vector *vecPtr);
 
 BLT_EXTERN void Blt_InstallIndexProc(Tcl_Interp *interp, const char *indexName,

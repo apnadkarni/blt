@@ -879,11 +879,11 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
         pixelPtr->u32 = value;
         return TCL_OK;
     } else if (string[0] == '#') {
-        char fmt[16];
+        char fmt[200];
         int n, r, g, b;
 
         n = strlen(string + 1);
-        if ((n > 12) && (n < 3) && ((n % 3) != 0)) {
+        if ((n > 12) || (n < 3) || ((n % 3) != 0)) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad color specification \"", string,
                              "\"", (char *)NULL);
@@ -955,10 +955,10 @@ Blt_NameOfPixel(Blt_Pixel *pixelPtr)
     static char string[20];
 
     if (pixelPtr->Alpha == 0xFF) {
-        Blt_FormatString(string, 20, "#%02x%02x%02x", pixelPtr->Red,
+        Blt_FmtString(string, 20, "#%02x%02x%02x", pixelPtr->Red,
                          pixelPtr->Green, pixelPtr->Blue);
     } else {
-        Blt_FormatString(string, 20, "0x%02x%02x%02x%02x", pixelPtr->Alpha,
+        Blt_FmtString(string, 20, "0x%02x%02x%02x%02x", pixelPtr->Alpha,
                          pixelPtr->Red, pixelPtr->Green, pixelPtr->Blue);
     }
     return string;

@@ -269,7 +269,7 @@ struct _Tga {
     int imageType;                      /* Image type code */
     int cmOffset;                       /* Index of first color map
                                            entry. */
-    int cmNumEntries;                   /* # of color map entries. */
+    size_t cmNumEntries;                /* # of color map entries. */
     int cmBitsPerPixel;                 /* Bits per pixel of color map
                                          * entries. */
     int xOrigin;                        /* X coordinate of the lower left
@@ -780,7 +780,6 @@ TgaSetInfo(Tcl_Interp *interp, Tga *tgaPtr, Tcl_Obj *varNameObjPtr)
 {
     Tcl_Obj *listObjPtr;
     TgaExtension *extPtr = &tgaPtr->ext;
-    char string[200];
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     /* Filename */
@@ -818,12 +817,16 @@ TgaSetInfo(Tcl_Interp *interp, Tga *tgaPtr, Tcl_Obj *varNameObjPtr)
         if ((extPtr->mon == 0) && (extPtr->day == 0) && (extPtr->year == 0)) {
             TgaAddInt(interp, listObjPtr, "date", 0);
         } else {
+            char string[200];
+
             sprintf(string, "%d/%d/%d", extPtr->mon, extPtr->day,extPtr->year);
             TgaAddString(interp, listObjPtr, "date", string);
         }
         if ((extPtr->sec == 0) && (extPtr->min == 0) && (extPtr->hour == 0)) {
             TgaAddInt(interp, listObjPtr, "time", 0);
         } else {
+            char string[200];
+
             sprintf(string, "%02d:%02d:%02d", extPtr->hour, extPtr->min, 
                 extPtr->sec);
             TgaAddString(interp, listObjPtr, "time", string);
@@ -834,6 +837,8 @@ TgaSetInfo(Tcl_Interp *interp, Tga *tgaPtr, Tcl_Obj *varNameObjPtr)
             (extPtr->jobSec == 0)) {
             TgaAddInt(interp, listObjPtr, "jobTime", 0);
         } else {
+            char string[200];
+
             sprintf(string, "%02d:%02d:%02d", extPtr->jobHour, extPtr->jobMin, 
                     extPtr->jobSec);
             TgaAddString(interp, listObjPtr, "jobTime", string);
@@ -1262,18 +1267,16 @@ TgaPut8BitGreyscalePixelProc(Tga *tgaPtr, Blt_Pixel *sp)
 static void
 TgaPut8BitPseudoColorPixelProc(Tga *tgaPtr, Blt_Pixel *sp)
 {
-    unsigned long pixel;
-    unsigned long index;
+    size_t index;
     Blt_HashEntry *hPtr;
 
-    pixel = (unsigned long)sp->u32;
-    hPtr = Blt_FindHashEntry(&tgaPtr->colorTable, (char *)pixel);
+    hPtr = Blt_FindHashEntry(&tgaPtr->colorTable, (char *)(size_t)sp->u32);
     if (hPtr == NULL) {
-        TgaError(tgaPtr, "can't find 8-bit pixel %lx in colortable", pixel);
+        TgaError(tgaPtr, "can't find 8-bit pixel %lx in colortable", sp->u32);
     }
-    index = (unsigned long)Blt_GetHashValue(hPtr);
+    index = (size_t)Blt_GetHashValue(hPtr);
     if (index >= tgaPtr->cmNumEntries) {
-        TgaError(tgaPtr, "invalid index %d for 8-bit pixel %lu", index, pixel);
+        TgaError(tgaPtr, "invalid index %d for 8-bit pixel %lu", index,sp->u32);
     }
     Blt_DBuffer_AppendByte(tgaPtr->dbuffer, index);
 }
@@ -1562,17 +1565,15 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         } else {
             Blt_HashEntry *hPtr;
             Blt_HashSearch iter;
-            unsigned long i;
+            size_t i;
 
             tga.bitsPerPixel = 8;
             tga.imageType = TGA_TYPE_PSEUDOCOLOR;
             for (i = 0, hPtr = Blt_FirstHashEntry(&tga.colorTable, &iter); 
                  hPtr != NULL; hPtr = Blt_NextHashEntry(&iter), i++) {
-                unsigned int pixel;
-
                 Blt_SetHashValue(hPtr, i);
-                pixel = (unsigned long)Blt_GetHashKey(&tga.colorTable, hPtr);
-                tga.palette[i].u32 = (unsigned int)pixel;
+                tga.palette[i].u32 =
+                    (size_t)Blt_GetHashKey(&tga.colorTable, hPtr);
             } 
             tga.colorMapExists = TRUE;
             tga.cmNumEntries = i;
@@ -1624,18 +1625,17 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                 tga.cmNumEntries = 0;
                 tga.cmBitsPerPixel = 0;
             } else {
-                int i;
+                size_t i;
                 Blt_HashEntry *hPtr;
                 Blt_HashSearch iter;
                 
                 /* Add indices to the colortable.  */
                 for (i = 0, hPtr = Blt_FirstHashEntry(&tga.colorTable, &iter); 
                      hPtr != NULL; hPtr = Blt_NextHashEntry(&iter), i++) {
-                    unsigned long key;
                     
-                    Blt_SetHashValue(hPtr, (unsigned long)i);
-                    key = (unsigned long)Blt_GetHashKey(&tga.colorTable, hPtr);
-                    tga.palette[i].u32 = (unsigned int)key;
+                    Blt_SetHashValue(hPtr, i);
+                    tga.palette[i].u32 =
+                        (size_t)Blt_GetHashKey(&tga.colorTable, hPtr);
                 } 
                 tga.imageType = TGA_TYPE_PSEUDOCOLOR;
                 tga.colorMapExists = TRUE;

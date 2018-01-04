@@ -278,7 +278,7 @@ static Tk_ConfigSpec configSpecs[] =
     {TK_CONFIG_ANCHOR, (char *)"-anchor", (char *)NULL, (char *)NULL,
         DEF_ANCHOR, Blt_Offset(EpsItem, anchor),
         TK_CONFIG_DONT_SET_DEFAULT},
-    {TK_CONFIG_SYNONYM, (char *)"-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 0},
+    {TK_CONFIG_SYNONYM, (char *)"-bd", "borderWidth"},
     {TK_CONFIG_CUSTOM, (char *)"-borderwidth", "borderWidth", (char *)NULL,
         DEF_BORDERWIDTH, Blt_Offset(EpsItem, borderWidth),
         TK_CONFIG_DONT_SET_DEFAULT, &bltDistanceOption},
@@ -398,6 +398,27 @@ FontToString(
     string = Blt_Font_Name(font);
     *freeProcPtr = (Tcl_FreeProc *)TCL_STATIC;
     return (char *)string;
+}
+
+static int 
+OptionMatches(int argc, char **argv, ...)
+{
+    va_list args;
+    char *option;
+
+    va_start(args, argv);
+    while ((option = va_arg(args, char *)) != NULL) {
+        int i;
+
+        for (i = 0; i < argc; i++) {
+            if (Tcl_StringMatch(argv[i], option)) {
+                va_end(args);
+                return 1;
+            }
+        }
+    }
+    va_end(args);
+    return 0;
 }
 
 static char *
@@ -733,10 +754,12 @@ ReadPostScript(Tcl_Interp *interp, EpsItem *itemPtr)
             } else if ((field[0] == 'T') &&
                 (strncmp(field, "Title:", 6) == 0)) {
                 if (dscTitle == NULL) {
-                    char *lp, *rp;
+                    char *lp;
 
                     lp = strchr(field + 6, '(');
                     if (lp != NULL) {
+                        char *rp;
+
                         rp = strrchr(field + 6, ')');
                         if (rp != NULL) {
                             *rp = '\0';
@@ -1160,7 +1183,7 @@ ConfigureProc(
      * Check for a "-image" option specifying an image to be displayed
      * representing the EPS canvas item.
      */
-    if (Blt_OldConfigModified(configSpecs, "-image", (char *)NULL)) {
+    if (OptionMatches(argc, argv, "-image", (char *)NULL)) {
         if (itemPtr->preview != NULL) {
             Tk_FreeImage(itemPtr->preview);     /* Release old Tk image */
             if ((!itemPtr->origFromPicture) && (itemPtr->original != NULL)) {
@@ -1206,7 +1229,7 @@ ConfigureProc(
             }
         }
     }
-    if (Blt_OldConfigModified(configSpecs, "-file", (char *)NULL)) {
+    if (OptionMatches(argc, argv, "-file", (char *)NULL)) {
         CloseEpsFile(itemPtr);
         if ((!itemPtr->origFromPicture) && (itemPtr->original != NULL)) {
             Blt_FreePicture(itemPtr->original);
@@ -1242,7 +1265,7 @@ ConfigureProc(
         itemPtr->height = height;
     }
 
-    if (Blt_OldConfigModified(configSpecs, "-quick", (char *)NULL)) {
+    if (OptionMatches(argc, argv, "-quick", (char *)NULL)) {
         itemPtr->lastWidth = itemPtr->lastHeight = 0;
     }
     /* Fill color GC */
@@ -1526,7 +1549,7 @@ DisplayProc(
         /* Translate the title to an anchor position within the EPS item */
         itemPtr->titleStyle.font = itemPtr->font;
         textPtr = Blt_Ts_CreateLayout(title, -1, &itemPtr->titleStyle);
-        Blt_GetBoundingBox(textPtr->width, textPtr->height, 
+        Blt_GetBoundingBox((double)textPtr->width, (double)textPtr->height, 
              itemPtr->titleStyle.angle, &rw, &rh, (Point2d *)NULL);
         dw = (int)ceil(rw);
         dh = (int)ceil(rh);
@@ -1856,7 +1879,7 @@ static Tk_ItemType itemType = {
 
 /*ARGSUSED*/
 void
-Blt_RegisterEpsCanvasItem(void)
+Blt_RegisterCanvasEpsItem(void)
 {
     Tk_CreateItemType(&itemType);
     /* Initialize custom canvas option routines. */

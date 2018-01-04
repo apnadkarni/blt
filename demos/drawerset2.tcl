@@ -18,7 +18,7 @@ blt::barchart .ds.bot2 -bg yellow -height 300 -width 300
 .ds add left \
     -side left \
     -window .ds.left \
-    -resize none \
+    -resize no \
     -fill none \
     -anchor nw \
     -handlecolor pink3  \

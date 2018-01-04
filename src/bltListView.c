@@ -349,11 +349,11 @@ static Blt_ConfigSpec styleSpecs[] =
     {BLT_CONFIG_RELIEF, "-activerelief", (char *)NULL, (char *)NULL, 
         DEF_STYLE_ACTIVE_RELIEF, Blt_Offset(Style, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-background", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_BACKGROUND, "-background", "background", (char *)NULL,
         DEF_STYLE_BG, Blt_Offset(Style, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"}, 
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", (char *)NULL,
         DEF_STYLE_BORDERWIDTH, Blt_Offset(Style, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", (char *)NULL, (char *)NULL, 
@@ -362,10 +362,10 @@ static Blt_ConfigSpec styleSpecs[] =
         DEF_STYLE_DISABLED_FG, Blt_Offset(Style, textDisabledColor), 0},
     {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_EDITOR, 
         Blt_Offset(Style, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
         Blt_Offset(Style, textFont), 0},
-    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
+    {BLT_CONFIG_COLOR, "-foreground", "forground", (char *)NULL, DEF_STYLE_FG, 
         Blt_Offset(Style, textNormalColor), 0},
     {BLT_CONFIG_RELIEF, "-relief", (char *)NULL, (char *)NULL, 
         DEF_STYLE_RELIEF, Blt_Offset(Style, relief), 
@@ -621,8 +621,8 @@ static Blt_ConfigSpec listViewSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_STYLE_BG, Blt_Offset(ListView, defStyle.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ListView, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -640,7 +640,7 @@ static Blt_ConfigSpec listViewSpecs[] =
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection",
         "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(ListView, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
         DEF_HIGHLIGHT_COLOR, Blt_Offset(ListView, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_STYLE_FONT, 
@@ -1721,6 +1721,28 @@ NewItem(ListView *viewPtr)
     return itemPtr;
 }
 
+#ifdef notdef
+
+static INLINE Item *
+FindItemByText(ListView *viewPtr, const char *text)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&viewPtr->textTable, text);
+    if (hPtr != NULL) {
+        Blt_HashTable *tablePtr;
+        Blt_HashEntry *h2Ptr;
+        Blt_HashSearch iter;
+
+        tablePtr = Blt_GetHashValue(hPtr);
+        h2Ptr = Blt_FirstHashEntry(tablePtr, &iter);
+        if (h2Ptr != NULL) {
+            return Blt_GetHashValue(h2Ptr);
+        }
+    }
+    return NULL;
+}
+
 static INLINE Item *
 FindItemByIndex(ListView *viewPtr, long index)
 {
@@ -1757,6 +1779,7 @@ EndItem(ListView *viewPtr)
     }
     return NULL;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2097,7 +2120,7 @@ ComputeRowLayout(ListView *viewPtr)
 static void
 ComputeColumnsLayout(ListView *viewPtr)
 {
-    int x, y, w, h;
+    int x, w, h;
     int reqWidth, reqHeight;
     int maxWidth, maxHeight;
     int winHeight;
@@ -2139,7 +2162,7 @@ ComputeColumnsLayout(ListView *viewPtr)
     x = 0;
     itemPtr = FirstItem(viewPtr, HIDDEN); 
     while (itemPtr != NULL) {
-        int i;
+        int i, y;
         int colWidth;
         Item *p;
         
@@ -2307,7 +2330,7 @@ ComputeIconsLayout(ListView *viewPtr)
 static void
 ComputeRowsLayout(ListView *viewPtr)
 {
-    int x, y, w, h;
+    int y, w, h;
     int reqWidth, reqHeight;
     int maxWidth, maxHeight;
     int winWidth;
@@ -2349,7 +2372,7 @@ ComputeRowsLayout(ListView *viewPtr)
     y = 0;
     itemPtr = FirstItem(viewPtr, HIDDEN); 
     while (itemPtr != NULL) {
-        int i;
+        int i, x;
         int rowHeight;
         Item *p;
         
@@ -2635,38 +2658,42 @@ GetStyleFromObj(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Item *itemPtr, Tcl_Obj *objPtr)
 {
     ListView *viewPtr;
-    long dummy;
-    
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    const char *string;
+    char c;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if (((c == 'a') && (strcmp(string, "all") == 0)) ||
+        ((c == 'e') && (strcmp(string, "end") == 0))) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tags. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     viewPtr = itemPtr->viewPtr;
-    Blt_Tags_AddItemToTag(&viewPtr->tags, tagName, itemPtr);
+    Blt_Tags_AddItemToTag(&viewPtr->tags, string, itemPtr);
     return TCL_OK;
 }
 
@@ -2744,25 +2771,6 @@ DestroyIcons(ListView *viewPtr)
     Blt_DeleteHashTable(&viewPtr->iconTable);
 }
 
-static INLINE Item *
-FindItemByText(ListView *viewPtr, const char *text)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->textTable, text);
-    if (hPtr != NULL) {
-        Blt_HashTable *tablePtr;
-        Blt_HashEntry *h2Ptr;
-        Blt_HashSearch iter;
-
-        tablePtr = Blt_GetHashValue(hPtr);
-        h2Ptr = Blt_FirstHashEntry(tablePtr, &iter);
-        if (h2Ptr != NULL) {
-            return Blt_GetHashValue(h2Ptr);
-        }
-    }
-    return NULL;
-}
 
 static char *
 NewText(Item *itemPtr, const char *text)
@@ -2850,12 +2858,12 @@ MoveItem(ListView *viewPtr, Item *itemPtr, int dir, Item *wherePtr)
 static Item *
 NextTaggedItem(ItemIterator *iterPtr)
 {
-    Item *itemPtr;
-
     switch (iterPtr->type) {
     case ITER_TAG:
     case ITER_ALL:
         if (iterPtr->link != NULL) {
+            Item *itemPtr;
+
             itemPtr = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return itemPtr;
@@ -2982,11 +2990,11 @@ GetItemByIndex(Tcl_Interp *interp, ListView *viewPtr, const char *string,
 {
     Item *itemPtr;
     char c;
-    long pos;
+    int64_t pos;
 
     itemPtr = NULL;
     c = string[0];
-    if ((isdigit(c)) && (Blt_GetLong(NULL, string, &pos) == TCL_OK)) {
+    if ((isdigit(c)) && (Blt_GetInt64(NULL, string, &pos) == TCL_OK)) {
         Blt_ChainLink link;
 
         link = Blt_Chain_GetNthLink(viewPtr->items, pos);
@@ -3271,7 +3279,7 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
     }
     chain = Blt_Chain_Create();
     for (row = blt_table_first_row(table); row != NULL; 
-         row = blt_table_next_row(table, row)) {
+         row = blt_table_next_row(row)) {
         Item *itemPtr;
         Blt_HashEntry *hPtr;
 
@@ -3286,7 +3294,7 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
         } else {
             itemPtr = Blt_GetHashValue(hPtr);
         }
-        itemPtr->index = blt_table_row_index(row) - 1;
+        itemPtr->index = blt_table_row_index(table, row) - 1;
         /* Move the item to the new list. */
         Blt_Chain_UnlinkLink(viewPtr->items, itemPtr->link);
         Blt_Chain_AppendLink(chain, itemPtr->link);
@@ -3430,11 +3438,11 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Item *itemPtr = (Item *)widgRec;
     Style **stylePtrPtr = (Style **)(widgRec + offset);
     Style *stylePtr;
-    char *string;
-
-    string = Tcl_GetString(objPtr);
+    int length;
+    
+    Tcl_GetStringFromObj(objPtr, &length);
     viewPtr = itemPtr->viewPtr;
-    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+    if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
         stylePtr = NULL;
     } else if (GetStyleFromObj(interp, viewPtr, objPtr, &stylePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3443,7 +3451,9 @@ ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if ((*stylePtrPtr != NULL) && (*stylePtrPtr != &viewPtr->defStyle)) {
         DestroyStyle(*stylePtrPtr);
     }
-    stylePtr->refCount++;
+    if (stylePtr != NULL) {
+        stylePtr->refCount++;
+    }
     *stylePtrPtr = stylePtr;
     return TCL_OK;
 }
@@ -3600,7 +3610,7 @@ ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, itemPtr, Tcl_GetString(objv[i]));
+        SetTag(interp, itemPtr, objv[i]);
     }
     return TCL_OK;
 }
@@ -5898,23 +5908,24 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
-    const char *tag;
-    long index;
-
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &index) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
     if (objc == 4) {
         /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&viewPtr->tags, tag);
+        Blt_Tags_AddTag(&viewPtr->tags, string);
     } else {
         int i;
 
@@ -5927,7 +5938,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
                  itemPtr = NextTaggedItem(&iter)) {
-                Blt_Tags_AddItemToTag(&viewPtr->tags, tag, itemPtr);
+                Blt_Tags_AddItemToTag(&viewPtr->tags, string, itemPtr);
             }
         }
     }
@@ -5949,18 +5960,19 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
-    const char *tag;
-    long index;
+    const char *string;
+    char c;
     int i;
 
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &index) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
@@ -5973,7 +5985,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
              itemPtr = NextTaggedItem(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&viewPtr->tags, tag, itemPtr);
+            Blt_Tags_RemoveItemFromTag(&viewPtr->tags, string, itemPtr);
         }
     }
     return TCL_OK;
@@ -6041,16 +6053,15 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 3; i < objc; i++) {
-        const char *tag;
-        long index;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_Tags_ForgetTag(&viewPtr->tags, tag);
+        Blt_Tags_ForgetTag(&viewPtr->tags, string);
     }
     return TCL_OK;
 }
@@ -6228,21 +6239,22 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&itemTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        long index;
-        const char *tag;
+        const char *string;
+        char c;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
         }
-        if (strcmp(tag, "all") == 0) {
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
             break;
         } else {
             Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&viewPtr->tags, tag);
+            chain = Blt_Tags_GetItemList(&viewPtr->tags, string);
             if (chain != NULL) {
                 Blt_ChainLink link;
 
@@ -6257,7 +6269,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             continue;
         }
-        Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
+        Tcl_AppendResult(interp, "can't find a tag \"", string, "\"",
                          (char *)NULL);
         goto error;
     }
@@ -6311,24 +6323,25 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        const char *tag;
+        const char *string;
+        char c;
         Item *itemPtr;
-        long index;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &index) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                              (char *)NULL);     
             return TCL_ERROR;
         }
         for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
              itemPtr = NextTaggedItem(&iter)) {
-            Blt_Tags_AddItemToTag(&viewPtr->tags, tag, itemPtr);
+            Blt_Tags_AddItemToTag(&viewPtr->tags, string, itemPtr);
         }    
     }
     return TCL_OK;
@@ -6761,8 +6774,8 @@ ListViewCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Tcl_GlobalEval(interp, 
                 "source [file join $blt_library bltListView.tcl]") != TCL_OK) {
             char info[200];
-            Blt_FormatString(info, 200,
-                             "\n    (while loading bindings for %.50s)", 
+            Blt_FmtString(info, 200,
+                             "\n\t(while loading bindings for %.50s)", 
                     Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             return TCL_ERROR;
@@ -6901,7 +6914,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
                 x + stylePtr->borderWidth + itemPtr->textX, 
                 y + stylePtr->borderWidth +  itemPtr->textY);
         if (itemPtr == viewPtr->activePtr) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable,
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable,
                 itemPtr->layoutPtr, &ts,
                 x + stylePtr->borderWidth + itemPtr->textX, 
                 y + stylePtr->borderWidth + itemPtr->textY);

@@ -39,6 +39,10 @@
 #define BUILD_BLT_TCL_PROCS 1
 #include <bltInt.h>
 
+#ifdef HAVE_INTTYPES_H
+  #include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
+
 #ifdef HAVE_STDLIB_H
   #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
@@ -63,9 +67,9 @@
 /*
  * Row and Column Information Structures
  *
- *      Map:    Array of pointers to headers, representing the logical 
- *              view of row/column.  
- * 
+ *      Row map:    Array of pointers to rows, representing the logical 
+ *                  view of row/column.  
+ *      Row list:   Actual rows
  *      x = pointer to row/column header.
  *      y = row/column header.
  *              label
@@ -131,6 +135,7 @@
 
 #define TABLE_ALLOC_MAX_DOUBLE_SIZE     (1<<16)
 #define TABLE_ALLOC_MAX_CHUNK           (1<<16)
+#define TABLE_ALLOC_INIT_SIZE           (32)
 
 #define TABLE_KEYS_DIRTY                (1<<0)
 #define TABLE_KEYS_UNIQUE               (1<<1)
@@ -138,13 +143,15 @@
 /* Column flag. */
 #define TABLE_COLUMN_PRIMARY_KEY        (1<<0)
 
+#define REINDEX                         (1<<21)
+
 typedef struct _BLT_TABLE_VALUE Value;
 
 typedef struct {
-    long numRows, numCols;
-    long mtime, ctime;
+    unsigned long numRows, numCols;
+    int64_t mtime, ctime;
     const char *fileName;
-    long numLines;
+    size_t numLines;
     unsigned int flags;
     int argc;
     const char **argv;
@@ -196,87 +203,80 @@ typedef struct {
     Tcl_Interp *interp;
 } InterpData;
 
-typedef struct _BLT_TABLE_HEADER Header;
 typedef struct _BLT_TABLE_ROW Row;
 typedef struct _BLT_TABLE_COLUMN Column;
 typedef struct _BLT_TABLE_CORE TableObject;
-typedef struct _BLT_TABLE_ROWCOLUMN RowColumn;
+typedef struct _BLT_TABLE_ROWS Rows;
+typedef struct _BLT_TABLE_COLUMNS Columns;
 
 typedef struct {
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN column;
 } RowColumnKey;
 
-static BLT_TABLE_ROWCOLUMN_CLASS rowClass = { 
-    "row", sizeof(struct _BLT_TABLE_ROW)
-};
-
-static BLT_TABLE_ROWCOLUMN_CLASS columnClass = { 
-    "column", sizeof(struct _BLT_TABLE_COLUMN) 
-};
-
 static Tcl_InterpDeleteProc TableInterpDeleteProc;
 static void DestroyClient(Table *tablePtr);
 static void NotifyClients(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
 
 static void
-FreeRowColumn(RowColumn *rcPtr)
-{
-    Header **hpp, **hend;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
-
-    for (hPtr = Blt_FirstHashEntry(&rcPtr->labelTable, &cursor); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&cursor)) {
-        Blt_HashTable *tablePtr;
-        
-        tablePtr = Blt_GetHashValue(hPtr);
-        Blt_DeleteHashTable(tablePtr);
-        Blt_Free(tablePtr);
-    }
-    Blt_DeleteHashTable(&rcPtr->labelTable);
-    Blt_Chain_Destroy(rcPtr->freeList);
-
-    for (hpp = rcPtr->map, hend = hpp + rcPtr->numUsed; hpp < hend; hpp++) {
-        Blt_Pool_FreeItem(rcPtr->headerPool, *hpp);
-    }
-    Blt_Pool_Destroy(rcPtr->headerPool);
-    Blt_Free(rcPtr->map);
-}
-
-static void
-UnsetLabel(RowColumn *rcPtr, Header *headerPtr)
+UnsetRowLabel(Rows *rowsPtr, Row *rowPtr)
 {
     Blt_HashEntry *hPtr;
 
-    if (headerPtr->label == NULL) {
-        return;
-    }
-    hPtr = Blt_FindHashEntry(&rcPtr->labelTable, headerPtr->label);
+    assert(rowPtr->label != NULL);
+    hPtr = Blt_FindHashEntry(&rowsPtr->labelTable, rowPtr->label);
+    assert(hPtr != NULL);
     if (hPtr != NULL) {
         Blt_HashTable *tablePtr;
         Blt_HashEntry *hPtr2;
 
         tablePtr = Blt_GetHashValue(hPtr);
-        hPtr2 = Blt_FindHashEntry(tablePtr, (char *)headerPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, rowPtr);
         if (hPtr2 != NULL) {
             Blt_DeleteHashEntry(tablePtr, hPtr2);
         }
         if (tablePtr->numEntries == 0) {
-            Blt_DeleteHashEntry(&rcPtr->labelTable, hPtr);
+            Blt_DeleteHashEntry(&rowsPtr->labelTable, hPtr);
             Blt_DeleteHashTable(tablePtr);
             Blt_Free(tablePtr);
         }
     }   
-    headerPtr->label = NULL;
+    rowPtr->label = NULL;
+}
+
+static void
+UnsetColumnLabel(Columns *columnsPtr, Column *colPtr)
+{
+    Blt_HashEntry *hPtr;
+
+    if (colPtr->label == NULL) {
+        return;
+    }
+    hPtr = Blt_FindHashEntry(&columnsPtr->labelTable, colPtr->label);
+    if (hPtr != NULL) {
+        Blt_HashTable *tablePtr;
+        Blt_HashEntry *hPtr2;
+
+        tablePtr = Blt_GetHashValue(hPtr);
+        hPtr2 = Blt_FindHashEntry(tablePtr, colPtr);
+        if (hPtr2 != NULL) {
+            Blt_DeleteHashEntry(tablePtr, hPtr2);
+        }
+        if (tablePtr->numEntries == 0) {
+            Blt_DeleteHashEntry(&columnsPtr->labelTable, hPtr);
+            Blt_DeleteHashTable(tablePtr);
+            Blt_Free(tablePtr);
+        }
+    }   
+    colPtr->label = NULL;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * SetLabel --
+ * SetRowLabel --
  *
- *      Changes the label for the row or column.  Labels aren't necessarily
+ *      Changes the label for the row.  Labels aren't necessarily
  *      unique. It's not enforced.  The rationale is that it is convenient
  *      to be able to add rows/columns to a table, and then change the
  *      labels.  For example, when importing table data from a file, you
@@ -292,20 +292,20 @@ UnsetLabel(RowColumn *rcPtr, Header *headerPtr)
  * -------------------------------------------------------------------------- 
  */
 static void
-SetLabel(RowColumn *rcPtr, Header *headerPtr, const char *newLabel)
+SetRowLabel(Rows *rowsPtr, Row *rowPtr, const char *newLabel)
 {
-    Blt_HashEntry *hPtr;
-    int isNew;
+    Blt_HashEntry *hPtr, *hPtr2;
     Blt_HashTable *tablePtr;            /* Secondary table. */
+    int isNew;
 
-    if (headerPtr->label != NULL) {
-        UnsetLabel(rcPtr, headerPtr);
+    if (rowPtr->label != NULL) {
+        UnsetRowLabel(rowsPtr, rowPtr);
     }
     if (newLabel == NULL) {
         return;
     }
     /* Check the primary label table for the bucket.  */
-    hPtr = Blt_CreateHashEntry(&rcPtr->labelTable, newLabel, &isNew);
+    hPtr = Blt_CreateHashEntry(&rowsPtr->labelTable, newLabel, &isNew);
     if (isNew) {
         tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
         Blt_InitHashTable(tablePtr, BLT_ONE_WORD_KEYS);
@@ -314,16 +314,71 @@ SetLabel(RowColumn *rcPtr, Header *headerPtr, const char *newLabel)
         tablePtr = Blt_GetHashValue(hPtr);
     }
     /* Save the label as the hash entry key.  */
-    headerPtr->label = Blt_GetHashKey(&rcPtr->labelTable, hPtr);
-    /* Now look the header in the secondary table. */
-    hPtr = Blt_CreateHashEntry(tablePtr, (char *)headerPtr, &isNew);
+    rowPtr->label = Blt_GetHashKey(&rowsPtr->labelTable, hPtr);
+    /* Now look for the row in the secondary table. */
+    hPtr2 = Blt_CreateHashEntry(tablePtr, rowPtr, &isNew);
     if (!isNew) {
         return;                         /* It's already there. */
     }
     /* Add it to the secondary table. */
-    Blt_SetHashValue(hPtr, headerPtr);
+    Blt_SetHashValue(hPtr2, rowPtr);
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetColumnLabel --
+ *
+ *      Changes the label for the column.  Labels aren't necessarily
+ *      unique. It's not enforced.  The rationale is that it is convenient
+ *      to be able to add rows/columns to a table, and then change the
+ *      labels.  For example, when importing table data from a file, you
+ *      can't apriori change the labels.  We could add #n to make the label
+ *      unique, but detecting and changing them is a pain.
+ *      
+ *
+ * Results:
+ *      Returns a pointer to the new object is successful, NULL otherwise.
+ *      If a table object can't be generated, interp->result will contain
+ *      an error message.
+ *
+ * -------------------------------------------------------------------------- 
+ */
+static void
+SetColumnLabel(Columns *columnsPtr, Column *colPtr, const char *newLabel)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashTable *tablePtr;            /* Secondary table. */
+    int isNew;
+
+    if (colPtr->label != NULL) {
+        UnsetColumnLabel(columnsPtr, colPtr);
+    }
+    if (newLabel == NULL) {
+        return;
+    }
+    /* Check the primary label table for the bucket.  */
+    hPtr = Blt_CreateHashEntry(&columnsPtr->labelTable, newLabel, &isNew);
+    if (isNew) {
+        tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
+        Blt_InitHashTable(tablePtr, BLT_ONE_WORD_KEYS);
+        Blt_SetHashValue(hPtr, tablePtr);
+    } else {
+        tablePtr = Blt_GetHashValue(hPtr);
+    }
+    /* Save the label as the hash entry key.  */
+    colPtr->label = Blt_GetHashKey(&columnsPtr->labelTable, hPtr);
+    /* Now look the column in the secondary table. */
+    hPtr = Blt_CreateHashEntry(tablePtr, colPtr, &isNew);
+    if (!isNew) {
+        return;                         /* It's already there. */
+    }
+    /* Add it to the secondary table. */
+    Blt_SetHashValue(hPtr, colPtr);
+}
+
+#ifdef notdef
 static int
 CheckLabel(Tcl_Interp *interp, RowColumn *rcPtr, const char *label)
 {
@@ -341,7 +396,7 @@ CheckLabel(Tcl_Interp *interp, RowColumn *rcPtr, const char *label)
     if (isdigit(UCHAR(c))) {
         long index;
 
-        if (Blt_GetLong(NULL, (char *)label, &index) == TCL_OK) {
+        if (Blt_GetLong(NULL, (const char *)label, &index) == TCL_OK) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, rcPtr->classPtr->name, " label \"", 
                         label, "\" can't be a number.", (char *)NULL);
@@ -351,54 +406,56 @@ CheckLabel(Tcl_Interp *interp, RowColumn *rcPtr, const char *label)
     }
     return TCL_OK;
 }
-
-static int
-SetHeaderLabel(Tcl_Interp *interp, RowColumn *rcPtr, Header *headerPtr, 
-               const char *newLabel)
-{
-#ifdef notdef
-    if (CheckLabel(interp, rcPtr, newLabel) != TCL_OK) {
-        return TCL_ERROR;
-    }
 #endif
-    SetLabel(rcPtr, headerPtr, newLabel);
-    return TCL_OK;
-}
 
 #if (SIZEOF_VOID_P == 8)  
-#define LABEL_FMT       "%c%ld"
+#define LABEL_FMT       "%s%ld"
 #else
-#define LABEL_FMT       "%c%d" 
+#define LABEL_FMT       "%s%d" 
 #endif
 
 static void
-GetNextLabel(RowColumn *rcPtr, Header *headerPtr)
+GetNextRowLabel(Rows *rowsPtr, Row *rowPtr)
 {
     char label[200];
 
     for(;;) {
         Blt_HashEntry *hPtr;
 
-        Blt_FormatString(label, 200, LABEL_FMT, rcPtr->classPtr->name[0], 
-                rcPtr->nextId++);
-        hPtr = Blt_FindHashEntry(&rcPtr->labelTable, label);
+        Blt_FmtString(label, 200, LABEL_FMT, "r", rowsPtr->nextRowId++);
+        hPtr = Blt_FindHashEntry(&rowsPtr->labelTable, label);
         if (hPtr == NULL) {
-            SetLabel(rcPtr, headerPtr, label);
-            return;
+            SetRowLabel(rowsPtr, rowPtr, label);
+            break;
         }
     }
 }
 
-static long
-GetMapSize(long oldLen, long extra)
+static void
+GetNextColumnLabel(Columns *columnsPtr, Column *colPtr)
 {
-    long newLen, reqLen;
+    char label[200];
 
-    reqLen = oldLen + extra;
-    newLen = oldLen;
-    if (newLen == 0) {
-        newLen = 1;
+    for(;;) {
+        Blt_HashEntry *hPtr;
+
+        Blt_FmtString(label, 200, LABEL_FMT, "c",
+                         columnsPtr->nextColumnId++);
+        hPtr = Blt_FindHashEntry(&columnsPtr->labelTable, label);
+        if (hPtr == NULL) {
+            SetColumnLabel(columnsPtr, colPtr, label);
+            break;
+        }
     }
+}
+
+static size_t
+GetMapSize(size_t oldLen, size_t numExtra)
+{
+    size_t newLen, reqLen;
+
+    reqLen = oldLen + numExtra;
+    newLen = TABLE_ALLOC_INIT_SIZE;
     if (reqLen < TABLE_ALLOC_MAX_DOUBLE_SIZE) {
         while (newLen < reqLen) {
             newLen += newLen;
@@ -411,170 +468,266 @@ GetMapSize(long oldLen, long extra)
     return newLen;
 }
 
-static int
-GrowHeaders(RowColumn *rcPtr, long extra)
+static Row *
+NewRow(Rows *rowsPtr) 
 {
-    long newSize, oldSize;
-    Header **map;
+    Row *rowPtr;
 
-    newSize = GetMapSize(rcPtr->numAllocated, extra);
-    oldSize = rcPtr->numAllocated;
-    map = rcPtr->map;
-    if (map == NULL) {
-        map = Blt_Malloc(sizeof(Header *) * newSize);
+    rowPtr = Blt_Pool_AllocItem(rowsPtr->pool, sizeof(Row));
+    memset(rowPtr, 0, sizeof(Row));
+    GetNextRowLabel(rowsPtr, rowPtr);
+    if (rowsPtr->headPtr == NULL) {
+        rowsPtr->tailPtr = rowsPtr->headPtr = rowPtr;
     } else {
-        map = Blt_Realloc(rcPtr->map, sizeof(Header *) * newSize);
-    }
-    if (map == NULL) {
-        return FALSE;
-    }
-    {
-        Header **mp;
-        long i;
-
-        /* Initialize the new extra header slots in the map to NULL and add
-         * them the free list. */
-        for (i = oldSize, mp = map + oldSize; i < newSize; i++, mp++) {
-            Blt_Chain_Append(rcPtr->freeList, (ClientData)i); 
-            *mp = NULL;                 /* Initialize new slots in the
-                                         * map.  */
+        rowPtr->prevPtr = rowsPtr->tailPtr;
+        if (rowsPtr->tailPtr != NULL) {
+            rowsPtr->tailPtr->nextPtr = rowPtr;
         }
+        rowsPtr->tailPtr = rowPtr;
     }
-    rcPtr->map = map;
-    rcPtr->numAllocated = newSize;
-    return TRUE;
+    rowPtr->index = rowsPtr->numUsed;
+    rowsPtr->numUsed++;
+    return rowPtr;
 }
 
-static int
-GrowColumns(Table *tablePtr, long extra)
+static Column *
+NewColumn(Columns *columnsPtr) 
 {
-    if (extra > 0) { 
-        long oldCols, newCols;
-        Value **data, **vp, **vend;
+    Column *colPtr;
 
-        oldCols = NumColumnsAllocated(tablePtr);
-        if (!GrowHeaders(&tablePtr->corePtr->columns, extra)) {
-            return FALSE;
+    colPtr = Blt_Pool_AllocItem(columnsPtr->pool, sizeof(Column));
+    memset(colPtr, 0, sizeof(Column));
+    GetNextColumnLabel(columnsPtr, colPtr);
+    if (columnsPtr->headPtr == NULL) {
+        columnsPtr->tailPtr = columnsPtr->headPtr = colPtr;
+    } else {
+        colPtr->prevPtr = columnsPtr->tailPtr;
+        if (columnsPtr->tailPtr != NULL) {
+            columnsPtr->tailPtr->nextPtr = colPtr;
         }
-        newCols = NumColumnsAllocated(tablePtr);
+        columnsPtr->tailPtr = colPtr;
+    }
+    colPtr->index = columnsPtr->numUsed;
+    columnsPtr->numUsed++;
+    return colPtr;
+}
 
-        /* Resize the vector array to have as many slots as columns. */
-        data = tablePtr->corePtr->data;
-        if (data == NULL) {
-            data = Blt_Malloc(newCols * sizeof(Value *));
+
+static int
+ExtendRows(Table *tablePtr, size_t numExtraRows, Blt_Chain chain)
+{
+    Rows *rowsPtr;
+    size_t i, oldSize, oldUsed;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    oldSize = rowsPtr->numAllocated;
+    oldUsed = rowsPtr->numUsed;
+
+    /* If we are going to exceed the current number of allocated rows,
+     * re-allocate a bigger row map and column vectors. */
+    if ((numExtraRows + rowsPtr->numUsed) > rowsPtr->numAllocated) {
+        size_t newSize;
+        Row **map;
+        Column *colPtr;
+    
+        newSize = GetMapSize(rowsPtr->numAllocated, numExtraRows);
+
+        /* Resize the row map. */
+        if (rowsPtr->map == NULL) {
+            map = Blt_Malloc(sizeof(Row *) * newSize);
         } else {
-            data = Blt_Realloc(data, newCols * sizeof(Value *));
+            map = Blt_Realloc(rowsPtr->map, sizeof(Row *) * newSize);
         }
-        if (data == NULL) {
+        if (map == NULL) {
             return FALSE;
         }
-        /* Initialize the new vector slots to NULL. */
-        for (vp = data + oldCols, vend = data + newCols; vp < vend; vp++) {
-            *vp = NULL;
-        }
-        tablePtr->corePtr->data = data;
-    }
-    return TRUE;
-}
+        rowsPtr->map = map;
+        rowsPtr->numAllocated = newSize;
 
-static int
-GrowRows(Table *tablePtr, long extra)
-{
-    long oldRows, newRows;
-    Value **vpp, **vpend;
-    
-    assert(extra > 0);
-    oldRows = NumRowsAllocated(tablePtr);
-    if (!GrowHeaders(&tablePtr->corePtr->rows, extra)) {
-        return FALSE;
-    }
-    newRows = NumRowsAllocated(tablePtr);
-    
-    /* Resize all the vectors. Leave the empty vectors alone.  They are
-     * allocated when data is added to them. */
-    for (vpp = tablePtr->corePtr->data,
-             vpend = vpp + NumColumnsAllocated(tablePtr); 
-         vpp < vpend; vpp++) {
-        if (*vpp != NULL) {
-            Value *vector, *valuePtr, *vend;
-            
-            vector = Blt_Realloc(*vpp, newRows * sizeof(Value));
-            for (valuePtr = vector + oldRows, vend = vector + newRows; 
-                 valuePtr < vend; valuePtr++) {
-                valuePtr->string = NULL;
+        /* Resize the individual column vectors.  */
+        for (colPtr = tablePtr->corePtr->columns.headPtr; colPtr != NULL;
+             colPtr = colPtr->nextPtr) {
+            if (colPtr->vector != NULL) {
+                Value *vector;
+                
+                vector = Blt_Realloc(colPtr->vector, newSize * sizeof(Value));
+                memset(vector + oldSize, 0, (newSize-oldSize) * sizeof(Value));
+                colPtr->vector = vector;
             }
-            *vpp = vector;
+        }        
+    }
+
+    /* Fill in the new slots in the map in with actual row structures.
+     * Reset the row index and offset.  Reuse row offsets from the free
+     * list first. */
+    for (i = 0; i < numExtraRows; i++) {
+        Row *rowPtr;
+        unsigned long offset, nextIndex;
+
+        rowPtr = NewRow(rowsPtr);
+        offset = nextIndex = i + oldUsed;
+        if (Blt_Chain_GetLength(rowsPtr->freeList) > 0) {
+            Blt_ChainLink link;
+            
+            link = Blt_Chain_FirstLink(rowsPtr->freeList);
+            offset = (uintptr_t)Blt_Chain_GetValue(link);
+            Blt_Chain_DeleteLink(rowsPtr->freeList, link);
+        }
+        if (chain != NULL) {
+            Blt_Chain_Append(chain, rowPtr);
+        }
+        rowsPtr->map[nextIndex] = rowPtr;
+        rowPtr->offset = offset;
+    }
+    return TRUE;
+}
+
+static int
+ExtendColumns(Table *tablePtr, size_t numExtraColumns, Blt_Chain chain)
+{
+    size_t i;
+    size_t prevUsed;
+    Columns *columnsPtr;
+
+    columnsPtr = &tablePtr->corePtr->columns;
+    prevUsed = columnsPtr->numUsed;
+    if ((numExtraColumns + columnsPtr->numUsed) > columnsPtr->numAllocated) {
+        Column **map;
+        size_t newSize;
+
+        /* Resize the map. */
+        newSize = GetMapSize(columnsPtr->numAllocated, numExtraColumns);
+        if (columnsPtr->map == NULL) {
+            map = Blt_Malloc(sizeof(Column *) * newSize);
+        } else {
+            map = Blt_Realloc(columnsPtr->map, sizeof(Column *) * newSize);
+        }
+        if (map == NULL) {
+            return FALSE;
+        }
+        columnsPtr->map = map;
+        columnsPtr->numAllocated = newSize;
+    }
+
+    /* Fill the map in with the actual columns. There's no storage yet for
+     * values.  We'll allocate that as needed. */
+    for (i = 0; i < numExtraColumns; i++) {
+        Column *colPtr;
+
+        colPtr = NewColumn(columnsPtr);
+        columnsPtr->map[i + prevUsed] = colPtr;
+        if (chain != NULL) {
+            Blt_Chain_Append(chain, colPtr);
         }
     }
     return TRUE;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ResetRowMap --
+ *
+ *      The map and the rows are out-of-sync.  There may be empty slots in
+ *      the map (because rows were deleted). 
+ *      
+ *---------------------------------------------------------------------------
+ */
 static void
-ExtendHeaders(RowColumn *rcPtr, long n, Blt_Chain chain)
+ResetRowMap(Rows *rowsPtr)
 {
-    Blt_ChainLink link;
-    long nextIndex;
-    long i;
-
-    /* 
-     * At this point we're guaranteed to have as many free rows/columns in
-     * the table as requested.
-     */
-    link = Blt_Chain_FirstLink(rcPtr->freeList);
-    assert(link != NULL);
-    nextIndex = rcPtr->numUsed; 
-    for (i = 0; i < n; i++) {
-        Blt_ChainLink next;
-        Header *headerPtr;
-
-        headerPtr = Blt_Pool_AllocItem(rcPtr->headerPool, 
-                rcPtr->classPtr->headerSize);
-        memset(headerPtr, 0, rcPtr->classPtr->headerSize);
-        GetNextLabel(rcPtr, headerPtr);
-        headerPtr->offset = (long)Blt_Chain_GetValue(link);
-        rcPtr->map[nextIndex] = headerPtr;
-        headerPtr->index = nextIndex;
-        nextIndex++;
-
-        /* Remove the link the freelist and append it to the output chain. */
-        next = Blt_Chain_NextLink(link);
-        Blt_Chain_UnlinkLink(rcPtr->freeList, link);
-        Blt_Chain_AppendLink(chain, link);
-        Blt_Chain_SetValue(link, headerPtr);
-        link = next;
+    long count;
+    Row *rowPtr;
+    
+    /* Reset the map to the current list of columns. */
+    count = 0;
+    for (rowPtr = rowsPtr->headPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr) {
+        rowsPtr->map[count] = rowPtr;
+        rowPtr->index = count;
+        count++;
     }
-    rcPtr->numUsed += n;
+    assert(count == rowsPtr->numUsed);
+    rowsPtr->flags &= ~REINDEX;
 }
 
-static int
-ExtendRows(Table *tablePtr, long n, Blt_Chain chain)
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ResetColumnMap --
+ *
+ *      The map and the columns are out-of-sync.  There may be empty slots
+ *      in the map (because columns were deleted). 
+ *      
+ *---------------------------------------------------------------------------
+ */
+static void
+ResetColumnMap(Columns *columnsPtr)
 {
-    long numFree;
-
-    numFree = Blt_Chain_GetLength(tablePtr->corePtr->rows.freeList);
-    if (n > numFree) {
-        if (!GrowRows(tablePtr, n - numFree)) {
-            return FALSE;
-        }
+    long count;
+    Column *colPtr;
+    
+    /* Reset the map to the current list of columns. */
+    count = 0;
+    for (colPtr = columnsPtr->headPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr) {
+        columnsPtr->map[count] = colPtr;
+        colPtr->index = count;
+        count++;
     }
-    ExtendHeaders(&tablePtr->corePtr->rows, n, chain);
-    tablePtr->flags |= TABLE_KEYS_DIRTY;
-    return TRUE;
+    assert(count == columnsPtr->numUsed);
+    columnsPtr->flags &= ~REINDEX;
 }
 
-static int
-ExtendColumns(Table *tablePtr, long n, Blt_Chain chain)
-{
-    long numFree;
 
-    numFree = Blt_Chain_GetLength(tablePtr->corePtr->columns.freeList);
-    if (n > numFree) {
-        if (!GrowColumns(tablePtr, n - numFree)) {
-            return FALSE;
-        }
+BLT_TABLE_ROW 
+blt_table_row(BLT_TABLE table, long index)  
+{
+    Rows *rowsPtr;
+
+    assert(index >= 0);
+    rowsPtr = blt_table_rows(table);
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
     }
-    ExtendHeaders(&tablePtr->corePtr->columns, n, chain);
-    return TRUE;
+    return rowsPtr->map[index];
+}
+
+BLT_TABLE_COLUMN 
+blt_table_column(BLT_TABLE table, long index)  
+{
+    Columns *columnsPtr;
+
+    assert(index >= 0);
+    columnsPtr = blt_table_columns(table);
+    if (columnsPtr->flags & REINDEX) {
+        ResetColumnMap(columnsPtr);
+    }
+    return columnsPtr->map[index];
+}
+
+long 
+blt_table_row_index(Table *tablePtr, Row *rowPtr)
+{
+    Rows *rowsPtr;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
+    }
+    return rowPtr->index;
+}
+
+long 
+blt_table_column_index(BLT_TABLE table, Column *colPtr)
+{
+    Columns *columnsPtr;
+
+    columnsPtr = blt_table_columns(table);
+    if (columnsPtr->flags & REINDEX) {
+        ResetColumnMap(columnsPtr);
+    }
+    return colPtr->index;
 }
 
 BLT_TABLE_COLUMN_TYPE
@@ -585,11 +738,13 @@ blt_table_name_to_column_type(const char *s)
     
     c = s[0];
     len = strlen(s);
-    if ((c == 's') && (len > 2) && (strncmp(s, "string", len) == 0)) {
+    if ((c == 's') && (strncmp(s, "string", len) == 0)) {
         return TABLE_COLUMN_TYPE_STRING;
-    } else if ((c == 'i') && (len > 2) && (strncmp(s, "integer", len) == 0)) {
+    } else if ((c == 'i') && (len > 3) && (strncmp(s, "integer", len) == 0)) {
         return TABLE_COLUMN_TYPE_LONG;
-    } else if ((c == 'n') && (len > 2) && (strncmp(s, "number", len) == 0)) {
+    } else if ((c == 'i') && (len > 3) && (strncmp(s, "int64", len) == 0)) {
+        return TABLE_COLUMN_TYPE_INT64;
+    } else if ((c == 'n') && (strncmp(s, "number", len) == 0)) {
         return TABLE_COLUMN_TYPE_DOUBLE;
     } else if ((c == 'd') && (strcmp(s, "double") == 0)) {
         return TABLE_COLUMN_TYPE_DOUBLE;
@@ -624,7 +779,7 @@ GetValueBytes(Value *valuePtr)
     return (const unsigned char *)valuePtr->string;
 }
 
-static INLINE size_t
+static INLINE unsigned int
 GetValueLength(Value *valuePtr)
 {
     return valuePtr->length;
@@ -642,16 +797,28 @@ blt_table_value_bytes(Value *valuePtr)
     return GetValueBytes(valuePtr);
 }
 
-size_t
+unsigned int
 blt_table_value_length(Value *valuePtr)
 {
     return GetValueLength(valuePtr);
 }
 
 static INLINE int
-IsEmpty(Value *valuePtr)
+IsEmptyValue(Value *valuePtr)
 {
     return ((valuePtr == NULL) || (valuePtr->string == NULL));
+}
+
+static INLINE int
+IsEmpty(Row *rowPtr, Column *colPtr)
+{
+    if (colPtr->vector != NULL) {
+        Value *valuePtr;
+
+        valuePtr = colPtr->vector + rowPtr->offset;
+        return IsEmptyValue(valuePtr);
+    }
+    return TRUE;
 }
 
 static INLINE void
@@ -666,46 +833,22 @@ ResetValue(Value *valuePtr)
 }
 
 
-static void
-FreeVector(Value *vector, long length)
-{
-    if (vector != NULL) {
-        Value *vp, *vend;
-
-        for (vp = vector, vend = vp + length; vp < vend; vp++) {
-            ResetValue(vp);
-        }
-        Blt_Free(vector);
-    }
-}
-
-static Value *
-AllocateVector(Table *tablePtr, long offset)
-{
-    Value *vector;
-
-    vector = tablePtr->corePtr->data[offset];
-    if (vector == NULL) {
-
-        vector = Blt_Calloc(NumRowsAllocated(tablePtr), sizeof(Value));
-        if (vector == NULL) {
-            return NULL;
-        }
-        tablePtr->corePtr->data[offset] = vector;
-    }
-    return vector;
-}
-
 static Value *
 GetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
-    Value *vector;
+    if (colPtr->vector == NULL) {
+        Value *vector;
+        Rows *rowsPtr;
 
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector == NULL) {
-        vector = AllocateVector(tablePtr, colPtr->offset);
+        rowsPtr = &tablePtr->corePtr->rows;
+        assert(rowsPtr->numAllocated > 0);
+        vector = Blt_Calloc(rowsPtr->numAllocated, sizeof(Value));
+        if (vector == NULL) {
+            return NULL;
+        }
+        colPtr->vector = vector;
     }
-    return vector + rowPtr->offset;
+    return colPtr->vector + rowPtr->offset;
 }
 
 static Tcl_Obj *
@@ -713,7 +856,7 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
 {
     Tcl_Obj *objPtr;
 
-    assert(!IsEmpty(valuePtr));
+    assert(!IsEmptyValue(valuePtr));
     objPtr = NULL;                      /* Suppress compiler warning. */
     assert(type != TABLE_COLUMN_TYPE_UNKNOWN);
     switch (type) {
@@ -725,11 +868,14 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
     case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
         objPtr = Tcl_NewDoubleObj(valuePtr->datum.d);
         break;
+    case TABLE_COLUMN_TYPE_INT64:        /* long */
+        objPtr = Blt_NewInt64Obj(valuePtr->datum.i64);
+        break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
-        objPtr = Tcl_NewLongObj(valuePtr->datum.l);
+        objPtr = Blt_NewLongObj(valuePtr->datum.l);
         break;
     case TABLE_COLUMN_TYPE_BOOLEAN:      /* boolean */
-        objPtr = Tcl_NewBooleanObj(valuePtr->datum.l);
+        objPtr = Tcl_NewBooleanObj((int)valuePtr->datum.i);
         break;
     default:
     case TABLE_COLUMN_TYPE_STRING:      /* string */
@@ -765,7 +911,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             if (Tcl_GetBooleanFromObj(interp, objPtr, &i) != TCL_OK) {
                 return TCL_ERROR;
             }
-            valuePtr->datum.l = i;
+            valuePtr->datum.i = i;
         }
         break;
 
@@ -774,6 +920,13 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             return TCL_ERROR;
         }
         break;
+
+    case TABLE_COLUMN_TYPE_INT64:        /* int64 */
+        if (Blt_GetInt64FromObj(interp, objPtr, &valuePtr->datum.i64)!=TCL_OK) {
+            return TCL_ERROR;
+        }
+        break;
+
     case TABLE_COLUMN_TYPE_LONG:        /* long */
         if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.l) != TCL_OK) {
             return TCL_ERROR;
@@ -804,8 +957,11 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     long l;
     Tcl_Obj *objPtr;
 
+    if (length < 0) {
+        length = strlen(s);
+    }
     objPtr = NULL;
-    if ((type != TABLE_COLUMN_TYPE_STRING) ||
+    if ((type != TABLE_COLUMN_TYPE_STRING) &&
         (type != TABLE_COLUMN_TYPE_BLOB)) {
 
         /* For the non-string types, make a copy of the string as a
@@ -839,6 +995,18 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             valuePtr->datum.l = l;      /* long */
             break;
 
+        case TABLE_COLUMN_TYPE_INT64:    
+            {
+                int64_t i;
+                
+                if (Blt_GetInt64FromObj(interp, objPtr, &i) != TCL_OK) {
+                    Tcl_DecrRefCount(objPtr);
+                    return TCL_ERROR;
+                }
+                valuePtr->datum.i64 = i;      /* long */
+            }
+            break;
+
         case TABLE_COLUMN_TYPE_BOOLEAN: 
             {
                 int ival;
@@ -847,7 +1015,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
                     Tcl_DecrRefCount(objPtr);
                     return TCL_ERROR;
                 }
-                valuePtr->datum.l = ival; /* long */
+                valuePtr->datum.i = ival; /* boolean */
             }
             break;
         default:
@@ -899,14 +1067,11 @@ NewTableObject(void)
 
     Blt_InitHashTableWithPool(&corePtr->columns.labelTable, BLT_STRING_KEYS);
     Blt_InitHashTableWithPool(&corePtr->rows.labelTable, BLT_STRING_KEYS);
-    corePtr->columns.classPtr = &columnClass;
-    corePtr->columns.freeList = Blt_Chain_Create();
-    corePtr->columns.headerPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
-    corePtr->columns.nextId = 1;
-    corePtr->rows.classPtr = &rowClass;
+    corePtr->columns.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
+    corePtr->columns.nextColumnId = 1;
     corePtr->rows.freeList = Blt_Chain_Create();
-    corePtr->rows.headerPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
-    corePtr->rows.nextId = 1;
+    corePtr->rows.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
+    corePtr->rows.nextRowId = 1;
     return corePtr;
 }
 
@@ -1068,6 +1233,77 @@ DestroyNotifiers(Table *tablePtr, Blt_Chain chain)
     Blt_Chain_Destroy(chain);
 }
 
+
+static void
+FreeRows(TableObject *corePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Rows *rowsPtr;
+
+    rowsPtr = &corePtr->rows;
+    for (hPtr = Blt_FirstHashEntry(&rowsPtr->labelTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Blt_HashTable *tablePtr;
+        
+        tablePtr = Blt_GetHashValue(hPtr);
+        Blt_DeleteHashTable(tablePtr);
+        Blt_Free(tablePtr);
+    }
+    Blt_DeleteHashTable(&rowsPtr->labelTable);
+    Blt_Pool_Destroy(rowsPtr->pool);
+    if (rowsPtr->freeList != NULL) {
+        Blt_Chain_Destroy(rowsPtr->freeList);
+    }
+    if (rowsPtr->map != NULL) {
+        Blt_Free(rowsPtr->map);
+        rowsPtr->map = NULL;
+    }
+    rowsPtr->numAllocated = rowsPtr->numUsed = 0;
+}
+
+static void
+FreeColumns(TableObject *corePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Column *colPtr;
+    Columns *columnsPtr;
+
+    columnsPtr = &corePtr->columns;
+    for (colPtr = columnsPtr->headPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
+        if (colPtr->vector != NULL) {
+            Row *rowPtr;
+
+            for (rowPtr = corePtr->rows.headPtr; rowPtr != NULL;
+                 rowPtr = rowPtr->nextPtr) {
+                assert(rowPtr->offset < corePtr->rows.numAllocated);
+                ResetValue(colPtr->vector + rowPtr->offset);
+            }
+            Blt_Free(colPtr->vector);
+            colPtr->vector = NULL;
+        }
+    }
+    for (hPtr = Blt_FirstHashEntry(&columnsPtr->labelTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+        Blt_HashTable *tablePtr;
+        
+        tablePtr = Blt_GetHashValue(hPtr);
+        Blt_DeleteHashTable(tablePtr);
+        Blt_Free(tablePtr);
+    }
+    Blt_DeleteHashTable(&columnsPtr->labelTable);
+    if (columnsPtr->pool != NULL) {
+        Blt_Pool_Destroy(columnsPtr->pool);
+    }
+    if (columnsPtr->map != NULL) {
+        Blt_Free(columnsPtr->map);
+        columnsPtr->map = NULL;
+    }
+    columnsPtr->numAllocated = columnsPtr->numUsed = 0;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1090,22 +1326,8 @@ DestroyTableObject(TableObject *corePtr)
     assert(Blt_Chain_GetLength(corePtr->clients) == 0);
     Blt_Chain_Destroy(corePtr->clients);
 
-    /* Free the headers containing row and column info. */
-    /* Free the data in each row. */
-    if (corePtr->data != NULL) {
-        Value **vp, **vend;
-        long i;
-
-        for (i = 0, vp = corePtr->data, vend = vp+corePtr->columns.numAllocated;
-             vp < vend; vp++, i++) {
-            if (*vp != NULL) {
-                FreeVector(*vp, corePtr->rows.numAllocated);
-            }
-        }
-        Blt_Free(corePtr->data);
-    }
-    FreeRowColumn(&corePtr->rows);
-    FreeRowColumn(&corePtr->columns);
+    FreeColumns(corePtr);
+    FreeRows(corePtr);
     Blt_Free(corePtr);
 }
 
@@ -1258,8 +1480,6 @@ ShareTags(Table *srcPtr, Table *destPtr)
 static Table *
 FindClientInNamespace(InterpData *dataPtr, Blt_ObjectName *namePtr)
 {
-    Blt_Chain chain;
-    Blt_ChainLink link;
     Blt_HashEntry *hPtr;
     Tcl_DString ds;
     const char *qualName;
@@ -1267,13 +1487,17 @@ FindClientInNamespace(InterpData *dataPtr, Blt_ObjectName *namePtr)
     qualName = Blt_MakeQualifiedName(namePtr, &ds);
     hPtr = Blt_FindHashEntry(&dataPtr->clientTable, qualName);
     Tcl_DStringFree(&ds);
-    if (hPtr == NULL) {
-        return NULL;
+    if (hPtr != NULL) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
+
+        chain = Blt_GetHashValue(hPtr);
+        link = Blt_Chain_FirstLink(chain);
+        if (link != NULL) {
+            return Blt_Chain_GetValue(link);
+        }
     }
-    chain = Blt_GetHashValue(hPtr);
-    link = Blt_Chain_FirstLink(chain);
-    assert(link != NULL);
-    return Blt_Chain_GetValue(link);
+    return NULL;
 }
 
 /*
@@ -1320,8 +1544,7 @@ static void
 DestroyClient(Table *tablePtr)
 {
     if (tablePtr->magic != TABLE_MAGIC) {
-        Blt_Warn("invalid table object token 0x%lx\n", 
-                 (unsigned long)tablePtr);
+        Blt_Warn("invalid table object token %p\n", tablePtr);
         return;
     }
     /* Remove any traces that were set by this client. */
@@ -1417,23 +1640,53 @@ NewTable(
 }
 
 static Blt_HashTable *
-GetLabelTable(RowColumn *rcPtr, const char *label)
+GetColumnLabelTable(Columns *columnsPtr, const char *label)
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&rcPtr->labelTable, label);
+    hPtr = Blt_FindHashEntry(&columnsPtr->labelTable, label);
     if (hPtr != NULL) {
         return Blt_GetHashValue(hPtr);
     }
     return NULL;
 }
 
-static Header *
-FindLabel(RowColumn *rcPtr, const char *label)
+static Blt_HashTable *
+GetRowLabelTable(Rows *rowsPtr, const char *label)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&rowsPtr->labelTable, label);
+    if (hPtr != NULL) {
+        return Blt_GetHashValue(hPtr);
+    }
+    return NULL;
+}
+
+static Row *
+FindRowLabel(Rows *rowsPtr, const char *label)
 {
     Blt_HashTable *tablePtr;
 
-    tablePtr = GetLabelTable(rcPtr, label);
+    tablePtr = GetRowLabelTable(rowsPtr, label);
+    if (tablePtr != NULL) {
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+
+        hPtr = Blt_FirstHashEntry(tablePtr, &iter);
+        if (hPtr != NULL) {
+            return Blt_GetHashValue(hPtr);
+        }
+    }
+    return NULL;
+}
+
+static Column *
+FindColumnLabel(Columns *columnsPtr, const char *label)
+{
+    Blt_HashTable *tablePtr;
+
+    tablePtr = GetColumnLabelTable(columnsPtr, label);
     if (tablePtr != NULL) {
         Blt_HashEntry *hPtr;
         Blt_HashSearch iter;
@@ -1447,24 +1700,22 @@ FindLabel(RowColumn *rcPtr, const char *label)
 }
 
 static int
-SetType(Tcl_Interp *interp, Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr, 
-        BLT_TABLE_COLUMN_TYPE type)
+SetColumnType(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
+              BLT_TABLE_COLUMN_TYPE type)
 {
-    int i;
+    Row *rowPtr;
 
     if (type == colPtr->type) {
         return TCL_OK;                  /* Already the requested type. */
     }
-    /* Test first that every value in the column can be converted. */
-    for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
-        Row *rowPtr;
-        Value *valuePtr;
-
-        rowPtr = blt_table_row(tablePtr, i);
-        valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-        if (!IsEmpty(valuePtr)) {
+    /* First test that every value in the column can be converted. */
+    for (rowPtr = tablePtr->corePtr->rows.headPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
+        if (!IsEmpty(rowPtr, colPtr)) {
             Value value;
-            
+            Value *valuePtr;
+
+            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
             memset(&value, 0, sizeof(Value));
             if (SetValueFromString(interp, type, GetValueString(valuePtr),
                         GetValueLength(valuePtr), &value) != TCL_OK) {
@@ -1474,14 +1725,14 @@ SetType(Tcl_Interp *interp, Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
         }
     }
     /* Now replace the column with the converted the values. */
-    for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
-        Row *rowPtr;
-        Value *valuePtr;
-        rowPtr = blt_table_row(tablePtr, i);
-        valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-        if (!IsEmpty(valuePtr)) {
+    for (rowPtr = tablePtr->corePtr->rows.headPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
+        if (!IsEmpty(rowPtr, colPtr)) {
+            Value *valuePtr;
+
+            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
             if (SetValueFromString(interp, type, GetValueString(valuePtr),
-                GetValueLength(valuePtr), valuePtr) != TCL_OK) {
+                 GetValueLength(valuePtr), valuePtr) != TCL_OK) {
                 return TCL_ERROR;
             }
         }
@@ -1490,39 +1741,126 @@ SetType(Tcl_Interp *interp, Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * UnsetValue --
+ *
+ *      Removes the value from the selected row, column location in the
+ *      table.  The row, column location must be within the actual table
+ *      limits, but it's okay if there isn't a value there to remove.
+ *
+ * Results:
+ *      None.
+ *
+ * Side Effects:
+ *      The objPtr representing the value is released.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+UnsetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
+{
+    Value *valuePtr;
+
+    if (colPtr->vector == NULL) {
+        return;
+    }
+    valuePtr = colPtr->vector + rowPtr->offset;
+    if (!IsEmptyValue(valuePtr)) {
+        /* Indicate the keytables need to be regenerated. */
+        if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
+            tablePtr->flags |= TABLE_KEYS_DIRTY;
+        }
+    }
+    ResetValue(valuePtr);
+}
 
 static void
-ResetMap(RowColumn *rcPtr)
+UnsetRowValues(Table *tablePtr, Row *rowPtr)
 {
-    long i;
+    Column *colPtr;
 
-    /* Reset the reverse lookup: from header to index. */
-    for (i = 0; i < rcPtr->numUsed; i++) {
-        rcPtr->map[i]->index = i;
+    for (colPtr = tablePtr->corePtr->columns.headPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr) {
+        if (colPtr->vector != NULL) {
+            UnsetValue(tablePtr, rowPtr, colPtr);
+        }
     }
 }
 
 static void
-DeleteHeader(RowColumn *rcPtr, Header *headerPtr)
+DeleteRow(Rows *rowsPtr, Row *rowPtr)
 {
-    /* If there is a label is associated with the column, free it. */
-    if (headerPtr->label != NULL) {
-        UnsetLabel(rcPtr, headerPtr);
+    /* If there is a label is associated with the row, free it. */
+    if (rowPtr->label != NULL) {
+        UnsetRowLabel(rowsPtr, rowPtr);
     }
-    { 
-        long p, q;
+    /* Unlink the row from the list of rows. */
+    if (rowsPtr->headPtr == rowPtr) {
+        rowsPtr->headPtr = rowPtr->nextPtr;
+    }
+    if (rowsPtr->tailPtr == rowPtr) {
+        rowsPtr->tailPtr = rowPtr->prevPtr;
+    }
+    if (rowPtr->nextPtr != NULL) {
+        rowPtr->nextPtr->prevPtr = rowPtr->prevPtr;
+    }
+    if (rowPtr->prevPtr != NULL) {
+        rowPtr->prevPtr->nextPtr = rowPtr->nextPtr;
+    }
+    /* Mark the map entry as empty. */
+    rowsPtr->map[rowPtr->index] = NULL;
+    rowsPtr->flags |= REINDEX;
+    if (rowsPtr->freeList != NULL) {
+        /* We don't delete row storage, just add the row offset back onto
+         * the free list. */
+        Blt_Chain_Append(rowsPtr->freeList,
+                         (ClientData)(uintptr_t)rowPtr->offset);
+    }
+    /* Finally free the row itself. */
+    Blt_Pool_FreeItem(rowsPtr->pool, rowPtr);
+    rowsPtr->numUsed--;
+}
 
-        /* Compress the index-to-offset map. */
-        for (p = headerPtr->index, q = p + 1; q < rcPtr->numUsed; p++, q++) {
-            /* Update the index as we slide down the headers in the map. */
-            rcPtr->map[p] = rcPtr->map[q];
-            rcPtr->map[p]->index = p;
-        }
-        rcPtr->map[p] = NULL;
+static void
+DeleteColumn(Table *tablePtr, Column *colPtr)
+{
+    Columns *columnsPtr;
+
+    columnsPtr = &tablePtr->corePtr->columns;
+    /* If there is a label is associated with the column, free it. */
+    if (colPtr->label != NULL) {
+        UnsetColumnLabel(columnsPtr, colPtr);
     }
-    /* Finally free the header. */
-    Blt_Pool_FreeItem(rcPtr->headerPool, headerPtr);
-    rcPtr->numUsed--;
+    if (columnsPtr->headPtr == colPtr) {
+        columnsPtr->headPtr = colPtr->nextPtr;
+    }
+    if (columnsPtr->tailPtr == colPtr) {
+        columnsPtr->tailPtr = colPtr->prevPtr;
+    }
+    if (colPtr->nextPtr != NULL) {
+        colPtr->nextPtr->prevPtr = colPtr->prevPtr;
+    }
+    if (colPtr->prevPtr != NULL) {
+        colPtr->prevPtr->nextPtr = colPtr->nextPtr;
+    }
+    colPtr->prevPtr = colPtr->nextPtr = NULL;
+    columnsPtr->map[colPtr->index] = NULL;
+    columnsPtr->flags |= REINDEX;
+    if (colPtr->vector != NULL) {
+        Row *rowPtr;
+
+        for (rowPtr = tablePtr->corePtr->rows.headPtr; rowPtr != NULL;
+             rowPtr = rowPtr->nextPtr) {
+            ResetValue(colPtr->vector + rowPtr->offset);
+        }
+        Blt_Free(colPtr->vector);
+        colPtr->vector = NULL;
+    }
+    /* Finally free the column. */
+    Blt_Pool_FreeItem(columnsPtr->pool, colPtr);
+    columnsPtr->numUsed--;
 }
 
 /*
@@ -1984,8 +2322,7 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
  *---------------------------------------------------------------------------
  */
 static void
-CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-                 unsigned int flags)
+CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr, unsigned int flags)
 {
     Blt_ChainLink link, next;
 
@@ -1999,71 +2336,11 @@ CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr,
     }
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * UnsetValue --
- *
- *      Removes the value from the selected row, column location in the
- *      table.  The row, column location must be within the actual table
- *      limits, but it's okay if there isn't a value there to remove.
- *
- * Results:
- *      None.
- *
- * Side Effects:
- *      The objPtr representing the value is released.
- *
- *---------------------------------------------------------------------------
- */
-static void
-UnsetValue(Table *tablePtr, Row *rowPtr, Column *colPtr)
-{
-    Value *valuePtr;
-
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (!IsEmpty(valuePtr)) {
-        /* Indicate the keytables need to be regenerated. */
-        if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
-            tablePtr->flags |= TABLE_KEYS_DIRTY;
-        }
-    }
-    ResetValue(valuePtr);
-}
-
-static void
-UnsetRowValues(Table *tablePtr, Row *rowPtr)
-{
-    Column *colPtr;
-
-    for (colPtr = blt_table_first_column(tablePtr); colPtr != NULL;
-         colPtr = blt_table_next_column(tablePtr, colPtr)) {
-        UnsetValue(tablePtr, rowPtr, colPtr);
-    }
-}
-
-static void
-UnsetColumnValues(Table *tablePtr, Column *colPtr)
-{
-    Value *vector;
-    Row *rowPtr;
-
-    for (rowPtr = blt_table_first_row(tablePtr); rowPtr != NULL;
-         rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
-        UnsetValue(tablePtr, rowPtr, colPtr);
-    }
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        FreeVector(vector, tablePtr->corePtr->rows.numAllocated);
-        tablePtr->corePtr->data[colPtr->offset] = NULL;
-    }
-}
 
 typedef struct {
     BLT_TABLE table;
     BLT_TABLE_SORT_ORDER *order;
-    Blt_HashTable freqTable;
-    long numColumns;
+    size_t numColumns;
     unsigned int flags;
 } TableSortData;
 
@@ -2074,28 +2351,25 @@ static int
 CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1, 
                          Row *rowPtr2)
 {
-    Value *valuePtr1, *valuePtr2, *vector;
-    Table *tablePtr;
+    Value *valuePtr1, *valuePtr2;
     
-    tablePtr = sortData.table;
     valuePtr1 = valuePtr2 = NULL;
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        valuePtr1 = vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
-        valuePtr2 = vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     assert(valuePtr1 != NULL);
@@ -2105,69 +2379,28 @@ CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
 }
 
 static int
-CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-                     Row *rowPtr2)
-{
-    Value *valuePtr1, *valuePtr2, *vector;
-    Blt_HashEntry *hPtr1, *hPtr2;
-    long f1, f2;
-    Table *tablePtr;
-
-    tablePtr = sortData.table;
-    valuePtr1 = valuePtr2 = NULL;
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        valuePtr1 = vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
-            valuePtr1 = NULL;
-        }
-        valuePtr2 = vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
-            valuePtr2 = NULL;
-        }
-    }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
-            return 0;
-        }
-        return 1;
-    } else if (IsEmpty(valuePtr2)) {
-        return -1;
-    }
-    /* FIXME: Frequency only works for string types. */
-    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, GetValueString(valuePtr1));
-    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, GetValueString(valuePtr2));
-    f1 = (long)Blt_GetHashValue(hPtr1);
-    f2 = (long)Blt_GetHashValue(hPtr2);
-    return f1 - f2;
-}
-
-static int
 CompareAsciiStrings(ClientData clientData, Column *colPtr, Row *rowPtr1, 
                     Row *rowPtr2)
 {
-    Value *valuePtr1, *valuePtr2, *vector;
-    Table *tablePtr;
+    Value *valuePtr1, *valuePtr2;
 
-    tablePtr = sortData.table;
     valuePtr1 = valuePtr2 = NULL;
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        valuePtr1 = vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
-        valuePtr2 = vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     return strcmp(GetValueString(valuePtr1), GetValueString(valuePtr2));
@@ -2177,59 +2410,81 @@ static int
 CompareAsciiStringsIgnoreCase(ClientData clientData, Column *colPtr,
                               Row *rowPtr1, Row *rowPtr2)
 {
-    Value *valuePtr1, *valuePtr2, *vector;
-    Table *tablePtr;
+    Value *valuePtr1, *valuePtr2;
 
-    tablePtr = sortData.table;
     valuePtr1 = valuePtr2 = NULL;
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        valuePtr1 = vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
-        valuePtr2 = vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     return strcasecmp(GetValueString(valuePtr1), GetValueString(valuePtr2));
 }
 
 static int
-CompareIntegers(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-                Row *rowPtr2)
+CompareInt64s(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+              Row *rowPtr2)
 {
-    Value *valuePtr1, *valuePtr2, *vector;
-    Table *tablePtr;
+    Value *valuePtr1, *valuePtr2;
 
-    tablePtr = sortData.table;
     valuePtr1 = valuePtr2 = NULL;
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        valuePtr1 = vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
-        valuePtr2 = vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
+        return -1;
+    }
+    return valuePtr1->datum.i64 - valuePtr2->datum.i64;
+}
+
+static int
+CompareLongs(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+             Row *rowPtr2)
+{
+    Value *valuePtr1, *valuePtr2;
+
+    valuePtr1 = valuePtr2 = NULL;
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
+            valuePtr1 = NULL;
+        }
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
+            valuePtr2 = NULL;
+        }
+    }
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
+            return 0;
+        }
+        return 1;
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     return valuePtr1->datum.l - valuePtr2->datum.l;
@@ -2239,28 +2494,26 @@ static int
 CompareDoubles(ClientData clientData, Column *colPtr, Row *rowPtr1, 
                     Row *rowPtr2)
 {
-    Value *valuePtr1, *valuePtr2, *vector;
-    Table *tablePtr;
+    Value *valuePtr1, *valuePtr2;
 
-    tablePtr = sortData.table;
+
     valuePtr1 = valuePtr2 = NULL;
-    vector = tablePtr->corePtr->data[colPtr->offset];
-    if (vector != NULL) {
-        valuePtr1 = vector + rowPtr1->offset;
-        if (IsEmpty(valuePtr1)) {
+    if (colPtr->vector != NULL) {
+        valuePtr1 = colPtr->vector + rowPtr1->offset;
+        if (IsEmptyValue(valuePtr1)) {
             valuePtr1 = NULL;
         }
-        valuePtr2 = vector + rowPtr2->offset;
-        if (IsEmpty(valuePtr2)) {
+        valuePtr2 = colPtr->vector + rowPtr2->offset;
+        if (IsEmptyValue(valuePtr2)) {
             valuePtr2 = NULL;
         }
     }
-    if (IsEmpty(valuePtr1)) {
-        if (IsEmpty(valuePtr2)) {
+    if (IsEmptyValue(valuePtr1)) {
+        if (IsEmptyValue(valuePtr2)) {
             return 0;
         }
         return 1;
-    } else if (IsEmpty(valuePtr2)) {
+    } else if (IsEmptyValue(valuePtr2)) {
         return -1;
     }
     if (valuePtr1->datum.d < valuePtr2->datum.d) {
@@ -2275,7 +2528,8 @@ static int
 CompareRows(void *a, void *b)
 {
     Row *rowPtr1, *rowPtr2;
-    long i, result;
+    size_t i;
+    int result;
 
     rowPtr1 = *(Row **)a;
     rowPtr2 = *(Row **)b;
@@ -2300,10 +2554,15 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 
     if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_AUTO) {
         switch (colPtr->type) {
+        case TABLE_COLUMN_TYPE_INT64:
+            proc = CompareInt64s;
+            break;
+
         case TABLE_COLUMN_TYPE_LONG:
         case TABLE_COLUMN_TYPE_BOOLEAN:
-            proc = CompareIntegers;
+            proc = CompareLongs;
             break;
+
         case TABLE_COLUMN_TYPE_TIME:
         case TABLE_COLUMN_TYPE_DOUBLE:
             proc = CompareDoubles;
@@ -2318,9 +2577,6 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
         case TABLE_SORT_DICTIONARY:
             proc = CompareDictionaryStrings;
             break;
-        case TABLE_SORT_FREQUENCY:
-            proc = CompareFrequencyRows;
-            break;
         default:
         case TABLE_SORT_ASCII:
             if (flags & TABLE_SORT_IGNORECASE) {
@@ -2334,113 +2590,186 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
     return proc;
 }
 
-static Header **
-SortHeaders(RowColumn *rcPtr, QSortCompareProc *proc)
+static Row **
+SortRows(Rows *rowsPtr, QSortCompareProc *proc)
 {
-    long i;
-    Header **map;
+    size_t i;
+    Row **map;
 
     /* Make a copy of the current row map. */
-    map = Blt_Malloc(sizeof(Header *) * rcPtr->numAllocated);
+    map = Blt_Malloc(sizeof(Row *) * rowsPtr->numAllocated);
     if (map == NULL) {
         return NULL;
     }
-    for (i = 0; i < rcPtr->numAllocated; i++) {
-        map[i] = rcPtr->map[i];
+    for (i = 0; i < rowsPtr->numAllocated; i++) {
+        map[i] = rowsPtr->map[i];
     }
     /* Sort the map and return it. */
-    qsort((char *)map, rcPtr->numUsed, sizeof(Header *), proc);
+    qsort((char *)map, rowsPtr->numUsed, sizeof(Row *), proc);
     return map;
 }
 
 static void
-ReplaceMap(RowColumn *rcPtr, Header **map)
+ReplaceRowMap(Rows *rowsPtr, Row **map)
 {
-    Blt_Free(rcPtr->map);
-    rcPtr->map = map;
-    ResetMap(rcPtr);
+    size_t i;
+
+    if (rowsPtr->numUsed == 0) {
+        return;
+    }
+    /* Rethread list according to the map. */
+    for (i = 0; i < rowsPtr->numUsed; i++) {
+        Row *rowPtr;
+        Row *prevPtr, *nextPtr;
+
+        prevPtr = (i > 0) ? map[i-1] : NULL;
+        nextPtr = ((i+i) < rowsPtr->numUsed) ? map[i+1] : NULL;
+        rowPtr = map[i];
+        rowPtr->prevPtr = prevPtr;
+        rowPtr->nextPtr = nextPtr;
+        rowPtr->index = i;
+    }
+    rowsPtr->headPtr = map[0];
+    rowsPtr->tailPtr = map[rowsPtr->numUsed-1];
+    if (rowsPtr->map != NULL) {
+        Blt_Free(rowsPtr->map);
+    }
+    rowsPtr->map = map;
+}
+
+static void
+ReplaceColumnMap(Columns *columnsPtr, Column **map)
+{
+    size_t i;
+    Column *prevPtr;
+    Column *colPtr;
+
+    if (columnsPtr->numUsed == 0) {
+        return;
+    }
+    /* Rethread column list according to the map. */
+    prevPtr = NULL;
+    for (i = 0; i < (columnsPtr->numUsed - 1); i++) {
+        colPtr = map[i];
+        colPtr->index = i;
+        colPtr->nextPtr = map[i + 1];
+        colPtr->prevPtr = prevPtr;
+        prevPtr =  map[i];
+    }
+    colPtr = map[i];
+    colPtr->nextPtr = NULL;
+    colPtr->prevPtr = prevPtr;
+    columnsPtr->headPtr = map[0];
+    columnsPtr->tailPtr = colPtr;
+    if (columnsPtr->map != NULL) {
+        Blt_Free(columnsPtr->map);
+    }
+    columnsPtr->map = map;
 }
 
 static int
-MoveIndices(
-    RowColumn *rcPtr,
-    Header *srcPtr,                     /* Starting source index.  */
-    Header *destPtr,                    /* Starting destination index. */
-    long count)                         /* # of rows or columns to move. */
+MoveRows(Rows *rowsPtr, Row *destPtr, Row *firstPtr, Row *lastPtr, int after)
 {
-    Header **newMap;                    /* Resulting reordered map. */
-    long src, dest;
-
-    if (srcPtr == destPtr) {
-        return TRUE;
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
     }
-    src = srcPtr->index, dest = destPtr->index;
-    newMap = Blt_Malloc(sizeof(Header *) * rcPtr->numAllocated);
-    if (newMap == NULL) {
-        return FALSE;
-    }
-    if (dest < src) {
-        long i, j;
+    /* Check is destination outside the range of rows to be moved. */
+    assert ((destPtr->index < firstPtr->index) ||
+            (destPtr->index > lastPtr->index));
 
-        /*
-         *     dest   src
-         *      v     v
-         * | | | | | |x|x|x|x| |
-         *  A A B B B C C C C D
-         * | | |x|x|x|x| | | | |
-         *
-         * Section C is the selected region to move.
-         */
-        /* Section A: copy everything from 0 to "dest" */
-        for (i = 0; i < dest; i++) {
-            newMap[i] = rcPtr->map[i];
-        }
-        /* Section C: append the selected region. */
-        for (i = src, j = dest; i < (src + count); i++, j++) {
-            newMap[j] = rcPtr->map[i];
-        }
-        /* Section B: shift the preceding indices from "dest" to "src".  */
-        for (i = dest; i < src; i++, j++) {
-            newMap[j] = rcPtr->map[i];
-        }
-        /* Section D: append trailing indices until the end. */
-        for (i = src + count; i < rcPtr->numUsed; i++, j++) {
-            newMap[j] = rcPtr->map[i];
-        }
-    } else if (src < dest) {
-        long i, j;
-
-        /*
-         *     src        dest
-         *      v           v
-         * | | |x|x|x|x| | | | |
-         *  A A C C C C B B B D
-         * | | | | | |x|x|x|x| |
-         *
-         * Section C is the selected region to move.
-         */
-        /* Section A: copy everything from 0 to "src" */
-        for (j = 0; j < src; j++) {
-            newMap[j] = rcPtr->map[j];
-        }
-        /* Section B: shift the trailing indices from "src" to "dest".  */
-        for (i = (src + count); j < dest; i++, j++) {
-            newMap[j] = rcPtr->map[i];
-        }
-        /* Section C: append the selected region. */
-        for (i = src; i < (src + count); i++, j++) {
-            newMap[j] = rcPtr->map[i];
-        }
-        /* Section D: append trailing indices until the end. */
-        for (i = dest + count; i < rcPtr->numUsed; i++, j++) {
-            newMap[j] = rcPtr->map[i];
-        }
+    /* Unlink the sub-list from the list of rows. */
+    if (rowsPtr->headPtr == firstPtr) {
+        rowsPtr->headPtr = lastPtr->nextPtr;
+        lastPtr->nextPtr->prevPtr = NULL;
     }
-    /* Reset the inverse offset-to-index map. */
-    ReplaceMap(rcPtr, newMap);
+    if (rowsPtr->tailPtr == lastPtr) {
+        rowsPtr->tailPtr = lastPtr->prevPtr;
+        lastPtr->prevPtr->nextPtr = NULL;
+    }
+    if (lastPtr->nextPtr != NULL) {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
+    }
+    if (firstPtr->prevPtr != NULL) {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
+    }
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
+    /* Now attach the detached list to the destination. */
+    if (after) {
+        if (destPtr->nextPtr == NULL) {
+            rowsPtr->tailPtr = lastPtr; /* Append to the end. */
+        } else {
+            destPtr->nextPtr->prevPtr = lastPtr;
+        }
+        firstPtr->prevPtr = destPtr;
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->nextPtr = firstPtr;
+    } else {
+        if (destPtr->prevPtr == NULL) {
+            rowsPtr->headPtr = firstPtr; /* Prepend to the beginning. */
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        lastPtr->nextPtr = destPtr;
+        destPtr->prevPtr = lastPtr;
+    }
+    /* FIXME: You don't have to reset the entire map. */
+    ResetRowMap(rowsPtr);
     return TRUE;
 }
 
+static int
+MoveColumns(Columns *columnsPtr, Column *destPtr, Column *firstPtr, 
+            Column *lastPtr, int after)
+{
+    if (columnsPtr->flags & REINDEX) {
+        ResetColumnMap(columnsPtr);
+    }
+    assert (firstPtr->index <= lastPtr->index);
+    /* Unlink the sub-list from the list of columns. */
+    if (columnsPtr->headPtr == firstPtr) {
+        columnsPtr->headPtr = lastPtr->nextPtr;
+        lastPtr->nextPtr->prevPtr = NULL;
+    } else {
+        firstPtr->prevPtr->nextPtr = lastPtr->nextPtr;
+    }
+    if (columnsPtr->tailPtr == lastPtr) {
+        columnsPtr->tailPtr = firstPtr->prevPtr;
+        firstPtr->prevPtr->nextPtr = NULL;
+    } else {
+        lastPtr->nextPtr->prevPtr = firstPtr->prevPtr;
+    }
+    firstPtr->prevPtr = lastPtr->nextPtr = NULL;
+
+    /* Now attach the detached list to the destination. */
+    if (after) { 
+        /* [a]->[dest]->[b] */
+        /*            [first]->[last] */
+        if (destPtr->nextPtr == NULL) {
+            assert(destPtr == columnsPtr->tailPtr);
+            columnsPtr->tailPtr = lastPtr; /* Append to the end. */
+        } else {
+            destPtr->nextPtr->prevPtr = lastPtr;
+        }
+        lastPtr->nextPtr = destPtr->nextPtr;
+        destPtr->nextPtr = firstPtr;
+        firstPtr->prevPtr = destPtr;
+    } else {
+        /*           [a]->[dest]->[b] */
+        /* [first]->[last] */
+        if (destPtr->prevPtr == NULL) {
+            columnsPtr->headPtr = firstPtr;
+        } else {
+            destPtr->prevPtr->nextPtr = firstPtr;
+        }
+        firstPtr->prevPtr = destPtr->prevPtr;
+        destPtr->prevPtr = lastPtr;
+        lastPtr->nextPtr = destPtr;
+    }
+    /* FIXME: You don't have to reset the entire map. */
+    ResetColumnMap(columnsPtr);
+    return TRUE;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -2607,8 +2936,8 @@ RestoreError(Tcl_Interp *interp, RestoreData *restorePtr)
 static int
 RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 {
-    long numCols, numRows;
-    long count, time;
+    long numCols, numRows, count;
+    int64_t time;
 
     /* i rows columns ctime mtime */
     if (restorePtr->argc != 5) {
@@ -2617,25 +2946,15 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
                 (char *)NULL);
         return TCL_ERROR;
     }   
-    if (Blt_GetLong(interp, restorePtr->argv[1], &count) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[1], COUNT_POS, &count)
+        != TCL_OK) {
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    if (count < 1) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad # of rows \"", restorePtr->argv[1], "\"", 
-                         (char *)NULL);
-        return TCL_ERROR;
-    }
+    /* FIXME: What are you doing w/ numRows and numCols? */
     numRows = count;
-    if (Blt_GetLong(interp, restorePtr->argv[2], &count) != TCL_OK) {
+    if (Blt_GetCount(interp, restorePtr->argv[2], COUNT_POS, &count)!=TCL_OK) {
         RestoreError(interp, restorePtr);
-        return TCL_ERROR;
-    }
-    if (count < 1) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad # of columns \"", restorePtr->argv[2], 
-                "\"", (char *)NULL);
         return TCL_ERROR;
     }
     numCols = count;
@@ -2643,38 +2962,16 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         numRows += restorePtr->numRows;
         numCols += restorePtr->numCols;
     }
-    if (numCols > blt_table_num_columns(table)) {
-        long needed;
-
-        needed = numCols - blt_table_num_columns(table);
-        if (!GrowColumns(table, needed)) {
-            RestoreError(interp, restorePtr);
-            Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(needed),
-                        "\"", " extra columns.", (char *)NULL);
-            return TCL_ERROR;
-        }
-    }
-    if (numRows > blt_table_num_rows(table)) {
-        long needed;
-
-        needed = numRows - blt_table_num_rows(table);
-        if (!GrowRows(table, needed)) {
-            RestoreError(interp, restorePtr);
-            Tcl_AppendResult(interp, "can't allocate \"", Blt_Ltoa(needed), 
-                "\" extra rows.", (char *)NULL);
-            return TCL_ERROR;
-        }
-    }
-    if (Blt_GetLong(interp, restorePtr->argv[3], &time) != TCL_OK) {
+    if (Blt_GetInt64(interp, restorePtr->argv[3], &time) != TCL_OK){
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    restorePtr->ctime = (unsigned long)time;
-    if (Blt_GetLong(interp, restorePtr->argv[4], &time) != TCL_OK) {
+    restorePtr->ctime = time;
+    if (Blt_GetInt64(interp, restorePtr->argv[4], &time) != TCL_OK){
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    restorePtr->mtime = (unsigned long)time;
+    restorePtr->mtime = time;
     return TCL_OK;
 }
 
@@ -2699,12 +2996,6 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    if (index < 0) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad column index \"", restorePtr->argv[1], 
-                "\"", (char *)NULL);
-        return TCL_ERROR;
-    }
     label = restorePtr->argv[2];
     colPtr = blt_table_get_column_by_label(table, label);
     if ((colPtr == NULL) || 
@@ -2717,7 +3008,7 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
             return TCL_ERROR;
         }
     }
-    hPtr = Blt_CreateHashEntry(&restorePtr->colIndices, (char *)index, &isNew);
+    hPtr = Blt_CreateHashEntry(&restorePtr->colIndices,(intptr_t)index, &isNew);
     Blt_SetHashValue(hPtr, colPtr);
 
     type = blt_table_name_to_column_type(restorePtr->argv[3]);
@@ -2770,12 +3061,6 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    if (index < 0) {
-        RestoreError(interp, restorePtr);
-        Tcl_AppendResult(interp, "bad row index \"", restorePtr->argv[1], "\"",
-                (char *)NULL);
-        return TCL_ERROR;
-    }
     label = restorePtr->argv[2];
     row = blt_table_get_row_by_label(table, label);
     if ((row == NULL) || ((restorePtr->flags & TABLE_RESTORE_OVERWRITE) == 0)) {
@@ -2787,7 +3072,7 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
             return TCL_ERROR;
         }
     }
-    hPtr = Blt_CreateHashEntry(&restorePtr->rowIndices, (char *)index, &isNew);
+    hPtr = Blt_CreateHashEntry(&restorePtr->rowIndices,(intptr_t)index, &isNew);
     Blt_SetHashValue(hPtr, row);
     if ((restorePtr->argc == 5) && 
         ((restorePtr->flags & TABLE_RESTORE_NO_TAGS) == 0)) {
@@ -2815,7 +3100,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 {
     Blt_HashEntry *hPtr;
     int result;
-    BLT_TABLE_ROW row;
+    Row *rowPtr;
     Column *colPtr;
     Value *valuePtr;
     long index;
@@ -2831,19 +3116,19 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&restorePtr->rowIndices, (char *)index);
+    hPtr = Blt_FindHashEntry(&restorePtr->rowIndices, (intptr_t)index);
     if (hPtr == NULL) {
         RestoreError(interp, restorePtr);
         Tcl_AppendResult(interp, "bad row index \"", restorePtr->argv[1], "\"",
                          (char *)NULL);
         return TCL_ERROR;
     }
-    row = Blt_GetHashValue(hPtr);
+    rowPtr = Blt_GetHashValue(hPtr);
     if (Blt_GetLong(interp, restorePtr->argv[2], &index) != TCL_OK) {
         RestoreError(interp, restorePtr);
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&restorePtr->colIndices, (char *)index);
+    hPtr = Blt_FindHashEntry(&restorePtr->colIndices, (intptr_t)index);
     if (hPtr == NULL) {
         RestoreError(interp, restorePtr);
         Tcl_AppendResult(interp, "bad column index \"", restorePtr->argv[2], 
@@ -2851,8 +3136,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
         return TCL_ERROR;
     }
     colPtr = Blt_GetHashValue(hPtr);
-
-    valuePtr = GetValue(table, row, colPtr);
+    valuePtr = GetValue(table, rowPtr, colPtr);
     result = SetValueFromString(interp, colPtr->type, restorePtr->argv[3], -1,
         valuePtr);
     if (result != TCL_OK) {
@@ -2864,13 +3148,19 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 BLT_TABLE_ROW *
 blt_table_get_row_map(Table *tablePtr)  
 {
-    return (BLT_TABLE_ROW *)tablePtr->corePtr->rows.map;
+    if (tablePtr->corePtr->rows.flags & REINDEX) {
+        ResetRowMap(&tablePtr->corePtr->rows);
+    }
+    return tablePtr->corePtr->rows.map;
 }
 
 BLT_TABLE_COLUMN *
 blt_table_get_column_map(Table *tablePtr)  
 {
-    return (BLT_TABLE_COLUMN *)tablePtr->corePtr->columns.map;
+    if (tablePtr->corePtr->columns.flags & REINDEX) {
+        ResetColumnMap(&tablePtr->corePtr->columns);
+    }
+    return tablePtr->corePtr->columns.map;
 }
 
 Blt_Chain
@@ -2927,7 +3217,10 @@ blt_table_same_object(Table *tablePtr1, Table *tablePtr2)
 BLT_TABLE_ROW
 blt_table_get_row_by_index(Table *tablePtr, long index)  
 {
-    if ((index >= 0) && (index < blt_table_num_rows(tablePtr))) {
+    if (tablePtr->corePtr->rows.flags & REINDEX) {
+        ResetRowMap(&tablePtr->corePtr->rows);
+    }
+    if (index < blt_table_num_rows(tablePtr)) {
         return blt_table_row(tablePtr, index);
     }
     return NULL;
@@ -2936,7 +3229,10 @@ blt_table_get_row_by_index(Table *tablePtr, long index)
 BLT_TABLE_COLUMN
 blt_table_get_column_by_index(Table *tablePtr, long index)  
 {
-    if ((index >= 0) && (index < blt_table_num_columns(tablePtr))) {
+    if (tablePtr->corePtr->columns.flags & REINDEX) {
+        ResetColumnMap(&tablePtr->corePtr->columns);
+    }
+    if (index < blt_table_num_columns(tablePtr)) {
         return blt_table_column(tablePtr, index);
     }
     return NULL;
@@ -2957,7 +3253,7 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
         *sp = string + 1;
         return TABLE_SPEC_TAG;
     } else if ((isdigit(UCHAR(c))) && 
-        (Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK)) {
+               (Blt_GetLongFromObj(NULL, objPtr, &index) == TCL_OK)) {
         return TABLE_SPEC_INDEX;
     } else if ((c == 'r') && (strncmp(string, "range:", 6) == 0)) {
         *sp = string + 6;
@@ -2997,43 +3293,49 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 BLT_TABLE_COLUMN
 blt_table_first_column(Table *tablePtr)  
 {
-    if (tablePtr->corePtr->columns.numUsed > 0) {
-        return (BLT_TABLE_COLUMN)tablePtr->corePtr->columns.map[0];
-    }
-    return NULL;
+    return tablePtr->corePtr->columns.headPtr;
 }
 
 BLT_TABLE_COLUMN
-blt_table_next_column(Table *tablePtr, Column *colPtr)  
+blt_table_last_column(Table *tablePtr)  
 {
-    long index;
+    return tablePtr->corePtr->columns.tailPtr;
+}
 
-    index = colPtr->index + 1;
-    if (index < tablePtr->corePtr->columns.numUsed) {
-        return (BLT_TABLE_COLUMN)tablePtr->corePtr->columns.map[index];
-    }
-    return NULL;
+BLT_TABLE_COLUMN
+blt_table_next_column(Column *colPtr)  
+{
+    return colPtr->nextPtr;
+}
+
+BLT_TABLE_COLUMN
+blt_table_previous_column(Column *colPtr)  
+{
+    return colPtr->prevPtr;
 }
 
 BLT_TABLE_ROW
 blt_table_first_row(Table *tablePtr)  
 {
-    if (tablePtr->corePtr->rows.numUsed > 0) {
-        return (BLT_TABLE_ROW)tablePtr->corePtr->rows.map[0];
-    }
-    return NULL;
+    return tablePtr->corePtr->rows.headPtr;
 }
 
 BLT_TABLE_ROW
-blt_table_next_row(Table *tablePtr, Row *rowPtr)  
+blt_table_last_row(Table *tablePtr)  
 {
-    long index;
+    return tablePtr->corePtr->rows.tailPtr;
+}
 
-    index = rowPtr->index + 1;
-    if (index < tablePtr->corePtr->rows.numUsed) {
-        return (BLT_TABLE_ROW)tablePtr->corePtr->rows.map[index];
-    }
-    return NULL;
+BLT_TABLE_ROW
+blt_table_next_row(Row *rowPtr)  
+{
+    return rowPtr->nextPtr;
+}
+
+BLT_TABLE_ROW
+blt_table_previous_row(Row *rowPtr)  
+{
+    return rowPtr->prevPtr;
 }
 
 /*
@@ -3055,46 +3357,54 @@ int
 blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
                       BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROW from, to;
     const char *tag, *p;
-    int result;
-    Tcl_Obj *rangeObjPtr;
     long index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
-
+    Rows *rowsPtr;
     memset(iterPtr, 0, sizeof(BLT_TABLE_ITERATOR));
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
     iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
 
     spec = blt_table_row_spec(table, objPtr, &tag);
+    rowsPtr = blt_table_rows(table);
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
+    }
     switch (spec) {
     case TABLE_SPEC_INDEX:
-        p = Tcl_GetString(objPtr);
-        if (p == tag) {
-            result = Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index);
-        } else {
-            result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tag, &index);
-        }
-        if (result != TCL_OK) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "badly formed row index \"", tag, 
-                        "\"", (char *)NULL);
+        {
+            int result;
+
+            p = Tcl_GetString(objPtr);
+            if (p == tag) {
+                result = Blt_GetLongFromObj(NULL, objPtr, &index);
+            } else {
+                result = Blt_GetLong(NULL, (char *)tag, &index);
             }
-            return TCL_ERROR;
-        }
-        if ((index < 0) || (index >= blt_table_num_rows(table))) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad row index \"", 
-                        Tcl_GetString(objPtr), "\"", (char *)NULL);
+            if (result != TCL_OK) {
+                if (interp != NULL) {
+                    Tcl_AppendResult(interp, "badly formed row index \"", tag, 
+                                     "\"", (char *)NULL);
+                }
+                return TCL_ERROR;
             }
-            return TCL_ERROR;
-        }               
-        iterPtr->start = index;
-        iterPtr->end = iterPtr->start + 1;
-        iterPtr->tag = tag;
-        iterPtr->numEntries = 1;
-        return TCL_OK;
+            if (index >= blt_table_num_rows(table)) {
+                if (interp != NULL) {
+                    Tcl_AppendResult(interp, "bad row index \"", 
+                                     Tcl_GetString(objPtr), "\"", (char *)NULL);
+                }
+                return TCL_ERROR;
+            }               
+            iterPtr->firstPtr = iterPtr->lastPtr = blt_table_row(table, index);
+            if (iterPtr->firstPtr != NULL) {
+                iterPtr->numEntries = 1;
+            }
+            iterPtr->tag = tag;
+            return TCL_OK;
+        }
+        break;
 
     case TABLE_SPEC_LABEL:
         iterPtr->tablePtr = blt_table_row_get_label_table(table, tag);
@@ -3107,64 +3417,78 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
         break;
         
     case TABLE_SPEC_TAG:
-
-        if (strcmp(tag, "all") == 0) {
-            iterPtr->type = TABLE_ITERATOR_ALL;
-            iterPtr->start = 0;
-            iterPtr->end = iterPtr->numEntries = blt_table_num_rows(table);
-            iterPtr->tag = tag;
-            return TCL_OK;
-        }
-        if (strcmp(tag, "end") == 0) {
-            iterPtr->tag = tag;
-            iterPtr->end = blt_table_num_rows(table);
-            iterPtr->start = iterPtr->end - 1;
-            iterPtr->numEntries = 1;
-            return TCL_OK;
-        }
         {
             Blt_Chain chain;
 
+            if (strcmp(tag, "all") == 0) {
+                Row *firstPtr, *lastPtr;
+                
+                iterPtr->type = TABLE_ITERATOR_ALL;
+                firstPtr = blt_table_first_row(table);
+                lastPtr = blt_table_last_row(table);
+                iterPtr->tag = tag;
+                if (firstPtr != NULL) {
+                    iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+                }
+                iterPtr->firstPtr = firstPtr;
+                iterPtr->lastPtr = lastPtr;
+                return TCL_OK;
+            }
+            if (strcmp(tag, "end") == 0) {
+                iterPtr->tag = tag;
+                iterPtr->firstPtr = iterPtr->lastPtr = 
+                    blt_table_last_row(table);
+                if (iterPtr->firstPtr != NULL) {
+                    iterPtr->numEntries = 1;
+                }
+                return TCL_OK;
+            }
             chain = blt_table_get_tagged_rows(iterPtr->table, tag);
             if (chain != NULL) {
                 iterPtr->link = Blt_Chain_FirstLink(chain);
                 iterPtr->type = TABLE_ITERATOR_TAG;
                 iterPtr->tag = tag;
-                iterPtr->numEntries = Blt_Chain_GetLength(chain);
                 iterPtr->chain = NULL;  /* Don't free row tag chain. */
+                iterPtr->numEntries = Blt_Chain_GetLength(chain);
             }
-            return TCL_OK;
         }
-        break;
+        return TCL_OK;
         
     case TABLE_SPEC_RANGE:
-        p = strchr(tag, '-');
-        if (p == NULL) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad range specification \"", tag, 
-                        "\"", (char *)NULL);
+        {
+            Row *firstPtr, *lastPtr;
+            Tcl_Obj *rangeObjPtr;
+
+            p = strchr(tag, '-');
+            if (p == NULL) {
+                if (interp != NULL) {
+                    Tcl_AppendResult(interp, "bad range specification \"", tag, 
+                                     "\"", (char *)NULL);
+                }
+                return TCL_ERROR;
             }
-            return TCL_ERROR;
+            rangeObjPtr = Tcl_NewStringObj(tag, p - tag);
+            firstPtr = blt_table_get_row(interp, table, rangeObjPtr);
+            Tcl_DecrRefCount(rangeObjPtr);
+            if (firstPtr == NULL) {
+                return TCL_ERROR;
+            }
+            rangeObjPtr = Tcl_NewStringObj(p + 1, -1);
+            lastPtr = blt_table_get_row(interp, table, rangeObjPtr);
+            Tcl_DecrRefCount(rangeObjPtr);
+            if (lastPtr == NULL) {
+                return TCL_ERROR;
+            }
+            if (firstPtr->index > lastPtr->index) {
+                return TCL_OK;
+            }
+            iterPtr->firstPtr = firstPtr;
+            iterPtr->lastPtr = lastPtr;
+            iterPtr->type = TABLE_ITERATOR_RANGE;
+            iterPtr->table = table;
+            iterPtr->tag = tag;
+            iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
         }
-        rangeObjPtr = Tcl_NewStringObj(tag, p - tag);
-        from = blt_table_get_row(interp, table, rangeObjPtr);
-        Tcl_DecrRefCount(rangeObjPtr);
-        if (from == NULL) {
-            return TCL_ERROR;
-        }
-        rangeObjPtr = Tcl_NewStringObj(p + 1, -1);
-        to = blt_table_get_row(interp, table, rangeObjPtr);
-        Tcl_DecrRefCount(rangeObjPtr);
-        if (to == NULL) {
-            return TCL_ERROR;
-        }
-        iterPtr->start = blt_table_row_index(from);
-        iterPtr->end   = blt_table_row_index(to) + 1;
-        iterPtr->numEntries = iterPtr->end - iterPtr->start;
-        iterPtr->type = TABLE_ITERATOR_RANGE;
-        iterPtr->table = table;
-        iterPtr->next = -1;
-        iterPtr->tag = tag;
         return TCL_OK;
 
     default:
@@ -3193,13 +3517,13 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 BLT_TABLE_ROW
 blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROW row;
-
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
         /* iterPtr->link is already set by blt_table_row_iterator */
         if (iterPtr->link != NULL) {
+            BLT_TABLE_ROW row;
+
             row = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return row;
@@ -3218,10 +3542,16 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
         break;
 
     default:
-        if (iterPtr->start < iterPtr->end) {
-            row = blt_table_row(iterPtr->table, iterPtr->start);
-            iterPtr->next = iterPtr->start + 1;
-            return row;
+        if (iterPtr->firstPtr != NULL) {
+            Row *rowPtr;
+
+            rowPtr = iterPtr->firstPtr;
+            if (rowPtr == iterPtr->lastPtr) {
+                iterPtr->nextPtr = NULL;
+            } else {
+                iterPtr->nextPtr = rowPtr->nextPtr;
+            }
+            return rowPtr;
         } 
     }
     return NULL;
@@ -3243,12 +3573,12 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 BLT_TABLE_ROW
 blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROW row;
-            
     switch (iterPtr->type) {
     case TABLE_ITERATOR_CHAIN:
     case TABLE_ITERATOR_TAG:
         if (iterPtr->link != NULL) {
+            BLT_TABLE_ROW row;
+            
             row = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return row;
@@ -3266,10 +3596,16 @@ blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
         }
         break;
     default:
-        if (iterPtr->next < iterPtr->end) {
-            row = blt_table_row(iterPtr->table, iterPtr->next);
-            iterPtr->next++;
-            return row;
+        if (iterPtr->nextPtr != NULL) {
+            Row *rowPtr;
+
+            rowPtr = iterPtr->nextPtr;
+            if (rowPtr == iterPtr->lastPtr) {
+                iterPtr->nextPtr = NULL;
+            } else {
+                iterPtr->nextPtr = rowPtr->nextPtr;
+            }
+            return rowPtr;
         }       
     }
     return NULL;
@@ -3333,8 +3669,8 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
     if (c == '@') {
         *sp = string + 1;
         return TABLE_SPEC_TAG;
-    } else if ((isdigit(c)) && 
-        Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK) {
+    } else if ((isdigit(c)) &&
+               (Blt_GetLongFromObj(NULL, objPtr, &index) == TCL_OK)) {
         return TABLE_SPEC_INDEX;
     } else if ((c == 'r') && (strncmp(string, "range:", 6) == 0)) {
         *sp = string + 6;
@@ -3391,28 +3727,29 @@ int
 blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
                          BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_COLUMN from, to;
     const char *tag, *p;
     int result;
-    Tcl_Obj *fromObjPtr, *toObjPtr;
     long index;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
+    Columns *columnsPtr;
 
+    columnsPtr = blt_table_columns(table);
+    if (columnsPtr->flags & REINDEX) {
+        ResetColumnMap(columnsPtr);
+    }
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
     iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
 
     spec = blt_table_column_spec(table, objPtr, &tag);
-#ifdef notdef
-    fprintf(stderr, "iterate_column: tag=%s spec=%d\n", tag, spec);
-#endif
     switch (spec) {
     case TABLE_SPEC_INDEX:
         p = Tcl_GetString(objPtr);
         if (p == tag) {
-            result = Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index);
+            result = Blt_GetLongFromObj(NULL, objPtr, &index);
         } else {
-            result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tag, &index);
+            result = Blt_GetLong(NULL, (const char *)tag, &index);
         }
         if (result != TCL_OK) {
             if (interp != NULL) {
@@ -3428,10 +3765,11 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
             }
             return TCL_ERROR;
         }               
-        iterPtr->start = index;
-        iterPtr->end = iterPtr->start + 1;
+        iterPtr->firstPtr = iterPtr->lastPtr = blt_table_column(table, index);
+        if (iterPtr->firstPtr != NULL) {
+            iterPtr->numEntries = 1;
+        }
         iterPtr->tag = tag;
-        iterPtr->numEntries = 1;
         return TCL_OK;
 
     case TABLE_SPEC_LABEL:
@@ -3445,61 +3783,78 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
         break;
         
     case TABLE_SPEC_TAG:
-        if (strcmp(tag, "all") == 0) {
-            iterPtr->type = TABLE_ITERATOR_ALL;
-            iterPtr->start = 0;
-            iterPtr->end = iterPtr->numEntries = blt_table_num_columns(table);
-            iterPtr->tag = tag;
-            return TCL_OK;
-        }
-        if (strcmp(tag, "end") == 0) {
-            iterPtr->tag = tag;
-            iterPtr->start = blt_table_num_columns(table) - 1;
-            iterPtr->end = iterPtr->start + 1;
-            iterPtr->numEntries = 1;
-            return TCL_OK;
-        }
         {
             Blt_Chain chain;
 
+            if (strcmp(tag, "all") == 0) {
+                Column *firstPtr, *lastPtr;
+
+                iterPtr->type = TABLE_ITERATOR_ALL;
+                iterPtr->tag = tag;
+                firstPtr = blt_table_first_column(table);
+                lastPtr = blt_table_last_column(table);
+                if (firstPtr != NULL) {
+                    iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+                }
+                iterPtr->firstPtr = firstPtr;
+                iterPtr->lastPtr = lastPtr;
+                return TCL_OK;
+            }
+            if (strcmp(tag, "end") == 0) {
+                iterPtr->tag = tag;
+                iterPtr->firstPtr = iterPtr->lastPtr = 
+                    blt_table_last_column(table);
+                if (iterPtr->firstPtr != NULL) {
+                    iterPtr->numEntries = 1;
+                }
+                return TCL_OK;
+            }
+            
             chain = blt_table_get_tagged_columns(iterPtr->table, tag);
             if (chain != NULL) {
                 iterPtr->link = Blt_Chain_FirstLink(chain);
                 iterPtr->type = TABLE_ITERATOR_TAG;
                 iterPtr->tag = tag;
-                iterPtr->numEntries = Blt_Chain_GetLength(chain);
                 iterPtr->chain = NULL;  /* Don't free column tag chain.  */
+                iterPtr->numEntries = Blt_Chain_GetLength(chain);
                 return TCL_OK;
             }
         }
         break;
 
     case TABLE_SPEC_RANGE:
-        p = strchr(tag, '-');
-        if (p == NULL) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad range specification \"", tag, 
-                        "\"", (char *)NULL);
+        {
+            Column *firstPtr, *lastPtr;
+            Tcl_Obj *fromObjPtr, *toObjPtr;
+            
+            p = strchr(tag, '-');
+            if (p == NULL) {
+                if (interp != NULL) {
+                    Tcl_AppendResult(interp, "bad range specification \"", tag, 
+                                     "\"", (char *)NULL);
+                }
+                return TCL_ERROR;
             }
-            return TCL_ERROR;
+            fromObjPtr = Tcl_NewStringObj(tag, p - tag);
+            firstPtr = blt_table_get_column(interp, table, fromObjPtr);
+            Tcl_DecrRefCount(fromObjPtr);
+            if (firstPtr == NULL) {
+                return TCL_ERROR;
+            }
+            toObjPtr = Tcl_NewStringObj(p + 1, -1);
+            lastPtr = blt_table_get_column(interp, table, toObjPtr);
+            Tcl_DecrRefCount(toObjPtr);
+            if (lastPtr == NULL) {
+                return TCL_ERROR;
+            }
+            iterPtr->firstPtr = firstPtr;
+            iterPtr->lastPtr = lastPtr;
+            iterPtr->type  = TABLE_ITERATOR_RANGE;
+            iterPtr->tag = tag;
+            if (firstPtr != NULL) {
+                iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+            }
         }
-        fromObjPtr = Tcl_NewStringObj(tag, p - tag);
-        from = blt_table_get_column(interp, table, fromObjPtr);
-        Tcl_DecrRefCount(fromObjPtr);
-        if (from == NULL) {
-            return TCL_ERROR;
-        }
-        toObjPtr = Tcl_NewStringObj(p + 1, -1);
-        to = blt_table_get_column(interp, table, toObjPtr);
-        Tcl_DecrRefCount(toObjPtr);
-        if (to == NULL) {
-            return TCL_ERROR;
-        }
-        iterPtr->start = blt_table_column_index(from);
-        iterPtr->end   = blt_table_column_index(to) + 1;
-        iterPtr->numEntries = iterPtr->end - iterPtr->start;
-        iterPtr->type  = TABLE_ITERATOR_RANGE;
-        iterPtr->tag = tag;
         return TCL_OK;
 
     default:
@@ -3528,13 +3883,13 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 BLT_TABLE_COLUMN
 blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_COLUMN col;
-
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
         /* iterPtr->link is already set by blt_table_column_iterator */
         if (iterPtr->link != NULL) {
+            BLT_TABLE_COLUMN col;
+
             col = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return col;
@@ -3552,10 +3907,16 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
         }
         break;
     default:
-        if (iterPtr->start < iterPtr->end) {
-            col = blt_table_column(iterPtr->table, iterPtr->start);
-            iterPtr->next = iterPtr->start + 1;
-            return col;
+        if (iterPtr->firstPtr != NULL) {
+            Column *colPtr;
+
+            colPtr = iterPtr->firstPtr;
+            if (colPtr == iterPtr->lastPtr) {
+                iterPtr->nextPtr = NULL;
+            } else {
+                iterPtr->nextPtr = colPtr->nextPtr;
+            }
+            return colPtr;
         } 
         break;
     }
@@ -3579,12 +3940,12 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 BLT_TABLE_COLUMN
 blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_COLUMN col;
-            
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
         if (iterPtr->link != NULL) {
+            BLT_TABLE_COLUMN col;
+            
             col = Blt_Chain_GetValue(iterPtr->link);
             iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
             return col;
@@ -3602,10 +3963,16 @@ blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
         }
         break;
     default:
-        if (iterPtr->next < iterPtr->end) {
-            col = blt_table_column(iterPtr->table, iterPtr->next);
-            iterPtr->next++;
-            return col;
+        if (iterPtr->nextPtr != NULL) {
+            Column *colPtr;
+
+            colPtr = iterPtr->nextPtr;
+            if (colPtr == iterPtr->lastPtr) {
+                iterPtr->nextPtr = NULL;
+            } else {
+                iterPtr->nextPtr = colPtr->nextPtr;
+            }
+            return colPtr;
         }       
         break;
     }
@@ -3667,7 +4034,7 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
         BLT_TABLE_COLUMN col;
 
         col = Blt_Chain_GetValue(link);
-        Blt_CreateHashEntry(&cols, (char *)col, &isNew);
+        Blt_CreateHashEntry(&cols, col, &isNew);
     }
     /* Collect the columns into a hash table. */
     for (i = 0; i < objc; i++) {
@@ -3683,7 +4050,7 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
              col = blt_table_next_tagged_column(&iter)) {
             int isNew;
 
-            Blt_CreateHashEntry(&cols, (char *)col, &isNew);
+            Blt_CreateHashEntry(&cols, col, &isNew);
             if (isNew) {
                 Blt_Chain_Append(chain, col);
             }
@@ -3709,7 +4076,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
         BLT_TABLE_ROW row;
 
         row = Blt_Chain_GetValue(link);
-        Blt_CreateHashEntry(&rows, (char *)row, &isNew);
+        Blt_CreateHashEntry(&rows, row, &isNew);
     }
     for (i = 0; i < objc; i++) {
         BLT_TABLE_ITERATOR iter;
@@ -3724,7 +4091,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
              row = blt_table_next_tagged_row(&iter)) {
             int isNew;
 
-            Blt_CreateHashEntry(&rows, (char *)row, &isNew);
+            Blt_CreateHashEntry(&rows, row, &isNew);
             if (isNew) {
                 Blt_Chain_Append(chain, row);
             }
@@ -3747,11 +4114,9 @@ blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     }
     iterPtr->type = TABLE_ITERATOR_CHAIN;
     iterPtr->link = Blt_Chain_FirstLink(chain);
-    iterPtr->next = -1;
-    iterPtr->start = 0;
-    iterPtr->end = iterPtr->numEntries = Blt_Chain_GetLength(chain);
     /* Indicate to free created chain. */
     iterPtr->chain = chain;
+    iterPtr->numEntries = Blt_Chain_GetLength(chain);
     iterPtr->tag = "";
     return TCL_OK;
 }
@@ -3759,14 +4124,28 @@ blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
 void
 blt_table_iterate_all_rows(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
-    iterPtr->table = table;
-    iterPtr->type = TABLE_ITERATOR_ALL;
-    iterPtr->link = NULL;
-    iterPtr->next = -1;
-    iterPtr->start = 0;
-    iterPtr->end = iterPtr->numEntries = blt_table_num_rows(table);
-    iterPtr->tag = "all";
+    Row *firstPtr, *lastPtr;
+    Rows *rowsPtr;
+    
+    rowsPtr = blt_table_rows(table);
+    if (rowsPtr->flags & REINDEX) {
+        ResetRowMap(rowsPtr);
+    }
+
     iterPtr->chain = NULL;
+    iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
+    iterPtr->table = table;
+    iterPtr->tag = "all";
+    iterPtr->type = TABLE_ITERATOR_ALL;
+
+    firstPtr = blt_table_first_row(table);
+    lastPtr = blt_table_last_row(table);
+    if (firstPtr != NULL) {
+        iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+    } 
+    iterPtr->firstPtr = firstPtr;
+    iterPtr->lastPtr = lastPtr;
 }
 
 int
@@ -3784,11 +4163,9 @@ blt_table_iterate_columns_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_CHAIN;
     iterPtr->link = Blt_Chain_FirstLink(chain);    
-    iterPtr->next = -1;
-    iterPtr->start = 0;
-    iterPtr->end = iterPtr->numEntries = Blt_Chain_GetLength(chain);
     /* Indicate to free created chain. */
     iterPtr->chain = chain;
+    iterPtr->numEntries = Blt_Chain_GetLength(chain);
     iterPtr->tag = "";
     return TCL_OK;
 }
@@ -3796,14 +4173,28 @@ blt_table_iterate_columns_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
 void
 blt_table_iterate_all_columns(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
-    iterPtr->table = table;
-    iterPtr->type = TABLE_ITERATOR_ALL;
-    iterPtr->link = NULL;
-    iterPtr->next = -1;
-    iterPtr->start = 0;
-    iterPtr->end = iterPtr->numEntries = blt_table_num_columns(table);
-    iterPtr->tag = "all";
+    Column *firstPtr, *lastPtr;
+    Columns *columnsPtr;
+
+    columnsPtr = blt_table_columns(table);
+    if (columnsPtr->flags & REINDEX) { 
+        ResetColumnMap(columnsPtr);
+    }
+
     iterPtr->chain = NULL;
+    iterPtr->link = NULL;
+    iterPtr->numEntries = 0;
+    iterPtr->table = table;
+    iterPtr->tag = "all";
+    iterPtr->type = TABLE_ITERATOR_ALL;
+
+    firstPtr = blt_table_first_column(table);
+    lastPtr = blt_table_last_column(table);
+    if (firstPtr != NULL) {
+        iterPtr->numEntries = lastPtr->index - firstPtr->index + 1;
+    } 
+    iterPtr->firstPtr = firstPtr;
+    iterPtr->lastPtr = lastPtr;
 }
 
 void
@@ -3916,7 +4307,7 @@ BLT_TABLE_TRACE
 blt_table_create_trace(
     Table *tablePtr,                    /* Table to be traced. */
     Row *rowPtr, 
-    Column *colPtr,                     /* Cell in table. */
+    Column *colPtr,                     /* Row/column in table. */
     const char *rowTag, 
     const char *colTag,
     unsigned int flags,                 /* Bit mask indicating what actions
@@ -4235,26 +4626,29 @@ int
 blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
                     const char *tag)
 {
+    char c;
     long dummy;
-
-    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
+    
+    c = tag[0];
+    if (((c == 'a') && (strcmp(tag, "all") == 0)) ||
+        ((c == 'e') && (strcmp(tag, "end") == 0))) {
         return TCL_OK;          /* Don't need to create reserved tags. */
     }
-    if (tag[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tag[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, "\" can't be a number.",
                              (char *)NULL);
@@ -4292,25 +4686,28 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
                          const char *tag)
 {
     long dummy;
+    char c;
 
-    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
+    c = tag[0];
+    if (((c == 'a') && (strcmp(tag, "all") == 0)) ||
+        ((c == 'e') && (strcmp(tag, "end") == 0))) {
         return TCL_OK;                  /* Don't create reserved tags. */
     }
-    if (tag[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, "\" can't be empty.", 
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tag[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
+    if ((isdigit(c)) &&(Blt_GetLong(NULL, (const char *)tag, &dummy)==TCL_OK)) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tag, "\" can't be a number.",
                              (char *)NULL);
@@ -4340,11 +4737,15 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 int
 blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tag)
 {
-    if (strcmp(tag, "all") == 0) {
+    char c;
+
+    c = tag[0];
+    if ((c == 'a') && (strcmp(tag, "all") == 0)) {
         return TRUE;            /* "all" tags matches every row. */
     }
-    if (strcmp(tag, "end") == 0) {
-        return (blt_table_row_index(rowPtr)==(blt_table_num_rows(tablePtr)-1));
+    if ((c == 'e') && (strcmp(tag, "end") == 0)) {
+        return (blt_table_row_index(tablePtr, rowPtr)==
+                (blt_table_num_rows(tablePtr)-1));
     }
     return Blt_Tags_ItemHasTag(tablePtr->rowTags, rowPtr, tag);
 }
@@ -4364,12 +4765,14 @@ blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tag)
 int
 blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tag)
 {
-    if (strcmp(tag, "all") == 0) {
+    char c;
+
+    c = tag[0];
+    if ((c == 'a') && (strcmp(tag, "all") == 0)) {
         return TRUE;                    /* "all" tags matches every column. */
     }
-    if (strcmp(tag, "end") == 0) {
-        return (blt_table_column_index(colPtr) == 
-                (blt_table_num_columns(tablePtr)-1));
+    if ((c == 'e') && (strcmp(tag, "end") == 0)) {
+        return (colPtr == (Column *)tablePtr->corePtr->columns.tailPtr);
     }
     return Blt_Tags_ItemHasTag(tablePtr->columnTags, colPtr, tag);
 }
@@ -4394,7 +4797,11 @@ int
 blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
                         const char *tag)
 {
-    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
+    char c;
+
+    c = tag[0];
+    if (((c == 'a') && (strcmp(tag, "all") == 0)) ||
+        ((c == 'e') && (strcmp(tag, "end") == 0))) {
         return TCL_OK;                  /* Can't remove reserved tags. */
     } 
     Blt_Tags_RemoveItemFromTag(tablePtr->rowTags, tag, rowPtr);
@@ -4422,7 +4829,11 @@ int
 blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
                          const char *tag)
 {
-    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
+    char c;
+
+    c = tag[0];
+    if (((c == 'a') && (strcmp(tag, "all") == 0)) ||
+        ((c == 'e') && (strcmp(tag, "end") == 0))) {
         return TCL_OK;                  /* Can't remove reserved tags. */
     } 
     Blt_Tags_RemoveItemFromTag(tablePtr->columnTags, tag, colPtr);
@@ -4519,10 +4930,10 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (IsEmpty(newPtr)) {              /* New value is empty. Effectively
-                                         * unsetting the value. */
+    if (IsEmptyValue(newPtr)) {         /* New value is empty. This is the
+                                         * same as unsetting the value. */
         flags |= TABLE_TRACE_UNSETS;
-    } else if (IsEmpty(valuePtr)) {
+    } else if (IsEmptyValue(valuePtr)) {
         flags |= TABLE_TRACE_CREATES;   /* Old value was empty. */
     } 
     if (newPtr != valuePtr) {
@@ -4561,10 +4972,10 @@ blt_table_get_obj(Table *tablePtr, Row *rowPtr, Column *colPtr)
     Tcl_Obj *objPtr;
 
     CallTraces(tablePtr, rowPtr, colPtr, TABLE_TRACE_READS);
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return NULL;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     objPtr = GetObjFromValue(colPtr->type, valuePtr);
     return objPtr;
 }
@@ -4595,10 +5006,10 @@ blt_table_set_obj(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (objPtr == NULL) {               /* New value is empty, effectively
-                                         * unsetting the value. */
+    if (objPtr == NULL) {               /* New value is empty. This is the 
+                                         * same as unsetting the value. */
         flags |= TABLE_TRACE_UNSETS;
-    } else if (IsEmpty(valuePtr)) {
+    } else if (IsEmptyValue(valuePtr)) {
         flags |= TABLE_TRACE_CREATES;
     } 
     if (SetValueFromObj(interp, colPtr->type, objPtr, valuePtr) != TCL_OK) {
@@ -4627,10 +5038,10 @@ blt_table_set_obj(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 int
 blt_table_unset_value(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
-    Value *valuePtr;
+    if (!IsEmpty(rowPtr, colPtr)) {
+        Value *valuePtr;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (!IsEmpty(valuePtr)) {
+        valuePtr = GetValue(tablePtr, rowPtr, colPtr);
         CallTraces(tablePtr, rowPtr, colPtr, TABLE_TRACE_UNSETS);
         /* Indicate the keytables need to be regenerated. */
         if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
@@ -4691,7 +5102,7 @@ blt_table_create(
     } else {
         /* Generate a unique name in the current namespace. */
         do  {
-            Blt_FormatString(string, 200, "datatable%d", dataPtr->nextId++);
+            Blt_FmtString(string, 200, "datatable%d", dataPtr->nextId++);
         } while (GetTable(dataPtr, name, NS_SEARCH_CURRENT) != NULL);
         name = string;
     } 
@@ -4795,8 +5206,7 @@ void
 blt_table_close(Table *tablePtr)
 {
     if (tablePtr->magic != TABLE_MAGIC) {
-        Blt_Warn("invalid table object token 0x%lx\n", 
-                 (unsigned long)tablePtr);
+        Blt_Warn("invalid table object token %p\n", tablePtr);
         return;
     }
     if (tablePtr->link2 != NULL) {
@@ -5118,7 +5528,7 @@ blt_table_delete_notifier(Table *tablePtr, Notifier *notifierPtr)
 BLT_TABLE_ROW
 blt_table_get_row_by_label(Table *tablePtr, const char *label)
 {
-    return (BLT_TABLE_ROW)FindLabel(&tablePtr->corePtr->rows, label);
+    return FindRowLabel(&tablePtr->corePtr->rows, label);
 }
 
 
@@ -5138,7 +5548,7 @@ blt_table_get_row_by_label(Table *tablePtr, const char *label)
 BLT_TABLE_COLUMN
 blt_table_get_column_by_label(Table *tablePtr, const char *label)
 {
-    return (BLT_TABLE_COLUMN)FindLabel(&tablePtr->corePtr->columns, label);
+    return FindColumnLabel(&tablePtr->corePtr->columns, label);
 }
 
 /*
@@ -5157,7 +5567,7 @@ blt_table_get_column_by_label(Table *tablePtr, const char *label)
 Blt_HashTable *
 blt_table_column_get_label_table(Table *tablePtr, const char *label)
 {
-    return GetLabelTable(&tablePtr->corePtr->columns, label);
+    return GetColumnLabelTable(&tablePtr->corePtr->columns, label);
 }
 
 /*
@@ -5176,7 +5586,7 @@ blt_table_column_get_label_table(Table *tablePtr, const char *label)
 Blt_HashTable *
 blt_table_row_get_label_table(Table *tablePtr, const char *label)
 {
-    return GetLabelTable(&tablePtr->corePtr->rows, label);
+    return GetRowLabelTable(&tablePtr->corePtr->rows, label);
 }
 
 /*
@@ -5201,10 +5611,7 @@ blt_table_set_row_label(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     InitNotifyEvent(tablePtr, &event);
     event.type = TABLE_NOTIFY_RELABEL;
     event.row = rowPtr;
-    if (SetHeaderLabel(interp, &tablePtr->corePtr->rows, (Header *)rowPtr,
-        label) != TCL_OK) {
-        return TCL_ERROR;
-    }
+    SetRowLabel(&tablePtr->corePtr->rows, rowPtr, label);
     NotifyClients(tablePtr, &event);
     return TCL_OK;
 }
@@ -5224,18 +5631,14 @@ blt_table_set_row_label(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  */
 int
 blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
-                         const char *label)
+                           const char *label)
 {
     BLT_TABLE_NOTIFY_EVENT event;
-
-    if (SetHeaderLabel(interp, &tablePtr->corePtr->columns, (Header *)colPtr,
-        label) != TCL_OK) {
-        return TCL_ERROR;
-    }
 
     InitNotifyEvent(tablePtr, &event);
     event.type = TABLE_NOTIFY_COLUMNS_RELABEL;
     event.column = colPtr;
+    SetColumnLabel(&tablePtr->corePtr->columns, colPtr, label);
     NotifyClients(tablePtr, &event);
     return TCL_OK;
 }
@@ -5259,7 +5662,7 @@ blt_table_set_column_type(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
     if (type == colPtr->type) {
         return TCL_OK;                  /* Already the requested type. */
     }
-    return SetType(interp, tablePtr, colPtr, type);
+    return SetColumnType(interp, tablePtr, colPtr, type);
 }
 
 /*
@@ -5281,7 +5684,7 @@ blt_table_value_exists(Table *tablePtr, Row *rowPtr, Column *colPtr)
     if ((colPtr == NULL) || (rowPtr == NULL)) {
         return 0;
     }
-    return !IsEmpty(GetValue(tablePtr, rowPtr, colPtr));
+    return !IsEmpty(rowPtr, colPtr);
 }
 
 
@@ -5324,15 +5727,16 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
         Blt_Chain_Destroy(chain);
         return TCL_ERROR;
     }
+    /* For each new row generate a notify event. */
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
          link = Blt_Chain_NextLink(link), i++) {
-        BLT_TABLE_ROW row;
+        Row *rowPtr;
 
-        row = Blt_Chain_GetValue(link);
+        rowPtr = Blt_Chain_GetValue(link);
         if (rows != NULL) {
-            rows[i] = row;
+            rows[i] = rowPtr;
         }
-        NotifyRowChanged(tablePtr, row, TABLE_NOTIFY_ROWS_CREATED);
+        NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_CREATED);
     }
     assert(Blt_Chain_GetLength(chain) > 0);
     Blt_Chain_Destroy(chain);
@@ -5342,13 +5746,13 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
 int
 blt_table_delete_row(Table *tablePtr, Row *rowPtr)
 {
-    DeleteHeader(&tablePtr->corePtr->rows, (Header *)rowPtr);
-    UnsetRowValues(tablePtr, rowPtr);
     NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_DELETED);
+    UnsetRowValues(tablePtr, rowPtr);
     Blt_Tags_ClearTagsFromItem(tablePtr->rowTags, rowPtr);
     blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
     tablePtr->flags |= TABLE_KEYS_DIRTY;
+    DeleteRow(&tablePtr->corePtr->rows, rowPtr);
     return TCL_OK;
 }
 
@@ -5373,7 +5777,7 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_move_row --
+ * blt_table_move_rows --
  *
  *      Move one of more rows to a new location in the tuple.
  *
@@ -5381,14 +5785,13 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
  */
 /*ARGSUSED*/
 int
-blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr, 
-                   Row *destPtr, size_t count)
+blt_table_move_rows(Tcl_Interp *interp, Table *tablePtr, Row *destPtr, 
+                   Row *firstPtr, Row *lastPtr, int after)
 {
-    if (srcPtr == destPtr) {
-        return TCL_OK;          /* Move to the same location. */
-    }
-    if (!MoveIndices(&tablePtr->corePtr->rows, (Header *)srcPtr, 
-                     (Header *)destPtr, count)) {
+    Rows *rowsPtr;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    if (!MoveRows(rowsPtr, destPtr, firstPtr, lastPtr, after)) {
         Tcl_AppendResult(interp, "can't allocate new map for \"", 
                 blt_table_name(tablePtr), "\"", (char *)NULL);
         return TCL_ERROR;
@@ -5400,73 +5803,45 @@ blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr,
 void
 blt_table_set_row_map(Table *tablePtr, Row **map)
 {
-    ReplaceMap(&tablePtr->corePtr->rows, (Header **)map);
+    ReplaceRowMap(&tablePtr->corePtr->rows, map);
     NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
 }
 
 void
-blt_table_sort_init(BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, 
-                    size_t numColumns, unsigned int flags)
+blt_table_sort_init(Table *tablePtr, BLT_TABLE_SORT_ORDER *order, 
+                    long numColumns, unsigned int flags)
 {
     size_t i;
 
-    sortData.table = table;
+    sortData.table = tablePtr;
     sortData.order = order;
     sortData.numColumns = numColumns;
     sortData.flags = flags;
-    Blt_InitHashTable(&sortData.freqTable, BLT_STRING_KEYS);
     for (i = 0; i < numColumns; i++) {
         BLT_TABLE_SORT_ORDER *sortPtr;
 
         sortPtr = order + i;
-        sortPtr->clientData = table;
-        sortPtr->cmpProc = blt_table_get_compare_proc(table, sortPtr->column, 
-                flags);
-    }
-    if (flags & TABLE_SORT_FREQUENCY) {
-        BLT_TABLE_COLUMN col;
-        long i;
-
-        col = order[0].column;
-        for (i = 0; i < blt_table_num_rows(table); i++) {
-            BLT_TABLE_ROW row;
-            Blt_HashEntry *hPtr;
-            const char *string;
-            int isNew;
-            long refCount;
-
-            row = blt_table_row(table, i);
-            if (!blt_table_value_exists(table, row, col)) {
-                continue;
-            }
-            string = blt_table_get_string(table, row, col);
-            hPtr = Blt_CreateHashEntry(&sortData.freqTable, string, &isNew);
-            if (isNew) {
-                refCount = 0;
-            } else {
-                refCount = (long)Blt_GetHashValue(hPtr);
-            }
-            refCount++;
-            Blt_SetHashValue(hPtr, refCount);
-        }
+        sortPtr->clientData = tablePtr;
+        sortPtr->cmpProc = blt_table_get_compare_proc(tablePtr, 
+                sortPtr->column, flags);
     }
 }
 
 void
 blt_table_sort_finish()
 {
-    Blt_DeleteHashTable(&sortData.freqTable);
 }
 
 BLT_TABLE_ROW *
 blt_table_sort_rows(Table *tablePtr)
 {
-    return (BLT_TABLE_ROW *)SortHeaders(&tablePtr->corePtr->rows, 
-        (QSortCompareProc *)CompareRows);
+    return SortRows(&tablePtr->corePtr->rows, (QSortCompareProc *)CompareRows);
 }
 
+
+
 void
-blt_table_sort_rows_subset(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
+blt_table_sort_row_map(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
 {
     /* Sort the map and return it. */
     qsort((char *)rows, numRows, sizeof(BLT_TABLE_ROW), 
@@ -5485,8 +5860,7 @@ blt_table_get_column_limits(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
     rowPtr = blt_table_first_row(tablePtr);
     maxRowPtr = minRowPtr = rowPtr;
     sortData.table = tablePtr;
-    for (/*empty*/; rowPtr != NULL; 
-                  rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
+    for (/*empty*/; rowPtr != NULL; rowPtr = rowPtr->nextPtr) {
         BLT_TABLE_COMPARE_PROC *proc;
 
         proc = blt_table_get_compare_proc(tablePtr, colPtr, 0);
@@ -5526,12 +5900,11 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
     if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
         blt_table_unset_keys(tablePtr);
     }
-    UnsetColumnValues(tablePtr, colPtr);
     NotifyColumnChanged(tablePtr, colPtr, TABLE_NOTIFY_COLUMNS_DELETED);
     blt_table_clear_column_traces(tablePtr, colPtr);
     Blt_Tags_ClearTagsFromItem(tablePtr->columnTags, colPtr);
     ClearColumnNotifiers(tablePtr, colPtr);
-    DeleteHeader(&tablePtr->corePtr->columns, (Header *)colPtr);
+    DeleteColumn(tablePtr, colPtr);
     return TCL_OK;
 }
 
@@ -5556,7 +5929,7 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
  */
 int
 blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra, 
-                        BLT_TABLE_COLUMN *columns)
+                        Column **columns)
 {
     size_t i;
     Blt_Chain chain;
@@ -5571,15 +5944,16 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra,
         Blt_Chain_Destroy(chain);
         return TCL_ERROR;
     }
+    /* For each new column generate a notify event. */
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
          link = Blt_Chain_NextLink(link), i++) {
-        BLT_TABLE_COLUMN col;
+        Column *colPtr;
 
-        col = Blt_Chain_GetValue(link);
+        colPtr = Blt_Chain_GetValue(link);
         if (columns != NULL) {
-            columns[i] = col;
+            columns[i] = colPtr;
         }
-        NotifyColumnChanged(table, col, TABLE_NOTIFY_COLUMNS_CREATED);
+        NotifyColumnChanged(table, colPtr, TABLE_NOTIFY_COLUMNS_CREATED);
     }
     Blt_Chain_Destroy(chain);
     return TCL_OK;
@@ -5607,13 +5981,13 @@ void
 blt_table_set_column_map(Table *tablePtr, Column **map)
 {
     NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
-    ReplaceMap(&tablePtr->corePtr->columns, (Header **)map);
+    ReplaceColumnMap(&tablePtr->corePtr->columns, map);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_move_column --
+ * blt_table_move_columns --
  *
  *      Move one of more rows to a new location in the tuple.
  *
@@ -5621,15 +5995,14 @@ blt_table_set_column_map(Table *tablePtr, Column **map)
  */
 /*ARGSUSED*/
 int
-blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr, 
-                      Column *destPtr, size_t count)
+blt_table_move_columns(Tcl_Interp *interp, Table *tablePtr, Column *destPtr, 
+                       Column *firstPtr, Column *lastPtr, int after)
 {
-    if (srcPtr == destPtr) {
-        return TCL_OK;          /* Move to the same location. */
-    }
-    if (!MoveIndices(&tablePtr->corePtr->columns, (Header *)srcPtr, 
-                (Header *)destPtr, count)) {
-        Tcl_AppendResult(interp, "can't allocate new map for \"", 
+    Columns *columnsPtr;
+
+    columnsPtr = &tablePtr->corePtr->columns;
+    if (!MoveColumns(columnsPtr, destPtr, firstPtr, lastPtr, after)) {
+        Tcl_AppendResult(interp, "can't move columns in \"", 
                 blt_table_name(tablePtr), "\"", (char *)NULL);
         return TCL_ERROR;
     }
@@ -5813,10 +6186,10 @@ blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table,
             result = TCL_ERROR;
         }
         if (result != TCL_OK) {
-            Blt_Free(restore.argv);
+            Tcl_Free((char *)restore.argv); /* Allocated by Tcl_SplitList */
             break;
         }
-        Blt_Free(restore.argv);
+        Tcl_Free((char *)restore.argv); /* Allocated by Tcl_SplitList */
     }
     Blt_DeleteHashTable(&restore.rowIndices);
     Blt_DeleteHashTable(&restore.colIndices);
@@ -5931,6 +6304,7 @@ blt_table_set_keys(Table *tablePtr, int numKeys, BLT_TABLE_COLUMN *keys,
 static int
 MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 {
+    Row *rowPtr;
     int i;
     size_t masterKeySize;
 
@@ -5978,35 +6352,34 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
     /* For each row, create hash entries for the individual key columns,
      * but also for the combined keys for the row.  The hash of the
      * combined keys must be unique. */
-    for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
-        Row *rowPtr;
+    for (rowPtr = (Row *)tablePtr->corePtr->rows.headPtr; rowPtr != NULL; 
+         rowPtr = rowPtr->nextPtr) {
         int j;
 
-        rowPtr = blt_table_row(tablePtr, i);
         for (j = 0; j < tablePtr->numKeys; j++) {
             Blt_HashTable *keyTablePtr;
             Column *colPtr;
-            Value *valuePtr;
             int isNew;
             Blt_HashEntry *hPtr;
-        
+            Value *valuePtr;
+            
             colPtr = tablePtr->primaryKeys[j];
-            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-            if (IsEmpty(valuePtr)) {
+            if (IsEmpty(rowPtr, colPtr)) {
                 break;                  /* Skip this row since one of the
                                          * key values is empty. */
             }
             keyTablePtr = tablePtr->keyTables + j;
+            valuePtr = GetValue(tablePtr, rowPtr, colPtr);
             switch (colPtr->type) {
             case TABLE_COLUMN_TYPE_DOUBLE:
             case TABLE_COLUMN_TYPE_TIME:
-                hPtr = Blt_CreateHashEntry(keyTablePtr,
-                        (char *)&valuePtr->datum.d, &isNew);
+                hPtr = Blt_CreateHashEntry(keyTablePtr, &valuePtr->datum.d,
+                                           &isNew);
                 break;
             case TABLE_COLUMN_TYPE_BOOLEAN:
             case TABLE_COLUMN_TYPE_LONG:
                 hPtr = Blt_CreateHashEntry(keyTablePtr,
-                        (char *)valuePtr->datum.l, &isNew);
+                                           (intptr_t)valuePtr->datum.l, &isNew);
                 break;
             case TABLE_COLUMN_TYPE_STRING:
             default:
@@ -6026,7 +6399,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
             /* If we created all the hashkeys necessary for this row, then
              * generate an entry for the row in the master key table. */
             hPtr = Blt_CreateHashEntry(&tablePtr->masterKeyTable, 
-                (char *)tablePtr->masterKey, &isNew);
+                tablePtr->masterKey, &isNew);
             if (isNew) {
                 Blt_SetHashValue(hPtr, rowPtr);
             } else if (tablePtr->flags & TABLE_KEYS_UNIQUE) {
@@ -6115,19 +6488,17 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Blt_GetDoubleFromObj(interp, objv[i], &dval) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)&dval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, &dval);
             }
             break;
         case TABLE_COLUMN_TYPE_BOOLEAN:
             {
                 int ival;
-                long lval;
                 
                 if (Tcl_GetBooleanFromObj(interp, objv[i], &ival) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                lval = ival;
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (intptr_t)ival);
             }
             break;
         case TABLE_COLUMN_TYPE_LONG:
@@ -6137,7 +6508,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
                     return TCL_ERROR;
                 }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+                hPtr = Blt_FindHashEntry(keyTablePtr, (intptr_t)lval);
             }
             break;
         default:
@@ -6156,8 +6527,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
         }
         tablePtr->masterKey[i] = Blt_GetHashValue(hPtr);
     }
-    hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, 
-                (char *)tablePtr->masterKey);
+    hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, tablePtr->masterKey);
     if (hPtr == NULL) {
         Blt_Warn("can't find master key\n");
         return TCL_OK;
@@ -6271,6 +6641,57 @@ blt_table_set_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 /*
  *---------------------------------------------------------------------------
  *
+ * blt_table_set_int64 --
+ *
+ *      Sets the int64_t value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "integer" or
+ *      "string", otherwise an error is returned.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ * Side Effects:
+ *      New tuples may be allocated created.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+blt_table_set_int64(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                   Column *colPtr, int64_t value)
+{
+    Value *valuePtr;
+    char string[200];
+
+    if ((colPtr->type != TABLE_COLUMN_TYPE_INT64) &&
+        (colPtr->type != TABLE_COLUMN_TYPE_STRING)) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "wrong column type \"",
+                             blt_table_column_type_to_name(colPtr->type), 
+                             "\": should be \"int64\"", (char *)NULL);
+        }
+        return TCL_ERROR;
+    }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    ResetValue(valuePtr);
+    valuePtr->datum.i64 = value;
+    valuePtr->length = sprintf(string, "%" PRId64, value);
+    if (strlen(string) >= TABLE_VALUE_LENGTH) {
+        valuePtr->string = Blt_AssertStrdup(string);
+    } else {
+        strcpy(valuePtr->store, string);
+        valuePtr->string = TABLE_VALUE_STORE;
+    }
+    /* Indicate the keytables need to be regenerated. */
+    if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
+        tablePtr->flags |= TABLE_KEYS_DIRTY;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * blt_table_set_string_rep --
  *
  *      Sets the value of the selected row, column location in the table.
@@ -6365,7 +6786,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Tcl_Obj *objPtr;
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmptyValue(valuePtr)) {
         objPtr = Tcl_NewStringObj(s, length);
     } else {
         objPtr = Tcl_NewStringObj(GetValueString(valuePtr),
@@ -6450,7 +6871,6 @@ blt_table_set_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
                      Column *colPtr, double value)
 {
     Value *valuePtr;
-    char string[200];
 
     if ((colPtr->type != TABLE_COLUMN_TYPE_DOUBLE) &&
         (colPtr->type != TABLE_COLUMN_TYPE_STRING) &&
@@ -6464,6 +6884,8 @@ blt_table_set_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     if (!isnan(value)) {
+        char string[200];
+
         valuePtr->datum.d = value;
         valuePtr->length = sprintf(string, "%.17g", value);
         if (strlen(string) >= TABLE_VALUE_LENGTH) {
@@ -6546,10 +6968,10 @@ blt_table_get_string(Table *tablePtr, Row *rowPtr, Column *colPtr)
 {
     Value *valuePtr;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return NULL;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     return GetValueString(valuePtr);
 }
 
@@ -6576,16 +6998,15 @@ blt_table_get_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Value *valuePtr;
     double d;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return Blt_NaN();
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     if ((colPtr->type == TABLE_COLUMN_TYPE_DOUBLE) ||
         (colPtr->type == TABLE_COLUMN_TYPE_TIME)) {
         return valuePtr->datum.d;
     }
-    if (Blt_GetDoubleFromString(interp, GetValueString(valuePtr), &d)
-        != TCL_OK) {
+    if (Blt_GetDouble(interp, GetValueString(valuePtr), &d) != TCL_OK) {
         return Blt_NaN();
     }
     return d;
@@ -6614,10 +7035,10 @@ blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Value *valuePtr;
     long l;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return defVal;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     if (colPtr->type == TABLE_COLUMN_TYPE_LONG) {
         return valuePtr->datum.l;
     }
@@ -6650,10 +7071,10 @@ blt_table_get_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     Value *valuePtr;
     int state;
 
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    if (IsEmpty(valuePtr)) {
+    if (IsEmpty(rowPtr, colPtr)) {
         return defVal;
     }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     if (colPtr->type == TABLE_COLUMN_TYPE_BOOLEAN) {
         return (int)valuePtr->datum.l;
     }
@@ -6661,4 +7082,142 @@ blt_table_get_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
         return TCL_ERROR;
     }
     return state;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_get_int64 --
+ *
+ *      Retrieves the 64-bit integer value of the selected row, column
+ *      location in the table.  No checking is done the see if row and
+ *      column are valid (it's assumed they are).  If the current type of
+ *      the column isn't "int64", the int64_t value is computed.
+ *
+ * Results:
+ *      Returns a int64_t value.  If the value is empty, the default value 
+ *      is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+int64_t
+blt_table_get_int64(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                   Column *colPtr, int64_t defVal)
+{
+    Value *valuePtr;
+    int64_t i;
+
+    if (IsEmpty(rowPtr, colPtr)) {
+        return defVal;
+    }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    if (colPtr->type == TABLE_COLUMN_TYPE_INT64) {
+        return valuePtr->datum.i64;
+    }
+    if (Blt_GetInt64(interp, GetValueString(valuePtr), &i) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    return i;
+}
+
+void
+blt_table_clear(Table *tablePtr)
+{
+    TableObject *corePtr;
+
+    corePtr = tablePtr->corePtr;
+    FreeColumns(corePtr);
+    FreeRows(corePtr);
+    /* Re-initialize rows and columns. */
+    Blt_InitHashTableWithPool(&corePtr->columns.labelTable, BLT_STRING_KEYS);
+    Blt_InitHashTableWithPool(&corePtr->rows.labelTable, BLT_STRING_KEYS);
+    corePtr->columns.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
+    corePtr->columns.nextColumnId = 1;
+    corePtr->rows.freeList = Blt_Chain_Create();
+    corePtr->rows.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
+    corePtr->rows.nextRowId = 1;
+}
+
+void
+blt_table_pack(Table *tablePtr)
+{
+    Column *colPtr;
+    Columns *columnsPtr;
+    Rows *rowsPtr;
+
+    rowsPtr = &tablePtr->corePtr->rows;
+    columnsPtr = &tablePtr->corePtr->columns;
+    /* Replace each vector with one exactly the number of used rows.  */
+    for (colPtr = columnsPtr->headPtr; colPtr != NULL; 
+         colPtr = colPtr->nextPtr) {
+        if (colPtr->vector != NULL) {
+            Row *rowPtr;
+            Value *vector, *valuePtr;
+
+            vector = Blt_Malloc(rowsPtr->numUsed * sizeof(Value));
+            if (vector == NULL) {
+            }    
+            valuePtr = vector;
+            for (rowPtr = rowsPtr->headPtr; rowPtr != NULL;
+                 rowPtr = rowPtr->nextPtr) {
+                *valuePtr = colPtr->vector[rowPtr->offset];
+                valuePtr++;
+            }
+            Blt_Free(colPtr->vector);
+            colPtr->vector = vector;
+        }
+    }
+    {
+        size_t count;
+        Row *rowPtr;
+        
+        count = 0;
+        for (rowPtr = rowsPtr->headPtr; rowPtr != NULL;
+             rowPtr = rowPtr->nextPtr) {
+            rowPtr->offset = count;
+            rowPtr->index = count;
+            count++;
+        }
+        assert(count == rowsPtr->numUsed);
+        if (count > 0) {
+            Row **map;
+            
+            /* Resize the row map to the exact number of rows. */
+            if (rowsPtr->map == NULL) {
+                map = Blt_Malloc(sizeof(Row *) * count);
+            } else {
+                map = Blt_Realloc(rowsPtr->map, sizeof(Row *) * count);
+            }
+            rowsPtr->map = map;
+            rowsPtr->numAllocated = count;
+        }
+        if (rowsPtr->freeList != NULL) {
+            /* Dump the free list. */
+            Blt_Chain_Destroy(rowsPtr->freeList);
+            rowsPtr->freeList = Blt_Chain_Create();
+        }
+    }
+    {
+        size_t count;
+        Column *colPtr;
+        
+        count = 0;
+        for (colPtr = columnsPtr->headPtr; colPtr != NULL;
+             colPtr = colPtr->nextPtr) {
+            count++;
+        }
+        assert(count == columnsPtr->numUsed);
+        if (count > 0) {
+            Column **map;
+
+            /* Resize the column map to the exact number of columns. */
+            if (columnsPtr->map == NULL) {
+                map = Blt_Malloc(sizeof(Column *) * count);
+            } else {
+                map = Blt_Realloc(columnsPtr->map, sizeof(Column *) * count);
+            }
+            columnsPtr->map = map;
+            columnsPtr->numAllocated = count;
+        }
+    }
 }

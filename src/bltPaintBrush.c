@@ -73,7 +73,7 @@
 #define REPEAT_MASK \
     (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
 #define ORIENT_MASK \
-    (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
+    (BLT_PAINTBRUSH_VERTICAL|BLT_PAINTBRUSH_HORIZONTAL)
 
 typedef struct {
     Blt_HashTable instTable;            /* Hash table of paintbrush
@@ -86,13 +86,13 @@ typedef struct {
 } PaintBrushCmdInterpData;
 
 typedef int (PaintBrushConfigProc)(Tcl_Interp *interp, Blt_PaintBrush brush);
-typedef int (PaintBrushColorProc)(Blt_PaintBrush brush, int x, int y);
+typedef unsigned int (PaintBrushColorProc)(Blt_PaintBrush brush, int x, int y);
 typedef void (PaintBrushFreeProc)(Blt_PaintBrush brush);
 typedef void (PaintBrushRegionProc)(Blt_PaintBrush brush, int x, int y,
         int w, int h);
 
 struct _Blt_PaintBrushClass {
-    int type;
+    Blt_PaintBrushType type;
     const char *name;                   /* Class name of paintbrush. */
     PaintBrushConfigProc *configProc;
     PaintBrushRegionProc *initProc;
@@ -612,11 +612,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     PaintBrushCmd *cmdPtr = clientData;
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)cmdPtr->brush;
-    int isPicture;
 
     /* Get picture from image. */
-    if ((brushPtr->tile != NULL) &&
-        (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+    if (brushPtr->tile != NULL) {
         Blt_FreePicture(brushPtr->tile);
     }
     if (Blt_Image_IsDeleted(brushPtr->tkImage)) {
@@ -624,13 +622,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
         return;                         /* Image was deleted. */
     }
     brushPtr->tile = Blt_GetPictureFromImage(cmdPtr->dataPtr->interp,
-        brushPtr->tkImage, &isPicture);
+        brushPtr->tkImage);
     if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
-    }
-    brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-    if (!isPicture) {
-        brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
     }
 }
 
@@ -954,9 +948,9 @@ ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+        flag = BLT_PAINTBRUSH_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_HORIZONTAL;
+        flag = BLT_PAINTBRUSH_HORIZONTAL;
     } else {
         Tcl_AppendResult(interp, "unknown orient value \"", string,
                 "\": should be vertical or horizontal.", (char *)NULL);
@@ -988,9 +982,9 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj *objPtr;
     
     switch (*flagsPtr & ORIENT_MASK) {
-    case BLT_PAINTBRUSH_ORIENT_VERTICAL:
+    case BLT_PAINTBRUSH_VERTICAL:
         objPtr = Tcl_NewStringObj("vertical", 8);       break;
-    case BLT_PAINTBRUSH_ORIENT_HORIZONTAL:
+    case BLT_PAINTBRUSH_HORIZONTAL:
         objPtr = Tcl_NewStringObj("horizontal", 10);    break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
@@ -1014,11 +1008,9 @@ static void
 PaletteChangedProc(Blt_Palette palette, ClientData clientData, 
                    unsigned int flags)
 {
-     if (flags & PALETTE_DELETE_NOTIFY) {
-         PaintBrush *brushPtr = clientData;
-
-         brushPtr->palette = NULL;
-    }
+    PaintBrush *brushPtr = clientData;
+    
+    NotifyClients(brushPtr);
 }
 
 /*ARGSUSED*/
@@ -1026,10 +1018,12 @@ static void
 FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
-    PaintBrush *brushPtr = (PaintBrush *)widgRec;
 
     if (*palPtr != NULL) {
+        PaintBrush *brushPtr = (PaintBrush *)widgRec;
+
         Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brushPtr);
+        Blt_Palette_Delete(*palPtr);
         *palPtr = NULL;
     }
 }
@@ -1053,18 +1047,30 @@ ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
+    Blt_Palette palette;
     PaintBrush *brushPtr = (PaintBrush *)(widgRec);
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-        FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
-        return TCL_OK;
+    int length;
+
+    Tcl_GetStringFromObj(objPtr, &length);
+    palette = NULL;
+    /* If the palette is the empty string (""), just remove the current
+     * palette. */
+    if (length > 0) {
+        if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
-    if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
-        return TCL_ERROR;
+    if (*palPtr != NULL) {
+        /* Delete the old palette and its associated notifier. */
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brushPtr);
+        Blt_Palette_Delete(*palPtr);
     }
-    Blt_Palette_CreateNotifier(*palPtr, PaletteChangedProc, brushPtr);
+    /* Create a notifier to tell us when the palette changes or is
+     * deleted. */
+    if (palette != NULL) {
+        Blt_Palette_CreateNotifier(palette, PaletteChangedProc, brushPtr);
+    }
+    *palPtr = palette;
     return TCL_OK;
 }
 
@@ -1342,7 +1348,7 @@ ColorBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     return TCL_OK;
 }
 
-static int
+static unsigned int
 ColorBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
@@ -1458,16 +1464,16 @@ LinearGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
     Blt_Pixel color;
     double t;
     
+    x -= brushPtr->xOrigin;
+    y -= brushPtr->yOrigin;
     if (brushPtr->calcProc != NULL) {
-        x -= brushPtr->xOrigin;
-        y -= brushPtr->yOrigin;
         if ((*brushPtr->calcProc)(brushPtr->clientData, x, y, &t) != TCL_OK) {
             return 0x0;
         }
@@ -1559,9 +1565,7 @@ TileBrushFreeProc(Blt_PaintBrush brush)
 {
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     
-    if (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE) {
-        Blt_FreePicture(brushPtr->tile);
-    }
+    Blt_FreePicture(brushPtr->tile);
 }
 
 /*
@@ -1582,27 +1586,19 @@ TileBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
     
     if (brushPtr->tkImage != NULL) {
-        int isPicture;
-        
-        if ((brushPtr->tile != NULL) &&
-            (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+        if (brushPtr->tile != NULL) {
             Blt_FreePicture(brushPtr->tile);
         }
-        brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage,
-                &isPicture);
+        brushPtr->tile = Blt_GetPictureFromImage(interp, brushPtr->tkImage);
         if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
             Blt_UnmultiplyColors(brushPtr->tile);
-        }
-        brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
-        if (!isPicture) {
-            brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
         }
     }
     /* This is where you initialize the coloring variables. */
     return TCL_OK;
 }
 
-static int
+static unsigned int
 TileBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)brush;
@@ -1707,7 +1703,7 @@ StripesBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 StripesBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_Pixel color;
@@ -1719,7 +1715,7 @@ StripesBrushColorProc(Blt_PaintBrush brush, int x, int y)
     x = (x - brushPtr->xOrigin);
     y = (y - brushPtr->yOrigin);
 
-    if (brushPtr->flags & BLT_PAINTBRUSH_ORIENT_VERTICAL) {
+    if (brushPtr->flags & BLT_PAINTBRUSH_VERTICAL) {
         t = ((x / brushPtr->stride) & 0x1) ? 0.0 : 1.0;
     } else {
         t = ((y / brushPtr->stride) & 0x1) ? 0.0 : 1.0;
@@ -1798,7 +1794,7 @@ CheckersBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 CheckersBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_CheckersBrush *brushPtr = (Blt_CheckersBrush *)brush;
@@ -1916,7 +1912,7 @@ RadialGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 RadialGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_Pixel color;
@@ -2027,7 +2023,7 @@ ConicalGradientBrushConfigProc(Tcl_Interp *interp, Blt_PaintBrush brush)
  *
  *---------------------------------------------------------------------------
  */
-static int
+static unsigned int
 ConicalGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 {
     Blt_ConicalGradientBrush *brushPtr = (Blt_ConicalGradientBrush *)brush;
@@ -2073,11 +2069,19 @@ ConicalGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
 }
 
 const char *
-Blt_GetBrushType(Blt_PaintBrush brush)
+Blt_GetBrushTypeName(Blt_PaintBrush brush)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
     return brushPtr->classPtr->name;
 }
+
+Blt_PaintBrushType
+Blt_GetBrushType(Blt_PaintBrush brush)
+{
+    PaintBrush *brushPtr = (PaintBrush *)brush;
+    return brushPtr->classPtr->type;
+}
+
 
 int 
 Blt_GetBrushTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
@@ -2257,7 +2261,7 @@ Blt_NewStripesBrush()
     brushPtr->classPtr = &stripesBrushClass;
     brushPtr->refCount = 1;
     brushPtr->alpha = 0xFF;
-    brushPtr->flags = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+    brushPtr->flags = BLT_PAINTBRUSH_VERTICAL;
     brushPtr->stride = 2;
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;
@@ -2369,6 +2373,7 @@ Blt_NewColorBrush(unsigned int color)
     brushPtr->refCount = 1;
     brushPtr->classPtr = &colorBrushClass;
     brushPtr->color.u32 = color;
+    brushPtr->reqColor.u32 = color;
     brushPtr->alpha = brushPtr->color.Alpha;
     Blt_PremultiplyColor(&brushPtr->color);
     JitterInit(&brushPtr->jitter);
@@ -2463,7 +2468,6 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     PaintBrushCmdInterpData *dataPtr = clientData;
     PaintBrushCmd *cmdPtr;
     Blt_PaintBrushType type;
-    const char *string;
     Blt_HashEntry *hPtr;
 
     if (Blt_GetBrushTypeFromObj(interp, objv[2], &type) != TCL_OK) {
@@ -2471,6 +2475,8 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     hPtr = NULL;
     if (objc > 3) {
+        const char *string;
+
         string = Tcl_GetString(objv[3]);
         if (string[0] != '-') {         
             int isNew;
@@ -2490,7 +2496,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         /* Generate a unique name for the paintbrush.  */
         do {
-            Blt_FormatString(name, 200, "paintbrush%d", dataPtr->nextId++);
+            Blt_FmtString(name, 200, "paintbrush%d", dataPtr->nextId++);
             hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
         } while (!isNew);
     } 
@@ -2695,7 +2701,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaintBrushCmdFromObj(interp, dataPtr, objv[2], &cmdPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    objPtr = Tcl_NewStringObj(Blt_GetBrushType(cmdPtr->brush), -1);
+    objPtr = Tcl_NewStringObj(Blt_GetBrushTypeName(cmdPtr->brush), -1);
     Tcl_SetObjResult(interp, objPtr);
     return TCL_OK;
 }
@@ -2879,7 +2885,7 @@ Blt_SetBrushOpacity(Blt_PaintBrush brush, double percent)
 }
 
 void
-Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, int w, int h)
+Blt_SetBrushArea(Blt_PaintBrush brush, int x, int y, int w, int h)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
     
@@ -2915,7 +2921,7 @@ Blt_SetLinearGradientBrushCalcProc(Blt_PaintBrush brush,
  *
  *---------------------------------------------------------------------------
  */
-int
+unsigned int
 Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x, int y)
 {
     PaintBrush *brushPtr = (PaintBrush *)brush;
@@ -3125,7 +3131,7 @@ Blt_GetBrushName(Blt_PaintBrush brush)
 }
 
 const char *
-Blt_GetBrushColor(Blt_PaintBrush brush)
+Blt_GetBrushColorName(Blt_PaintBrush brush)
 {
      Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
      
@@ -3133,6 +3139,17 @@ Blt_GetBrushColor(Blt_PaintBrush brush)
          return "???";
      }
      return Blt_NameOfPixel(&brushPtr->reqColor);
+}
+
+Blt_Pixel *
+Blt_GetBrushPixel(Blt_PaintBrush brush)
+{
+     Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
+     
+     if (brushPtr->classPtr->type != BLT_PAINTBRUSH_COLOR) {
+         return NULL;
+     }
+     return &brushPtr->reqColor;
 }
 
 void
@@ -3154,4 +3171,33 @@ Blt_IsVerticalLinearBrush(Blt_PaintBrush brush)
         return 1;
     }
     return 0;
+}
+
+int
+Blt_IsHorizontalLinearBrush(Blt_PaintBrush brush)
+{
+    Blt_LinearGradientBrush *brushPtr = (Blt_LinearGradientBrush *)brush;
+
+    if ((brushPtr->classPtr->type == BLT_PAINTBRUSH_LINEAR) && 
+        (brushPtr->flags & BLT_PAINTBRUSH_HORIZONTAL)) {
+        return 1;
+    }
+    return 0;
+}
+
+XColor *
+Blt_GetXColorFromBrush(Tk_Window tkwin, Blt_PaintBrush brush)
+{
+    Blt_ColorBrush *brushPtr = (Blt_ColorBrush *)brush;
+    XColor *colorPtr;
+    XColor color;
+    
+    if (brushPtr->classPtr->type != BLT_PAINTBRUSH_COLOR) {
+        return NULL;
+    }
+    color.red   = brushPtr->reqColor.Red * 257;
+    color.green = brushPtr->reqColor.Green * 257;
+    color.blue  = brushPtr->reqColor.Blue * 257;
+    colorPtr = Tk_GetColorByValue(tkwin, &color);
+    return colorPtr;
 }

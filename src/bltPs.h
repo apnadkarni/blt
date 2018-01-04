@@ -216,6 +216,10 @@ BLT_EXTERN void Blt_Ps_Polygon(Blt_Ps ps, Point2d *points, int numPoints);
 
 BLT_EXTERN void Blt_Ps_SetPrinting(Blt_Ps ps, int value);
 
+BLT_EXTERN void Blt_Ps_TextLayout(Blt_Ps ps, int x, int y, TextLayout *textPtr);
+BLT_EXTERN void Blt_Ps_TextString(Blt_Ps ps, const char *string, int numBytes);
+BLT_EXTERN const char *Blt_Ps_GetString(Blt_Ps ps);
+
 #endif /* _TK */
 
 #endif /* BLT_PS_H */

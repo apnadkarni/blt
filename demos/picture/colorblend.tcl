@@ -59,15 +59,15 @@ blt::combomenu .top.entry.menu \
     -restrictwidth min \
     -height 1i \
     -command {
-	$img colorblend $bg $fg -mode $mode
+	$img colorblend $bg $fg -mode $blend
     }
 blt::tk::scrollbar .top.entry.menu.xs
 blt::tk::scrollbar .top.entry.menu.ys
 
 foreach mode $modes {
-    $m add -text $mode -variable mode -value $mode
+    $m add -text $mode -variable blend -value $mode
 }
-$m select "normal"
+$m invoke "normal"
 blt::table . \
     0,0 .top -fill x -cspan 3 \
     1,0 .base \

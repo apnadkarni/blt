@@ -122,27 +122,21 @@ Blt_GetTextExtents(
     unsigned int *widthPtr, 
     unsigned int *heightPtr)
 {
-    unsigned int lineHeight;
+    unsigned int maxWidth, maxHeight;
 
-    if (text == NULL) {
-        return;                         /* NULL string? */
-    }
-    {
+    maxWidth = maxHeight = 0;
+    if (text != NULL) {
         Blt_FontMetrics fm;
-
-        Blt_Font_GetMetrics(font, &fm);
-        lineHeight = fm.linespace;
-    }
-    if (textLen < 0) {
-        textLen = strlen(text);
-    }
-    { 
         unsigned int lineLen;           /* # of characters on each line */
         const char *p, *pend;
         const char *line;
-        unsigned int maxWidth, maxHeight;
+        unsigned int lineHeight;
 
-        maxWidth = maxHeight = 0;
+        Blt_Font_GetMetrics(font, &fm);
+        lineHeight = fm.linespace;
+        if (textLen < 0) {
+            textLen = strlen(text);
+        }
         lineLen = 0;
         for (p = line = text, pend = text + textLen; p < pend; p++) {
             if (*p == '\n') {
@@ -172,9 +166,9 @@ Blt_GetTextExtents(
                 maxWidth = lineWidth;
             }
         }
-        *widthPtr = maxWidth;
-        *heightPtr = maxHeight;
     }
+    *widthPtr = maxWidth;
+    *heightPtr = maxHeight;
 }
 
 /*
@@ -237,8 +231,8 @@ Blt_Ts_GetExtents(TextStyle *tsPtr, const char *text, unsigned int *widthPtr,
  */
 void
 Blt_GetBoundingBox(
-    int width, int height,              /* Unrotated region */
-    float angle,                        /* Rotation of box */
+    double width, double height,        /* Unrotated region */
+    double angle,                        /* Rotation of box */
     double *rotWidthPtr, 
     double *rotHeightPtr,               /* (out) Bounding box region */
     Point2d *bbox)                      /* (out) Points of the rotated
@@ -581,7 +575,7 @@ Blt_MeasureText(
  *---------------------------------------------------------------------------
  */
 TextLayout *
-Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
+Blt_Ts_CreateLayout(const char *text, int numBytes, TextStyle *tsPtr)
 {
     TextFragment *fp;
     TextLayout *layoutPtr;
@@ -597,7 +591,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
     size_t size;
 
     numFrags = 0;
-    endp = text + ((textLen < 0) ? strlen(text) : textLen);
+    endp = text + ((numBytes < 0) ? strlen(text) : numBytes);
     for (p = text; p < endp; p++) {
         if (*p == '\n') {
             numFrags++;
@@ -628,9 +622,9 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
             } else {
                 width = 0;
             }
-            fp->width = width;
-            fp->count = count;
-            fp->sy = fp->y = maxHeight + fm.ascent;
+            fp->w = width;
+            fp->numBytes = count;
+            fp->ry = fp->y = maxHeight + fm.ascent;
             fp->text = start;
             maxHeight += lineHeight;
             fp++;
@@ -648,9 +642,9 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
         if (width > maxWidth) {
             maxWidth = width;
         }
-        fp->width = width;
-        fp->count = count;
-        fp->sy = fp->y = maxHeight + fm.ascent;
+        fp->w = width;
+        fp->numBytes = count;
+        fp->ry = fp->y = maxHeight + fm.ascent;
         fp->text = start;
         maxHeight += lineHeight;
         numFrags++;
@@ -663,13 +657,13 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
         default:
         case TK_JUSTIFY_LEFT:
             /* No offset for left justified text strings */
-            fp->x = fp->sx = tsPtr->padLeft;
+            fp->rx = fp->x = tsPtr->padLeft;
             break;
         case TK_JUSTIFY_RIGHT:
-            fp->x = fp->sx = (maxWidth - fp->width) - tsPtr->padRight;
+            fp->rx = fp->x =  (maxWidth - fp->w) - tsPtr->padRight;
             break;
         case TK_JUSTIFY_CENTER:
-            fp->x = fp->sx = (maxWidth - fp->width) / 2;
+            fp->rx = fp->x = (maxWidth - fp->w) / 2;
             break;
         }
     }
@@ -679,7 +673,7 @@ Blt_Ts_CreateLayout(const char *text, int textLen, TextStyle *tsPtr)
             int first, last;
 
             first = fp->text - text;
-            last = first + fp->count;
+            last = first + fp->numBytes;
             if ((tsPtr->underline >= first) && (tsPtr->underline < last)) {
                 layoutPtr->underlinePtr = fp;
                 layoutPtr->underline = tsPtr->underline - first;
@@ -787,22 +781,25 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
     Blt_Font_GetMetrics(font, &fm);
     for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments; 
          fp < fend; fp++) {
-        int sx, sy;
+        int tx, ty;
 
-        sx = x + fp->sx, sy = y + fp->sy;
-        if ((maxLength > 0) && ((fp->width + fp->x) > maxLength)) {
+        tx = x + fp->rx, ty = y + fp->ry;
+        if ((maxLength > 0) && ((fp->w + fp->x) > maxLength)) {
             Blt_DrawWithEllipsis(tkwin, drawable, gc, font, depth, angle, 
-                fp->text, fp->count, sx, sy, maxLength - fp->x);
+                fp->text, fp->numBytes, tx, ty, maxLength - fp->x);
         } else {
             Blt_Font_Draw(Tk_Display(tkwin), drawable, gc, font, depth, angle, 
-                fp->text, fp->count, sx, sy);
+                fp->text, fp->numBytes, tx, ty);
         }
     }
     if (layoutPtr->underlinePtr != NULL) {
+        int tx, ty;
+
         /* Single underlined character. */
         fp = layoutPtr->underlinePtr;
-        Blt_Font_Underline(Tk_Display(tkwin), drawable, gc, font, fp->text, 
-                fp->count, x + fp->sx, y + fp->sy, layoutPtr->underline, 
+        tx = x + fp->rx, ty = y + fp->ry;
+        Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, gc, font, fp->text,
+                fp->numBytes, tx, ty, layoutPtr->underline, 
                 layoutPtr->underline + 1, maxLength);
     }
 }
@@ -1002,41 +999,49 @@ DrawStandardLayout(Tk_Window tkwin, Drawable drawable, TextStyle *stylePtr,
 
 
 static void
-RotateStartingTextPositions(TextLayout *lPtr, int w, int h, float angle)
+RotateStartingTextPositions(TextLayout *layoutPtr, int w, int h, float angle)
 {
     Point2d off1, off2;
-    TextFragment *fp, *fend;
     double radians;
     double rw, rh;
     double sinTheta, cosTheta;
-    
-    Blt_GetBoundingBox(w, h, angle, &rw, &rh, (Point2d *)NULL);
+    int i;
+
+    Blt_GetBoundingBox((double)w, (double)h, angle, &rw, &rh, (Point2d *)NULL);
+    /* Offset to center of unrotated box. */
     off1.x = (double)w * 0.5;
     off1.y = (double)h * 0.5;
+    /* Offset to center of rotated box. */
     off2.x = rw * 0.5;
     off2.y = rh * 0.5;
     radians = -angle * DEG2RAD;
-    
     sinTheta = sin(radians), cosTheta = cos(radians);
-    for (fp = lPtr->fragments, fend = fp + lPtr->numFragments; 
-         fp < fend; fp++) {
+
+    for (i = 0; i < layoutPtr->numFragments; i++) {
         Point2d p, q;
-        
-        p.x = fp->x - off1.x;
-        p.y = fp->y - off1.y;
+        TextFragment *fragPtr;
+
+        fragPtr = layoutPtr->fragments + i;
+        /* Translate the start of the fragement to the center of box. */
+        p.x = fragPtr->x - off1.x;
+        p.y = fragPtr->y - off1.y;
+        /* Rotate the point. */
         q.x = (p.x * cosTheta) - (p.y * sinTheta);
         q.y = (p.x * sinTheta) + (p.y * cosTheta);
+        /* Translate the point back toward the upper-left corner of the
+         * rotated bounding box. */
         q.x += off2.x;
         q.y += off2.y;
-        fp->sx = ROUND(q.x);
-        fp->sy = ROUND(q.y);
+        fragPtr->rx = q.x;
+        fragPtr->ry = q.y;
     }
 }
 
 void
-Blt_RotateStartingTextPositions(TextLayout *lPtr, float angle)
+Blt_RotateStartingTextPositions(TextLayout *layoutPtr, float angle)
 {
-    RotateStartingTextPositions(lPtr, lPtr->width, lPtr->height, angle);
+    RotateStartingTextPositions(layoutPtr, layoutPtr->width, layoutPtr->height,
+                                angle);
 }
 
 int
@@ -1053,7 +1058,7 @@ Blt_DrawTextWithRotatedFont(Tk_Window tkwin, Drawable drawable, float angle,
         w = stylePtr->maxLength;
     }
     RotateStartingTextPositions(layoutPtr, w, h, angle);
-    Blt_GetBoundingBox(w, h, angle, &rw, &rh, (Point2d *)NULL);
+    Blt_GetBoundingBox((double)w, (double)h, angle, &rw, &rh, (Point2d *)NULL);
     Blt_TranslateAnchor(x, y, (int)rw, (int)rh, stylePtr->anchor, &x, &y);
     if (stylePtr->state & (STATE_DISABLED | STATE_EMPHASIS)) {
         TkBorder *borderPtr = (TkBorder *)Blt_Bg_Border(stylePtr->bg);
@@ -1215,11 +1220,11 @@ Blt_Ts_DrawLayout(
 }
 
 void
-Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
-                        TextLayout *layoutPtr, TextStyle *stylePtr,
-                        int x, int y)
+Blt_Ts_UnderlineChars(Tk_Window tkwin, Drawable drawable, TextLayout *layoutPtr,
+                      TextStyle *stylePtr, int x, int y)
 {
     float angle;
+    int w, h;
 
     if ((stylePtr->gc == NULL) || (stylePtr->flags & UPDATE_GC)) {
         Blt_Ts_ResetStyle(tkwin, stylePtr);
@@ -1228,6 +1233,13 @@ Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
     if (angle < 0.0) {
         angle += 360.0;
     }
+    w = layoutPtr->width;
+    h = layoutPtr->height;
+    if ((stylePtr->maxLength > 0) && (stylePtr->maxLength < w)) {
+        w = stylePtr->maxLength;
+    }
+    /* FIXME: Handle any degree font rotation. */
+    RotateStartingTextPositions(layoutPtr, w, h, angle);
     if (angle == 0.0) {
         TextFragment *fp, *fend;
 
@@ -1236,11 +1248,11 @@ Blt_Ts_UnderlineLayout( Tk_Window tkwin, Drawable drawable,
         }
         for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments; 
              fp < fend; fp++) {
-            int sx, sy;
+            int tx, ty;
 
-            sx = x + fp->sx, sy = y + fp->sy;
-            Blt_Font_Underline(Tk_Display(tkwin), drawable, stylePtr->gc, 
-                stylePtr->font, fp->text, fp->count, sx, sy, 0, -1, 
+            tx = x + fp->rx, ty = y + fp->ry;
+            Blt_Font_UnderlineChars(Tk_Display(tkwin), drawable, stylePtr->gc, 
+                stylePtr->font, fp->text, fp->numBytes, tx, ty, 0, -1, 
                 stylePtr->maxLength);
         }
         if (stylePtr->rgn != NULL) {
@@ -1319,8 +1331,8 @@ Blt_DrawText2(
     if (angle != 0.0) {
         double rotWidth, rotHeight;
 
-        Blt_GetBoundingBox(width, height, angle, &rotWidth, &rotHeight, 
-           (Point2d *)NULL);
+        Blt_GetBoundingBox((double)width, (double)height, angle, 
+                &rotWidth, &rotHeight, (Point2d *)NULL);
         width = ROUND(rotWidth);
         height = ROUND(rotHeight);
     }
@@ -1445,7 +1457,7 @@ typedef struct _TkTextLayout {
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_FreeTextLayout --
+ * Blt_TkTextLayout_Free --
  *
  *      This procedure is called to release the storage associated with a
  *      Tk_TextLayout when it is no longer needed.
@@ -1460,7 +1472,7 @@ typedef struct _TkTextLayout {
  */
 
 void
-Blt_FreeTextLayout(Tk_TextLayout textLayout)
+Blt_TkTextLayout_Free(Tk_TextLayout textLayout)
 {
     TkTextLayout *layoutPtr = (TkTextLayout *) textLayout;
 
@@ -1526,7 +1538,7 @@ NewChunk(TkTextLayout **layoutPtrPtr, int *maxPtr, const char *start,
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_ComputeTextLayout --
+ * Blt_TkTextLayout_Compute --
  *
  *      Computes the amount of screen space needed to display a multi-line,
  *      justified string of text.  Records all the measurements that were
@@ -1554,7 +1566,7 @@ NewChunk(TkTextLayout **layoutPtrPtr, int *maxPtr, const char *start,
  */
 
 Tk_TextLayout
-Blt_ComputeTextLayout(
+Blt_TkTextLayout_Compute(
     Blt_Font font,                      /* Font that will be used to
                                          * display text. */
     const char *string,                 /* String whose dimensions are to
@@ -1845,7 +1857,7 @@ Blt_ComputeTextLayout(
 }
 
 void
-Blt_DrawTextLayout(
+Blt_TkTextLayout_Draw(
     Display *display,                   /* Display on which to draw. */
     Drawable drawable,                  /* Window or pixmap in which to
                                          * draw. */
@@ -1913,7 +1925,7 @@ Blt_DrawTextLayout(
 /*
  *---------------------------------------------------------------------------
  *
- * Tk_CharBbox --
+ * Blt_TkTextLayout_CharBbox --
  *
  *      Use the information in the Tk_TextLayout token to return the
  *      bounding box for the character specified by index.
@@ -1945,7 +1957,7 @@ Blt_DrawTextLayout(
  */
 
 int
-Blt_CharBbox(
+Blt_TkTextLayout_CharBbox(
     Tk_TextLayout layout,               /* Layout information, from a
                                          * previous call to
                                          * Tk_ComputeTextLayout(). */
@@ -2046,7 +2058,7 @@ Blt_CharBbox(
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_UnderlineTextLayout --
+ * Blt_TkTextLayout_UnderlineSingleChar --
  *
  *      Use the information in the Tk_TextLayout token to display an
  *      underline below an individual character.  This procedure does not
@@ -2067,7 +2079,7 @@ Blt_CharBbox(
  */
 
 void
-Blt_UnderlineTextLayout(
+Blt_TkTextLayout_UnderlineSingleChar(
     Display *display,                   /* Display on which to draw. */
     Drawable drawable,                  /* Window or pixmap in which to
                                          * draw. */
@@ -2086,8 +2098,8 @@ Blt_UnderlineTextLayout(
     TkTextLayout *layoutPtr;
     int xx, yy, width, height;
 
-    if ((Blt_CharBbox(layout, underline, &xx, &yy, &width, &height) != 0)
-            && (width != 0)) {
+    if ((Blt_TkTextLayout_CharBbox(layout, underline, &xx, &yy, &width, 
+        &height) != 0) && (width != 0)) {
         Blt_FontMetrics fm;
         layoutPtr = (TkTextLayout *) layout;
         Blt_Font_GetMetrics(layoutPtr->font, &fm);
@@ -2198,9 +2210,9 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
             }
         }
         fp->text  = text;
-        fp->count = numBytes;
-        fp->width = w;
-        fp->y = fp->sy = maxHeight + fm.ascent;
+        fp->numBytes = numBytes;
+        fp->w = w;
+        fp->ry = fp->y = maxHeight + fm.ascent;
         if (w > maxWidth) {
             maxWidth = w;
         }
@@ -2225,13 +2237,13 @@ Blt_Ts_TitleLayout(const char *text, int numBytes, TextStyle *tsPtr)
         default:
         case TK_JUSTIFY_LEFT:
             /* No offset for left justified text strings */
-            fp->x = fp->sx = tsPtr->padLeft;
+            fp->rx = fp->x = tsPtr->padLeft;
             break;
         case TK_JUSTIFY_RIGHT:
-            fp->x = fp->sx = (maxWidth - fp->width) - tsPtr->padRight;
+            fp->rx = fp->x = (maxWidth - fp->w) - tsPtr->padRight;
             break;
         case TK_JUSTIFY_CENTER:
-            fp->x = fp->sx = (maxWidth - fp->width) / 2;
+            fp->rx = fp->x = (maxWidth - fp->w) / 2;
             break;
         }
     }

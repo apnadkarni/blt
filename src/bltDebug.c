@@ -170,12 +170,14 @@ GetWatch(DebugCmdInterpData *dataPtr, Tcl_Obj *objPtr)
     Blt_ChainLink link;
     char c;
     Watch *watchPtr;
-    char *name, *string;
+    char *name;
 
     name = Tcl_GetString(objPtr);
     c = name[0];
     for (link = Blt_Chain_FirstLink(dataPtr->chain); link != NULL;
         link = Blt_Chain_NextLink(link)) {
+        char *string;
+
         watchPtr = Blt_Chain_GetValue(link);
         string = Tcl_GetString(watchPtr->nameObjPtr);
         if ((string[0] == c) && (strcmp(name, string) == 0)) {
@@ -284,7 +286,7 @@ TraceCmdProc(
         }
     }
     Tcl_DStringInit(&ds);
-    Blt_FormatString(prompt, 200, "%-2d-> ", level);
+    Blt_FmtString(prompt, 200, "%-2d-> ", level);
     p = command;
     /* Skip leading spaces in command line. */
     while(isspace(UCHAR(*p))) {
@@ -342,7 +344,7 @@ TraceCmdProc(
         string = Tcl_GetString(objPtr);
     }
     lineStart = string;
-    Blt_FormatString(prompt, 200, "  <- ");
+    Blt_FmtString(prompt, 200, "  <- ");
     count = 0;
     for (p = string; *p != '\0'; /* empty */) {
         if (*p == '\n') {

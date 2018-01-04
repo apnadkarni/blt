@@ -143,6 +143,7 @@ typedef enum {
     BLT_CONFIG_DASHES,
     BLT_CONFIG_FILL,
     BLT_CONFIG_FLOAT, 
+    BLT_CONFIG_INT64, 
     BLT_CONFIG_INT_NNEG,        /* 0..N */
     BLT_CONFIG_INT_POS,         /* 1..N */
     BLT_CONFIG_LIST,

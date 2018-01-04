@@ -48,6 +48,7 @@ typedef enum {
     TABLE_COLUMN_TYPE_STRING, 
     TABLE_COLUMN_TYPE_DOUBLE, 
     TABLE_COLUMN_TYPE_LONG, 
+    TABLE_COLUMN_TYPE_INT64, 
     TABLE_COLUMN_TYPE_TIME, 
     TABLE_COLUMN_TYPE_BOOLEAN, 
     TABLE_COLUMN_TYPE_BLOB, 
@@ -58,10 +59,11 @@ typedef enum {
 
 typedef struct _BLT_TABLE_VALUE {
     union {                             
-        long l;
-        double d;
-        Tcl_WideInt w;
-        void *ptr;
+        double d;                       /* 64 bits */
+        int64_t i64;                    /* 64 bits */
+        long l;                         /* 32 or 64 bits */
+        void *ptr;                      /* 32 or 64 bits */
+        int i;                          /* 32 bits */
     } datum;                            /* Internal representation of data:
                                          * used to speed comparisons,
                                          * sorting, etc. */
@@ -70,7 +72,7 @@ typedef struct _BLT_TABLE_VALUE {
      * will be that we don't have to allocate space for each string
      * representation.
      */
-    size_t length;                      /* Number of bytes in string
+    unsigned int length;                /* Number of bytes in string
                                          * below. */
     const char *string;                 /* String representation of the
                                          * value. If NULL, the value is
@@ -87,35 +89,83 @@ typedef struct _BLT_TABLE_VALUE {
     char store[TABLE_VALUE_LENGTH];
 } *BLT_TABLE_VALUE;
 
-typedef struct _BLT_TABLE_HEADER {
-    const char *label;                  /* Label of row or column. */
-    long index;                         /* Reverse lookup
-                                         * offset-to-index. */
-    long offset;
-    unsigned int flags;
-} *BLT_TABLE_HEADER;
+typedef struct _BLT_TABLE_HEADER *BLT_TABLE_HEADER;
+typedef struct _BLT_TABLE_ROW *BLT_TABLE_ROW;
+typedef struct _BLT_TABLE_COLUMN *BLT_TABLE_COLUMN;
 
-typedef struct _BLT_TABLE_ROW {
+struct _BLT_TABLE_HEADER {
+    struct _BLT_TABLE_HEADER *nextPtr;
+    struct _BLT_TABLE_HEADER *prevPtr;
     const char *label;                  /* Label of row or column. */
     long index;                         /* Reverse lookup
                                          * offset-to-index. */
-    long offset;
+    long offset;                     
     unsigned int flags;
-} *BLT_TABLE_ROW;
+};
 
-typedef struct _BLT_TABLE_COLUMN {
+struct _BLT_TABLE_ROW {
+    struct _BLT_TABLE_ROW *nextPtr;
+    struct _BLT_TABLE_ROW *prevPtr;
     const char *label;                  /* Label of row or column. */
     long index;                         /* Reverse lookup
                                          * offset-to-index. */
-    long offset;
-    unsigned short flags;
+    long offset;                        /* Index of row in column
+                                         * storage. */
+    unsigned int flags;
+};
+
+struct _BLT_TABLE_COLUMN {
+    struct _BLT_TABLE_COLUMN *nextPtr;
+    struct _BLT_TABLE_COLUMN *prevPtr;
+    const char *label;                  /* Label of row or column. */
+    long index;                         /* Reverse lookup
+                                         * offset-to-index. */
+    BLT_TABLE_VALUE vector;
     BLT_TABLE_COLUMN_TYPE type;
-} *BLT_TABLE_COLUMN;
+    unsigned int flags;
+};
 
-typedef struct {
-    const char *name;
-    long headerSize;
-} BLT_TABLE_ROWCOLUMN_CLASS;
+/*
+ * BLT_TABLE_ROWS --
+ *
+ *      Structure representing the rows in the table. 
+ */
+typedef struct _BLT_TABLE_ROWS {
+    unsigned int flags;
+    struct _BLT_TABLE_ROW *headPtr, *tailPtr;
+    Blt_Pool pool;                      /* Pool of rows. */
+    long numAllocated;                  /* Length of allocated header array
+                                         * below. May exceed the number of
+                                         * rows used. */
+    long numUsed;
+    BLT_TABLE_ROW *map;                 /* Array of row pointers. */
+    Blt_HashTable labelTable;           /* Hash table of labels. Maps
+                                         * labels to table offsets. */
+    long nextRowId;                     /* Used to generate default
+                                         * row labels. */
+    Blt_Chain freeList;                 /* List of free rows. */
+} BLT_TABLE_ROWS;
+
+/*
+ * BLT_TABLE_COLUMNS --
+ *
+ *      Structure representing the columns in the table. 
+ */
+typedef struct _BLT_TABLE_COLUMNS {
+    unsigned int flags;
+    struct _BLT_TABLE_COLUMN *headPtr, *tailPtr;
+    Blt_Pool pool;                      /* Pool of columns. */
+    long numAllocated;                  /* Length of allocated map array
+                                         * below. May exceed the number of
+                                         * columns used. */
+    long numUsed;
+    BLT_TABLE_COLUMN *map;              /* Array of column pointers. */
+    Blt_HashTable labelTable;           /* Hash table of labels. Maps
+                                         * labels to table offsets. */
+    long nextColumnId;                  /* Used to generate default
+                                         * labels. */
+} BLT_TABLE_COLUMNS;
+
 
 /*
  * BLT_TABLE_ROWCOLUMN --
@@ -123,18 +173,18 @@ typedef struct {
  *      Structure representing a row or column in the table. 
  */
 typedef struct _BLT_TABLE_ROWCOLUMN {
-    BLT_TABLE_ROWCOLUMN_CLASS *classPtr;
+    unsigned int flags;
+    struct _BLT_TABLE_HEADER *headPtr, *tailPtr;
     Blt_Pool headerPool;
     long numAllocated;                  /* Length of allocated header array
                                          * below. May exceed the number of
                                          * row or column headers used. */
     long numUsed;
     BLT_TABLE_HEADER *map;              /* Array of row or column headers. */
-    Blt_Chain freeList;                 /* Tracks free row or column
-                                         * headers. */
     Blt_HashTable labelTable;           /* Hash table of labels. Maps
                                          * labels to table offsets. */
-    long nextId;                        /* Used to generate default labels. */
+    long nextId;                        /* Used to generate default
+                                         * labels. */
 } BLT_TABLE_ROWCOLUMN;
 
 /*
@@ -159,12 +209,12 @@ typedef struct _BLT_TABLE_ROWCOLUMN {
  *      it's up to the clients to manage sorting and ordering.
  */
 typedef struct _BLT_TABLE_CORE {
-    BLT_TABLE_ROWCOLUMN rows, columns;
-    BLT_TABLE_VALUE *data;              /* Array of column vector pointers */
+    BLT_TABLE_ROWS rows;
+    BLT_TABLE_COLUMNS columns;
     unsigned int flags;                 /* Internal flags. See definitions
                                          * below. */
     Blt_Chain clients;                  /* List of clients using this table */
-    unsigned long mtime, ctime;
+    uint64_t mtime, ctime;
     unsigned int notifyFlags;           /* Notification flags. See
                                          * definitions below. */
     int notifyHold;
@@ -256,6 +306,8 @@ BLT_EXTERN int blt_table_create(Tcl_Interp *interp, const char *name,
 BLT_EXTERN int blt_table_open(Tcl_Interp *interp, const char *name, 
         BLT_TABLE *tablePtr);
 BLT_EXTERN void blt_table_close(BLT_TABLE table);
+BLT_EXTERN void blt_table_clear(BLT_TABLE table);
+BLT_EXTERN void blt_table_pack(BLT_TABLE table);
 
 BLT_EXTERN int blt_table_same_object(BLT_TABLE table1, BLT_TABLE table2);
 
@@ -300,15 +352,17 @@ BLT_EXTERN BLT_TABLE_COLUMN blt_table_create_column(Tcl_Interp *interp,
         BLT_TABLE table, const char *label);
 
 BLT_EXTERN int blt_table_extend_rows(Tcl_Interp *interp, BLT_TABLE table,
-        size_t n, BLT_TABLE_ROW *rows);
+                                     size_t n, BLT_TABLE_ROW *rows);
 BLT_EXTERN int blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, 
         size_t n, BLT_TABLE_COLUMN *columms);
 BLT_EXTERN int blt_table_delete_row(BLT_TABLE table, BLT_TABLE_ROW row);
 BLT_EXTERN int blt_table_delete_column(BLT_TABLE table, BLT_TABLE_COLUMN column);
-BLT_EXTERN int blt_table_move_row(Tcl_Interp *interp, BLT_TABLE table, 
-        BLT_TABLE_ROW from, BLT_TABLE_ROW to, size_t n);
-BLT_EXTERN int blt_table_move_column(Tcl_Interp *interp, BLT_TABLE table, 
-        BLT_TABLE_COLUMN from, BLT_TABLE_COLUMN to, size_t n);
+BLT_EXTERN int blt_table_move_rows(Tcl_Interp *interp, BLT_TABLE table, 
+        BLT_TABLE_ROW destRow, BLT_TABLE_ROW firstRow, BLT_TABLE_ROW lastRow, 
+        int after);
+BLT_EXTERN int blt_table_move_columns(Tcl_Interp *interp, BLT_TABLE table, 
+        BLT_TABLE_COLUMN destColumn, BLT_TABLE_COLUMN firstColumn, 
+        BLT_TABLE_COLUMN lastColumn, int after);
 
 BLT_EXTERN Tcl_Obj *blt_table_get_obj(BLT_TABLE table, BLT_TABLE_ROW row, 
         BLT_TABLE_COLUMN column);
@@ -342,6 +396,10 @@ BLT_EXTERN int blt_table_get_boolean(Tcl_Interp *interp, BLT_TABLE table,
         BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int defValue);
 BLT_EXTERN int blt_table_set_boolean(Tcl_Interp *interp, BLT_TABLE table,
         BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int value);
+BLT_EXTERN int blt_table_set_int64(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t value);
+BLT_EXTERN int64_t blt_table_get_int64(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t defValue);
 
 BLT_EXTERN BLT_TABLE_VALUE blt_table_get_value(BLT_TABLE table, 
         BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
@@ -353,7 +411,7 @@ BLT_EXTERN int blt_table_value_exists(BLT_TABLE table, BLT_TABLE_ROW row,
         BLT_TABLE_COLUMN column);
 BLT_EXTERN const char *blt_table_value_string(BLT_TABLE_VALUE value);
 BLT_EXTERN const unsigned char *blt_table_value_bytes(BLT_TABLE_VALUE value);
-BLT_EXTERN size_t blt_table_value_length(BLT_TABLE_VALUE value);
+BLT_EXTERN unsigned int blt_table_value_length(BLT_TABLE_VALUE value);
 
 BLT_EXTERN int blt_table_tags_are_shared(BLT_TABLE table);
 BLT_EXTERN void blt_table_clear_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
@@ -380,10 +438,13 @@ BLT_EXTERN int blt_table_unset_column_tag(Tcl_Interp *interp, BLT_TABLE table,
         BLT_TABLE_COLUMN column, const char *tag);
 
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_first_column(BLT_TABLE table);
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE table, 
-        BLT_TABLE_COLUMN column);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_last_column(BLT_TABLE table);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE_COLUMN column);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_previous_column(BLT_TABLE_COLUMN column);
 BLT_EXTERN BLT_TABLE_ROW blt_table_first_row(BLT_TABLE table);
-BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE table, BLT_TABLE_ROW row);
+BLT_EXTERN BLT_TABLE_ROW blt_table_last_row(BLT_TABLE table);
+BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE_ROW row);
+BLT_EXTERN BLT_TABLE_ROW blt_table_previous_row(BLT_TABLE_ROW row);
 
 typedef enum { 
     TABLE_SPEC_UNKNOWN,                 /* 0 */
@@ -444,17 +505,10 @@ typedef struct _BLT_TABLE_ITERATOR {
     const char *tag;                    /* Used by notification routines to
                                          * determine if a tag is being
                                          * used. */
-    long start;                         /* Starting index.  Starting point
-                                         * of search, saved if iterator is
-                                         * reused.  Used for
-                                         * TABLE_ITERATOR_ALL and
-                                         * TABLE_ITERATOR_INDEX
-                                         * searches. */
-    long end;                           /* Ending index (inclusive). */
-
-    long next;                          /* Next index. */
-
-    size_t numEntries;                  /* Number of entries found. */
+    void *firstPtr;
+    void *lastPtr;
+    void *nextPtr;
+    long numEntries;
 
     /* For tag-based searches. */
     Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
@@ -777,12 +831,11 @@ typedef struct {
 #define TABLE_SORT_AUTO                 (0)
 #define TABLE_SORT_ASCII                (1<<3)
 #define TABLE_SORT_DICTIONARY           (2<<3)
-#define TABLE_SORT_FREQUENCY            (3<<3)
 
-BLT_EXTERN void blt_table_sort_init(BLT_TABLE table, 
-        BLT_TABLE_SORT_ORDER *order, size_t numCompares, unsigned int flags);
+BLT_EXTERN void blt_table_sort_init(BLT_TABLE table,
+    BLT_TABLE_SORT_ORDER *order, long numCompares, unsigned int flags);
 BLT_EXTERN BLT_TABLE_ROW *blt_table_sort_rows(BLT_TABLE table);
-BLT_EXTERN void blt_table_sort_rows_subset(BLT_TABLE table, long numRows, 
+BLT_EXTERN void blt_table_sort_row_map(BLT_TABLE table, long numRows, 
         BLT_TABLE_ROW *rows);
 BLT_EXTERN void blt_table_sort_finish(void);
 BLT_EXTERN BLT_TABLE_COMPARE_PROC *blt_table_get_compare_proc(BLT_TABLE table, 
@@ -821,20 +874,20 @@ BLT_EXTERN int blt_table_key_lookup(Tcl_Interp *interp, BLT_TABLE table,
 BLT_EXTERN int blt_table_get_column_limits(Tcl_Interp *interp, BLT_TABLE table, 
         BLT_TABLE_COLUMN col, Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr);
 
+BLT_EXTERN BLT_TABLE_ROW blt_table_row(BLT_TABLE table, long index);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_column(BLT_TABLE table, long index);
+BLT_EXTERN long blt_table_row_index(BLT_TABLE table, BLT_TABLE_ROW row);
+BLT_EXTERN long blt_table_column_index(BLT_TABLE table,
+                                           BLT_TABLE_COLUMN column);
 #define blt_table_num_rows(t)           ((t)->corePtr->rows.numUsed)
-#define blt_table_row_index(r)          ((r)->index)
 #define blt_table_row_label(r)          ((r)->label)
-#define blt_table_row(t,i)  \
-    (BLT_TABLE_ROW)((t)->corePtr->rows.map[(i)])
 
 #define blt_table_num_columns(t)        ((t)->corePtr->columns.numUsed)
-#define blt_table_column_index(c)       ((c)->index)
 #define blt_table_column_label(c)       ((c)->label)
-#define blt_table_column(t,i) \
-        (BLT_TABLE_COLUMN)((t)->corePtr->columns.map[(i)])
 
 #define blt_table_name(t)               ((t)->name)
 #define blt_table_empty_value(t)        ((t)->emptyValue)
 #define blt_table_column_type(c)        ((c)->type)
-
+#define blt_table_columns(t)            (&(t)->corePtr->columns)
+#define blt_table_rows(t)               (&(t)->corePtr->rows)
 #endif /* BLT_DATATABLE_H */

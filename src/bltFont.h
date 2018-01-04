@@ -89,23 +89,31 @@ typedef int (Blt_Font_PostscriptNameProc)(Blt_Font font,
         Tcl_DString *resultPtr);
 typedef const char *(Blt_Font_FamilyProc)(Blt_Font font);
 typedef int (Blt_Font_CanRotateProc)(Blt_Font font, float angle);
-typedef void (Blt_Font_UnderlineProc)(Display *display, Drawable drawable, 
+typedef void (Blt_Font_UnderlineCharsProc)(Display *display, Drawable drawable, 
         GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
         int first, int last, int xMax);
+typedef double (Blt_Font_PointSizeProc)(Blt_Font font);
+typedef double (Blt_Font_PixelSizeProc)(Blt_Font font);
+typedef Blt_Font (Blt_Font_DuplicateProc)(Tk_Window tkwin, Blt_Font font, 
+             double size);
 
 struct _Blt_FontClass {
-    int type;                           /* Indicates the type of font used. */
+    int type;                        /* Indicates the type of font used. */
+    const char *className;
     Blt_Font_CanRotateProc *canRotateProc;
     Blt_Font_DrawProc *drawProc;
+    Blt_Font_DuplicateProc *dupProc;
     Blt_Font_FamilyProc *familyProc;
     Blt_Font_FreeProc *freeProc;
     Blt_Font_GetMetricsProc *getMetricsProc;
     Blt_Font_IdProc *idProc;
     Blt_Font_MeasureProc *measureProc;
     Blt_Font_NameProc *nameProc;
+    Blt_Font_PixelSizeProc *pixelSizeProc;
+    Blt_Font_PointSizeProc *pointSizeProc;
     Blt_Font_PostscriptNameProc *psNameProc;
     Blt_Font_TextWidthProc *textWidthProc;
-    Blt_Font_UnderlineProc *underlineProc;
+    Blt_Font_UnderlineCharsProc *underlineCharsProc;
 };
 
 /* 
@@ -132,10 +140,14 @@ struct _Blt_Font {
 #define Blt_Font_PostscriptName(f,rp) \
         (*(f)->classPtr->psNameProc)(f,rp)
 #define Blt_Font_Family(f)      (*(f)->classPtr->familyProc)(f)
+#define Blt_Font_PointSize(f)   (*(f)->classPtr->pointSizeProc)(f)
+#define Blt_Font_PixelSize(f)   (*(f)->classPtr->pixelSizeProc)(f)
 #define Blt_Font_CanRotate(f,a) (*(f)->classPtr->canRotateProc)(f,a)
 #define Blt_Font_Free(f)        (*(f)->classPtr->freeProc)(f)
-#define Blt_Font_Underline(d,w,g,f,s,l,x,y,a,b,m)               \
-        (*(f)->classPtr->underlineProc)(d,w,g,f,s,l,x,y,a,b,m)
+#define Blt_Font_Duplicate(t,f,s) \
+        (*(f)->classPtr->dupProc)(t,f,s)
+#define Blt_Font_UnderlineChars(d,w,g,f,s,l,x,y,a,b,m)               \
+        (*(f)->classPtr->underlineCharsProc)(d,w,g,f,s,l,x,y,a,b,m)
 #define Blt_Font_SetClipRegion(f,r) \
         ((f)->rgn = (r))
 

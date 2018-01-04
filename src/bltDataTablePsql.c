@@ -464,7 +464,8 @@ PsqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
  *
  * PsqlImportValues --
  *
- *      Sets the cell values in the table for the new columns.  
+ *      Sets the cell values in the table for the new columns.  This 
+ *      overwrites any existing data in the table.
  *
  * Results:
  *      The return value is a standard TCL result.  
@@ -476,7 +477,8 @@ PsqlImportValues(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
                  size_t numCols, BLT_TABLE_COLUMN *cols) 
 {
     size_t numRows;
-    size_t i;
+    size_t count;
+    BLT_TABLE_ROW row;
     
     numRows = PQntuples(result);
     /* First check that there are enough rows in the table to accomodate
@@ -489,17 +491,17 @@ PsqlImportValues(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
             return TCL_ERROR;
         }
     }
-    for (i = 0; i < numRows; i++) {
-        BLT_TABLE_ROW row;
+    count = 0;
+    for (row = blt_table_first_row(table); /*empty*/; 
+         row = blt_table_next_row(row), count++) {
         size_t j;
 
-        row = blt_table_row(table, i);
         for (j = 0; j < numCols; j++) {
             int length;
             const char *value;
 
-            value = PQgetvalue(result, i, j);
-            length = PQgetlength(result, i, j);
+            value = PQgetvalue(result, count, j);
+            length = PQgetlength(result, count, j);
             if (blt_table_set_string_rep(interp, table, row, cols[j], value,
                         length) != TCL_OK) {
                 return TCL_ERROR;

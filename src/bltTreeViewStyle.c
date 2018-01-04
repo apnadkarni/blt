@@ -135,7 +135,7 @@
 #define DEF_CHECKBOX_ONVALUE            "1"
 #define DEF_CHECKBOX_RELIEF             "flat"
 #define DEF_CHECKBOX_SHOWVALUE          "yes"
-#define DEF_CHECKBOX_SIZE               "15"
+#define DEF_CHECKBOX_SIZE               "0"
 #define DEF_CHECKBOX_UNDERLINE_ACTIVE   "1"
 #define DEF_COMBOBOX_ACTIVE_ARROW_BG    RGB_GREY95
 #define DEF_COMBOBOX_ACTIVE_COLORS      "0"
@@ -195,35 +195,35 @@
 #define DEF_TEXTBOX_SIDE                "left"
 #define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
 
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc FreeIconProc;
 static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, NULL,
+    ObjToIcon, IconToObj, FreeIconProc, NULL,
 };
 
 static Blt_OptionFreeProc FreeIconVarProc;
-static Blt_OptionParseProc ObjToIconVarProc;
-static Blt_OptionPrintProc IconVarToObjProc;
+static Blt_OptionParseProc ObjToIconVar;
+static Blt_OptionPrintProc IconVarToObj;
 static Blt_CustomOption iconVarOption = {
-    ObjToIconVarProc, IconVarToObjProc, FreeIconVarProc, (ClientData)0
+    ObjToIconVar, IconVarToObj, FreeIconVarProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 static Blt_OptionFreeProc FreeTextVarProc;
-static Blt_OptionParseProc ObjToTextVarProc;
-static Blt_OptionPrintProc TextVarToObjProc;
+static Blt_OptionParseProc ObjToTextVar;
+static Blt_OptionPrintProc TextVarToObj;
 static Blt_CustomOption textVarOption = {
-    ObjToTextVarProc, TextVarToObjProc, FreeTextVarProc, (ClientData)0
+    ObjToTextVar, TextVarToObj, FreeTextVarProc, (ClientData)0
 };
 static Blt_OptionFreeProc FreeTextProc;
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
+    ObjToText, TextToObj, FreeTextProc, (ClientData)0
 };
 
 /* 
@@ -313,6 +313,7 @@ typedef struct {
     Blt_TreeKey key;                    /* Actual data resides in this tree
                                            cell. */
     Tcl_Obj *cmdObjPtr;
+
     /* TextBox-specific fields */
     Tcl_Obj *editorObjPtr;             /* If non-NULL, TCL procedure
                                          * called to allow the user to edit
@@ -393,6 +394,7 @@ typedef struct {
     Blt_TreeKey key;                    /* Actual data resides in this tree
                                            cell. */
     Tcl_Obj *cmdObjPtr;
+
     /* Checkbox specific fields. */
     int size;                           /* Size of the checkbox. */
     Tcl_Obj *onValueObjPtr;
@@ -484,7 +486,6 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;
 
     /* ComboBox-specific fields */
-
     int arrowBorderWidth;
     int scrollWidth;
     /*  */
@@ -534,8 +535,9 @@ typedef struct {
     int reqArrowWidth;
     Blt_Bg arrowBg;
     Blt_Bg activeArrowBg;
-    const char dummy1[2000];
     int arrow;
+    Blt_Painter painter;
+    Blt_Picture downArrow;
 } ComboBoxStyle;
 
 typedef struct {
@@ -707,30 +709,25 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(CheckBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"}, 
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_CHECKBOX_ACTIVE_COLORS, Blt_Offset(CheckBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(CheckBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_CHECKBOX_ACTIVE_RELIEF, Blt_Offset(CheckBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(CheckBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(CheckBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_CHECKBOX_BORDERWIDTH, Blt_Offset(CheckBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -746,15 +743,12 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(CheckBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_CHECKBOX_EDITABLE, 
         Blt_Offset(CheckBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDITABLE},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_CHECKBOX_FONT, 
         Blt_Offset(CheckBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -767,10 +761,8 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
          Blt_Offset(CheckBoxStyle, highlightFg), 0},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
         Blt_Offset(CheckBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
@@ -819,21 +811,18 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(ComboBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_COMBOBOX_ACTIVE_COLORS, Blt_Offset(ComboBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground",
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(ComboBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_COMBOBOX_ACTIVE_RELIEF, Blt_Offset(ComboBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(ComboBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
@@ -849,9 +838,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(ComboBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
-        0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_COMBOBOX_BORDERWIDTH, Blt_Offset(ComboBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -863,15 +851,12 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(ComboBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_COMBOBOX_EDITABLE, 
         Blt_Offset(ComboBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDITABLE},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_COMBOBOX_FONT, 
         Blt_Offset(ComboBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -884,10 +869,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
          Blt_Offset(ComboBoxStyle, highlightFg), 0},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
         Blt_Offset(ComboBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_CUSTOM, "-iconvariable", "iconVariable", "IconVariable", 
@@ -932,10 +915,8 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(ImageBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground"}, 
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_IMAGEBOX_ACTIVE_COLORS, Blt_Offset(ImageBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
@@ -945,17 +926,14 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_IMAGEBOX_ACTIVE_RELIEF, Blt_Offset(ImageBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(ImageBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(ImageBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_IMAGEBOX_BORDERWIDTH, Blt_Offset(ImageBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -969,15 +947,12 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(ImageBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_IMAGEBOX_EDITABLE, 
         Blt_Offset(ImageBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDITABLE},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
         Blt_Offset(ImageBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -987,10 +962,8 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(ImageBoxStyle, highlightBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlistFackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"}, 
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(ImageBoxStyle, highlightFg), 0},
@@ -1022,30 +995,26 @@ static Blt_ConfigSpec radioButtonStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(RadioButtonStyle, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"}, 
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_RADIOBUTTON_ACTIVE_COLORS, Blt_Offset(RadioButtonStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(RadioButtonStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_RADIOBUTTON_ACTIVE_RELIEF, Blt_Offset(RadioButtonStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(RadioButtonStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_NORMAL_BG, Blt_Offset(RadioButtonStyle, normalBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+        DEF_NORMAL_BG, Blt_Offset(RadioButtonStyle, normalBg),
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_RADIOBUTTON_BORDERWIDTH, Blt_Offset(RadioButtonStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -1062,15 +1031,12 @@ static Blt_ConfigSpec radioButtonStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(RadioButtonStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_RADIOBUTTON_EDITABLE, 
         Blt_Offset(RadioButtonStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDITABLE},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_RADIOBUTTON_FONT, 
         Blt_Offset(RadioButtonStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -1083,10 +1049,8 @@ static Blt_ConfigSpec radioButtonStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
          Blt_Offset(RadioButtonStyle, highlightFg), 0},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
         Blt_Offset(RadioButtonStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
@@ -1134,30 +1098,26 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(TextBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_TEXTBOX_ACTIVE_COLORS, Blt_Offset(TextBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
-        "ActiveForeground", DEF_ACTIVE_FG, 
+        "ActiveForeground", DEF_ACTIVE_FG,
         Blt_Offset(TextBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_TEXTBOX_ACTIVE_RELIEF, Blt_Offset(TextBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(TextBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(TextBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -1171,17 +1131,14 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(TextBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_TEXTBOX_EDITABLE, 
         Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDITABLE},
     {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_TEXTBOX_EDITOR, 
         Blt_Offset(TextBoxStyle, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT, 
         Blt_Offset(TextBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -1191,10 +1148,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(TextBoxStyle, highlightBg), BLT_CONFIG_COLOR_ONLY},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"},
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(TextBoxStyle, highlightFg), 0},
@@ -1561,7 +1516,7 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert the name of an icon into a Tk image.
  *
@@ -1574,8 +1529,8 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
     CellStyle *stylePtr = (CellStyle *)widgRec;
@@ -1610,7 +1565,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -1621,7 +1576,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
               char *widgRec, int offset, int flags)     
 {
     Icon icon = *(Icon *)(widgRec + offset);
@@ -1735,7 +1690,9 @@ IconVarTraceProc(
     if (flags & TCL_TRACE_WRITES) {
         Icon icon;
         Tcl_Obj *valueObjPtr;
-
+        const char *iconName;
+        int length;
+        
         /*
          * Update the combobutton's icon with the image whose name is
          * stored in the variable.
@@ -1745,9 +1702,14 @@ IconVarTraceProc(
         if (valueObjPtr == NULL) {
             return GetInterpResult(interp);
         }
-        icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(valueObjPtr));
-        if (icon == NULL) {
-            return GetInterpResult(interp);
+        iconName = Tcl_GetStringFromObj(valueObjPtr, &length); 
+        if (length > 0) {
+            icon = GetIcon((CellStyle *)stylePtr, iconName);
+            if (icon == NULL) {
+                return GetInterpResult(interp);
+            }
+        } else {
+            icon = NULL;
         }
         if (stylePtr->icon != NULL) {
             FreeIcon(stylePtr->icon);
@@ -1782,7 +1744,7 @@ FreeIconVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconVarProc --
+ * ObjToIconVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -1794,14 +1756,8 @@ FreeIconVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToIconVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToIconVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -1842,7 +1798,7 @@ ObjToIconVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * IconVarToObjProc --
+ * IconVarToObj --
  *
  *      Return the name of the style.
  *
@@ -1853,13 +1809,8 @@ ObjToIconVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconVarToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+IconVarToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+             char *widgRec, int offset, int flags)     
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -1873,7 +1824,7 @@ IconVarToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -1885,14 +1836,8 @@ IconVarToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     const char *string;
@@ -1916,7 +1861,7 @@ ObjToStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -1927,13 +1872,8 @@ ObjToStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+           char *widgRec, int offset, int flags)     
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -1971,7 +1911,7 @@ FreeTextVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextVarProc --
+ * ObjToTextVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -1983,14 +1923,8 @@ FreeTextVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTextVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -2028,7 +1962,7 @@ ObjToTextVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextVarToObjProc --
+ * TextVarToObj --
  *
  *      Return the name of the text variable.
  *
@@ -2039,13 +1973,8 @@ ObjToTextVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextVarToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TextVarToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+             char *widgRec, int offset, int flags)     
 {
     Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
 
@@ -2072,7 +2001,7 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -2083,14 +2012,8 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
 
@@ -2111,7 +2034,7 @@ ObjToTextProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Return the text of the item.
  *
@@ -2122,13 +2045,8 @@ ObjToTextProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+TextToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          char *widgRec, int offset, int flags)     
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
 
@@ -2475,11 +2393,13 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     x += stylePtr->borderWidth + colPtr->pad.side1;
     y += stylePtr->borderWidth;
 
+#ifdef notdef
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) {
         XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
                        rowHeight - 4);
     }
+#endif
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
@@ -2514,7 +2434,9 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         ih = IconHeight(stylePtr->icon);
     }
     if (cellPtr->dataObjPtr != NULL) {
+#ifdef notdef
         tw = cellPtr->textWidth;
+#endif
         th = cellPtr->textHeight;
         tw = cellWidth - iw;
         if (stylePtr->icon != NULL) {
@@ -2582,9 +2504,11 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_SetMaxLength(ts, xMax);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-        if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
-            (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+        if (((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) ||
+            ((stylePtr->flags & UNDERLINE_ACTIVE) &&
+             (viewPtr->activeCellPtr == cellPtr))) {
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -2596,10 +2520,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
  *
  * TextBoxStyleFreeProc --
  *
- *      Releases resources allocated for the textbox. The resources freed by
- *      this routine are specific only to the "textbox".  Other resources
- *      (common to all styles) are freed in the Blt_TreeView_FreeStyle
- *      routine.
+ *      Releases resources allocated for the textbox. 
  *
  * Results:
  *      None.
@@ -2634,6 +2555,7 @@ TextBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    /* Style is eventually freed by DestroyStyle */
 }
 
 /*
@@ -2657,7 +2579,6 @@ NewCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->classPtr = &checkBoxStyleClass;
     stylePtr->viewPtr = viewPtr;
     stylePtr->gap = 4;
-    stylePtr->size = 15;
     stylePtr->lineWidth = 2;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
@@ -2694,15 +2615,23 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
     TreeView *viewPtr;
     XGCValues gcValues;
     unsigned long gcMask;
-
+    Blt_Font font;
+    
     viewPtr = stylePtr->viewPtr;
-
+    font = CHOOSE(viewPtr->font, stylePtr->font);
     gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
     gcValues.dashes = 1;
-    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
+    gcValues.font = Blt_Font_Id(font);
     gcValues.line_width = 0;
     gcValues.line_style = LineOnOffDash;
 
+    if (stylePtr->size <= 0) {
+        Blt_FontMetrics fm;
+
+        Blt_Font_GetMetrics(font, &fm);
+        stylePtr->size = fm.linespace * 75 / 100;
+    }
+    
     /* Normal text. */
     gcValues.foreground = CHOOSE(viewPtr->normalFg, stylePtr->normalFg)->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
@@ -3074,7 +3003,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
     }
     stylePtr->flags &= ~STYLE_DIRTY;
@@ -3169,6 +3099,7 @@ CheckBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    /* Style is eventually freed by DestroyStyle */
 }
 
 /*
@@ -3380,7 +3311,6 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height += 2 * CELL_PADY;
     cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
-
     FormatCell(cellStylePtr, cellPtr);
     if (stylePtr->icon != NULL) {
         iw = IconWidth(stylePtr->icon);
@@ -3393,7 +3323,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     } else if (cellPtr->dataObjPtr != NULL) {
         TextStyle ts;
         const char *string;
-
+        
         string = Tcl_GetString(cellPtr->dataObjPtr);
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
@@ -3407,12 +3337,43 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 
     font = CHOOSE(viewPtr->font, stylePtr->font);
     Blt_Font_GetMetrics(font, &fm);
-    stylePtr->arrowWidth = fm.ascent - 2;
-    aw = ah = (2 * stylePtr->arrowBorderWidth) + stylePtr->arrowWidth;
-     aw += 2 * 1;
+    stylePtr->arrowHeight = fm.linespace;
+    stylePtr->arrowWidth = stylePtr->arrowHeight * 60 / 100;
+    stylePtr->arrowHeight += 2 * stylePtr->arrowBorderWidth;
+    stylePtr->arrowWidth += 2 * stylePtr->arrowBorderWidth;
+    aw = stylePtr->arrowWidth;
+    ah = stylePtr->arrowHeight;
+    aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + 2 * gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
+}
+
+static Blt_Picture
+GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
+{
+    if ((stylePtr->downArrow == NULL) ||
+        (Blt_Picture_Width(stylePtr->downArrow) != w) ||
+        (Blt_Picture_Height(stylePtr->downArrow) != h)) {
+        int ih, iw;
+        Blt_Picture picture;
+        int ix, iy;
+
+        if (stylePtr->downArrow != NULL) {
+            Blt_FreePicture(stylePtr->downArrow);
+        }
+        iw = w * 75 / 100;
+        ih = h * 40 / 100;
+        
+        picture = Blt_CreatePicture(w, h);
+        Blt_BlankPicture(picture, 0x0);
+        iy = (h - ih) / 2;
+        ix = (w - iw) / 2;
+        Blt_PaintArrowHead(picture, ix, iy, iw, ih,
+                           Blt_XColorToPixel(colorPtr), ARROW_DOWN);
+        stylePtr->downArrow = picture;
+    }
+    return stylePtr->downArrow;
 }
 
 /*
@@ -3445,11 +3406,11 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     GC gc;
     Entry *rowPtr;
     int ix, iy, tx, ty;
-    unsigned int gap, colWidth, rowHeight, cellWidth, cellHeight;
-    unsigned int iw, ih, th;
+    int gap, colWidth, rowHeight, cellWidth, cellHeight;
+    int iw, ih, th;
     int relief;
-    XColor *fg;
     TreeView *viewPtr;
+    int x0;
 
     viewPtr = stylePtr->viewPtr;
     rowPtr = cellPtr->entryPtr;
@@ -3460,7 +3421,6 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     if ((colWidth <= 0) || (rowHeight <= 0)) {
         return;
     }
-
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
         /* Disabled */
         bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
@@ -3506,6 +3466,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowHeight -= 2 * stylePtr->borderWidth;
     colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
 
+    x0 = x;
     x += stylePtr->borderWidth + colPtr->pad.side1;
     y += stylePtr->borderWidth;
 
@@ -3519,9 +3480,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
     colWidth  -= 2 * (FOCUS_PAD + CELL_PADX);
 
-    cellHeight = cellPtr->height - 
+    cellHeight = cellPtr->height - rowPtr->ruleHeight -
         2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD);
-    cellWidth  = cellPtr->width  - PADDING(colPtr->pad) - 
+    cellWidth  = cellPtr->width  - colPtr->ruleWidth - PADDING(colPtr->pad) - 
         2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD);
 
     /* Justify (x) and center (y) the contents of the cell. */
@@ -3567,7 +3528,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     }
     if (cellPtr->dataObjPtr != NULL) {
         TextStyle ts;
-        int xMax;
+        int maxLength;
         TextLayout *textPtr;
         const char *string;
         int length;
@@ -3576,24 +3537,26 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        xMax = SCREENX(viewPtr, colPtr->worldX) + colWidth - 
-            stylePtr->arrowWidth;
-        Blt_Ts_SetMaxLength(ts, xMax - tx);
+        maxLength = cellWidth - stylePtr->arrowWidth;
+        Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
     if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {
         int ax, ay;
         unsigned int aw, ah;
-
-        aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBorderWidth);
-        ah = aw;
-        ax = x + colWidth - aw - stylePtr->gap;
+        XColor *fg;
+        
+        aw = stylePtr->arrowWidth;
+        ah = stylePtr->arrowHeight;
+        ax = x0 + colPtr->width - colPtr->ruleWidth - stylePtr->arrowWidth - 
+            - colPtr->pad.side1 - 1;
         ay = y;
         
         if (rowHeight > ah) {
@@ -3609,8 +3572,18 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
                 stylePtr->arrowBorderWidth, relief);
         aw -= 2 * stylePtr->arrowBorderWidth;
         ax += stylePtr->arrowBorderWidth;
-        Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                stylePtr->arrowBorderWidth, ARROW_DOWN);
+        ah -= 2 * stylePtr->arrowBorderWidth;
+        ay += stylePtr->arrowBorderWidth;
+        {
+            Blt_Picture picture;
+            
+            picture = GetArrowPicture(stylePtr, aw, ah, fg);
+            if (stylePtr->painter == NULL) {
+                stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(stylePtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
+        }
     }
 }
 
@@ -3691,6 +3664,13 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->painter != NULL) {
+        Blt_FreePainter(stylePtr->painter);
+    }
+    if (stylePtr->downArrow != NULL) {
+        Blt_FreePicture(stylePtr->downArrow);
+    }
+    /* Style is eventually freed by DestroyStyle */
 }
 
 /*
@@ -3905,11 +3885,11 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     if (cellPtr->tkImage != NULL) {
         Tk_SizeOfImage(cellPtr->tkImage, (int *)&pw, (int *)&ph);
     }
-    cellPtr->height += MAX(ph, ih);
     if (stylePtr->icon != NULL) {
         iw = IconWidth(stylePtr->icon);
         ih = IconHeight(stylePtr->icon);
     } 
+    cellPtr->height += MAX(ph, ih);
     if ((stylePtr->flags & SHOW_TEXT) && (cellPtr->dataObjPtr != NULL)) {
         TextStyle ts;
         const char *string;
@@ -4081,7 +4061,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     if ((stylePtr->flags & SHOW_TEXT) && (cellPtr->dataObjPtr != NULL)) {
         TextStyle ts;
-        int xMax;
+        int maxLength;
         TextLayout *textPtr;
         const char *string;
         int length;
@@ -4092,13 +4072,14 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        xMax = colWidth - iw - gap;
-        Blt_Ts_SetMaxLength(ts, xMax);
+        maxLength = colWidth - iw - gap;
+        Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -4175,7 +4156,7 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
-    Blt_Free(stylePtr);
+    /* Style is eventually freed by DestroyStyle */
 }
 
 
@@ -4563,7 +4544,7 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
     }
     if (stylePtr->flags & SHOW_VALUE) {
         TextStyle ts;
-        int xMax;
+        int maxLength;
         const char *string;
         int length;
         TextLayout *textPtr;
@@ -4572,13 +4553,14 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         Blt_Ts_SetGC(ts, gc);
-        xMax = colWidth - iw - bw - gap - stylePtr->gap;
-        Blt_Ts_SetMaxLength(ts, xMax);
+        maxLength = colWidth - iw - bw - gap - stylePtr->gap;
+        Blt_Ts_SetMaxLength(ts, maxLength);
         textPtr = Blt_Ts_CreateLayout(string, length, &ts);
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+                &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }

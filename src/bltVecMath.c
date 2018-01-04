@@ -226,14 +226,14 @@ static int NextValue(Tcl_Interp *interp, ParseInfo *piPtr, int prec,
 static int
 Sort(Vector *vPtr)
 {
-    size_t *map;
+    long *map;
     double *values;
-    int i;
-    size_t sortLength;
+    long i, sortLength;
 
     sortLength = vPtr->length;
     Blt_Vec_SortMap(&vPtr, 1, &map);
     values = Blt_AssertMalloc(sizeof(double) * sortLength);
+    /* Copy the values into the array in sorted order */
     for(i = 0; i < sortLength; i++) {
         values[i] = vPtr->valueArr[map[i]];
     }
@@ -272,7 +272,7 @@ Product(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double prod;
-    int i;
+    long i;
 
     prod = 1.0;
     for(i = 0; i < vPtr->length; i++) {
@@ -285,11 +285,11 @@ Product(Blt_Vector *vectorPtr)
 }
 
 static double
-GetSum(Blt_Vector *vectorPtr, int *nonEmptyPtr)
+GetSum(Blt_Vector *vectorPtr, long *nonEmptyPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double sum;
-    int i, count;
+    long i, count;
 
     /* Kahan summation algorithm */
 
@@ -302,7 +302,6 @@ GetSum(Blt_Vector *vectorPtr, int *nonEmptyPtr)
     count = 0;
     if (i < vPtr->length) {
         double c;
-        sum = vPtr->valueArr[i];
         c = 0.0;                        /* A running compensation for lost
                                          * low-order bits.*/
         count = 1;
@@ -329,7 +328,7 @@ GetSum(Blt_Vector *vectorPtr, int *nonEmptyPtr)
 static double
 Sum(Blt_Vector *vectorPtr)
 {
-    int count;
+    long count;
 
     return GetSum(vectorPtr, &count);
 }
@@ -338,7 +337,7 @@ static double
 Mean(Blt_Vector *vectorPtr)
 {
     double sum;
-    int n;
+    long n;
 
     sum = GetSum(vectorPtr, &n);
     if (n == 0) {
@@ -355,7 +354,7 @@ Variance(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double var, mean;
-    int i, count;
+    long i, count;
 
     mean = Mean(vectorPtr);
     var = 0.0;
@@ -385,7 +384,7 @@ Skew(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double var, skew, mean;
-    int i, count;
+    long i, count;
 
     mean = Mean(vectorPtr);
     var = skew = 0.0;
@@ -428,27 +427,26 @@ static double
 AvgDeviation(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
-    double avg, mean;
-    int i, count;
+    double sum, mean;
+    long i, count;
 
     mean = Mean(vectorPtr);
-    avg = 0.0;
+    sum = 0.0;
     count = 0;
     for(i = 0; i < vPtr->length; i++) {
-        double diff;
+        double dx;
 
         if (!FINITE(vPtr->valueArr[i])) {
             continue;
         }
-        diff = vPtr->valueArr[i] - mean;
-        avg += FABS(diff);
+        dx = vPtr->valueArr[i] - mean;
+        sum += FABS(dx);
         count++;
     }
     if (count < 2) {
         return 0.0;
     }
-    avg /= (double)count;
-    return avg;
+    return sum / (double)count;
 }
 
 
@@ -457,7 +455,7 @@ Kurtosis(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double kurt, var, mean;
-    int i, count;
+    long i, count;
 
     mean = Mean(vectorPtr);
     var = kurt = 0.0;
@@ -490,10 +488,10 @@ static double
 Median(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
-    size_t *map;
     double q2;
-    int mid;
-    size_t sortLength;
+    long mid;
+    long *map;
+    long sortLength;
     
     if (vPtr->length == 0) {
         return -DBL_MAX;
@@ -502,9 +500,9 @@ Median(Blt_Vector *vectorPtr)
     mid = (sortLength - 1) / 2;
 
     /*  
-     * Determine Q2 by checking if the number of elements [0..n-1] is
-     * odd or even.  If even, we must take the average of the two
-     * middle values.  
+     * Determine Q2 by checking if the number of elements [0..n-1] is odd
+     * or even.  If even, we must take the average of the two middle
+     * values.
      */
     if (sortLength & 1) { /* Odd */
         q2 = vPtr->valueArr[map[mid]];
@@ -521,8 +519,8 @@ Q1(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double q1;
-    size_t *map;
-    size_t sortLength;
+    long *map;
+    long sortLength;
 
     if (vPtr->length == 0) {
         return -DBL_MAX;
@@ -531,7 +529,7 @@ Q1(Blt_Vector *vectorPtr)
     if (sortLength < 4) {
         q1 = vPtr->valueArr[map[0]];
     } else {
-        int mid, q;
+        long mid, q;
 
         mid = (sortLength - 1) / 2;
         q = mid / 2;
@@ -557,8 +555,8 @@ Q3(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double q3;
-    size_t *map;
-    size_t sortLength;
+    long *map;
+    long sortLength;
 
     if (vPtr->length == 0) {
         return -DBL_MAX;
@@ -567,7 +565,7 @@ Q3(Blt_Vector *vectorPtr)
     if (sortLength < 4) {
         q3 = vPtr->valueArr[map[sortLength - 1]];
     } else {
-        int mid, q;
+        long mid, q;
 
         mid = (sortLength - 1) / 2;
         q = (sortLength + mid) / 2;
@@ -594,7 +592,7 @@ Norm(Blt_Vector *vector)
 {
     Vector *vPtr = (Vector *)vector;
     double min, max;
-    int i;
+    long i;
 
     min = DBL_MAX;
     max = -DBL_MAX;
@@ -611,7 +609,7 @@ Norm(Blt_Vector *vector)
     }
     if (min < max) {
         double range;
-        int i;
+        long i;
 
         range = max - min;
         for (i = 0; i < vPtr->length; i++) {
@@ -630,9 +628,7 @@ static double
 Count(Blt_Vector *vector)
 {
     Vector *vPtr = (Vector *)vector;
-    int count;
-    int i;
-
+    long i, count;
 
     count = 0;
     for (i = 0; i < vPtr->length; i++) {
@@ -640,7 +636,7 @@ Count(Blt_Vector *vector)
             count++;
         }
     }
-    return (double) count;
+    return (double)count;
 }
 
 
@@ -648,8 +644,7 @@ static double
 Nonzeros(Blt_Vector *vector)
 {
     Vector *vPtr = (Vector *)vector;
-    int count;
-    int i;
+    long i, count;
 
     count = 0;
     for (i = 0; i < vPtr->length; i++) {
@@ -1274,7 +1269,7 @@ NextValue(
                                          * again. */
     int result;
     Vector *vPtr, *v2Ptr;
-    int i;
+    long i;
     double *values;
 
     /*
@@ -1584,12 +1579,12 @@ NextValue(
 
             case RIGHT_SHIFT:
                 {
-                    int offset;
+                    long offset;
 
                     offset = (int)scalar % vPtr->length;
                     if (offset > 0) {
                         double *hold;
-                        int j;
+                        long j;
                         
                         hold = Blt_AssertMalloc(sizeof(double) * offset);
                         for (i = vPtr->length - offset, j = 0; 
@@ -2075,7 +2070,7 @@ PointFunc(
     Vector *vPtr)
 {
     PointProc1 *procPtr = (PointProc1 *) clientData;
-    int i;
+    long i;
     double *values;
 
     values = Blt_AssertMalloc(sizeof(double) * vPtr->length);
@@ -2122,7 +2117,7 @@ PointNoArgsFunc(
     Vector *vPtr)
 {
     PointProc0 *procPtr = (PointProc0 *) clientData;
-    int i;
+    long i;
     double *values;
 
     values = Blt_AssertMalloc(sizeof(double) * vPtr->length);
@@ -2301,8 +2296,7 @@ Blt_ExprVector(
     Vector *vPtr = (Vector *)vector;
     Value value;
 
-    dataPtr = (vector != NULL) 
-        ? vPtr->dataPtr : Blt_Vec_GetInterpData(interp);
+    dataPtr = (vPtr != NULL) ? vPtr->dataPtr : Blt_Vec_GetInterpData(interp);
     value.vPtr = Blt_Vec_New(dataPtr);
     if (EvaluateExpression(interp, string, &value) != TCL_OK) {
         Blt_Vec_Free(value.vPtr);
@@ -2312,7 +2306,7 @@ Blt_ExprVector(
         Blt_Vec_Duplicate(vPtr, value.vPtr);
     } else {
         Tcl_Obj *listObjPtr;
-        int i;
+        long i;
 
         /* No result vector.  Put values in interp->result.  */
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);

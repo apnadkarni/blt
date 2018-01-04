@@ -162,10 +162,14 @@ typedef struct FontFamily {
 typedef struct SubFont {
     char **fontMap;             /* Pointer to font map from the FontFamily, 
                                  * cached here to save a dereference. */
-    HFONT hFont;                /* The specific screen font that will be
+    HFONT hFont0;               /* The specific screen font that will be
                                  * used when displaying/measuring chars
                                  * belonging to the FontFamily. */
     FontFamily *familyPtr;      /* The FontFamily for this SubFont. */
+#if (_TCL_VERSION >=  _VERSION(8,6,0)) 
+    HFONT hFontAngled;
+    double angle;
+#endif
 } SubFont;
 
 /*

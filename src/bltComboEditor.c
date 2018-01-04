@@ -438,10 +438,10 @@ typedef struct {
     int x, y;
 } ComboEditor;
 
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, NULL, (ClientData)0
+    ObjToText, TextToObj, NULL, (ClientData)0
 };
 
 extern Blt_CustomOption bltLimitsOption;
@@ -456,8 +456,8 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(ComboEditor, activeColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
         DEF_NORMAL_BACKGROUND, Blt_Offset(ComboEditor, normalBg), 0 },
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0,0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ComboEditor, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -471,8 +471,7 @@ static Blt_ConfigSpec configSpecs[] =
         "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(ComboEditor, flags),
         BLT_CONFIG_DONT_SET_DEFAULT , 
         (Blt_CustomOption *)EXPORT_SELECTION},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 
-        0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
         Blt_Offset(ComboEditor, font), 0, },
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -953,6 +952,7 @@ RecordEdit(ComboEditor *editPtr, RecordType type, CharIndex index,
     editPtr->undoPtr = recPtr;
 }
 
+#ifdef notdef
 static void
 CleanText(ComboEditor *editPtr)
 {
@@ -978,6 +978,7 @@ CleanText(ComboEditor *editPtr)
     Blt_DBuffer_SetLength(editPtr->dbuffer, editPtr->numBytes);
     Tcl_DecrRefCount(objPtr);
 } 
+#endif
 
 static void
 BlinkCursor(ComboEditor *editPtr)
@@ -1475,7 +1476,7 @@ SelectionProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -1486,8 +1487,8 @@ SelectionProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboEditor *editPtr = (ComboEditor *)(widgRec);
 
@@ -1498,7 +1499,7 @@ ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Returns the current text of the entry.
  *
@@ -1509,8 +1510,8 @@ ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)     
+TextToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)     
 {
     ComboEditor *editPtr = (ComboEditor *)(widgRec);
 
@@ -4325,7 +4326,7 @@ ComboEditorCmdProc(
             "source [file join $blt_library bltComboEditor.tcl]") != TCL_OK) {
             char info[200];
 
-            Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+            Blt_FmtString(info, 200, "\n\t(while loading bindings for %.50s)", 
                     Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             return TCL_ERROR;

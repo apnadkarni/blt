@@ -702,7 +702,7 @@ PopOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         if (grabPtr->entryPtr->tkwin != tkwin) {
-            Blt_Warn("This is no grab on this window %s, it's on %s\n", 
+            Blt_Warn("Can't release grab on window %s, it's on %s\n", 
                      Tk_PathName(tkwin), Tk_PathName(grabPtr->entryPtr->tkwin));
             return TCL_OK;
         }

@@ -84,11 +84,11 @@ typedef struct {
                                          * occurred). */
     Tcl_Obj *postCmdObjPtr;             /* Procedure to be invoked after
                                          * the command is executed. */
-    Tcl_Trace token;                 /* Trace handler which activates "pre"
-                                      * command procedures */
-    Tcl_AsyncHandler asyncHandle;    /* Async handler which triggers the
-                                      * "post" command procedure (if one
-                                      * exists) */
+    Tcl_Trace token;                    /* Trace handler which activates
+                                         * "pre" command procedures */
+    Tcl_AsyncHandler asyncHandle;       /* Async handler which triggers the
+                                         * "post" command procedure (if one
+                                         * exists) */
     int active;                         /* Indicates if a trace is
                                          * currently active.  This prevents
                                          * recursive tracing of the "pre"

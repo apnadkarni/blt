@@ -1,4 +1,4 @@
-# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
+# -*- mode: tcl; tcl-indent-level: 4; indent-tabs-mode: nil -*- 
 #
 # bltComboEntry.tcl
 #
@@ -328,26 +328,40 @@ bind BltComboEntry <<Copy>> {
 }
 
 bind BltComboEntry <<Paste>> {
-    %W insert insert [selection get]
-    %W see insert
+    global tcl_platform
+    catch {
+	if {[tk windowingsystem] ne "x11"} {
+	    catch {
+		%W delete sel.first sel.last
+	    }
+	}
+	%W insert insert [::tk::GetSelection %W CLIPBOARD]
+	%W see insert
+    }
 }
 
 bind BltComboEntry <<Clear>> {
-    %W delete sel.first sel.last
+    # ignore if there is no selection
+    catch { %W delete sel.first sel.last }
 }
 
 
 bind Entry <<PasteSelection>> {
-    if { $tk_strictMotif || 
-	 ![info exists blt::ComboEntry::_private(mouseMoved)] || 
-	 !$blt::ComboEntry::_private(mouseMoved)} {
-	tk::EntryPaste %W %x
+    global tcl_platform
+    catch {
+	if {[tk windowingsystem] ne "x11"} {
+	    catch {
+		%W delete sel.first sel.last
+	    }
+	}
+	%W insert insert [::tk::GetSelection %W CLIPBOARD]
+	%W see insert
     }
 }
 
 # Paste
 bind BltComboEntry <Control-v> {
-    %W insert insert [selection get]
+    %W insert insert [::tk::GetSelection %W CLIPBOARD]
 }
 
 # Cut
@@ -572,7 +586,6 @@ proc ::blt::ComboEntry::PostMenu { w } {
     
     set _private(postingButton) $w
     set _private(lastFocus) [focus]
-    $menu activate none
     #blt::ComboEntry::GenerateMenuSelect $menu
 
 
@@ -581,6 +594,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
     # the menu just below the menubutton, as for a pull-down.
 
     update idletasks
+    update
     if { [catch { $w post } msg] != 0 } {
 	# Error posting menu (e.g. bogus -postcommand). Unpost it and
 	# reflect the error.
@@ -593,12 +607,7 @@ proc ::blt::ComboEntry::PostMenu { w } {
     }
 
     focus $menu
-    set value [$w get]
-    set index [$menu index $value]
-    if { $index != -1 } {
-	$menu see $index
-	$menu activate $index
-    }
+    $menu reset [$w get]
     if { [winfo viewable $menu] } {
         # Automatically turn off grab on unposted menu
         bind $menu <Unmap> [list blt::ComboEntry::HandleUnmap %W $menu $w]

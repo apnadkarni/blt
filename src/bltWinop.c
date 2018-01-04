@@ -53,6 +53,7 @@
 #endif  /* WIN32 */
 
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 
 #include "bltAlloc.h"
 #include "bltPicture.h"
@@ -66,6 +67,8 @@
 static Tcl_ObjCmdProc WinopCmd;
 
 typedef struct _WindowNode WindowNode;
+static int selectTableInitialized = 0;
+static Blt_HashTable selectTable;
 
 /*
  *  WindowNode --
@@ -139,7 +142,7 @@ GetIdFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
         { 
             static TkWinWindow tkWinWindow;
             
-            tkWinWindow.handle = (HWND)xid;
+            tkWinWindow.handle = (HWND)(size_t)xid;
             tkWinWindow.winPtr = NULL;
             tkWinWindow.type = TWD_WINDOW;
             *windowPtr = (Window)&tkWinWindow;
@@ -154,7 +157,7 @@ GetIdFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- *  GetWindowRegion --
+ *  GetWindowNodeRegion --
  *
  *      Queries for the upper-left and lower-right corners of the given
  *      window.
@@ -170,7 +173,7 @@ GetWindowNodeRegion(Display *display, WindowNode *nodePtr)
 {
     int x, y, w, h;
 
-    if (Blt_GetWindowRegion(display, nodePtr->window, &x, &y, &w, &h) 
+    if (Blt_GetWindowExtents(display, nodePtr->window, &x, &y, &w, &h) 
         != TCL_OK) {
         return TCL_ERROR;
     }
@@ -318,7 +321,7 @@ FindTopWindow(WindowNode *rootPtr, int x, int y)
     return nodePtr;
 }
 
-#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
@@ -388,7 +391,7 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
 {
     char *atomName;
     XErrorHandler handler;
-    static char name[200];
+    static char name[256];
     int result;
 
     handler = XSetErrorHandler(IgnoreErrors);
@@ -402,8 +405,8 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
     } else {
         size_t length = strlen(atomName);
 
-        if (length > 200) {
-            length = 200;
+        if (length > 255) {
+            length = 255;
         }
         memcpy(name, atomName, length);
         name[length] = '\0';
@@ -429,7 +432,7 @@ GetWindowProperties(Tcl_Interp *interp, Display *display, Window window,
 
         if (GetAtomName(display, atoms[i], &name)) {
             union {
-                char *data;
+                unsigned char *data;
                 int window;
             } prop;
             int result, format;
@@ -454,26 +457,24 @@ GetWindowProperties(Tcl_Interp *interp, Display *display, Window window,
                                          * format. */
                 &numBytesAfter,         /* (out) # of bytes remaining to be
                                          * read. */
-                (unsigned char **)&prop.data);
+                &prop.data);
 #ifdef notdef
             fprintf(stderr, "%x: property name is %s (format=%d(%d) type=%d result=%d)\n", window, name, format, numItems, typeAtom, result == Success);
 #endif
             if (result == Success) {
-                if (format == 8) {
-                    if (prop.data != NULL) {
-                        Blt_Tree_SetValue(interp, tree, parent, name, 
-                                Tcl_NewStringObj(prop.data, numItems));
-                    }
+                Tcl_Obj *objPtr;
+
+                if ((format == 8) && (prop.data != NULL)) {
+                    objPtr = Tcl_NewStringObj((char *)prop.data, numItems);
                 } else if ((typeAtom == XA_WINDOW) && (format == 32)) {
                     char string[200];
 
                     sprintf(string, "0x%x", prop.window);
-                    Blt_Tree_SetValue(interp, tree, parent, name, 
-                        Tcl_NewStringObj(string, -1));
+                    objPtr = Tcl_NewStringObj(string, -1);
                 } else {
-                    Blt_Tree_SetValue(interp, tree, parent, name, 
-                        Tcl_NewStringObj("???", -1));
+                    objPtr = Tcl_NewStringObj("???", 3);
                 }
+                Blt_Tree_SetValue(interp, tree, parent, name, objPtr);
                 XFree(prop.data);
             }
         }
@@ -519,6 +520,82 @@ FillTree(Tcl_Interp *interp, Display *display, Window window, Blt_Tree tree,
         Blt_Chain_Destroy(chain);
     }
 
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LostSelection --
+ *
+ *      This procedure is called back by Tk when the selection is grabbed
+ *      away.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The existing selection is unhighlighted, and the window is marked
+ *      as not containing a selection.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+LostSelection(ClientData clientData)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    assert(selectTableInitialized);
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tcl_DStringFree(dsPtr);
+        Blt_Free(dsPtr);
+        Blt_DeleteHashEntry(&selectTable, hPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionProc --
+ *
+ *      This procedure is called back by Tk when the selection is requested
+ *      by someone.  It returns part or all of the selection in a buffer
+ *      provided by the caller.
+ *
+ * Results:
+ *      The return value is the number of non-NULL bytes stored at buffer.
+ *      Buffer is filled (or partially filled) with a NUL-terminated string
+ *      containing part or all of the selection, as given by offset and
+ *      maxBytes.
+ *
+ * Side effects:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SelectionProc(
+    ClientData clientData,              /* Information about the widget. */
+    int offset,                         /* Offset within selection of first
+                                         * character to be returned. */
+    char *buffer,                       /* Location in which to place
+                                         * selection. */
+    int maxBytes)                       /* Maximum number of bytes to place
+                                         * at buffer, not including
+                                         * terminating NULL character. */
+{
+    Tcl_DString *dsPtr = clientData;
+    int size;
+
+    size = Tcl_DStringLength(dsPtr) - offset;
+    strncpy(buffer, Tcl_DStringValue(dsPtr) + offset, maxBytes);
+    buffer[maxBytes] = '\0';
+    return (size > maxBytes) ? maxBytes : size;
 }
 
 /*
@@ -572,7 +649,7 @@ GeometryOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetIdFromObj(interp, objv[2], &id) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_GetWindowRegion(Tk_Display(tkMain), id, &x, &y, &w, &h);
+    Blt_GetWindowExtents(Tk_Display(tkMain), id, &x, &y, &w, &h);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y));
@@ -668,7 +745,7 @@ InsideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tcl_GetIntFromObj(interp, objv[4], &rootY) != TCL_OK)) {
         return TCL_ERROR;
     }
-    if (Blt_GetWindowRegion(Tk_Display(tkMain), id, &x, &y, &w, &h) != TCL_OK) {
+    if (Blt_GetWindowExtents(Tk_Display(tkMain), id, &x, &y, &w, &h) != TCL_OK){
         return TCL_ERROR;
     }
     state = FALSE;
@@ -778,17 +855,239 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- *  SetScreenSizeOp --
+ * SelectionAppendOp
+ *
+ *      Add strings to the selection.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection changes.
+ *
+ *      blt::winop selection append ?string...?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionAppendOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                  Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+    int isNew;
+    Tcl_DString *dsPtr;
+    int i;
+
+    hPtr = Blt_CreateHashEntry(&selectTable, tkMain, &isNew);
+    if (isNew) {
+        dsPtr = Blt_AssertMalloc(sizeof(Tcl_DString));
+        Tcl_DStringInit(dsPtr);
+        Blt_SetHashValue(hPtr, dsPtr);
+        Tk_CreateSelHandler(tkMain, XA_PRIMARY, XA_STRING, SelectionProc,
+                            dsPtr, XA_STRING);
+    }
+    dsPtr = Blt_GetHashValue(hPtr);
+    for (i = 3; i < objc; i++) {
+        const char *string;
+        int length;
+
+        string = Tcl_GetStringFromObj(objv[i], &length);
+        Tcl_DStringAppend(dsPtr, string, length);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionClearOp
+ *
+ *      Clears the selection.
+ *
+ *      blt::winop selection clear 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionClearOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tcl_DStringFree(dsPtr);
+        Blt_Free(dsPtr);
+        Blt_DeleteHashEntry(&selectTable, hPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionCurrentOp
+ *
+ *      Returns the current selection.
+ *
+ *      blt::winop selection current 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tcl_SetStringObj(Tcl_GetObjResult(interp), Tcl_DStringValue(dsPtr),
+                         Tcl_DStringLength(dsPtr));
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionExportOp
+ *
+ *      Exports the current selection.  It is not an error if not selection
+ *      is present.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection is exported.
+ *
+ *      blt::winop selection export
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                  Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    if (hPtr != NULL) {
+        Tcl_DString *dsPtr;
+
+        dsPtr = Blt_GetHashValue(hPtr);
+        Tk_OwnSelection(tkMain, XA_PRIMARY, LostSelection, dsPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionPresentOp
+ *
+ *      Returns 1 if there is a selection and 0 if it isn't.
+ *
+ * Results:
+ *      A standard TCL result.  interp->result will contain a boolean string
+ *      indicating if there is a selection.
+ *
+ *      pathName selection present 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
+{
+    Tk_Window tkMain = clientData;
+    int state;
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&selectTable, tkMain);
+    state = (hPtr != NULL);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SelectionOp --
+ *
+ *      This procedure handles the individual options for text selections.
+ *      The selected text is designated by start and end indices into the text
+ *      pool.  The selected segment has both a anchored and unanchored ends.
+ *
+ * Results:
+ *      None.
+ *
+ * Side effects:
+ *      The selection changes.
+ *
+ *      pathName selection op args
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec selectionOps[] =
+{
+    {"append",   1, SelectionAppendOp,   3, 0, "?string...?",},
+    {"clear",    2, SelectionClearOp,    3, 3, "",},
+    {"current",  2, SelectionCurrentOp,  3, 3, "",},
+    {"export",   1, SelectionExportOp,   3, 3, "",},
+    {"present",  1, SelectionPresentOp,  3, 3, "",},
+};
+static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
+
+static int
+SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    if (!selectTableInitialized) {
+        Blt_InitHashTable(&selectTable, BLT_ONE_WORD_KEYS);
+        selectTableInitialized = TRUE;
+    }
+    proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG2, 
+        objc, objv, 0);
+    if (proc == NULL) {
+        return TCL_ERROR;
+    }
+    return (*proc) (clientData, interp, objc, objv);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ *  ScreenSizeOp --
  *
  *      Sets the size of the screen.
  *
- *      blt::winop setscreensize width height
+ *      blt::winop screensize width height
  *
  * ------------------------------------------------------------------------ 
  */
-#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
 static int
-SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+ScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                 Tcl_Obj *const *objv)
 {
     Display *display;
@@ -873,7 +1172,7 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     XRRFreeScreenConfigInfo(sc);
     return TCL_OK;
 }
-#endif  /* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
+#endif  /* HAVE_RANDR && HAVE_XRRGETSCREENRESOURCES */
 
 /*
  *---------------------------------------------------------------------------
@@ -979,7 +1278,7 @@ UnmapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- *  WarpTop --
+ *  WarpToOp --
  *
  *      Warps the pointer to the given window or coordinates.
  *
@@ -1020,6 +1319,36 @@ WarpToOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return QueryOp(tkMain, interp, 0, (Tcl_Obj **)NULL);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ *  UnmapOp --
+ *
+ *      Unmaps the named windows.
+ *
+ *      blt::winop xdpi 
+ *
+ * ------------------------------------------------------------------------ 
+ */
+static int
+DpiOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Tk_Window tkwin = clientData;
+    int xdpi, ydpi;
+    const char *string;
+    char c;
+    
+    Blt_ScreenDPI(tkwin, &xdpi, &ydpi);
+    string = Tcl_GetString(objv[1]);
+    c = string[0];
+    if (c == 'x') {
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), xdpi);
+    } else {
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), ydpi);
+    }
+    return TCL_OK;
+}
+
 static Blt_OpSpec winOps[] =
 {
     {"changes",  1, ChangesOp,  3, 3, "windowName",},
@@ -1030,13 +1359,16 @@ static Blt_OpSpec winOps[] =
     {"move",     2, MoveOp,     5, 5, "windowName x y",},
     {"query",    1, QueryOp,    2, 2, "",},
     {"raise",    1, RaiseOp,    2, 0, "?windowName ...?",},
-#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
-    {"screensize", 1, SetScreenSizeOp, 4, 4, "w h",},
-#endif  /* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
+#if defined(HAVE_RANDR) && defined(HAVE_XRRGETSCREENRESOURCES)
+    {"screensize", 1, ScreenSizeOp, 4, 4, "w h",},
+#endif  /* HAVE_RANDR && HAVE_XRRGETSCREENRESOURCES */
+    {"selection", 1, SelectionOp, 2, 0, "args...",},
     {"top",      2, TopOp,      4, 4, "x y",},
     {"tree",     2, TreeOp,     4, 4, "windowName treeName",},
     {"unmap",    1, UnmapOp,    2, 0, "?windowName ...?",},
     {"warpto",   1, WarpToOp,   2, 5, "?windowName?",},
+    {"xdpi",     1, DpiOp,      2, 2, ""},
+    {"ydpi",     1, DpiOp,      2, 2, ""},
 };
 
 static int numWinOps = sizeof(winOps) / sizeof(Blt_OpSpec);
@@ -1050,7 +1382,7 @@ WinopCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     int result;
     Tk_Window tkwin;
 
-    proc = Blt_GetOpFromObj(interp, numWinOps, winOps, BLT_OP_ARG1,  objc, objv, 
+    proc = Blt_GetOpFromObj(interp, numWinOps, winOps, BLT_OP_ARG1, objc, objv, 
         0);
     if (proc == NULL) {
         return TCL_ERROR;

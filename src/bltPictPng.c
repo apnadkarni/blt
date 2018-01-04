@@ -466,13 +466,13 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         png_destroy_write_struct(&png, (png_infop *)NULL);
         return TCL_ERROR;
     }
+    srcPtr = original;
     if (setjmp(png_jmpbuf(png))) {
         goto bad;
     }
     png_set_write_fn(png, (void *)dbuffer, PngWriteToBuffer, PngFlush);
 
     png_set_compression_level(png, Z_BEST_COMPRESSION);
-    srcPtr = original;
     if (srcPtr->flags & BLT_PIC_PREMULT_COLORS) {
         Blt_Picture unassoc;
         /* 

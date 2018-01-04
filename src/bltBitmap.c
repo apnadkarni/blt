@@ -104,8 +104,8 @@ typedef struct {
  * BitmapInfo --
  */
 typedef struct {
-    float angle;                        /* Rotation of text string */
-    float scale;                        /* Scaling factor */
+    double angle;                       /* Rotation of text string */
+    double scale;                       /* Scaling factor */
     Blt_Font font;                      /* Font pointer */
     Tk_Justify justify;                 /* Justify text */
     Blt_Pad padX, padY;                 /* Padding around the text */
@@ -125,12 +125,6 @@ typedef struct {
 #define DEF_BITMAP_SCALE        "1.0"
 #define DEF_BITMAP_JUSTIFY      "center"
 
-#define ROTATE_0        0
-#define ROTATE_90       1
-#define ROTATE_180      2
-#define ROTATE_270      3
-
-
 static Blt_ConfigSpec composeConfigSpecs[] =
 {
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL,
@@ -144,10 +138,10 @@ static Blt_ConfigSpec composeConfigSpecs[] =
     {BLT_CONFIG_PAD, "-pady", (char *)NULL, (char *)NULL,
         DEF_BITMAP_PAD, Blt_Offset(BitmapInfo, padY),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_FLOAT, "-rotate", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_DOUBLE, "-rotate", (char *)NULL, (char *)NULL,
         DEF_BITMAP_ANGLE, Blt_Offset(BitmapInfo, angle),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_FLOAT, "-scale", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_DOUBLE, "-scale", (char *)NULL, (char *)NULL,
         DEF_BITMAP_SCALE, Blt_Offset(BitmapInfo, scale),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
@@ -156,10 +150,10 @@ static Blt_ConfigSpec composeConfigSpecs[] =
 
 static Blt_ConfigSpec defineConfigSpecs[] =
 {
-    {BLT_CONFIG_FLOAT, "-rotate", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_DOUBLE, "-rotate", (char *)NULL, (char *)NULL,
         DEF_BITMAP_ANGLE, Blt_Offset(BitmapInfo, angle),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_FLOAT, "-scale", (char *)NULL, (char *)NULL,
+    {BLT_CONFIG_DOUBLE, "-scale", (char *)NULL, (char *)NULL,
         DEF_BITMAP_SCALE, Blt_Offset(BitmapInfo, scale),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
@@ -755,26 +749,26 @@ ScaleRotateData(
     Tcl_Interp *interp,                 /* Interpreter to report results
                                          * to */
     BitmapData *srcPtr,                 /* Source bitmap to transform. */
-    float angle,                        /* Number of degrees to rotate the
+    double angle,                       /* Number of degrees to rotate the
                                          * bitmap. */
-    float scale,                        /* Factor to scale the bitmap. */
+    double scale,                       /* Factor to scale the bitmap. */
     BitmapData *destPtr)                /* Destination bitmap. */
 {
     int x, y;
     double srcX, srcY, destX, destY;    /* Origins of source and
                                          * destination bitmaps */
     double sinTheta, cosTheta;
-    double rotWidth, rotHeight;
+    double rw, rh;
     double radians;
     unsigned char *bits;
     int numBytes;
     int srcBytesPerLine, destBytesPerLine;
 
     srcBytesPerLine = (srcPtr->width + 7) / 8;
-    Blt_GetBoundingBox(srcPtr->width, srcPtr->height, angle, &rotWidth, 
-        &rotHeight, (Point2d *)NULL);
-    destPtr->width = (int)(rotWidth * scale + 0.5) ;
-    destPtr->height = (int)(rotHeight * scale + 0.5);
+    Blt_GetBoundingBox((double)srcPtr->width, (double)srcPtr->height, angle, 
+        &rw, &rh, (Point2d *)NULL);
+    destPtr->width = (int)(rw * scale + 0.5) ;
+    destPtr->height = (int)(rh * scale + 0.5);
 
     destBytesPerLine = (destPtr->width + 7) / 8;
     numBytes = destPtr->height * destBytesPerLine;
@@ -796,8 +790,8 @@ ScaleRotateData(
      */
     srcX = srcPtr->width * 0.5;
     srcY = srcPtr->height * 0.5;
-    destX = rotWidth * 0.5;
-    destY = rotHeight * 0.5;
+    destX = rw * 0.5;
+    destY = rh * 0.5;
 
     /*
      * Rotate each pixel of dest image, placing results in source X image
@@ -811,11 +805,11 @@ ScaleRotateData(
             sxd = scale * (double)x;
             syd = scale * (double)y;
             if (angle == 270.0) {
-                sx = (int)syd, sy = (int)(rotWidth - sxd) - 1;
+                sx = (int)syd, sy = (int)(rw - sxd) - 1;
             } else if (angle == 180.0) {
-                sx = (int)(rotWidth - sxd) - 1, sy = (int)(rotHeight - syd) - 1;
+                sx = (int)(rw - sxd) - 1, sy = (int)(rh - syd) - 1;
             } else if (angle == 90.0) {
-                sx = (int)(rotHeight - syd) - 1, sy = (int)sxd;
+                sx = (int)(rh - syd) - 1, sy = (int)sxd;
             } else if (angle == 0.0) {
                 sx = (int)sxd, sy = (int)syd;
             } else {
@@ -897,7 +891,7 @@ BitmapDataToString(
         char string[200];
 
         separator = (i % BYTES_PER_OUTPUT_LINE) ? " " : "\n    ";
-        Blt_FormatString(string, 200, "%s%02x", separator, bits[i]);
+        Blt_FmtString(string, 200, "%s%02x", separator, bits[i]);
         Tcl_DStringAppend(resultPtr, string, -1);
     }
     if (bits != NULL) {
@@ -938,7 +932,7 @@ ComposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TextLayout *textPtr;
     TextStyle ts;
     char *string;
-    float angle;
+    double angle;
     int numBytes;
     int isNew;
     int result;
@@ -993,7 +987,7 @@ ComposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     /* If bitmap is to be rotated or scaled, do it here */
-    if ((angle != 0.0) || (bi.scale != 1.0f)) {
+    if ((angle != 0.0) || (bi.scale != 1.0)) {
         BitmapData srcData, destData;
 
         srcData.bits = bits;
@@ -1049,7 +1043,7 @@ DefineOp(ClientData clientData, Tcl_Interp *interp, int objc,
     char *p;
     BitmapInfo bi;
     int result;
-    float angle;
+    double angle;
     Pixmap bitmap;
     Blt_HashEntry *hPtr;
     int isNew;
@@ -1061,8 +1055,8 @@ DefineOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     /* Initialize info and then process flags */
-    bi.angle = 0.0f;                    /* No rotation by default */
-    bi.scale = 1.0f;                    /* No scaling by default */
+    bi.angle = 0.0;                     /* No rotation by default */
+    bi.scale = 1.0;                     /* No scaling by default */
     if (Blt_ConfigureWidgetFromObj(interp, dataPtr->tkMain, defineConfigSpecs,
             objc - 4, objv + 4, (char *)&bi, 0) != TCL_OK) {
         return TCL_ERROR;
@@ -1086,7 +1080,7 @@ DefineOp(ClientData clientData, Tcl_Interp *interp, int objc,
         angle += 360.0;
     }
     /* If bitmap is to be rotated or scale, do it here */
-    if ((angle != 0.0) || (bi.scale != 1.0f)) { 
+    if ((angle != 0.0) || (bi.scale != 1.0)) { 
         BitmapData srcData, destData;
 
         srcData.bits = bits;

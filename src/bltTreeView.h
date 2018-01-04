@@ -58,14 +58,19 @@
 #include "bltBind.h"
 #include "bltBg.h"
 
-#define ITEM_NONE               0
-#define ITEM_ENTRY              (1<<0)
-#define ITEM_ENTRY_BUTTON       (1<<1)
-#define ITEM_COLUMN             (1<<2)
-#define ITEM_COLUMN_TITLE       (1<<3)
-#define ITEM_COLUMN_RULE        (1<<4)
-#define ITEM_CELL               (1<<5)
-#define ITEM_STYLE              (ClientData)0x10004
+typedef enum {
+    ITEM_NONE,
+    ITEM_ENTRY,
+    ITEM_BUTTON,
+    ITEM_COLUMN_TITLE,
+    ITEM_COLUMN_RESIZE,
+    ITEM_CELL
+} ItemType;
+    
+typedef struct _BindTag {
+    ClientData clientData;
+    int type;
+} *BindTag;
 
 #define TITLE_PADX      5
 #define TITLE_PADY      1
@@ -111,7 +116,7 @@
 #define LEVELOFFSET(d)  (viewPtr->levelInfo[(d)].offset)
 
 #ifdef notdef
-#define DEPTH(t, n)     (((t)->flags & FLATTEN) ? 0 : Blt_Tree_NodeDepth(n))
+#define DEPTH(t, n)     (((t)->flags & FLAT) ? 0 : Blt_Tree_NodeDepth(n))
 #endif
 
 /* Shared flags. */
@@ -148,7 +153,7 @@
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING  (SCROLLX | SCROLLY)
 
-#define FLATTEN                 (1<<14) /* Indicates if the view of the
+#define FLAT                    (1<<14) /* Indicates if the view of the
                                          * tree has been flattened. */
 #define UPDATE                  (1<<15)
 #define RESORT                  (1<<16) /* The tree has changed such that
@@ -299,6 +304,7 @@ struct _Column {
                                          * definitions of the various bit
                                          * fields see below. */
     Blt_HashEntry *hashPtr;
+    const char *name;                   
     Blt_TreeKey key;                    /* Data cell identifier for current
                                          * tree. */
     int index;                          /* Position of column in list.
@@ -547,12 +553,10 @@ struct _Entry {
                                          * columns. */
     short int rowHeight;
     short int colWidth;
+    short int lineHeight;               /* Height of first line of text. */
     Blt_Pad rowPad;
     int reqHeight;                      /* Requested height of the entry.
                                          * Overrides computed height. */
-    int vertLineLength;                 /* Length of the vertical line
-                                         * segment. */
-    short int lineHeight;               /* Height of first line of text. */
     Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
                                          * entry. */
     Tcl_Obj *openCmdObjPtr;
@@ -612,8 +616,12 @@ struct _Entry {
     GC gc;
     Entry *bottomPtr;
     Entry *parentPtr;                   /* Parent entry. NULL if root. */
-    Entry *firstChildPtr, *lastChildPtr; /* First and last child
-                                         * entry. NULL if no children. */
+    Entry *firstChildPtr;               /* First child of the entry.  NULL
+                                         * if no children.  */
+    Entry *lastChildPtr;                /* Last child of the entry. NULL if
+                                         * no children.  Used to draw the
+                                         * vertical line from the entry
+                                         * through all its children. */
     Entry *nextSiblingPtr, *prevSiblingPtr; /* Next and previous siblings. */
     int numChildren;
 };
@@ -701,6 +709,7 @@ typedef struct {
     int viewIsDecreasing;               /* Current sorting direction */
     Column *markPtr;                    /* Column to mark as sorted. */
     Blt_Chain order;                    /* Order of columns in sorting. */
+    Blt_Picture upArrow, downArrow;     /* Cached/generated pictures. */
 } SortInfo;
 
 /*
@@ -822,6 +831,8 @@ struct _TreeView {
     Selection sel;
     int leader;                         /* Number of pixels padding between
                                          * entries. */
+
+    Blt_Painter painter;
     Tk_Cursor cursor;                   /* X Cursor */
     Tk_Cursor resizeCursor;             /* Resize Cursor */
     int reqWidth, reqHeight;            /* Requested dimensions of the
@@ -864,6 +875,7 @@ struct _TreeView {
     short int titleHeight;              /* Height of column titles. */
 
     LevelInfo *levelInfo;
+
 
     /* Scanning information: */
     int scanAnchorX, scanAnchorY;       /* Scan anchor in screen
@@ -910,10 +922,8 @@ struct _TreeView {
     Blt_BindTable bindTable;            /* Binding information for
                                          * entries. */
 
-    Blt_HashTable entryTagTable;
-    Blt_HashTable buttonTagTable;
-    Blt_HashTable columnTagTable;
-    Blt_HashTable styleTagTable;
+    Blt_HashTable bindTagTable;
+    Blt_HashTable uidTable;
     CellStyle *stylePtr;                /* Default style for text cells */
     Column treeColumn;
     Column *colActivePtr; 

@@ -133,8 +133,22 @@ name, tag or text label.
   tabs.
 
 
-TABSET OPERATIONS
------------------
+STYLES
+------
+
+Tabs can be displayed with different styles.  A *style* is collection of
+tab attributes that affect how the tab is displayed.  There is a built-in
+style call "default" that tabs by default use.  When you set some widget
+configuration options (such as **-background** and **-foreground**), you
+are changing the "default" style.  This is the same are globally changing
+the style for all tabs, since they by default use that style.
+
+You can create new styles with the **style create** operation.  You can
+specify the style for individual tabs using the tab **-style** option.
+More than one tab can use the same style.
+
+OPERATIONS
+----------
 
 All **blt::tabset** operations are invoked by specifying the widget's
 pathname, the operation, and any arguments that pertain to that
@@ -148,32 +162,61 @@ available for *tabset* widgets:
 
 *pathName* **activate** *tabName* 
   Specifies to draw *tabName* with its active colors (see the
-  **-activebackground** and **-activeforeground** options) . *TabName* is
+  **-activebackground** and **-activeforeground** options). *TabName* is
   an index, label, or tag but may not refer to more than one tab.  Only one
   tab may be active at a time.  If *tabName* is "", then no tab will be be
   active.
 
-*pathName* **bind** *tagName* ?\ *sequence*\ ? ?\ *cmdString*\ ? 
-  Associates *cmdString* with *tagName* such that whenever the event sequence
-  given by *sequence* occurs for a tab with this tag, *cmdString* will be
-  invoked.  The syntax is similar to the **bind** command except that it
-  operates on tabs, rather than widgets. See the **bind** manual entry for
-  complete details on *sequence* and the substitutions performed on
-  *cmdString*.
+*pathName* **add** ?\ *nameString*\ ?  ?\ *value option ...*\ ?
+  Adds a new tab to the tabset.  The tab is automatically placed after any
+  existing tabs. If a *nameString* argument is present, this is the name of
+  the tab. It is used to uniquely identify the tab, regardless of its
+  position in the tabset. By default tabs are labeled "tabN" where N is a
+  number.  If *nameString* is "+", this is a special case where a "+" tab
+  is created that automatically creates new tabs.
+  
+  If one or more *option-value* pairs are specified, they modify the given
+  tab option(s) to have the given value(s). *Option* and *value* are
+  described in the **configure** operation below.
+
+*pathName* **bbox** *tabName*
+  Returns the bounding box of *tabName*.  *TabName* may be an index, tag,
+  name, or label but may not refer to more than one tab.  This command
+  returns a list of 4 numbers that represent the coordinates of the
+  upper-left and lower-right corners of the bounding box of the tab (but
+  not its folder) in root coordinates.
+
+*pathName* **bind** *tagName* *type* ?\ *sequence*\ ? ?\ *cmdString*\ ?
+  Associates *cmdString* with *tagName* and *type* such that whenever the event
+  sequence given by *sequence* occurs for a tab with this tag, *cmdString*
+  will be invoked.  The syntax is similar to the **bind** command except
+  that it operates on tabs, rather than widgets. See the **bind** manual
+  entry for complete details on *sequence* and the substitutions performed
+  on *cmdString*.
+
+  *Type* is the area of the tab. It can be one of the following.
+
+  **perforation**
+    Matches the area under the perforation.
+  **xbutton**
+    Matches the area under the X button.
+  **label**
+    Matches all other areas of the tab label.
   
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
-  character of *cmdString* is "+" then *cmdString* augments an existing binding
-  rather than replacing it.  If no *cmdString* argument is provided then the
-  command currently associated with *tagName* and *sequence* (it's an error
-  occurs if there's no such binding) is returned.  If both *cmdString* and
-  *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *tagName*.
+  character of *cmdString* is "+" then *cmdString* augments an existing
+  binding rather than replacing it.  If no *cmdString* argument is provided
+  then the command currently associated with *tagName* and *sequence* (it's
+  an error occurs if there's no such binding) is returned.  If both
+  *cmdString* and *sequence* are missing then a list of all the event
+  sequences for which bindings have been defined for *tagName*.
 
 *pathName* **cget** *option*
   Returns the current value of the widget configuration option given by
   *option*.  *Option* may have any of the values accepted by the
   **configure** operation described below.
+
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value option value ...*\ ?
   Query or modify the configuration options of the widget.  If no *option*
@@ -188,110 +231,120 @@ available for *tabset* widgets:
 
   Widget configuration options may be set either by the **configure** 
   operation or the Tk **option** command.  The resource class
-  is "Tabset".  The resource name is the name of the widget.
+  is "BltTabset".  The resource name is the name of the widget.
 
   ::
 
-     option add *Tabset.Foreground white
-     option add *Tabset.Background blue
+     option add *BltTabset.Foreground white
+     option add *BltTabset.Background blue
 
   *Option* and *value* are described below.
 
   **-activebackground** *bgName*
-    Sets the default active background color for tabs.  A tab is active
-    when the mouse is positioned over it or set by the **activate**
-    operation.  Individual tabs may override this option by setting the
-    tab's **-activebackground** option.
-    FIXME
+    Sets the active background color for the "default" style.  A tab is
+    active when the mouse is positioned over it or set by the **activate**
+    operation.  *BgName** may be a color name or the name of a background
+    object created by the **blt::background** command.  The default is
+    "skyblue4".
     
   **-activeforeground** *colorName*
-    Sets the default active foreground color for tabs.  A tab is active
-    when the mouse is positioned over it or set by the **activate**
-    operation.  Individual tabs may override this option by setting the
-    tab's **-activeforeground** option.
+    Sets the active foreground color for tabs for the "default" style.  A
+    tab is active when the mouse is positioned over it or set by the
+    **activate** operation.  The default is "white".
+
+  **-activeperforationbackground** *bgName*
+    Sets the active background color for perforations for the "default"
+    style.  A perforation is active when the mouse is positioned over the
+    perforation on the selected tab or by setting the **perforation
+    activate** operation.  *BgName** may be a color name or the name of a
+    background object created by the **blt::background** command.  The
+    default is "grey90".
+    
+  **-activeperforationforeground** *colorName*
+    Sets the active foreground color for perforations for the "default"
+    style.  A perforation is active when the mouse is positioned over the
+    perforation on the selected tab or by setting the **perforation
+    activate** operation.  The default is "grey50".
+
+  **-activeperforationrelief** *reliefName*
+    Specifies the 3-D effect for a perforation when it is active.
+    *ReliefName* specifies how the perforation should appear relative to
+    background of the *tabset* widget. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the perforation should appear to protrude.  The
+    default is "flat".
 
   **-background** *bgName*
-    Sets the default background color of folders.  Individual tabs can
-    override this with their own **-background** option.
-    FIXME
+    Sets the background color of the tab and folder for the "default"
+    style.  *BgName** may be a color name or the name of a background
+    object created by the **blt::background** command.  The default is
+    "grey85".
     
   **-borderwidth** *numPixels*
     Sets the width of the 3\-D border around tabs and folders. The
     **-relief** option determines how the border is to be drawn.  The
     default is "1".
 
-  **-relief** *reliefName*
-    Specifies the 3-D effect for both tabs and folders.  *ReliefName*
-    specifies how the tabs should appear relative to background of the
-    *tabset* widget. Acceptable values are **raised**, **sunken**,
-    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
-    means the tab should appear to protrude.  The default is "raised".
-
-  **-troughbackground** *bgName*
-    Sets the background color of the trough under the tabs.  
-    FIXME
-
-  **-outerborderwidth** *numPixels*
-    Sets the width of the 3\-D border around the outside edge of the
-    widget.  The **-relief** option determines how the border is to be
-    drawn.  The default is "0".
-
-  **-outerpad** *numPixels*
-    Sets the amount of padding between the highlight ring on the outer edge
-    of the tabset and the folder.  The default is "0".
-
-  **-outerrelief** *reliefName*
-    Specifies the 3-D effect for the tabset widget.  *ReliefName* specifies
-    how the tabset should appear relative to widget that it is packed
-    into. Acceptable values are **raised**, **sunken**, **flat**,
-    **ridge**, **solid**, and **groove**. For example, "raised" means the
-    *tabset* should appear to protrude.  The default is "sunken".
-
-  **-cursor** *cursor*
-    Specifies the widget's cursor.  The default cursor is "".
-
-  **-dashes** *dashList*
-    Sets the dash style of the focus outline.  When a tab has the widget's
-    focus, it is drawn with a dashed outline around its label.  *DashList*
-    is a list of up to 11 numbers that alternately represent the lengths of
-    the dashes and gaps on the cross hair lines.  Each number must be
-    between 1 and 255.  If *dashList* is "", the outline will be a solid
-    line.  The default value is "5 2".
+  **-cursor** *cursorName* 
+    Specifies the cursor to be used for the widget. *CursorName* may have
+    any of the forms acceptable to **Tk_GetCursor**.  If *cursorName* is "",
+    this indicates that the widget should defer to its parent for cursor
+    specification.  The default is "".
 
   **-font** *fontName*
-    Sets the default font for the text in tab labels.  Individual tabs may
-    override this by setting the tab's **-font** option.  The default value
-    is "Arial 9".
+    Sets the font for the text in tab labels for the "default" style. The
+    default is "Arial 9".
 
   **-foreground** *colorName* 
-    Sets the default color of tab labels.  Individual tabs may override
-    this option by setting the tab's **-foreground** option.  The default
-    value is "black".
+    Specifies the color of the text in the tabs for the "default" style.
+    The default is "black".
 
   **-gap** *numPixels*
-    Sets the gap (in pixels) between tabs.  The default value is "2".
+    Sets the gap between tabs. The default is "1".
 
   **-height** *numPixels*
     Specifies the requested height of widget.  If *numPixels* is 0, then the
     height of the widget will be calculated based on the size the tabs and
     their pages.  The default is "0".
 
-  **-highlightbackground**  *bgName*
-    Sets the color to display in the traversal highlight region when the
-    tabset does not have the input focus.
-    FIXME
-    
-  **-highlightcolor** *colorName*
-    Sets the color to use for the traversal highlight rectangle that is
-    drawn around the widget when it has the input focus.  The default is
-    "black".
+  **-highlightbackground** *BgName*
+    Specifies the color of the traversal highlight region when *pathName*
+    does not have the input focus.  *BgName* may be a color name or the
+    name of a background object created by the **blt::background** command.
+    The default is "grey85".
+
+  **-highlightcolor** *bgName*
+    Specifies the color of the traversal highlight region when *pathName*
+    has input focus.  *BgName* may be a color name or the name of a
+    background object created by the **blt::background** command. The
+    default is "black".
 
   **-highlightthickness** *numPixels*
-    Sets the width of the highlight rectangle to draw around the outside of
-    the widget when it has the input focus. *NumPixels* is a non-negative
-    value and may have any of the forms acceptable to **Tk_GetPixels**.  If
-    the value is zero, no focus highlight is drawn around the widget.  The
-    default is "2".
+    Specifies a non-negative value for the width of the highlight rectangle
+    to drawn around the outside of the widget.  *NumPixels* may have any of
+    the forms acceptable to **Tk_GetPixels**.  If *numPixels* is "0", no
+    focus highlight is drawn around the widget.  The default is "2".
+
+  **-justify**  *justifyName*
+    Specifies how the tab's text should be justified.  *JustifyName* must
+    be "left", "right", or "center".  The default is "center".
+
+  **-outerborderwidth** *numPixels*
+    Sets the width of the outer 3\-D border around tabset window. The
+    **-outerrelief** option determines how the border is to be drawn.  The
+    default is "1".
+
+  **-outerpad** *numPixels*
+    Sets the extra padding between the outer border and the folders.
+    The default is "0".
+
+  **-outerrelief** *reliefName*
+    Specifies the 3-D effect for *pathName*. The relief is for the outer
+    border of the widget.  *ReliefName* specifies how the window should
+    appear relative its parent window.  Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means *pathName* should appear to protrude.  The
+    default is "flat".
 
   **-pageheight** *numPixels*
     Sets the requested height of the page.  The page is the area under the
@@ -304,16 +357,162 @@ available for *tabset* widgets:
     tab used to display the page contents.  If *numPixels* is "0", the
     maximum width of all embedded tab windows is used.  The default is "0".
 
+  **-perforationbackground** *bgName*
+    Sets the background color for perforations for the "default"
+    style. *BgName** may be a color name or the name of a background object
+    created by the **blt::background** command.  The default is "grey85".
+    
+  **-perforationborderwidth** *numPixels*
+    Sets the width of the 3\-D border around perforations. The
+    **-perforationrelief** and **-activeperforationrelief** options
+    determines how the border is to be drawn.  The default is "1".
+
+  **-perforationcommand** *cmdString*
+    Specifies a TCL script to be invoked to tear off the current page.
+    This command is typically invoked when left mouse button is released
+    over the tab perforation.  The standard action is to tear-off the page
+    and place it into a new toplevel window.  This option can be overridden
+    by the tab's **-perforationcommand** option.
+
+  **-perforationforeground** *colorName*
+    Sets the color for dotted line for perforations for the "default"
+    style.  The default is "grey64".
+
   **-perforationcommand** *cmdString*
     Specifies a TCL script to be invoked to tear off the current page in
     the tabset. This command is typically invoked when left mouse button is
-    released over the tab perforation.  The default action is to tear-off
+    released over the tab perforation.  The standard action is to tear-off
     the page and place it into a new toplevel window.
+    Individual tabs may override this option
+    by setting the tab's **-perforationcommand** option.
+
+  **-perforationrelief** *reliefName*
+    Specifies the 3-D effect for a perforation.
+    *ReliefName* specifies how the perforation should appear relative to
+    background of the tab. Acceptable values are **raised**,
+    **sunken**, **flat**, **ridge**, **solid**, and **groove**. For
+    example, "raised" means the perforation should appear to protrude.  The
+    default is "flat".
+
+  **-relief** *reliefName*
+    Specifies the 3-D effect for both tabs and folders.  *ReliefName*
+    specifies how the tabs and folders should appear relative to background
+    of the *pathName*. Acceptable values are **raised**, **sunken**,
+    **flat**, **ridge**, **solid**, and **groove**. For example, "raised"
+    means the tab should appear to protrude.  The default is "raised".
 
   **-rotate** *numDegrees*
-    Specifies the degrees to rotate text in tab labels.  *NumDegrees* is a
-    real value representing the number of degrees to rotate the text
-    labels.  The default is "0.0" degrees.
+    Specifies how to rotate the tab. *NumDegrees* must be one of the following.
+    
+    **auto** 
+      The tab angle is determined solely from the side that the tabs are
+      placed. See the **-side** option.  
+    **0** 
+      The tab will not be rotated, regardless of the side it is placed.
+    **90** 
+      The tab is rotated 90 degrees, regardless of the side it is placed.
+    **180** 
+      The tab is rotated 180 degrees, regardless of the side it is placed.
+    **270** 
+      The tab is rotated 180 degrees, regardless of the side it is placed.
+
+    The default is "auto".
+
+  **-scrollcommand** *cmdPrefix*
+    Specifies the prefix for a command for communicating with scrollbars.
+    Whenever the view in the widget's window changes, the widget will
+    generate a TCL command by concatenating the scroll command and two
+    numbers.  If this option is not specified, then no command will be
+    executed.
+
+  **-scrollincrement** *numPixels*
+    Sets the smallest number of pixels to scroll the tabs.  If *numPixels*
+    is greater than 0, this sets the units for scrolling (e.g., when you
+    the change the view by clicking on the left and right arrows of a
+    scrollbar).
+
+  **-scrolltabs** *boolName*
+    Indicates if *pathName* should scroll tabs if the tabs do not fit
+    in the current window size.  The default is "0".
+
+  **-selectbackground** *bgName*
+    Sets the color to display for background of the selected tab and folder
+    for the "default" style. *BgName** may be a color name or the name 
+    of a background object created by the **blt::background** command.  
+    The default is "grey85".
+    
+  **-selectcommand** *cmdString*
+    Specifies a TCL script to be associated with tabs.  This command is
+    typically invoked when left mouse button is released over the tab.
+    Individual tabs may override this with the tab's **-selectcommand**
+    option. The default is "".
+
+  **-selectforeground** *colorName*
+    Sets the color of the selected tab's text label in the "default" style.  
+    The default is "black".
+
+  **-selectpadx** *numPixels*
+    Specifies extra padding to be displayed on the left and right side of
+    the selected tab (no rotation).  The default is "4".
+
+  **-selectpady** *numPixels*
+    Specifies extra padding to be displayed above and below the selected
+    tab (no rotation).  The default is "2".
+
+  **-showtabs** *how*
+    Specifies how to display tabs.  *How* can be one of the following:
+
+    **always**
+      Always display tabs and the folder outline of the selected folder. 
+
+    **never**
+      Do not display tabs or the folder outline. Only the embedded window
+      for the selected tab will be displayed.  You can use the **select**
+      operation to change the selected tab.
+
+    **multiple**
+      Display tabs when there is more than one tab. 
+
+    The default is "always".
+
+  **-side** *sideName*
+    Specifies the side of the widget to place tabs.  *SideName* can be any
+    of the following values.
+
+    **top**
+      Tabs are drawn along the top from left to right.  Tabs are not
+      rotated.
+    **left**
+      Tabs are drawn along the left side from top to bottom. Tabs are
+      rotated 90 degrees.
+    **right**
+      Tabs are drawn along the right side from top to bottom. Tabs are
+      rotated 270 degrees.
+    **both**
+      Tabs are drawn along the bottom side from left to right. Tabs are not
+      rotated.
+
+    The default is "top".
+
+  **-slant** *slantName*
+    Specifies if the tabs should be slanted 45 degrees on the left and/or
+    right sides. *SlantName* can be any of the following values.
+
+    **none**
+      Tabs are drawn as a rectangle.  
+    **left**
+      The left side of the tab is slanted.  
+    **right**
+      The right side of the tab is slanted.  
+    **both**
+      Boths sides of the tab are slanted.
+
+    The default is "none".
+
+  **-stipple** *bitmapName*
+    Specifies a stipple pattern to use for the background of the folder
+    when the window is torn off for the "default" style.  *BitmapName* 
+    specifies a bitmap to use as the stipple pattern. The default is "BLT".
 
   **-tabwidth** *widthName*
     Indicates the width of each tab.  *WidthName* can be one of the
@@ -331,70 +530,6 @@ available for *tabset* widgets:
 
     The default is "same".
 
-  **-scrollcommand** *cmdPrefix*
-    Specifies the prefix for a command for communicating with scrollbars.
-    Whenever the view in the widget's window changes, the widget will
-    generate a TCL command by concatenating the scroll command and two
-    numbers.  If this option is not specified, then no command will be
-    executed.
-
-  **-scrollincrement** *numPixels*
-    Sets the smallest number of pixels to scroll the tabs.  If *numPixels*
-    is greater than 0, this sets the units for scrolling (e.g., when you
-    the change the view by clicking on the left and right arrows of a
-    scrollbar).
-
-  **-selectbackground** *bgName*
-    Sets the color to use when displaying background of the selected
-    tab. Individual tabs can override this option by setting the tab's
-    **-selectbackground** option.
-    FIXME
-    
-  **-selectcommand** *cmdString*
-    Specifies a default TCL script to be associated with tabs.  This
-    command is typically invoked when left mouse button is released over
-    the tab.  Individual tabs may override this with the tab's **-command**
-    option. The default value is "".
-
-  **-selectforeground** *colorName*
-    Sets the default color of the selected tab's text label.  Individual
-    tabs can override this option by setting the tab's
-    **-selectforeground** option. The default value is "black".
-
-  **-selectpad** *numPixels*
-    Specifies extra padding to be displayed around the selected tab.  The
-    default value is "3".
-
-  **-side** *sideName*
-    Specifies the side of the widget to place tabs.  *SideName* can be any
-    of the following values.
-
-    **top**
-      Tabs are drawn along the top.
-    **left**
-      Tabs are drawn along the left side.
-    **right**
-      Tabs are drawn along the right side.
-    **both**
-      Tabs are drawn along the bottom side.
-
-    The default value is "top".
-
-  **-slant** *slantName*
-    Specifies if the tabs should be slanted 45 degrees on the left and/or
-    right sides. *SlantName* can be any of the following values.
-
-    **none**
-      Tabs are drawn as a rectangle.  
-    **left**
-      The left side of the tab is slanted.  
-    **right**
-      The right side of the tab is slanted.  
-    **both**
-      Boths sides of the tab are slanted.
-
-    The default is "none".
-
   **-takefocus** *focus* 
     Provides information used when moving the focus from window to window
     via keyboard traversal (e.g., Tab and Shift-Tab).  If *focus* is "0",
@@ -404,16 +539,20 @@ available for *tabset* widgets:
     whether to focus on the window.  The default is "1".
 
   **-tearoff** *boolean*
-    FIXME
-
-  **-textside** *sideName*
-    If both images and text are specified for a tab, this option determines
-    on which side of the tab the text is to be displayed. The valid sides
-    are "left", "right", "top", and "bottom".  The default value is "left".
+    Indicates if tabs can be torn off (redrawing the tab in a new toplevel
+    window) by clicking on the perforation on the lower portion of the tab.
+    The tab's **-tearoff** option must also be set to true.  The default
+    is "0".
 
   **-tiers** *numTiers*
     Specifies the maximum number of tiers to use to display the tabs.  The
-    default value is "1".  
+    default is "1".  
+
+  **-troughcolor** *bgName*
+    Sets the background color of the trough surrounding the folder.  
+    *BgName** may be a color name or the name of a background
+    object created by the **blt::background** command. 
+    The default is "grey60".
 
   **-width** *numPixels*
     Specifies the requested width of the widget.  *NumPixels* is a
@@ -422,18 +561,57 @@ available for *tabset* widgets:
     be calculated based on the size the tabs and their pages.  The default
     is "0".
 
+  **-xbutton** *how*
+    Specifies if and when the X button is displayed for the tab. *How*
+    must be one of the following.
+
+    **always**
+      Display the X button for every tab.
+
+    **selected**
+      Display the X button only on the selected tab.
+
+    **unselected**
+      Display the X button on unselected tabs.  Do not display it on
+      the selected tab.
+
+    **never**
+      Do not display X buttons on tabs.
+
+    The default is "never".
+
+  **-xbuttoncommand** *cmdString*
+    Specifies a TCL script to be invoked when the mouse button is released
+    over the X button on the tab. By default, this command deletes current
+    tab. 
+
+*pathName* **deactivate** 
+  Deactivates all tabs in the tabset.  
+
 *pathName* **delete** ?\ *tabName* ... ?
   Deletes one or more tabs from the tabset.  *TabName* may be an index,
   tag, name, or label and may refer to multiple tabs.
+
+*pathName* **dockall** 
+  Docks all tabs that have been torn off. The forces the tabs back into the
+  tabset widget.
+
+*pathName* **exists** *tabName* 
+  Indicates if the name tab exists in *pathName*.  Returns "1" if the
+  tab is found and "0" otherwise.
 
 *pathName* **focus** *tabName*
   Specifies *tabName* to get the widget's focus.  The tab is displayed with
   a dashed line around its label. *TabName* may be an index, tag, name, or
   label but may not reference more than one tab.
 
-*pathName* **get** *tabName*
-  Returns the label of the *tabName*.  The value of *index* may be in any
-  form described in the section `REFERENCING TABS`_.
+*pathName* **highlight** *tabName*
+  Same as the **activate** operation.
+
+*pathName* **identify** *tabName* *x* *y*
+  Identifies the part of *tabName* under the given screen coordinates.
+  Returns "icon", "text", "xbutton", or "". *TabName* may be an index, tag,
+  name, or label but may not reference more than one tab.
 
 *pathName* **index** ?\ *flag* ? *string* 
   Returns the node id of the tab specified by *string*.  If *flag* is
@@ -451,29 +629,44 @@ available for *tabset* widgets:
 
 *pathName* **invoke** *tabName*
   Selects *tabName*, displaying its folder in the tabset.  In addtion the
-  TCL command associated with the tab (see the tabset's **-selectcommand**
-  option or the tab's **-command** option) is invoked, if there is one.
-  *TabName* may be an index, tag, or label but may not refer to more than one
-  tab.  This command is ignored if the tab's state (see the **-state**
-  option) is "disabled".
+  TCL command associated with the tab (see the **-selectcommand** option)
+  is invoked.  *TabName* may be an index, tag, or label but may not refer
+  to more than one tab.  This command is ignored if the tab's state is
+  "disabled" (see the **-state** option).
 
 *pathName* **move** *tabName* *how* *destTabName*
   Moves the *tabName* to a new position in the tabset. *How* is either
   "before" or "after". It indicates whether the *tabName* is moved
   before or after *destTabName*.
 
-*pathName* **nearest** *x* *y*
-  Returns the name of the tab nearest to given X-Y screen coordinate.
+*pathName* **nameof** *tabName*
+  Returns the label of the *tabName*.  The value of *index* may be in any
+  form described in the section `REFERENCING TABS`_.
 
-*pathName* **perforation highlight** *tabName* *boolean*
-  FIXME
+*pathName* **names** ?\ *pattern* ... ?
+  Returns the names of the tabs in *pathName*.  If one or more
+  *pattern* arguments are provided, then the name of any tab matching
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
+
+*pathName* **nearest** *x* *y*
+  Returns the index of the tab nearest to given X-Y screen coordinate.
+
+*pathName* **perforation activate** *tabName* *boolean*
+  Indicates if the perforation should be drawn as active using the
+  **-activeperforationbackground**, **-activeperforationforeground**,
+  **-activeperforationrelief** options.
+  *TabName* may be an index, tag, or label but may not refer to more than
+  one tab.
 
 *pathName* **perforation invoke** *tabName*
   Invokes the command specified for perforations (see the
-  **-perforationcommand** widget option). Typically this command places the
-  page into a top level widget. The name of the toplevel is in the form
-  "*pathName*-*tabName*".  This command is ignored if the tab's state (see
-  the **-state** option) is disabled.
+  **-perforationcommand** widget option).  *TabName* may be an index, tag,
+  or label but may not refer to more than one tab.  Typically this command
+  places the page into a top level widget. The name of the toplevel is in
+  the form "*pathName*-*tabName*".  This command is ignored if the tab's
+  state (see the **-state** option) is disabled.
 
 *pathName* **scan mark** *x y*
   Records *x* and *y* and the current view in the tabset window; used with
@@ -491,8 +684,119 @@ available for *tabset* widgets:
 *pathName* **see** *tabName* 
   Scrolls the tabset so that *tabName* is visible in the widget's window.
 
+*pathName* **select** *tabName* 
+  Selects *tabName* in the widget. The tab is drawn in its selected colors,
+  its folder is raised and displayed, and its TCL command is invoked (see
+  the **-selectcommand** option).  *TabName* may be a name, index, or tag,
+  but may not represent more than one tab.
+  
 *pathName* **size**
   Returns the number of tabs in the tabset.
+
+*pathName* **style cget** *styleName* *option*
+  Returns the current value of the style configuration option given by
+  *option* for *styleName*.  *StyleName* is the name of a style created by
+  the **style create** operaton.  *Option* may be any option described
+  below for the **style configure** operation.
+   
+*pathName* **style configure** *styleName* ?\ *option* *value* ... ?
+  Queries or modifies the configuration options for the style *styleName*.
+  *StyleName* is the name of a style created by the **style create**
+  operaton.  If no *option* argument is specified, this command returns a
+  list describing all the available options for *pathName* (see
+  **Tk_ConfigureInfo** for information on the format of this list).  If
+  *option* is specified with no *value*, then the command returns a list
+  describing the one named option (this list will be identical to the
+  corresponding sublist of the value returned if no *option* is specified).
+  If one or more *option-value* pairs are specified, then this command
+  modifies the given style option(s) to have the given value(s); in this
+  case the command returns an empty string.  *Option* and *value* are
+  described below.
+
+  **-activebackground** *bgName*
+    Sets the active background color.  A tab is active when the mouse is
+    positioned over it or set by the **activate** operation.  *BgName** may
+    be a color name or the name of a background object created by the
+    **blt::background** command.  The default is "skyblue4".
+    
+  **-activeforeground** *colorName*
+    Sets the active foreground color for tabs.  A tab is active when the
+    mouse is positioned over it or set by the **activate** operation.  The
+    default is "white".
+
+  **-activeperforationbackground** *bgName*
+    Sets the active background color for perforations.  A perforation is
+    active when the mouse is positioned over the perforation on the
+    selected tab or by setting the **perforation activate** operation.
+    *BgName** may be a color name or the name of a background object
+    created by the **blt::background** command.  The default is "grey90".
+    
+  **-activeperforationforeground** *colorName*
+    Sets the active foreground color for perforations.  A perforation is
+    active when the mouse is positioned over the perforation on the
+    selected tab or by setting the **perforation activate** operation.  The
+    default is "grey50".
+
+  **-background** *bgName*
+    Sets the background color of the tab and folder.  *BgName** may be a
+    color name or the name of a background object created by the
+    **blt::background** command.  The default is "grey85".
+    
+  **-font** *fontName*
+    Sets the font for the text in tab labels. The default is "Arial 9".
+
+  **-foreground** *colorName* 
+    Specifies the color of the text in the tabs.  The default is "black".
+
+  **-perforationbackground** *bgName*
+    Sets the background color for perforations. *BgName** may be a color
+    name or the name of a background object created by the
+    **blt::background** command.  The default is "grey85".
+    
+  **-perforationforeground** *colorName*
+    Sets the color for dotted line for perforations.  The default is
+    "grey64".
+
+  **-selectbackground** *bgName*
+    Sets the color to display for background of the selected tab and
+    folder.  *BgName** may be a color name or the name of a background
+    object created by the **blt::background** command.  The default is
+    "grey85".
+    
+  **-selectforeground** *colorName*
+    Sets the color of the selected tab's text label.  The default is
+    "black".
+
+  **-stipple** *bitmapName*
+    Specifies a stipple pattern to use for the background of the folder
+    when the window is torn off.  *BitmapName* specifies a bitmap to use as
+    the stipple pattern. The default is "BLT".
+
+*pathName* **style create** *styleName* ?\ *option* *value* ... ?
+  Creates a new style named *styleName*.  By default all tabs use the
+  same set of global style (called "default").  The style specifies the
+  tab's appearance: color, font, etc.  Styles contain sets of configuration
+  options that you can apply to tabs (using the its **-style**
+  option) to change their appearance. More than one tab can use the same
+  style. *StyleName* can not already exist.  If one or more
+  *option*-*value* pairs are specified, they specify options valid for the
+  **style configure** operation.  The name of the style is returned.
+   
+*pathName* **style delete** ? *styleName* ... ?
+  Deletes one or more styles.  *StyleName* is the name of a style created
+  by the **style create** operaton.  Styles are reference counted.  The
+  resources used by *styleName* are not freed until no item is using it.
+   
+*pathName* **style exists** *styleName*
+  Indicates if the style *styleName* exists in the widget. Returns "1" if
+  it exists, "0" otherwise.
+   
+*pathName* **style names** ?\ *pattern* ... ?
+  Returns the names of all the styles in the widget.  If one or more
+  *pattern* arguments are provided, then the names of any style matching
+  *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
+  Matching is done in a fashion similar to that used by the TCL **glob**
+  command.
 
 *pathName* **tab cget** *tabName* *option*
   Returns the current value of the configuration option given by *option*
@@ -505,13 +809,11 @@ available for *tabset* widgets:
   *option* is specified, this operation returns a list describing all the
   available options for *tabName*.
 
-  FIXME
-
   If *option* is specified, but not *value*, then a list describing the one
   named option is returned.  If one or more \fIoption\-value\fR pairs are
   specified, then each named tab (specified by *tabName*) will have its
   configurations option(s) set the given value(s).  In this last case, the
-  empty string is returned.  
+  empty string is returned.
 
   In addition to the **configure** operation, widget configuration
   options may also be set by the Tk **option** command.  The class
@@ -519,22 +821,10 @@ available for *tabset* widgets:
 
     ::
 
-       option add *Tabset.Tab.Foreground white
-       option add *Tabset.name.Background blue
+       option add *BltTabset.Tab.Anchor ne
+       option add *BltTabset.name.Fill both
 
   *Option* and *value* are described below.
-
-  **-activebackground** *bgName*
-    Sets the active background color for *tabName*.  A tab is active when
-    the mouse is positioned over it or set by the **activate** operation.
-    This overrides the widget's **-activebackground** option.
-    FIXME
-    
-  **-activeforeground** *colorName*
-    Sets the default active foreground color *tabName*.  A tab is active
-    when the mouse is positioned over it or set by the **activate**
-    operation.  Individual tabs may override this option by setting the
-    tab's **-activeforeground** option.
 
   **-anchor** *anchorName* 
     Anchors the tab's embedded widget to a particular position in the
@@ -543,36 +833,24 @@ available for *tabset* widgets:
     itself. *AnchorName* specifies how the widget will be positioned in the
     extra space.  For example, if *anchorName* is "center" then the window
     is centered in the folder ; if *anchorName* is "w" then the window will
-    be aligned with the leftmost edge of the folder. The default value is
+    be aligned with the leftmost edge of the folder. The default is
     "center".
 
-  **-background** *bgName*
-    Sets the background color for *tabName*.  Setting this option overides
-    the widget's **-tabbackground** option.
-    FIXME
-    
   **-bindtags** *tagList*
-    Specifies the binding tags for this tab.  *TagList* is a list of
-    binding tag names.  The tags and their order will determine how
-    commands for events in tabs are invoked.  Each tag in the list matching
-    the event sequence will have its TCL command executed.  Implicitly the
-    name of the tab is always the first tag in the list.  The default value
+    Specifies the binding tags for *tabName*.  *TagList* is a list of
+    binding tag names.  The tags and their order will determine how events
+    are handled for the tab.  Each tag in the list matching the current
+    event sequence will have its TCL command executed.  The default 
     is "all".
-
-  **-command** *cmdString*
-    Specifies a TCL script to be associated with *tabName*.  This command
-    is typically invoked when left mouse button is released over the tab.
-    Setting this option overrides the widget's **-selectcommand** option.
 
   **-data** *dataString*
     Specifies a string to be associated with *tabName*.  This value
-    isn't used in the widget code.  It may be used in TCL bindings to
-    associate extra data (other than the image or text) with the tab. The
-    default value is "".
+    may be used in TCL scripts to associate extra data (other than the
+    icon or text) with the tab. The default is "".
 
   **-deletecommand** *cmdString*
     Specifies a TCL command to invoked when the tab is deleted (via the
-    *tabset*\ 's **delete** operation, or destroying the *tabset*).  The
+    *tabset*\ 's **delete** operation, or destroying *pathName*).  The
     command will be invoked before the tab is actually deleted.  If
     *cmdString* is "", no command is invoked.  The default is "".
 
@@ -594,85 +872,97 @@ available for *tabset* widgets:
     **none**
       The embedded widget does not grow along with the span.  
 
-    The default is "none".
+    The default is "both".
 
-  **-font** *fontName* 
-    Sets the font for the text in tab labels.  If *fontName* is not the
-    empty string, this overrides the tabset's **-font** option.  The
-    default value is "".
-
-  **-foreground** *colorName* 
-    Sets the color of the label for *nameOrIndex*.  If *colorName* is not
-    the empty string, this overrides the widget's **-tabforeground**
-    option.  The default value is "".
-
-  **-image** *imageName*
-    Specifies the image to be drawn in label for *tabName*.  If
-    *imageName* is "", no image will be drawn.  Both text and images may
-    be displayed at the same time in tab labels.  The default value is
+  **-icon** *imageName*
+    Specifies the icon to be drawn in label for *tabName*.  If
+    *imageName* is "", no icon will be drawn.  Both text and icons may
+    be displayed at the same time in tab labels.  The default is
     "".
 
   **-ipadx** *padName*
-    Sets the padding to the left and right of the label.  *PadName* can be
-    a list of one or two screen distances.  If *padName* has two elements,
-    the left side of the label is padded by the first distance and the
-    right side by the second.  If *padName* has just one distance, both the
-    left and right sides are padded evenly.  The default value is "0".
-
-  **-ipady** *pad*
-    Sets the padding to the top and bottom of the label.  *Pad* can be a
-    list of one or two screen distances.  If *pad* has two elements, the
-    top of the label is padded by the first distance and the bottom by the
-    second.  If *pad* has just one distance, both the top and bottom sides
-    are padded evenly.  The default value is "0".
-
-  **-padx** *pad*
-    Sets the padding around the left and right of the embedded widget, if
-    one exists.  *Pad* can be a list of one or two screen distances.  If
-    *pad* has two elements, the left side of the widget is padded by the
-    first distance and the right side by the second.  If *pad* has just one
-    distance, both the left and right sides are padded evenly.  The default
-    value is "0".
-
-  **-pady** *pad*
-    Sets the padding around the top and bottom of the embedded widget, if
-    one exists.  *Pad* can be a list of one or two screen distances.  If
-    *pad* has two elements, the top of the widget is padded by the first
-    distance and the bottom by the second.  If *pad* has just one distance,
-    both the top and bottom sides are padded evenly.  The default value is
+    Sets the padding to the left and right of the tab's text.  *PadName*
+    can be a list of one or two screen distances.  If *padName* has two
+    elements, the left side of the text is padded by the first distance
+    and the right side by the second.  If *padName* has just one distance,
+    both the left and right sides are padded evenly.  The default is
     "0".
 
-  **-selectbackground** *bgName*
-    Sets the color to use when displaying background of the selected
-    tab. If *bgName* is not the empty string, this overrides the widget's
-    **-selectbackground** option. The default value is "".
-    FIXME
-    
-  **-shadow** *colorName*
-    Sets the shadow color for the text in the tab's label. Drop shadows are
-    useful when both the foreground and background of the tab have similar
-    color intensities.  If *colorName* is the empty string, no shadow is
-    drawn.  The default value is "".
+  **-ipady** *padName*
+    Sets the padding to the top and bottom of the tab's text.  *PadName*
+    can be a list of one or two screen distances.  If *padName* has two
+    elements, the top of the text is padded by the first distance and the
+    bottom by the second.  If *padName* has just one distance, both the top
+    and bottom sides are padded evenly.  The default is "0".
+
+  **-padx** *padName*
+    Sets the padding around the left and right of the embedded widget.
+    *PadName* can be a list of one or two screen distances.  If *padName*
+    has two elements, the left side of the widget is padded by the first
+    distance and the right side by the second.  If *padName* has just one
+    distance, both the left and right sides are padded evenly.  The default
+    is "0".
+
+  **-pady** *padName*
+    Sets the padding around the top and bottom of the embedded widget.
+    *PadName* can be a list of one or two screen distances.  If *padName*
+    has two elements, the top of the widget is padded by the first distance
+    and the bottom by the second.  If *padName* has just one distance, both
+    the top and bottom sides are padded evenly.  The default is "0".
+
+  **-perforationcommand** *cmdString*
+    Specifies a TCL script to be invoked to tear off the current page in
+    the tabset. This command is typically invoked when left mouse button is
+    released over the tab perforation.  The standard action is to tear-off
+    the page and place it into a new toplevel window.
+    This overrides the widgets **-perforationcommand** option.
+
+  **-selectcommand** *cmdString*
+    Specifies a TCL script to be associated with *tabName*.  This command
+    is typically invoked when left mouse button is released over the tab.
+    Setting this option overrides the widget's **-selectcommand** option.
+    If *cmdString* is "" then the widget's **-selectcommand** option value
+    is used.  The default is "".
 
   **-state** *stateName*
-    Sets the state of the tab. If *stateName* is "disable" the text of the
-    tab is drawn as engraved and operations on the tab (such as **invoke**
-    and **tab tearoff**) are ignored.  The default is "normal".
+    Sets the state of the tab. *StateName* must be one of the following.
 
-  **-stipple** *bitmapName*
-    Specifies a stipple pattern to use for the background of the folder
-    when the window is torn off.  *BitmapName* specifies a bitmap to use as
-    the stipple pattern. The default is "BLT".
+    **active**
+      The tab and its folder are drawn in its active colors. See the 
+      **-activebackground** and **-activeforeground** options.
 
-  **-text** *labelString*
-    Specifies the text of the tab's label.  The exact way the text is drawn
-    may be affected by other options such as **-state** or **-rotate**.
+    **disabled** 
+      The text of *tabName* is drawn as engraved and operations on the tab 
+      (such as **invoke** and **tab tearoff**) are ignored.  
+
+    **hidden**
+      The tab and its folder are not displayed.
+
+    **normal**
+      The tab and its folder are drawn normally. See the **-background**
+      and **-foreground** options.
+
+    The default is "normal".
+
+  **-style** *styleName* Specifies the style to use to draw the tab and
+    folder. *StyleName* is the name of a style created by the **style
+    create** operation. The default built-in style is called "default".
+    The default is "default".
+
+  **-tearoff** *boolean*
+    Indicates if the tab can be torn off (redrawing the tab in a new
+    toplevel window) by clicking on the perforation.  The widget option
+    **-tearoff** must also be set to true.  The default is "1".
+
+  **-text** *textString*
+    Specifies the text of the tab's label.  *TextString* can be an 
+    arbitrary string.
 
   **-window** *childName*
     Specifies the widget to be embedded into the tab.  *ChildName* is the
     pathname of a Tk widget and must be a child of the **blt::tabset**
     widget.  The tabset will "pack" and manage the size and placement of
-    *childName*.  The default value is "".
+    *childName*.  The default is "".
 
   **-windowheight** *numPixels*
     Sets the requested height of the page.  The page is the area under the
@@ -685,13 +975,19 @@ available for *tabset* widgets:
     tab used to display the page contents.  If *numPixels* is "0", the
     maximum width of all embedded tab windows is used.  The default is "0".
 
-*pathName* **tab names** ?\ *pattern*\ ... ?
-  Returns the names of all the tabs matching the given pattern. If no
-  *pattern* argument is provided, then all tab names are returned.
+  **-xbutton** *bool*
+    Forces the X button to be displayed for *tabName*, regardless if the
+    tab is selected or not.  This overrides the widget's **-xbutton**
+    option for this particular tab.
 
-*pathName* **tab tearoff** *tabName* ?\ *window*\ ... ?
+  **-xbuttoncommand** *cmdString*
+    Specifies a TCL script to be invoked when the mouse button is released
+    over the X button on *tabName*. By default, this command deletes current
+    tab.  This option overrides the widget **-xbuttoncommand** option.
+
+*pathName* **tearoff** *tabName* ?\ *windowName*\ ... ?
   Moves the widget embedded the folder *tabName* (see the **-window** option),
-  placing it inside of *window*.  *Window* is either the name of an new
+  placing it inside of *windowName*.  *WindowName* is either the name of an new
   widget that will contain the embedded widget or the name of the
   **blt::tabset** widget.  It the last case, the embedded widget is put
   back into the folder.
@@ -722,13 +1018,70 @@ available for *tabset* widgets:
   then tabs farther to the left become visible; if it is positive then tabs
   farther to the right become visible.
 
+*pathName* **xbutton activate** *tabName*
+  Activated the tab's X button. The button is drawn in its active colors.
+  See the button's **-activebackground** and **-activeforeground** options.
+  *TabName* is an index, label, or tag but may not refer to more than one
+  tab.  Only one tab button may be active at a time.
+
+*pathName* **xbutton cget** *option*
+  Returns the current value of the button configuration option given by
+  *option*.  *Option* may have any of the values accepted by the
+  **xbutton configure** operation described below.
+
+*pathName* **xbutton configure** ?\ *option*\ ? ?\ *value option value ...*\ ?
+  Query or modify the configuration options of the button.  If no *option*
+  is specified, returns a list describing all the available options for
+  *pathName* (see **Tk_ConfigureInfo** for information on the format of
+  this list).  If *option* is specified with no *value*, then the command
+  returns a list describing the one named option (this list will be
+  identical to the corresponding sublist of the value returned if no
+  *option* is specified).  If one or more \fIoption\-value\fR pairs are
+  specified, then the command modifies the given button option(s) to have
+  the given value(s); in this case the command returns an empty string.
+
+  Button configuration options may be set either by the **xbutton configure** 
+  operation or the Tk **option** command.  The resource class
+  is "XButton".  The resource name is "xbutton".
+
+  ::
+
+     option add *BltTabset.XButton.Foreground white
+     option add *BltTabset.XButton.Background blue
+
+  *Option* and *value* are described below.
+
+  **-activebackground** *colorName*
+    Sets the active background color for buttons.  An X button is
+    active when the mouse is positioned over it or set by the **button
+    activate** operation. The default is "skyblue4".
+    
+  **-activeforeground** *colorName*
+    Sets the active foreground color for buttons.  An X button is
+    active when the mouse is positioned over it or set by the **button
+    activate** operation. The default is "white".
+
+  **-background** *colorName*
+    Sets the background color of X buttons.  This is the color of the
+    background circle. The default is "grey82".
+
+  **-foreground** *colorName* 
+    Sets the foreground color of X buttons.  This is the color of the X.
+    The default color is "grey50".
+
+*pathName* **xbutton invoke** *tabName*
+  Invokes a command associated with the X button for *tabName*. See the
+  tab or widget **-xbuttoncommand** option.
+  *TabName* is an index, label, or tag but may not refer to more than one
+  tab.  Only one tab button may be invoked at a time.
+
 
 DEFAULT BINDINGS
 ----------------
 
 BLT automatically generates class bindings that supply tabsets their
 default behaviors. The following event sequences are set by default 
-for tabsets (via the class bind tag "Tabset"):
+for tabsets (via the class bind tag "BltTabset"):
 
 **<ButtonPress-2>**
 
@@ -780,7 +1133,7 @@ for tabsets (via the class bind tag "Tabset"):
 
 **<ButtonRelease-1>**
   Clicking with the left mouse button on a tab causes the tab to be
-  selected and its TCL script (see the **-command** or **-selectcommand**
+  selected and its TCL script (see the **-selectcommand**
   options) to be invoked.  The folder and any embedded widget (if one is
   specified) is automatically mapped.
 
@@ -838,12 +1191,12 @@ You create a tabset widget with the **blt::tabset** command.
 
 A new TCL command ".ts" is also created.  This command can be
 used to query and modify the tabset.  For example, to change the
-default font used by all the tab labels, you use the new command and
+font used by all the tab labels, you use the new command and
 the tabset's **configure** operation.
 
   ::
 
-    # Change the default font.
+    # Change the font.
     .ts configure \-font "fixed"
 
 You can then add folders using the **insert** operation.
@@ -916,16 +1269,16 @@ of its own.  Clicking again on the right mouse button puts it back into
 the folder.
 
 If you want to share a page between two different folders, the
-**-command** option lets you specify a TCL command to be invoked
+**-selectcommand** option lets you specify a TCL command to be invoked
 whenever the folder is selected.  You can reset the **-window**
 option for the tab whenever it's clicked.
 
   ::
 
-    .ts tab configure "f2" -command { 
+    .ts tab configure "f2" -selectcommand { 
          .ts tab configure "f2" -window ".ts.graph"
      }
-     .ts tab configure "f1" -command { 
+     .ts tab configure "f1" -selectcommand { 
          .ts tab configure "f1" -window ".ts.graph"
      }
 

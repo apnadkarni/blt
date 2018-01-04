@@ -22,7 +22,7 @@ A *comboentry* widget displays button, that when pressed, posts a
 **blt::combomenu** widget.
 
 The *comboentry* widget can be used as a normal entry widget. It
-has undo and redo capabilities, a configurable clear button, and a
+has undo and redo capabilities, a configurable X button, and a
 icon.
 
 SYNTAX
@@ -55,7 +55,7 @@ The *comboentry* widget is composed of the followung elements.
   The arrow button is displayed on the far right side of the widget. It is
   used to post the associated menu.
 **button**
-  The clear button is displayed on the right, before the arrow.  It is
+  The X button is displayed on the right, before the arrow.  It is
   typically used to clear the text.
 
 The **identify** operation is used to determine the element the mouse is
@@ -181,7 +181,7 @@ command.  The following operations are available for *comboentry* widgets:
   Redisplays the button using its normal colors and relief.  
 
 *pathName* **button invoke** 
-  Invokes a TCL command specified by *widget*'s **-closecommand** or
+  Invokes a TCL command specified by *widget*'s **-xbuttoncommand** or
   button's **-command** option.  This is typically called from the widget's
   bindings when the user clicks on the button.
 
@@ -268,15 +268,6 @@ command.  The following operations are available for *comboentry* widgets:
     *comboentry* window.  *NumPixels* may have any of the forms acceptable
     to **Tk_GetPixels**.  The default is "1".
 
-  **-clearbutton** *boolean* 
-    Indicates whether to display the clear button. The default is "0".
-    
-  **-clearcommand** *cmdString* 
-    Specifies a TCL command to be executed when the clean button is
-    invoked: either by clicking on the button or using the button's
-    **invoke** operation.  If *cmdString* is "", then no command is
-    invoked. The default is "".
-
   **-command** *cmdString* 
     Specifies a TCL command to be executed when the widget's arrow is
     clicking on. If *cmdString* is "", then no command is invoked. The
@@ -358,11 +349,6 @@ command.  The following operations are available for *comboentry* widgets:
     acceptable to **Tk_GetPixels**.  If *numPixels* is "0", the width of
     the icon is set from the width of the image.  The default is "0".
     
-  **-image** *imageName* 
-    Specifies an image to be displayed instead of the text for the *combentry*.
-    *ImageName* is the name of an Tk photo or BLT picture.
-    If *imageName* is "", the text is displayed. The default is "".
-
   **-insertcolor** *colorName* 
     Specifies the color of the insertion cursor.  The default is "black".
     
@@ -493,6 +479,15 @@ command.  The following operations are available for *comboentry* widgets:
     forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
     *numPixels* is "0", the width of *pathName* is computed from its text.
     The default is "".
+
+  **-xbutton** *boolean* 
+    Indicates whether to display the X button. The default is "0".
+    
+  **-xbuttoncommand** *cmdString* 
+    Specifies a TCL command to be executed when the X button is
+    invoked: either by clicking on the button or using the button's
+    **invoke** operation.  If *cmdString* is "", then no command is
+    invoked. The default is "".
 
   **-xscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with horizontal
@@ -650,7 +645,7 @@ There are several default class bindings for *comboentry* widgets.
   combomenu if one is specified. The relief of the arrow changes to raised
   and its associated menu is posted under the *comboentry*.
 
-  Pressing button 1 over the *comboentry* clear button clears the text
+  Pressing button 1 over the *comboentry* X button clears the text
   in the widget.
   
   Clicking mouse button 1 positions the insertion cursor just before the

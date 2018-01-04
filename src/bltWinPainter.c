@@ -64,6 +64,14 @@ typedef struct _Blt_Picture Pict;
  * The following structure is used to encapsulate palette information.
  */
 
+typedef struct _DCState {
+    TkWinDCState state;
+    TkpClipMask *clipPtr;
+    GC gc;
+    Drawable drawable;
+    HDC dc;
+} DCState;
+
 typedef struct {
     HPALETTE palette;           /* Palette handle used when drawing. */
     UINT size;                  /* Number of entries in the palette. */
@@ -106,11 +114,11 @@ static Blt_HashTable painterTable;
 static int initialized = 0;
 
 static void
-GetPaletteColors(HDC dc, Painter *p, Blt_Pixel *colors)
+GetPaletteColors(HDC hDC, Painter *p, Blt_Pixel *colors)
 {
     DWORD flags;
 
-    flags = GetDeviceCaps(dc, RASTERCAPS);
+    flags = GetDeviceCaps(hDC, RASTERCAPS);
     if (flags & RC_PALETTE) {
         LOGPALETTE *logPalPtr;
         PALETTEENTRY *pePtr;
@@ -170,7 +178,7 @@ GetPaletteColors(HDC dc, Painter *p, Blt_Pixel *colors)
             dp->Alpha = 0xFF;
         }
     }
-    ReleaseDC(NULL, dc);
+    ReleaseDC(NULL, hDC);
 }
 
 
@@ -345,14 +353,14 @@ DrawableToPicture(
     BITMAPINFO bmi;
     DIBSECTION ds;
     HBITMAP hBitmap;
-    HDC dc, memdc;
+    HDC hDC, hMemDC;
     Pict *destPtr;
     TkWinDCState state;
     void *data;
-    HPALETTE prevPalette;
+    HPALETTE hOldPalette;
     int resetPalette;
 
-    dc = TkWinGetDrawableDC(painterPtr->display, drawable, &state);
+    hDC = TkWinGetDrawableDC(painterPtr->display, drawable, &state);
 
     /* Create the intermediate drawing surface at window resolution. */
     ZeroMemory(&bmi, sizeof(bmi));
@@ -363,17 +371,17 @@ DrawableToPicture(
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    hBitmap = CreateDIBSection(dc, &bmi, DIB_RGB_COLORS, &data, NULL, 0);
-    memdc = CreateCompatibleDC(dc);
-    (void)SelectBitmap(memdc, hBitmap);
-    if (GetDeviceCaps(dc, RASTERCAPS) & RC_PALETTE) {
+    hBitmap = CreateDIBSection(hDC, &bmi, DIB_RGB_COLORS, &data, NULL, 0);
+    hMemDC = CreateCompatibleDC(hDC);
+    (void)SelectBitmap(hMemDC, hBitmap);
+    if (GetDeviceCaps(hDC, RASTERCAPS) & RC_PALETTE) {
         TkWinColormap *mapPtr;
 
         mapPtr = (TkWinColormap *)painterPtr->colormap;
-        prevPalette = SelectPalette(dc, mapPtr->palette, FALSE);
-        RealizePalette(dc);
-        SelectPalette(memdc, mapPtr->palette, FALSE);
-        RealizePalette(memdc);
+        hOldPalette = SelectPalette(hDC, mapPtr->palette, FALSE);
+        RealizePalette(hDC);
+        SelectPalette(hMemDC, mapPtr->palette, FALSE);
+        RealizePalette(hMemDC);
         resetPalette = TRUE;
     } else {
         resetPalette = FALSE;
@@ -381,7 +389,7 @@ DrawableToPicture(
     destPtr = NULL;
 
     /* Copy the window contents to the memory surface. */
-    if (!BitBlt(memdc, 0, 0, w, h, dc, x, y, SRCCOPY)) {
+    if (!BitBlt(hMemDC, 0, 0, w, h, hDC, x, y, SRCCOPY)) {
         goto done;
     }
     if (GetObject(hBitmap, sizeof(DIBSECTION), &ds) == 0) {
@@ -392,8 +400,6 @@ DrawableToPicture(
 
         bits = (unsigned char *)ds.dsBm.bmBits;
         destPtr = Blt_CreatePicture(w, h);
-        destRowPtr = destPtr->bits;
-        
         /* 
          * Copy the DIB RGB data into the picture. The DIB origin is the
          * bottom-left corner, so the scanlines are stored in reverse order
@@ -417,10 +423,10 @@ DrawableToPicture(
   done:
     DeleteBitmap(hBitmap);
     if (resetPalette) {
-        SelectPalette(dc, prevPalette, FALSE);
+        SelectPalette(hDC, hOldPalette, FALSE);
     }
-    DeleteDC(memdc);
-    TkWinReleaseDrawableDC(drawable, dc, &state);
+    DeleteDC(hMemDC);
+    TkWinReleaseDrawableDC(drawable, hDC, &state);
     return destPtr;
 }
 
@@ -454,20 +460,21 @@ PaintPicture(
     int dx, int dy,             /* Coordinates of region in the drawable.  */
     unsigned int flags)
 {
-    HDC dc;
+    HDC hDC;
+    HPALETTE hOldPalette;
     Pict *ditherPtr;
-    TkWinDCState state;
+    DCState state;
     int resetPalette;
-    HPALETTE prevPalette;
 
     ditherPtr = NULL;
-    dc = TkWinGetDrawableDC(painterPtr->display, drawable, &state);
-    if (GetDeviceCaps(dc, RASTERCAPS) & RC_PALETTE) {
+    hDC = Blt_GetDCAndState(painterPtr->display, drawable, painterPtr->gc,
+                            &state);
+    if (GetDeviceCaps(hDC, RASTERCAPS) & RC_PALETTE) {
         TkWinColormap *mapPtr;
 
         mapPtr = (TkWinColormap *)painterPtr->colormap;
-        prevPalette = SelectPalette(dc, mapPtr->palette, FALSE);
-        RealizePalette(dc);
+        hOldPalette = SelectPalette(hDC, mapPtr->palette, FALSE);
+        RealizePalette(hDC);
         resetPalette = TRUE;
     } else {
         resetPalette = FALSE;
@@ -475,7 +482,7 @@ PaintPicture(
     if (flags & BLT_PAINTER_DITHER) {
         Blt_Pixel colors[256];
 
-        GetPaletteColors(dc, painterPtr, colors);
+        GetPaletteColors(hDC, painterPtr, colors);
         ditherPtr = Blt_DitherPicture(srcPtr, colors);
         if (ditherPtr != NULL) {
             srcPtr = ditherPtr;
@@ -519,14 +526,14 @@ PaintPicture(
         bmi.bmiHeader.biBitCount = 32;
         bmi.bmiHeader.biCompression = BI_RGB;
         
-        SetDIBitsToDevice(dc, dx, dy, w, h, 0, 0, 0, h, bits, &bmi, 
+        SetDIBitsToDevice(hDC, dx, dy, w, h, 0, 0, 0, h, bits, &bmi, 
                 DIB_RGB_COLORS);
         Blt_Free(bits);
     }
     if (resetPalette) {
-        SelectPalette(dc, prevPalette, FALSE);
+        SelectPalette(hDC, hOldPalette, FALSE);
     }
-    TkWinReleaseDrawableDC(drawable, dc, &state);
+    Blt_ReleaseDCAndState(&state);
     if (ditherPtr != NULL) {
         Blt_FreePicture(ditherPtr);
     }
@@ -596,7 +603,7 @@ PaintPictureWithBlend(
     if (bg == NULL) {
         return FALSE;
     }
-    Blt_CompositeRegion(bg, fg, x, y, w, h, 0, 0);
+    Blt_CompositeArea(bg, fg, x, y, w, h, 0, 0);
     PaintPicture(p, drawable, bg, 0, 0, w, h, dx, dy, flags);
     Blt_FreePicture(bg);
     return TRUE;
@@ -619,10 +626,10 @@ PaintPictureWithBlend(
 Painter *
 Blt_GetPainterFromDrawable(Display *display, Drawable drawable, float gamma)
 {
-    XGCValues gcValues;
-    unsigned long gcMask;
     Painter *p;
     TkWinBitmap *bmPtr;
+    XGCValues gcValues;
+    unsigned long gcMask;
 
     bmPtr = (TkWinBitmap *)drawable;
     assert(bmPtr->type != TWD_BITMAP);

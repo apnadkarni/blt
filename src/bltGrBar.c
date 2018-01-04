@@ -353,9 +353,9 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
     {BLT_CONFIG_FLOAT, "-barwidth", "barWidth", "BarWidth",
         DEF_WIDTH, Blt_Offset(BarElement, barWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth" },
-    {BLT_CONFIG_SYNONYM, "-bg", "background" },
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(BarElement, builtinPen.borderWidth), 0},
     {BLT_CONFIG_COLOR, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
@@ -369,11 +369,10 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         DEF_ERRORBAR_CAP_WIDTH, 
         Blt_Offset(BarElement, builtinPen.errorBarCapWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_CUSTOM, "-data", "data", "Data", (char *)NULL, 0, 0, 
         &bltValuePairsOption},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_BORDER, "-foreground", "foreground", "Foreground",
         DEF_PEN_NORMAL_OUTLINE_COLOR, 
         Blt_Offset(BarElement, builtinPen.outline), BLT_CONFIG_NULL_OK},
@@ -389,8 +388,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
         Blt_Offset(BarElement, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_AXIS_Y, 
         Blt_Offset(BarElement, axes.y), 0, &bltYAxisOption},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_CUSTOM, "-colormap", "colormap", "Colormap", DEF_COLORMAP, 
         Blt_Offset(BarElement, zAxisPtr), 0, &bltAxisOption},
     {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", (char *)NULL, 
@@ -773,14 +771,6 @@ ConfigurePen(Graph *graphPtr, BarPen *penPtr)
     int screenNum;
 
     screenNum = Tk_ScreenNumber(graphPtr->tkwin);
-
-    gcMask = GCLineWidth;
-    gcValues.line_width = LineWidth(penPtr->errorBarLineWidth);
-    if (penPtr->outline != NULL) {
-        gcMask |= GCForeground;
-        gcValues.foreground = Tk_3DBorderColor(penPtr->outline)->pixel;
-    }
-    newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
 
     newGC = NULL;
     gcMask = GCForeground | GCBackground;
@@ -1391,9 +1381,9 @@ MapActive(BarElement *elemPtr)
         count = 0;
         for (i = 0; i < elemPtr->numBars; i++) {
             Blt_HashEntry *hPtr;
-            long lindex;
+            size_t lindex;
 
-            lindex = (long)elemPtr->barToData[i];
+            lindex = (size_t)elemPtr->barToData[i];
             hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)lindex);
             if (hPtr != NULL) {
                 activeRects[count] = elemPtr->bars[i];
@@ -1485,13 +1475,14 @@ MapErrorBars(Graph *graphPtr, BarElement *elemPtr, BarStyle **dataToStyle)
         indexPtr = map = Blt_AssertMalloc(n * 3 * sizeof(int));
         for (i = 0; i < n; i++) {
             double x, y;
-            double high, low;
             BarStyle *stylePtr;
 
             x = elemPtr->x.values[i];
             y = elemPtr->y.values[i];
             stylePtr = dataToStyle[i];
             if ((FINITE(x)) && (FINITE(y))) {
+                double high, low;
+
                 if (elemPtr->xError.numValues > 0) {
                     high = x + elemPtr->xError.values[i];
                     low = x - elemPtr->xError.values[i];
@@ -1549,13 +1540,14 @@ MapErrorBars(Graph *graphPtr, BarElement *elemPtr, BarStyle **dataToStyle)
         indexPtr = map = Blt_AssertMalloc(n * 3 * sizeof(int));
         for (i = 0; i < n; i++) {
             double x, y;
-            double high, low;
             BarStyle *stylePtr;
 
             x = elemPtr->x.values[i];
             y = elemPtr->y.values[i];
             stylePtr = dataToStyle[i];
             if ((FINITE(x)) && (FINITE(y))) {
+                double high, low;
+
                 if (elemPtr->yError.numValues > 0) {
                     high = y + elemPtr->yError.values[i];
                     low = y - elemPtr->yError.values[i];
@@ -1941,27 +1933,27 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
 {
     Blt_PaintBrush brush;
     Blt_Painter painter;
-    Blt_Picture bg;
+    Blt_Picture picture;
     
     if ((elemPtr->zAxisPtr == NULL) || (elemPtr->zAxisPtr->palette == NULL)) {
         return;                         /* No palette defined. */
     }
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
-        rectPtr->y, rectPtr->width, rectPtr->height, 1.0);
-    if (bg == NULL) {
+    picture = Blt_CreatePicture(rectPtr->width, rectPtr->height);
+    if (picture == NULL) {
         return;                         /* Background is obscured. */
     }
+    Blt_BlankPicture(picture, 0x0);
     brush = Blt_NewLinearGradientBrush();
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
     Blt_SetLinearGradientBrushPalette(brush, elemPtr->zAxisPtr->palette);
     Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush,
-                       TRUE);
+    Blt_PaintRectangle(picture, 0, 0, rectPtr->width, rectPtr->height, 0, 0, 
+        brush, TRUE);
     Blt_FreeBrush(brush);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, rectPtr->width, 
                      rectPtr->height, rectPtr->x, rectPtr->y, 0);
-    Blt_FreePicture(bg);
+    Blt_FreePicture(picture);
 }
 
 /*
@@ -1978,19 +1970,19 @@ static void
 DrawColorRectangle(Graph *graphPtr, Drawable drawable, Blt_Painter painter,
                    Blt_PaintBrush brush, XRectangle *rectPtr)
 {
-    Blt_Picture bg;
+    Blt_Picture picture;
     
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
-        rectPtr->y, rectPtr->width, rectPtr->height, 1.0);
-    if (bg == NULL) {
-        return;                         /* Background is obscured. */
+    picture = Blt_CreatePicture(rectPtr->width, rectPtr->height);
+    if (picture == NULL) {
+        return;                         /* Can't allocate picture. */
     }
+    Blt_BlankPicture(picture, 0x0);
     Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush,
-                       TRUE);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+    Blt_PaintRectangle(picture, 0, 0, rectPtr->width, rectPtr->height, 0, 0, 
+        brush, TRUE);
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, rectPtr->width, 
                      rectPtr->height, rectPtr->x, rectPtr->y, 0);
-    Blt_FreePicture(bg);
+    Blt_FreePicture(picture);
 }
 
 /*
@@ -2108,13 +2100,13 @@ DrawValues(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
 
         count++;
         if (penPtr->valueShow == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueShow == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueShow == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         if (graphPtr->flags & INVERTED) {
             anchorPos.y = rp->y + rp->height * 0.5;
@@ -2345,9 +2337,6 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
     XRectangle *rp, *rend;
     int count;
     const char *fmt;
-    char string[TCL_DOUBLE_SPACE * 2 + 2];
-    double x, y;
-    Point2d anchorPos;
     
     count = 0;
     fmt = penPtr->valueFormat;
@@ -2355,17 +2344,21 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
         fmt = "%g";
     }
     for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
+        double x, y;
+        Point2d anchorPos;
+        char string[TCL_DOUBLE_SPACE * 2 + 2];
+
         x = elemPtr->x.values[barToData[count]];
         y = elemPtr->y.values[barToData[count]];
         count++;
         if (penPtr->valueShow == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueShow == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueShow == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         if (graphPtr->flags & INVERTED) {
             anchorPos.y = rp->y + rp->height * 0.5;

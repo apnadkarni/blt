@@ -3,10 +3,7 @@
 package require BLT
 #blt::bltdebug 100
 
-set tile [image create picture -file ~/madthinker.jpg]
-set bg [blt::background create tile -image $tile -relativeto .]
-set bg red
-set bg [blt::background create checker -offcolor  grey70 -oncolor grey90 \
+set bg [blt::background create checker -offcolor  grey80 -oncolor grey85 \
 	-relativeto self]
 
 image create picture label1 -file ./images/mini-book1.gif
@@ -14,7 +11,6 @@ image create picture label2 -file ./images/mini-book2.gif
 image create picture testImage -file ./images/txtrflag.gif
 
 blt::tabset .t \
-    -iconposition right \
     -slant both \
     -side right \
     -tabwidth same \
@@ -40,14 +36,19 @@ set attributes {
 }
 
 foreach { name label color } $attributes {
-    .t insert end $name -text $label \
+    .t style create $name \
 	-selectbackground ${color}3  \
 	-background ${color}3 \
 	-activebackground ${color}2
+    .t insert end $name -text $label \
+	-style $name
 }
 
-.t insert end Image -selectbackground salmon2 -background salmon3 \
-    -selectbackground salmon3 -activebackground salmon2 -window .t.l
+.t style create salmon \
+    -selectbackground salmon2 -background salmon3 \
+    -selectbackground salmon3 -activebackground salmon2
+
+.t insert end Image -window .t.l -style salmon
 
 set tabLabels { 
     Aarhus Aaron Ababa aback abaft abandon abandoned abandoning
@@ -136,19 +137,20 @@ set tabLabels {
     acquiring acquisition acquisitions
 }
 
+.t style configure default -selectbackground $bg
 for { set i 0 } { $i < 500 } { incr i } {
-    .t insert end [lindex $tabLabels $i] -state normal -selectbackground $bg
+    .t insert end [lindex $tabLabels $i] -state normal 
 }
 
 blt::tk::scrollbar .s -command { .t view } -orient horizontal
 radiobutton .left -text "Left" -variable side -value "left" \
-    -command { .t configure -side $side -rotate 90 }
+    -command { .t configure -side $side }
 radiobutton .right -text "Right" -variable side -value "right" \
-    -command { .t configure -side $side -rotate 270 }
+    -command { .t configure -side $side }
 radiobutton .top -text "Top" -variable side -value "top" \
-    -command { .t configure -side $side -rotate 0 }
+    -command { .t configure -side $side }
 radiobutton .bottom -text "Bottom" -variable side -value "bottom" \
-    -command { .t configure -side $side -rotate 0 }
+    -command { .t configure -side $side }
 
 blt::table . \
     .t 0,0 -fill both -cspan 2 \

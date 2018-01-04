@@ -37,7 +37,12 @@
 
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
+#include "bltMath.h"
 #include "tclIntDecls.h"
+
+#ifdef HAVE_STDLIB_H
+  #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
   #include <string.h>
@@ -52,6 +57,8 @@
 #endif /* HAVE_CTYPE_H */
 
 #include "tclIntDecls.h"
+
+#include "bltMath.h"
 
 #define TABLE_THREAD_KEY "BLT DataTable Command Interface"
 #define TABLE_FIND_KEY "BLT DataTable Find Command Interface"
@@ -165,11 +172,6 @@ static DataFormat dataFormats[] = {
 #endif
 };
 
-typedef struct {
-    Tcl_Obj *cmd0;
-    Tcl_Interp *interp;
-} CompareData;
-
 /*
  * TraceInfo --
  *
@@ -214,8 +216,9 @@ BLT_EXTERN Blt_SwitchParseProc blt_table_column_iter_switch_proc;
 BLT_EXTERN Blt_SwitchParseProc blt_table_row_iter_switch_proc;
 static Blt_SwitchParseProc TableSwitchProc;
 static Blt_SwitchFreeProc TableFreeProc;
-static Blt_SwitchParseProc PositionSwitch;
 static Blt_SwitchParseProc ColumnTypeSwitchProc;
+static Blt_SwitchParseProc AfterColumnSwitch;
+static Blt_SwitchParseProc AfterRowSwitch;
 
 static Blt_SwitchCustom columnIterSwitch = {
     blt_table_column_iter_switch_proc, NULL, blt_table_column_iter_free_proc, 0,
@@ -246,17 +249,14 @@ static Blt_SwitchCustom rowsSwitch = {
 
 #endif
 
-#define INSERT_BEFORE   (ClientData)(1<<0)
-#define INSERT_AFTER    (ClientData)(1<<1)
+#define INSERT_BEFORE   (0)
+#define INSERT_AFTER    (1<<0)
 
-#define INSERT_ROW      (BLT_SWITCH_USER_BIT<<1)
-#define INSERT_COL      (BLT_SWITCH_USER_BIT<<2)
-
-static Blt_SwitchCustom beforeSwitch = {
-    PositionSwitch, NULL, NULL, INSERT_BEFORE,
+static Blt_SwitchCustom afterRowSwitch = {
+    AfterRowSwitch, NULL, NULL, 0
 };
-static Blt_SwitchCustom afterSwitch = {
-    PositionSwitch, NULL, NULL, INSERT_AFTER,
+static Blt_SwitchCustom afterColumnSwitch = {
+    AfterColumnSwitch, NULL, NULL, 0
 };
 
 typedef struct {
@@ -335,31 +335,50 @@ static Blt_SwitchSpec dirSwitches[] =
 
 typedef struct {
     Cmd *cmdPtr;
-    BLT_TABLE_ROW row;                  /* Index where to install new row
-                                         * or column. */
-    BLT_TABLE_COLUMN column;
+    BLT_TABLE_ROW destRow;              /* Index where to install new
+                                         * row. */
+    const char *label;                  /* New label. */
+    Tcl_Obj *tags;                      /* List of tags to be applied to
+                                         * this column. */
+    unsigned int flags;
+} InsertRowSwitches;
+
+static Blt_SwitchSpec insertRowSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-after",  "rowName",       (char *)NULL,
+        Blt_Offset(InsertRowSwitches, destRow),    0, 0, &afterRowSwitch},
+    {BLT_SWITCH_CUSTOM, "-before", "rowName",       (char *)NULL,
+         Blt_Offset(InsertRowSwitches, destRow),   0, 0, &afterRowSwitch},
+    {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
+        Blt_Offset(InsertRowSwitches, label),  0},
+    {BLT_SWITCH_OBJ,    "-tags",   "tagList",      (char *)NULL,
+        Blt_Offset(InsertRowSwitches, tags),   0},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    Cmd *cmdPtr;
+    BLT_TABLE_COLUMN destColumn;        /* Index where to install new
+                                         * column. */
     const char *label;                  /* New label. */
     Tcl_Obj *tags;                      /* List of tags to be applied to
                                          * this row or column. */
     BLT_TABLE_COLUMN_TYPE type;
-} InsertSwitches;
+    unsigned int flags;
+} InsertColumnSwitches;
 
-static Blt_SwitchSpec insertSwitches[] = 
+static Blt_SwitchSpec insertColumnSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-after",  "column",    (char *)NULL,
-        Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &afterSwitch},
-    {BLT_SWITCH_CUSTOM, "-after",  "row",       (char *)NULL,
-        Blt_Offset(InsertSwitches, row),    INSERT_ROW, 0, &afterSwitch},
-    {BLT_SWITCH_CUSTOM, "-before", "column",    (char *)NULL,
-        Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &beforeSwitch},
-    {BLT_SWITCH_CUSTOM, "-before", "row",       (char *)NULL,
-         Blt_Offset(InsertSwitches, row),   INSERT_ROW, 0, &beforeSwitch},
+    {BLT_SWITCH_CUSTOM, "-after",  "columnName",    (char *)NULL,
+        Blt_Offset(InsertColumnSwitches, destColumn), 0, 0, &afterColumnSwitch},
+    {BLT_SWITCH_CUSTOM, "-before", "columnName",    (char *)NULL,
+        Blt_Offset(InsertColumnSwitches, destColumn), 0, 0, &afterColumnSwitch},
     {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
-        Blt_Offset(InsertSwitches, label),  INSERT_ROW | INSERT_COL},
+        Blt_Offset(InsertColumnSwitches, label),  0},
     {BLT_SWITCH_OBJ,    "-tags",   "tagList",      (char *)NULL,
-        Blt_Offset(InsertSwitches, tags),   INSERT_ROW | INSERT_COL},
+        Blt_Offset(InsertColumnSwitches, tags),   0},
     {BLT_SWITCH_CUSTOM, "-type",   "columnType",      (char *)NULL,
-        Blt_Offset(InsertSwitches, type),   INSERT_COL, 0, &columnTypeSwitch},
+        Blt_Offset(InsertColumnSwitches, type),   0, 0, &columnTypeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -451,6 +470,19 @@ static Blt_SwitchSpec addSwitches[] =
 };
 
 typedef struct {
+    unsigned int flags;
+} MoveSwitches;
+
+#define MOVE_AFTER     (1<<1)
+
+static Blt_SwitchSpec moveSwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-after", "", (char *)NULL,
+        Blt_Offset(CopySwitches, flags), 0, MOVE_AFTER},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
     /* Private data */
     Tcl_Channel channel;
     Tcl_DString *dsPtr;
@@ -495,42 +527,69 @@ static Blt_SwitchSpec restoreSwitches[] =
 
 typedef struct {
     unsigned int flags;
-    unsigned int sortFlags;
-    BLT_TABLE table;
+    unsigned int returnType;
+    unsigned int tsFlags;
     BLT_TABLE_ITERATOR ri, ci;
+    Tcl_Obj *freqArrVarObjPtr;          /* Specifies TCL array variable to 
+                                         * store value/frequency pairs. */
+    Tcl_Obj *freqListVarObjPtr;         /* Specifies TCL variable to store
+                                         * list of frequencies, one per
+                                         * row. */
 } SortSwitches;
 
-#define SORT_UNIQUE     (1<<16)
-#define SORT_VALUES     (1<<17)
-#define SORT_LIST       (1<<18)
-#define SORT_NONEMPTY   (1<<19)
-
+#define SORT_UNIQUE     (1<<16)         /* Indicates to output only the
+                                         * first of an equal run.  */
+#define SORT_ALTER      (1<<19)         /* Indicates to rearrange the
+                                         * table. */
+#define SORT_NONEMPTY   (1<<20)         /* Indicates to not consider empty
+                                         * values when sorting.  */
+#define SORT_BYFREQ     (1<<21)         /* Indicates to sort by the
+                                         * frequency of the value. */
+#define SORT_RETURN_INDICES (0)         /* Indicates to return the sorted
+                                         * rows by their labels. */
+#define SORT_RETURN_VALUES  (1)          /* Indicates to return the sorted
+                                         * rows by their values. */
+#define SORT_RETURN_LABELS  (2)         /* Indicates to return the sorted
+                                         * rows by their labels. */
 static Blt_SwitchSpec sortSwitches[] = 
 {
+    {BLT_SWITCH_BITS_NOARG, "-alter", "", (char *)NULL,
+        Blt_Offset(SortSwitches, flags), 0, SORT_ALTER},
     {BLT_SWITCH_BITS_NOARG, "-ascii",      "", (char *)NULL,
-        Blt_Offset(SortSwitches, sortFlags),  0, TABLE_SORT_ASCII},
+        Blt_Offset(SortSwitches, tsFlags),  0, TABLE_SORT_ASCII},
+    {BLT_SWITCH_BITS_NOARG, "-byfrequency", "", (char *)NULL,
+        Blt_Offset(SortSwitches, flags), 0, SORT_BYFREQ},
     {BLT_SWITCH_CUSTOM, "-columns", "", (char *)NULL,
         Blt_Offset(SortSwitches, ci), 0, 0, &columnIterSwitch},
     {BLT_SWITCH_BITS_NOARG, "-decreasing", "", (char *)NULL,
-        Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DECREASING},
+        Blt_Offset(SortSwitches, tsFlags), 0, TABLE_SORT_DECREASING},
     {BLT_SWITCH_BITS_NOARG, "-dictionary", "", (char *)NULL,
-        Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DICTIONARY},
-    {BLT_SWITCH_BITS_NOARG, "-frequency", "", (char *)NULL,
-        Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_FREQUENCY},
-    {BLT_SWITCH_BITS_NOARG, "-list", "", (char *)NULL,
-        Blt_Offset(SortSwitches, flags), 0, SORT_LIST},
+        Blt_Offset(SortSwitches, tsFlags), 0, TABLE_SORT_DICTIONARY},
+    {BLT_SWITCH_OBJ, "-frequencyarrayvariable", "varName", (char *)NULL,
+        Blt_Offset(SortSwitches, freqArrVarObjPtr)},
+    {BLT_SWITCH_OBJ, "-frequencylistvariable", "varName", (char *)NULL,
+        Blt_Offset(SortSwitches, freqListVarObjPtr)},
+    {BLT_SWITCH_VALUE, "-indices", "", (char *)NULL,
+        Blt_Offset(SortSwitches, returnType), 0, SORT_RETURN_INDICES},
+    {BLT_SWITCH_VALUE, "-labels", "", (char *)NULL,
+        Blt_Offset(SortSwitches, returnType), 0, SORT_RETURN_LABELS},
     {BLT_SWITCH_BITS_NOARG, "-nocase", "", (char *)NULL,
-        Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_IGNORECASE},
+        Blt_Offset(SortSwitches, tsFlags), 0, TABLE_SORT_IGNORECASE},
     {BLT_SWITCH_BITS_NOARG, "-nonempty", "", (char *)NULL,
-        Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY|SORT_LIST},
+        Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,
         Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITS_NOARG, "-unique", "", (char *)NULL,
-        Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE|SORT_LIST},
-    {BLT_SWITCH_BITS_NOARG, "-values", "", (char *)NULL,
-        Blt_Offset(SortSwitches, flags), 0, SORT_VALUES|SORT_LIST},
+        Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE},
+    {BLT_SWITCH_VALUE, "-values", "", (char *)NULL,
+        Blt_Offset(SortSwitches, returnType), 0, SORT_RETURN_VALUES},
     {BLT_SWITCH_END}
 };
+
+typedef struct {
+    BLT_TABLE_ROW row;
+    size_t count;
+} FreqMap;
 
 typedef struct {
     unsigned int flags;
@@ -562,9 +621,10 @@ typedef struct {
 
     /* Public values */
     Tcl_Obj *emptyValueObjPtr;
+    Tcl_Obj *prefixObjPtr;
     const char *tag;
     unsigned int flags;
-    long maxMatches;
+    size_t maxMatches;
 } FindSwitches;
 
 #define FIND_INVERT     (1<<0)
@@ -579,6 +639,8 @@ static Blt_SwitchSpec findSwitches[] =
         Blt_Offset(FindSwitches, flags), 0, FIND_INVERT},
     {BLT_SWITCH_LONG_NNEG, "-maxrows", "numRows", (char *)NULL,
         Blt_Offset(FindSwitches, maxMatches), 0},
+    {BLT_SWITCH_OBJ, "-prefix", "string", (char *)NULL,
+        Blt_Offset(FindSwitches, prefixObjPtr), 0},
     {BLT_SWITCH_CUSTOM, "-rows", "rowList", (char *)NULL,
         Blt_Offset(FindSwitches, iter), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
@@ -613,6 +675,33 @@ LoadFormat(Tcl_Interp *interp, const char *name)
         return FALSE;
     }
     return TRUE;
+}
+
+static Tcl_Obj *
+GetColumnIndexObj(BLT_TABLE table, BLT_TABLE_COLUMN col) 
+{
+    size_t index;
+
+    index = blt_table_column_index(table, col);
+    return Tcl_NewWideIntObj(index);
+}
+
+static Tcl_Obj *
+GetRowIndexObj(BLT_TABLE table, BLT_TABLE_ROW row) 
+{
+    size_t index;
+
+    index = blt_table_row_index(table, row);
+    return Tcl_NewWideIntObj(index);
+}
+
+static Tcl_Obj *
+GetRowLabelObj(BLT_TABLE table, BLT_TABLE_ROW row) 
+{
+    const char *string;
+
+    string = blt_table_row_label(row);
+    return Tcl_NewStringObj(string, -1);
 }
 
 
@@ -812,7 +901,7 @@ PermSwitchProc(
 /*
  *---------------------------------------------------------------------------
  *
- * PositionSwitch --
+ * AfterRowSwitch --
  *
  *      Convert a Tcl_Obj representing an offset in the table.
  *
@@ -823,7 +912,7 @@ PermSwitchProc(
  */
 /*ARGSUSED*/
 static int
-PositionSwitch(
+AfterRowSwitch(
     ClientData clientData,              /* Flag indicating if the node is
                                          * considered before or after the
                                          * insertion position. */
@@ -835,33 +924,65 @@ PositionSwitch(
     int flags)                          /* Indicates whether this is a row or
                                          * column index. */
 {
-    InsertSwitches *insertPtr = (InsertSwitches *)record;
+    InsertRowSwitches *insertPtr = (InsertRowSwitches *)record;
     BLT_TABLE table;
+    BLT_TABLE_ROW row;
 
     table = insertPtr->cmdPtr->table;
-    if (flags & INSERT_COL) {
-        BLT_TABLE_COLUMN col;
-
-        col = blt_table_get_column(interp, table, objPtr);
-        if (col == NULL) {
-            return TCL_ERROR;
-        }
-        if (clientData == INSERT_AFTER) {
-            col = blt_table_next_column(table, col);
-        }
-        insertPtr->column = col;
-    } else if (flags & INSERT_ROW) {
-        BLT_TABLE_ROW row;
-
-        row = blt_table_get_row(interp, table, objPtr);
-        if (row == NULL) {
-            return TCL_ERROR;
-        }
-        if (clientData == INSERT_AFTER) {
-            row = blt_table_next_row(table, row);
-        }
-        insertPtr->row = row;
+    if (strcmp(switchName, "-after") == 0) {
+        insertPtr->flags = INSERT_AFTER;
+    } else {
+        insertPtr->flags = INSERT_BEFORE;
     }
+    row = blt_table_get_row(interp, table, objPtr);
+    if (row == NULL) {
+        return TCL_ERROR;
+    }
+    insertPtr->destRow = row;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AfterColumnSwitch --
+ *
+ *      Convert a Tcl_Obj representing an offset in the table.
+ *
+ * Results:
+ *      The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+AfterColumnSwitch(
+    ClientData clientData,              /* Flag indicating if the node is
+                                         * considered before or after the
+                                         * insertion position. */
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Not used. */
+    int flags)                          /* Indicates whether this is a row or
+                                         * column index. */
+{
+    InsertColumnSwitches *insertPtr = (InsertColumnSwitches *)record;
+    BLT_TABLE table;
+    BLT_TABLE_COLUMN col;
+
+    table = insertPtr->cmdPtr->table;
+    if (strcmp(switchName, "-after") == 0) {
+        insertPtr->flags = INSERT_AFTER;
+    } else {
+        insertPtr->flags = INSERT_BEFORE;
+    }
+    col = blt_table_get_column(interp, table, objPtr);
+    if (col == NULL) {
+        return TCL_ERROR;
+    }
+    insertPtr->destColumn = col;
     return TCL_OK;
 }
 
@@ -1088,7 +1209,7 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 {
     const char *string;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
-    long n;
+    long index;
 
     spec = blt_table_row_spec(table, objPtr, &string);
     switch(spec) {
@@ -1099,13 +1220,24 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
             return TCL_ERROR;
         }
         break;
+
     case TABLE_SPEC_INDEX:
         Tcl_ResetResult(interp);
-        if (Blt_GetLong(interp, string, &n) != TCL_OK) {
+        if (Blt_GetLong(interp, string, &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        n -= blt_table_num_rows(table) - 1;
-        blt_table_extend_rows(interp, table, n, NULL);
+        if (index < 0) {
+            Tcl_AppendResult(interp, "invalid row index \"", string, "\"",
+                             (char *)NULL);
+            return TCL_ERROR;
+        }
+        /* Index is beyond the end of the table. Auto-create rows.  */
+        if (index >= blt_table_num_rows(table)) {
+            size_t extra;
+            
+            extra = (index + 1) - blt_table_num_rows(table);
+            blt_table_extend_rows(interp, table, extra, NULL);
+        }
         break;
     default:
         return TCL_ERROR;
@@ -1152,7 +1284,7 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 {
     const char *string;
     BLT_TABLE_ROWCOLUMN_SPEC spec;
-    long n;
+    long index;
 
     spec = blt_table_column_spec(table, objPtr, &string);
     switch(spec) {
@@ -1165,11 +1297,21 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
         break;
     case TABLE_SPEC_INDEX:
         Tcl_ResetResult(interp);
-        if (Blt_GetLong(interp, string, &n) != TCL_OK) {
+        if (Blt_GetLong(interp, string, &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        n -= blt_table_num_columns(table) - 1;
-        blt_table_extend_columns(interp, table, n, NULL);
+        if (index < 0) {
+            Tcl_AppendResult(interp, "invalid column index \"", string, "\"",
+                             (char *)NULL);
+            return TCL_ERROR;
+        }
+        /* Index is beyond the end of the table. Auto-create columns.  */
+        if (index >= blt_table_num_columns(table)) {
+            size_t extra;
+
+            extra = (index + 1) - blt_table_num_columns(table);
+            blt_table_extend_columns(interp, table, extra, NULL);
+        }
         break;
     default:
         return TCL_ERROR;
@@ -1194,9 +1336,9 @@ IterateColumnsWithCreate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 {
     if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) != TCL_OK) {
         /* 
-         * We could not parse column descriptor.  If the column specification
-         * is a label that doesn't exist, create a new column with that label
-         * and try to load the iterator again.
+         * We could not parse column descriptor.  If the column
+         * specification is a label that doesn't exist, create a new column
+         * with that label and try to load the iterator again.
          */
 #ifdef notdef
         fprintf(stderr, "making column %s\n", Tcl_GetString(objPtr));
@@ -1323,7 +1465,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 
         Tcl_DStringInit(&ds);
         Tcl_DStringAppend(&ds, prefix, -1);
-        Blt_FormatString(string, 200, "datatable%d", n);
+        Blt_FmtString(string, 200, "datatable%d", n);
         Tcl_DStringAppend(&ds, string, -1);
         Tcl_DStringAppend(&ds, suffix, -1);
         if (!Blt_ParseObjectName(interp, Tcl_DStringValue(&ds), 
@@ -1498,7 +1640,7 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
         Tcl_ListObjAppendElement(interp, listObjPtr, 
                                  Tcl_NewStringObj("row", 3));
         Tcl_ListObjAppendElement(interp, listObjPtr, 
-                        Tcl_NewLongObj(blt_table_row_index(tracePtr->row)));
+             GetRowIndexObj(tracePtr->table, tracePtr->row));
     }
     if (tracePtr->colTag != NULL) {
         Tcl_ListObjAppendElement(interp, listObjPtr, 
@@ -1510,7 +1652,7 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
         Tcl_ListObjAppendElement(interp, listObjPtr, 
                                  Tcl_NewStringObj("column", 6));
         Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewLongObj(blt_table_column_index(tracePtr->column)));
+          GetColumnIndexObj(tracePtr->table, tracePtr->column));
     }
     PrintTraceFlags(tracePtr->flags, string);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj("flags", 5));
@@ -1565,9 +1707,9 @@ TraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     interp = eventPtr->interp;
     cmdObjPtr = Tcl_DuplicateObj(tracePtr->cmdObjPtr);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(eventPtr->row));
+    objPtr = GetRowIndexObj(eventPtr->table, eventPtr->row);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(eventPtr->column));
+    objPtr = GetColumnIndexObj(eventPtr->table, eventPtr->column);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     PrintTraceFlags(eventPtr->mask, string);
     objPtr = Tcl_NewStringObj(string, -1);
@@ -1649,7 +1791,7 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     WatchInfo *watchPtr = clientData; 
     Tcl_Interp *interp;
     int result;
-    long index;
+    size_t index;
     Tcl_Obj *objPtr, *cmdObjPtr;
 
     interp = watchPtr->cmdPtr->interp;
@@ -1658,11 +1800,11 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     objPtr = Tcl_NewStringObj(GetEventName(eventPtr->type), -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     if (eventPtr->type & TABLE_NOTIFY_ROW) {
-        index = blt_table_row_index(eventPtr->row);
+        index = blt_table_row_index(eventPtr->table, eventPtr->row);
     } else {
-        index = blt_table_column_index(eventPtr->column);
+        index = blt_table_column_index(eventPtr->table, eventPtr->column);
     }   
-    objPtr = Tcl_NewLongObj(index);
+    objPtr = Tcl_NewWideIntObj(index);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -1678,7 +1820,7 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 static int
 ColumnVarResolverProc(
     Tcl_Interp *interp,                 /* Current interpreter. */
-    const char *name,                   /* Variable name being resolved. */
+    const char *varName,                   /* Variable name being resolved. */
     Tcl_Namespace *nsPtr,               /* Current namespace context. */
     int flags,                          /* TCL_LEAVE_ERR_MSG => leave error
                                          * message. */
@@ -1691,37 +1833,53 @@ ColumnVarResolverProc(
     Tcl_Obj *valueObjPtr;
     long index;
     char c;
-    
+    const char *prefix;
+    int prefixLen;
+
     dataPtr = GetTableCmdInterpData(interp);
     hPtr = Blt_FindHashEntry(&dataPtr->findTable, nsPtr);
     if (hPtr == NULL) {
         /* This should never happen.  We can't find data associated with
-         * the current namespace.  But this routine should never be called
+         * the current namespace, but this routine should never be called
          * unless we're in a namespace that with linked with this variable
          * resolver. */
         return TCL_CONTINUE;    
     }
     switchesPtr = Blt_GetHashValue(hPtr);
-    c = name[0];
-    if ((c == '#') && (strcmp(name, "#") == 0)) {
+    prefix = NULL;
+    prefixLen = 0;
+    if (switchesPtr->prefixObjPtr != NULL) {
+        prefix = Tcl_GetStringFromObj(switchesPtr->prefixObjPtr, &prefixLen);
+    }
+    c = varName[0];
+    col = NULL;
+    if ((c == '#') && (strcmp(varName, "#") == 0)) {
+        /* $# returns the row number of the current row. */
         /* Look up the column from the variable name given. */
-        valueObjPtr = Tcl_NewLongObj(blt_table_row_index(switchesPtr->row));
-        *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
+        valueObjPtr = GetRowIndexObj(switchesPtr->table, switchesPtr->row);
+        *varPtr = Blt_GetCachedVar(&switchesPtr->varTable,varName, valueObjPtr);
         return TCL_OK;
     } 
-    if ((isdigit(c)) && (Blt_GetLong((Tcl_Interp *)NULL, (char *)name,
-                                     &index) == TCL_OK)) {
+    if ((isdigit(c)) &&
+        (Blt_GetLong(NULL, (const char *)varName, &index) == TCL_OK)) {
+        /* $N returns the value in the Nth column of the current row. */
         col = blt_table_get_column_by_index(switchesPtr->table, index);
-    } else {
-        col = blt_table_get_column_by_label(switchesPtr->table, name);
+    } else if (prefixLen == 0) {
+        /* $fieldName returns the value of the "fieldName" column of the
+         * current row. */
+        col = blt_table_get_column_by_label(switchesPtr->table, varName);
+    } else if (strncmp(varName, prefix, prefixLen) == 0) {
+        /* $pref_fieldName returns the value of the "fieldName" column of the
+         * current row. "pref_" is the user-defined prefix. */
+        col = blt_table_get_column_by_label(switchesPtr->table, 
+                                            varName + prefixLen);
     }
     if (col == NULL) {
-        /* Variable name doesn't refer to any column. Pass it back to the Tcl
-         * interpreter and let it resolve it normally. */
+        /* Variable name doesn't refer to any column. Pass it back to the TCL
+         * interpreter and let it resolve the variable as usual. */
         return TCL_CONTINUE;
     }
-    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, 
-        col);
+    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, col);
     if (valueObjPtr == NULL) {
         valueObjPtr = switchesPtr->emptyValueObjPtr;
         if (valueObjPtr != NULL) {
@@ -1730,7 +1888,7 @@ ColumnVarResolverProc(
             return TCL_CONTINUE;
         }
     }
-    *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
+    *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, varName, valueObjPtr);
     return TCL_OK;
 }
 
@@ -1762,7 +1920,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     Tcl_Namespace *nsPtr;
     Tcl_Obj *listObjPtr;
     int isNew;
-    long numMatches;
+    size_t numMatches;
     int result = TCL_OK;
 
     Tcl_AddInterpResolvers(interp, TABLE_FIND_KEY, (Tcl_ResolveCmdProc*)NULL,
@@ -1770,7 +1928,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     dataPtr = GetTableCmdInterpData(interp);
     nsPtr = Tcl_GetCurrentNamespace(interp);
-    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, (char *)nsPtr, &isNew);
+    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, nsPtr, &isNew);
     assert(isNew);
     Blt_SetHashValue(hPtr, switchesPtr);
 
@@ -1800,7 +1958,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
                 }
             }
             numMatches++;
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            objPtr = GetRowIndexObj(table, row);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             if ((switchesPtr->maxMatches > 0) && 
                 (numMatches >= switchesPtr->maxMatches)) {
@@ -1829,7 +1987,7 @@ AppendColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
     BLT_TABLE_COLUMN srcCol,            /* Column in the source table. */
     BLT_TABLE_COLUMN dstCol)            /* Column in the dstination table. */
 {
-    long i, j, oldNumRows, need;
+    size_t i, j, oldNumRows, need;
     BLT_TABLE_COLUMN_TYPE type;
     
     oldNumRows = blt_table_num_rows(src);
@@ -1860,12 +2018,13 @@ AppendColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
 
 static int
 CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
-    BLT_TABLE_COLUMN c1,                /* Column in the source table. */
-    BLT_TABLE_COLUMN c2)                /* Column in the destination table. */
+    BLT_TABLE_COLUMN scol,                /* Column in the source table. */
+    BLT_TABLE_COLUMN dcol)                /* Column in the destination table. */
 {
-    long i, srcNumRows, dstNumRows;
+    BLT_TABLE_ROW srow, drow;
+    size_t i, srcNumRows, dstNumRows;
 
-    if ((blt_table_same_object(src, dst)) && (c1 == c2)) {
+    if ((blt_table_same_object(src, dst)) && (scol == dcol)) {
         return TCL_OK;                  /* Source and destination columns are
                                          * the same column in the same
                                          * table. */
@@ -1873,36 +2032,35 @@ CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
     srcNumRows = blt_table_num_rows(src);
     dstNumRows = blt_table_num_rows(dst);
     if (srcNumRows >  dstNumRows) {
-        long need;
+        size_t need;
 
         need = (srcNumRows - dstNumRows);
         if (blt_table_extend_rows(interp, dst, need, NULL) != TCL_OK) {
             return TCL_ERROR;
         }
     }
-    if (blt_table_set_column_type(interp, dst, c2, blt_table_column_type(c1))
-        != TCL_OK) {
+    if (blt_table_set_column_type(interp, dst, dcol,
+        blt_table_column_type(scol)) != TCL_OK) {
         return TCL_ERROR;
     }
-    for (i = 0; i < srcNumRows; i++) {
-        BLT_TABLE_ROW r1, r2;
+    for (srow = blt_table_first_row(src), drow = blt_table_first_row(dst);
+         srow != NULL;
+         srow = blt_table_next_row(srow), drow = blt_table_next_row(drow)) {
         BLT_TABLE_VALUE value;
-
-        r1 = blt_table_row(src, i);
-        value = blt_table_get_value(src, r1, c1);
+        
+        value = blt_table_get_value(src, srow, scol);
         if (value == NULL) {
             continue;
         }
-        r2 = blt_table_row(dst, i);
-        if (blt_table_set_value(dst, r2, c2, value) != TCL_OK) {
+        if (blt_table_set_value(dst, drow, dcol, value) != TCL_OK) {
             return TCL_ERROR;
         }
     }
     for (i = srcNumRows; i < dstNumRows; i++) {
-        BLT_TABLE_ROW r2;
+        BLT_TABLE_ROW drow;
 
-        r2 = blt_table_row(dst, i);
-        blt_table_unset_value(dst, r2, c2);
+        drow = blt_table_row(dst, i);
+        blt_table_unset_value(dst, drow, dcol);
     }
     return TCL_OK;
 }           
@@ -1933,11 +2091,11 @@ ClearTable(BLT_TABLE table)
     BLT_TABLE_ROW row, nextRow;
 
     for (col = blt_table_first_column(table); col != NULL; col = nextCol) {
-        nextCol = blt_table_next_column(table, col);
+        nextCol = blt_table_next_column(col);
         blt_table_delete_column(table, col);
     }
     for (row = blt_table_first_row(table); row != NULL;  row = nextRow) {
-        nextRow = blt_table_next_row(table, row);
+        nextRow = blt_table_next_row(row);
         blt_table_delete_row(table, row);
     }
 }
@@ -1958,20 +2116,18 @@ CopyColumnLabel(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
 static int
 CopyTable(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst) 
 {
-    long i;
-    long count;
+    size_t i;
+
     if (blt_table_same_object(src, dst)) {
         return TCL_OK;                  /* Source and destination are the
                                          * same table. */
     }
     ClearTable(dst);
-    count = blt_table_num_columns(src) - blt_table_num_columns(dst);
-    if (count > 0) {
+    if (blt_table_num_columns(src) > blt_table_num_columns(dst)) {
+        size_t count;
+
+        count = blt_table_num_columns(src) - blt_table_num_columns(dst);
         blt_table_extend_columns(interp, dst, count, NULL);
-    }
-    count = blt_table_num_rows(src) - blt_table_num_rows(dst);
-    if (count > 0) {
-        blt_table_extend_rows(interp, dst, count, NULL);
     }
     for (i = 0; i < blt_table_num_columns(src); i++) {
         BLT_TABLE_COLUMN c1, c2;
@@ -1995,14 +2151,14 @@ CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
     BLT_TABLE_ROW srcRow,               /* Row offset in the source table. */
     BLT_TABLE_ROW destRow)              /* Row offset in the destination. */
 {
-    long i;
+    size_t i;
 
     if ((blt_table_same_object(srcTable, destTable)) && 
         (srcRow == destRow)) {
         return TCL_OK;          /* Source and destination are the same. */
     }
     if (blt_table_num_columns(srcTable) > blt_table_num_columns(destTable)) {
-        long needed;
+        size_t needed;
 
         needed = blt_table_num_columns(srcTable) - 
             blt_table_num_columns(destTable);
@@ -2082,7 +2238,7 @@ WriteRecord(Tcl_Channel channel, Tcl_DString *dsPtr)
  *---------------------------------------------------------------------------
  */
 static int
-DumpHeader(DumpSwitches *dumpPtr, long numRows, long numCols)
+DumpHeader(DumpSwitches *dumpPtr, size_t numRows, size_t numCols)
 {
     /* i rows columns ctime mtime \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "i");
@@ -2125,8 +2281,8 @@ DumpValue(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row,
     }
     /* d row column value \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "d");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_column_index(col)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(table, row)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_column_index(table, col)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, string);
     Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
     if (dumpPtr->channel != NULL) {
@@ -2154,7 +2310,7 @@ DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
     /* c index label type tags \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "c");
     Tcl_DStringAppendElement(dumpPtr->dsPtr, 
-        Blt_Ltoa(blt_table_column_index(col)));
+           Blt_Ltoa(blt_table_column_index(table, col)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, blt_table_column_label(col));
     name = blt_table_column_type_to_name(blt_table_column_type(col));
     if (name == NULL) {
@@ -2197,7 +2353,8 @@ DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
 
     /* r index label tags \n */
     Tcl_DStringAppendElement(dumpPtr->dsPtr, "r");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, 
+                             Blt_Ltoa(blt_table_row_index(table, row)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, (char *)blt_table_row_label(row));
     Tcl_DStringStartSublist(dumpPtr->dsPtr);
     rowTags = blt_table_get_row_tags(table, row);
@@ -2243,7 +2400,7 @@ static int
 DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
 {
     int result;
-    long numCols, numRows;
+    size_t numCols, numRows;
     BLT_TABLE_COLUMN col;
     BLT_TABLE_ROW row;
 
@@ -2280,85 +2437,231 @@ DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
     return (result) ? TCL_OK : TCL_ERROR;
 }
 
-static Tcl_Obj *
-PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-            BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
+static int
+SetFreqArrVariable(Tcl_Interp *interp, Cmd *cmdPtr, size_t numRows,
+                   FreqMap *freqMap, BLT_TABLE_COLUMN col,
+                   SortSwitches *switchesPtr)
 {
-    long i;
-    Tcl_Obj *listObjPtr;
-    
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 1; i < numRows; i++) {
-        Tcl_Obj *objPtr;
+    size_t i;
+
+    /* Return the new row order as a list. */
+    for (i = 0; i < numRows; i++) {
+        BLT_TABLE_ROW row;
+        Tcl_Obj *valueObjPtr, *freqObjPtr, *objPtr;
         int isEmpty;
         
-        isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
-        if ((isEmpty) && (flags & SORT_NONEMPTY)) {
+        row = freqMap[i].row;
+        isEmpty = !blt_table_value_exists(cmdPtr->table, row, col);
+        if ((isEmpty) && (switchesPtr->flags & SORT_NONEMPTY)) {
             continue;
         }
-        if (flags & SORT_VALUES) {
-            if (isEmpty) {
-                objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
-            } else {
-                objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-            }
+        if (isEmpty) {
+            valueObjPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
         } else {
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+            valueObjPtr = blt_table_get_obj(cmdPtr->table, row, col);
         }
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    }
-    return listObjPtr;
+        freqObjPtr = Tcl_NewWideIntObj(freqMap[i].count);
+        objPtr = Tcl_ObjSetVar2(interp, switchesPtr->freqArrVarObjPtr, 
+                                valueObjPtr, freqObjPtr, 0);
+        if (objPtr == NULL) {
+            return TCL_ERROR;
+        }
+    } 
+    return TCL_OK;
 }
 
+static int
+SetFreqListVariable(Tcl_Interp *interp, Cmd *cmdPtr, size_t numRows,
+                    FreqMap *freqMap,
+                    BLT_TABLE_COLUMN col, SortSwitches *switchesPtr)
+{
+    size_t i;
+    Tcl_Obj *listObjPtr;
 
-static Tcl_Obj *
-PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-                  BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
+    /* Return the new row order as a list. */
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (i = 0; i < numRows; i++) {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewWideIntObj(freqMap[i].count);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    } 
+    if (Tcl_ObjSetVar2(interp, switchesPtr->freqListVarObjPtr, NULL, listObjPtr,
+                       0) == NULL) {
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+static unsigned int sortFlags;
+
+static int
+CompareFrequencies(const void *a, const void *b)
+{
+    FreqMap *rowPtr1, *rowPtr2;
+    int result;
+
+    rowPtr1 = *(FreqMap **)a;
+    rowPtr2 = *(FreqMap **)b;
+    if (rowPtr1->count > rowPtr2->count) {
+        result = -1;
+    } else if (rowPtr2->count > rowPtr1->count) {
+        result = 1;
+    } else {
+        result = 0;
+    }
+    return (sortFlags & TABLE_SORT_DECREASING) ? -result : result;
+}
+
+static int
+SortFrequencies(Tcl_Interp *interp, Cmd *cmdPtr, size_t numRows, 
+                BLT_TABLE_ROW *map, BLT_TABLE_COLUMN col, 
+                SortSwitches *switchesPtr)
 {
     BLT_TABLE_COMPARE_PROC *proc;
-    Tcl_Obj *listObjPtr, *objPtr;
-    long i;
+    FreqMap *freqMap; 
+    size_t i, numEntries;
+    
+    proc = blt_table_get_compare_proc(cmdPtr->table, col, switchesPtr->tsFlags);
+    freqMap = Blt_AssertCalloc(numRows, sizeof(FreqMap));
+    numEntries = 0;
+
+    /* Load the map with the frequencies of each run for a value. */
+    for (i = 0; i < numRows; /*empty*/) {
+        size_t j;
+        size_t count;
+        
+        /* Find the next run of the same value as the current. */
+        count = 1;
+        for (j = i+1; j < numRows; j++) {
+            if (((*proc)(cmdPtr->table, col, map[i], map[j])) != 0) {
+                break;
+            }
+            count++;
+        }
+        if (switchesPtr->flags & SORT_UNIQUE) {
+            /* Just one entry. Use the first row and count. */
+            freqMap[numEntries].row = map[i];
+            freqMap[numEntries].count = count;
+            numEntries++;
+            i = j;
+        } else {
+            /* An entry for each row. Replicate the count. */
+            for (/*empty*/; i < j; i++) {
+                freqMap[i].row = map[i];
+                freqMap[i].count = count;
+                numEntries++;
+            }
+        }
+    }
+    if (switchesPtr->flags & SORT_BYFREQ) {
+        /* Sort the rows by their frequency. Set the global sortFlags
+         * variable so that CompareFrequencies can pick it up. */
+        sortFlags = switchesPtr->tsFlags;
+        qsort(freqMap, numEntries, sizeof(FreqMap), CompareFrequencies);
+    }
+    if (switchesPtr->freqArrVarObjPtr != NULL) {
+        /* Set the TCL array with the frequencies */
+        if (SetFreqArrVariable(interp, cmdPtr, numEntries, freqMap, col,
+                               switchesPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    if (switchesPtr->freqListVarObjPtr != NULL) {
+        /* Set the TCL array with the list of frequencies. */
+        if (SetFreqListVariable(interp, cmdPtr, numEntries, freqMap, col,
+                                switchesPtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    if (switchesPtr->flags & SORT_ALTER) {
+        /* Overwrite the original sort map with the frequency map. */
+        for (i = 0; i < numEntries; i++) {
+            map[i] = freqMap[i].row;
+        }
+        /* Make row order permanent. */
+        blt_table_set_row_map(cmdPtr->table, map);
+    }
+    Blt_Free(freqMap);
+    return TCL_OK;
+}
+
+static int
+SetSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, size_t numRows, 
+                BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
+                SortSwitches *switchesPtr)
+{
+    Tcl_Obj *listObjPtr;
+    size_t i;
     
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-
-    /* Get the compare procedure for the column. We'll use that to sift out
-     * unique values. */
-    proc = blt_table_get_compare_proc(cmdPtr->table, col, flags);
-
-    /* Find the first non-empty value in the column.  */
     for (i = 0; i < numRows; i++) {
-        if (blt_table_value_exists(cmdPtr->table, rows[i], col)) {
-            break;
-        }
-    }
-    /* What if all the rows are empty? */
-    /* Is an empty row considered unique? */
-    if (i == numRows) {
-        return TCL_OK;
-    }
-    /* Append the row index or value onto the list. */
-    if (flags & SORT_VALUES) {
-        objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-    } else {
-        /* Convert the table offset back to a client index. */
-        objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    for (i++; i < numRows; i++) {
-        if (((*proc)(cmdPtr->table, col, rows[i-1], rows[i])) == 0) {
-            continue;
-        }
-        if (flags & SORT_VALUES) {
+        Tcl_Obj *objPtr;
+
+        objPtr = NULL;
+        switch(switchesPtr->returnType) {
+        case SORT_RETURN_VALUES:
             objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-        } else {
-            /* Convert the table offset back to a client index. */
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+            break;
+        case SORT_RETURN_LABELS:
+            objPtr = GetRowLabelObj(cmdPtr->table, rows[i]);
+            break;
+        case SORT_RETURN_INDICES:
+            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
+            break;
         }
         if (objPtr != NULL) {
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
-    return listObjPtr;
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+static int
+SetUniqueSortedResult(Tcl_Interp *interp, Cmd *cmdPtr, size_t numRows, 
+                      BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, 
+                      SortSwitches *switchesPtr)
+{
+    BLT_TABLE_COMPARE_PROC *proc;
+    Tcl_Obj *listObjPtr;
+    size_t i;
+    
+
+    /* Get the compare procedure for the column. We'll use that to sift out
+     * unique values. */
+    proc = blt_table_get_compare_proc(cmdPtr->table, col, switchesPtr->tsFlags);
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (i = 0; i < numRows; /*empty*/) {
+        size_t j;
+        Tcl_Obj *objPtr;
+
+        /* Find the next run of similar rows. */
+        for (j = i + 1; j < numRows; j++) {
+            if (((*proc)(cmdPtr->table, col, rows[i], rows[j])) != 0) {
+                break;
+            }
+        }
+        objPtr = NULL;
+        switch(switchesPtr->returnType) {
+        case SORT_RETURN_VALUES:
+            objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+            break;
+        case SORT_RETURN_LABELS:
+            objPtr = GetRowLabelObj(cmdPtr->table, rows[i]);
+            break;
+        case SORT_RETURN_INDICES:
+            objPtr = GetRowIndexObj(cmdPtr->table, rows[i]);
+            break;
+        }
+        if (objPtr != NULL) {
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+        i = j;
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
 }
 
 static const char *
@@ -2551,7 +2854,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         const char *label;
         BLT_TABLE_COLUMN dstCol;
         BLT_TABLE_ROW srcRow;
-        long i;
+        size_t i;
 
         label = blt_table_column_label(srcCol);
         dstCol = blt_table_get_column_by_label(cmdPtr->table, label);
@@ -2734,6 +3037,25 @@ AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ClearOp --
+ *
+ *      tableName clear
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ClearOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+
+    blt_table_clear(cmdPtr->table);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ColumnCopyOp --
  *
  *      Copies the specified columns to the table.  A different table may
@@ -2744,7 +3066,7 @@ AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the
  *      interpreter result.
  *
- *      tableName column copy srcColumName destColumnName ?switches?
+ *      tableName column copy destColumn srcColumn ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -2753,8 +3075,8 @@ ColumnCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE src, dst;
-    BLT_TABLE_COLUMN c1, c2;
+    BLT_TABLE srcTable, destTable;
+    BLT_TABLE_COLUMN srcColumn, destColumn;
     CopySwitches switches;
     int result;
 
@@ -2765,35 +3087,42 @@ ColumnCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_SWITCH_DEFAULTS) < 0) {
         goto error;
     }
-    src = dst = cmdPtr->table;
+    /* Need to get the -table switch first to know what table to look up
+     * for the source column. */
+    srcTable = destTable = cmdPtr->table;
     if (switches.table != NULL) {
-        src = switches.table;
+        srcTable = switches.table;
     }
-    c1 = blt_table_get_column(interp, src, objv[3]);
-    if (c1 == NULL) {
-        goto error;
-    }
-    c2 = NULL;
+    /* Destination column may not already exist. */
+    destColumn = NULL;
     if ((switches.flags & COPY_NEW) == 0) {
-        c2 = blt_table_get_column(interp, dst, objv[4]);
+        destColumn = blt_table_get_column(interp, destTable, objv[3]);
     }
-    if (c2 == NULL) {
-        c2 = blt_table_create_column(interp, dst, Tcl_GetString(objv[4]));
-        if (c2 == NULL) {
+    if (destColumn == NULL) {
+        destColumn = blt_table_create_column(interp, destTable,
+                                             Tcl_GetString(objv[3]));
+        if (destColumn == NULL) {
             goto error;
         }
     }
+    /* Source column must exist. */
+    srcColumn = blt_table_get_column(interp, srcTable, objv[4]);
+    if (srcColumn == NULL) {
+        goto error;
+    }
     if (switches.flags & COPY_APPEND) {
-        if (AppendColumn(interp, src, dst, c1, c2) != TCL_OK) {
+        if (AppendColumn(interp, srcTable, destTable, srcColumn, destColumn)
+            != TCL_OK) {
             goto error;
         }
     } else {
-        if (CopyColumn(interp, src, dst, c1, c2) != TCL_OK) {
+        if (CopyColumn(interp, srcTable, destTable, srcColumn, destColumn)
+            != TCL_OK) {
             goto error;
         }
     }
     if ((switches.flags & COPY_NOTAGS) == 0) {
-        CopyColumnTags(src, dst, c1, c2);
+        CopyColumnTags(srcTable, destTable, srcColumn, destColumn);
     }
     result = TCL_OK;
  error:
@@ -2829,7 +3158,7 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
     size_t oldWidth, extra;
     int result;
     BLT_TABLE_COLUMN srcCol;
-    long i;
+    size_t i;
 
     /* Process switches following the column names. */
     if (blt_table_open(interp, Tcl_GetString(objv[3]), &src) != TCL_OK) {
@@ -2870,7 +3199,7 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
         for (srcRow = blt_table_first_row(src); srcRow != NULL; 
-             srcRow = blt_table_next_row(src, srcRow)) {
+             srcRow = blt_table_next_row(srcRow)) {
             BLT_TABLE_VALUE value;
             BLT_TABLE_ROW dstRow;
 
@@ -2990,7 +3319,7 @@ ColumnDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (srcCol = blt_table_first_tagged_column(&ci); srcCol != NULL; 
          srcCol = blt_table_next_tagged_column(&ci)) {
-        long i;
+        size_t i;
         BLT_TABLE_COLUMN dstCol;
 
         dstCol = blt_table_create_column(interp, table, 
@@ -3002,8 +3331,8 @@ ColumnDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
         CopyColumnTags(table, table, srcCol, dstCol);
-        i = blt_table_column_index(dstCol);
-        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
+        i = blt_table_column_index(table, dstCol);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(i));
     }
     blt_table_free_iterator_objv(&ci);
     Tcl_SetObjResult(interp, listObjPtr);
@@ -3048,11 +3377,11 @@ ColumnEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-         row = blt_table_next_row(cmdPtr->table, row)) {
+         row = blt_table_next_row(row)) {
         if (!blt_table_value_exists(cmdPtr->table, row, col))  {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            objPtr = GetRowIndexObj(cmdPtr->table, row);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
@@ -3117,9 +3446,8 @@ ColumnExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
-    Tcl_Obj *listObjPtr;
     BLT_TABLE_COLUMN *cols;
-    long i, numColumns;
+    long numColumns;
     ExtendSwitches switches;
     int result;
     
@@ -3140,7 +3468,7 @@ ColumnExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     cols = Blt_AssertMalloc(numColumns * sizeof(BLT_TABLE_COLUMN));
     result = blt_table_extend_columns(interp, table, numColumns, cols);
     if ((result == TCL_OK) && (switches.labels != NULL)) {
-        long i;
+        size_t i;
         const char **p;
         
         for (i = 0, p = switches.labels; *p != NULL; p++, i++) {
@@ -3151,11 +3479,14 @@ ColumnExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (result == TCL_OK) {
+        size_t i;
+        Tcl_Obj *listObjPtr;
+
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (i = 0; i < numColumns; i++) {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_column_index(cols[i]));
+            objPtr = GetColumnIndexObj(table, cols[i]);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -3211,13 +3542,13 @@ ColumnGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_ROW row;
 
         for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-             row = blt_table_next_row(cmdPtr->table, row)) {
+             row = blt_table_next_row(row)) {
             Tcl_Obj *objPtr;
 
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+                objPtr = GetRowIndexObj(cmdPtr->table, row);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -3241,7 +3572,7 @@ ColumnGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+                objPtr = GetRowIndexObj(cmdPtr->table, row);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -3290,7 +3621,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (col != NULL) {
             BLT_TABLE_COLUMN next;
             
-            index = blt_table_column_index(col);
+            index = blt_table_column_index(cmdPtr->table, col);
             next = blt_table_next_tagged_column(&iter);
             if (next != NULL) {
                 /* It's not an error to look for an index of a column that
@@ -3306,7 +3637,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -3356,7 +3687,7 @@ ColumnIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         tablePtr = blt_table_column_get_label_table(cmdPtr->table, label);
         if (tablePtr == NULL) {
             /* Label doesn't refer to any column. */
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(-1));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(-1));
             continue;
         }
         if ((switches.flags & INDICES_DUPLICATES) &&
@@ -3372,7 +3703,7 @@ ColumnIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *objPtr;
                 
                 col = Blt_GetHashValue(hPtr);
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         } else {
@@ -3385,7 +3716,7 @@ ColumnIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_Obj *objPtr;
                 
                 col = Blt_GetHashValue(hPtr);
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
@@ -3418,17 +3749,15 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
                Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    InsertSwitches switches;
+    InsertColumnSwitches switches;
     BLT_TABLE_COLUMN col;
-    unsigned int flags;
 
     memset(&switches, 0, sizeof(switches));
     switches.cmdPtr = cmdPtr;
     switches.type = TABLE_COLUMN_TYPE_STRING;
 
-    flags = INSERT_COL;
-    if (Blt_ParseSwitches(interp, insertSwitches, objc - 3, objv + 3, 
-        &switches, flags) < 0) {
+    if (Blt_ParseSwitches(interp, insertColumnSwitches, objc - 3, objv + 3, 
+        &switches, 0) < 0) {
         goto error;
     }
     col = blt_table_create_column(interp, cmdPtr->table, switches.label);
@@ -3439,9 +3768,9 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         != TCL_OK) {
         goto error;
     }
-    if (switches.column != NULL) {
-        if (blt_table_move_column(interp, cmdPtr->table, col, 
-                switches.column, 1) != TCL_OK) {
+    if (switches.destColumn != NULL) {
+        if (blt_table_move_columns(interp, cmdPtr->table, switches.destColumn, 
+                col, col, switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
     }
@@ -3461,11 +3790,11 @@ ColumnCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_column_index(col)));
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Tcl_SetObjResult(interp, GetColumnIndexObj(cmdPtr->table, col));
+    Blt_FreeSwitches(insertColumnSwitches, &switches, 0);
     return TCL_OK;
  error:
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Blt_FreeSwitches(insertColumnSwitches, &switches, 0);
     return TCL_ERROR;
 }
 
@@ -3563,7 +3892,7 @@ ColumnLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             const char *label;
             Tcl_Obj *objPtr;
             
@@ -3610,7 +3939,7 @@ ColumnLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the column index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- *      tableName column move fromColumn toColumn ?numColumns?
+ *      tableName column move destColumn firstColumn lastColumn ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3619,38 +3948,46 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE_COLUMN from, to;
-    long count;
+    MoveSwitches switches;
+    BLT_TABLE_COLUMN destColumn, firstColumn, lastColumn;
 
-    from = blt_table_get_column(interp, cmdPtr->table, objv[3]);
-    if (from == NULL) {
+    destColumn = blt_table_get_column(interp, cmdPtr->table, objv[3]);
+    if (destColumn == NULL) {
         return TCL_ERROR;
     }
-    to = blt_table_get_column(interp, cmdPtr->table, objv[4]);
-    if (to == NULL) {
+    firstColumn = blt_table_get_column(interp, cmdPtr->table, objv[4]);
+    if (firstColumn == NULL) {
         return TCL_ERROR;
     }
-    count = 1;
-    if (objc == 6) {
-        long lcount;
-
-        if (Blt_GetLongFromObj(interp, objv[5], &lcount) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (lcount == 0) {
-            return TCL_OK;
-        }
-        if (lcount < 0) {
-            Tcl_AppendResult(interp, 
-                        "can't move columns: # of columns can't be negative",
-                        (char *)NULL);
-            return TCL_ERROR;
-        }
-        count = lcount;
+    lastColumn = blt_table_get_column(interp, cmdPtr->table, objv[5]);
+    if (lastColumn == NULL) {
+        return TCL_ERROR;
     }
-    return blt_table_move_column(interp, cmdPtr->table, from, to, count);
+    /* Check if range is valid. */
+    if ((blt_table_column_index(cmdPtr->table, firstColumn) > 
+         blt_table_column_index(cmdPtr->table, lastColumn))) {
+        return TCL_OK;                  /* No range. */
+    }
+
+    /* Check that destination is outside the range of columns to be moved. */
+    if ((blt_table_column_index(cmdPtr->table, destColumn) >= 
+         blt_table_column_index(cmdPtr->table, firstColumn)) &&
+        (blt_table_column_index(cmdPtr->table, destColumn) <= 
+         blt_table_column_index(cmdPtr->table, lastColumn))) {
+        Tcl_AppendResult(interp, "destination column \"", 
+                Tcl_GetString(objv[3]),
+                 "\" can't be in the range of columns to be moved.", 
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, moveSwitches, objc - 6, objv + 6, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    return blt_table_move_columns(interp, cmdPtr->table, destColumn, 
+          firstColumn, lastColumn, switches.flags & MOVE_AFTER);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -3677,7 +4014,7 @@ ColumnNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-         col = blt_table_next_column(cmdPtr->table, col)) {
+         col = blt_table_next_column(col)) {
         const char *label;
         int match;
         int i;
@@ -3736,11 +4073,11 @@ ColumnNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-         row = blt_table_next_row(cmdPtr->table, row)) {
+         row = blt_table_next_row(row)) {
         if (blt_table_value_exists(cmdPtr->table, row, col))  {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            objPtr = GetRowIndexObj(cmdPtr->table, row);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
     }
@@ -3792,7 +4129,7 @@ ColumnSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (col = blt_table_first_tagged_column(&ci); col != NULL; 
          col = blt_table_next_tagged_column(&ci)) {
-        long i;
+        int i;
 
         /* The remaining arguments are index/value pairs. */
         for (i = 4; i < objc; i += 2) {
@@ -3990,7 +4327,7 @@ ColumnTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     BLT_TABLE_ITERATOR ci;
     Tcl_Obj *listObjPtr;
     int isNew;
-    long lastIndex;
+    size_t lastIndex;
     
     table = cmdPtr->table;
     if (blt_table_iterate_columns(interp, table, objv[4], &ci) != TCL_OK) {
@@ -4009,7 +4346,7 @@ ColumnTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_ChainLink link;
         int isNew;
         
-        if (blt_table_column_index(col) == lastIndex) {
+        if (blt_table_column_index(table, col) == lastIndex) {
             Blt_CreateHashEntry(&tagTable, "end", &isNew);
         }
         chain = blt_table_get_column_tags(table, col);
@@ -4056,7 +4393,7 @@ static unsigned char *
 GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc, 
                     Tcl_Obj *const *objv)
 {
-    long numCols;
+    size_t numCols;
     int i;
     unsigned char *matches;
 
@@ -4068,7 +4405,7 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 
         tag = Tcl_GetString(objv[i]);
         if (strcmp("all", tag) == 0) {
-            long j;
+            size_t j;
 
             for (j = 0; j < numCols; j++) {
                 matches[j] = TRUE;
@@ -4097,11 +4434,10 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
         for (link = Blt_Chain_FirstLink(chain); link != NULL; 
              link = Blt_Chain_NextLink(link)) {
             BLT_TABLE_COLUMN col;
-            long j;
+            size_t j;
 
             col = Blt_Chain_GetValue(link);
-             j = blt_table_column_index(col);
-            assert(j >= 0);
+            j = blt_table_column_index(table, col);
             matches[j] = TRUE;
         }
     }
@@ -4132,11 +4468,12 @@ ColumnTagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     matches = GetColumnTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     if (matches != NULL) {
-        long i;
+        size_t i;
 
         for (i = 0; i < blt_table_num_columns(cmdPtr->table); i++) {
             if (matches[i]) {
-                Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
+                Tcl_ListObjAppendElement(interp, listObjPtr,
+                                         Tcl_NewWideIntObj(i));
             }
         }
         Blt_Free(matches);
@@ -4168,7 +4505,7 @@ ColumnTagLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     matches = GetColumnTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     if (matches != NULL) {
-        long j;
+        size_t j;
 
         for (j = 0; j < blt_table_num_columns(cmdPtr->table); j++) {
             if (matches[j]) {
@@ -4218,16 +4555,16 @@ ColumnTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (to == NULL) {
         return TCL_ERROR;
     }
-    if (blt_table_column_index(from) > blt_table_column_index(to)) {
+    if (blt_table_column_index(table, from) > blt_table_column_index(table, to)) {
         return TCL_OK;
     }
     for (i = 6; i < objc; i++) {
         const char *tag;
-        long j;
+        size_t j;
         
         tag = Tcl_GetString(objv[i]);
-        for (j = blt_table_column_index(from); j <= blt_table_column_index(to); 
-             j++) {
+        for (j = blt_table_column_index(table, from);
+             j <= blt_table_column_index(table, to); j++) {
             BLT_TABLE_COLUMN col;
 
             col = blt_table_column(table, j);
@@ -4464,8 +4801,8 @@ ColumnTagOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the interpreter
  *      result.
  *      
- *      tableName column type column 
- *      tableName column type column ?typeName columnName typeName ...?
+ *      tableName column type columnName
+ *      tableName column type columnName ?typeName columnName typeName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4629,7 +4966,7 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-             row = blt_table_next_row(cmdPtr->table, row)) {
+             row = blt_table_next_row(row)) {
             Tcl_Obj *objPtr;
             
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -4642,23 +4979,24 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
         Tcl_Obj **elv;
         int elc;
-        int i;
+        size_t i;
+        BLT_TABLE_ROW row;
 
         if (Tcl_ListObjGetElements(interp, objv[4], &elc, &elv) != TCL_OK) {
             return TCL_ERROR;
         }
         if (elc > blt_table_num_rows(table)) {
-            long needed;
+            size_t needed;
 
             needed = elc - blt_table_num_rows(table);
-            if (blt_table_extend_rows(interp, table, needed, NULL) != TCL_OK) {
+            if (blt_table_extend_rows(interp, table, needed, NULL)
+                != TCL_OK) {
                 return TCL_ERROR;
             }
         }
-        for (i = 0; i < elc; i++) {
-            BLT_TABLE_ROW row;
+        for (i = 0, row = blt_table_first_row(cmdPtr->table); i < elc; 
+             i++, row = blt_table_next_row(row)) {
 
-            row = blt_table_row(cmdPtr->table, i);
             if (blt_table_set_obj(interp, table, row, col, elv[i]) != TCL_OK) {
                 return TCL_ERROR;
             }
@@ -4683,7 +5021,7 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec columnOps[] =
 {
-    {"copy",      2, ColumnCopyOp,    4, 0, "srcColumn destColumn ?switches?",},
+    {"copy",      2, ColumnCopyOp,    4, 0, "destColumn srcColumn ?switches?",},
     {"create",    2, ColumnCreateOp,  3, 0, "?switches?",},
     {"delete",    2, ColumnDeleteOp,  3, 0, "?columnName ...?",},
     {"duplicate", 2, ColumnDupOp,     3, 0, "?columnName ...?",},
@@ -4696,7 +5034,7 @@ static Blt_OpSpec columnOps[] =
     {"join",      1, ColumnJoinOp,    4, 0, "tableName ?switches?",},
     {"label",     5, ColumnLabelOp,   4, 0, "columnName ?label?",},
     {"labels",    6, ColumnLabelsOp,  3, 4, "?labelList?",},
-    {"move",      1, ColumnMoveOp,    5, 6, "fromColumn toColumn ?numColumns?"},
+    {"move",      1, ColumnMoveOp,    6, 0, "destColumn firstColumn lastColumn ?switches?"},
     {"names",     2, ColumnNamesOp,   3, 0, "?pattern ...?",},
     {"nonempty",  3, ColumnNonEmptyOp,4, 4, "columnName",},
     {"set",       1, ColumnSetOp,     5, 0, "columnName rowName ?value ...?",},
@@ -5133,8 +5471,8 @@ ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadFormat(interp, Tcl_GetString(objv[2]));
     }
     if (fmtPtr->exportProc == NULL) {
-        Tcl_AppendResult(interp, "no export procedure registered for \"", 
-                         fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find table export procedure for \"", 
+                         fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     return (*fmtPtr->exportProc) (cmdPtr->table, interp, objc, objv);
@@ -5193,7 +5531,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- *      tableName get row column ?defValue?
+ *      tableName get rowName columnName ?defValue?
  *
  *---------------------------------------------------------------------------
  */
@@ -5277,7 +5615,7 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadFormat(interp, fmt);
         hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
         if (hPtr == NULL) {
-            Tcl_AppendResult(interp, "can't import \"", fmt,
+            Tcl_AppendResult(interp, "can't import table format \"", fmt,
                              "\": format not registered", (char *)NULL);
             return TCL_ERROR;
         }
@@ -5287,8 +5625,8 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
         LoadFormat(interp, Tcl_GetString(objv[2]));
     }
     if (fmtPtr->importProc == NULL) {
-        Tcl_AppendResult(interp, "no import procedure registered for \"", 
-                fmtPtr->name, "\"", (char *)NULL);
+        Tcl_AppendResult(interp, "can't find table import procedure for \"", 
+                fmtPtr->name, "\" format.", (char *)NULL);
         return TCL_ERROR;
     }
     return (*fmtPtr->importProc) (cmdPtr->table, interp, objc, objv);
@@ -5367,7 +5705,7 @@ KeysOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- *      tableName append row column ?value ...?
+ *      tableName append rowName columnName ?value ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5439,8 +5777,8 @@ LookupOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (blt_table_key_lookup(interp, table, objc-2, objv+2, &row) != TCL_OK) {
         return TCL_ERROR;
     }
-    i = (row == NULL) ? -1 : blt_table_row_index(row);
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), i);
+    i = (row == NULL) ? -1 : blt_table_row_index(table, row);
+    Blt_SetLongObj(Tcl_GetObjResult(interp), i);
     return TCL_OK;
 }
 
@@ -5449,8 +5787,8 @@ LookupOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * MinMaxOp --
  *  
- *      $t min $column
- *      $t max $column 
+ *      tableName min columnName
+ *      tableName max columnName 
  *
  *---------------------------------------------------------------------------
  */
@@ -5484,7 +5822,7 @@ MinMaxOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
 
         for (col = blt_table_first_column(table); col != NULL;
-             col = blt_table_next_column(table, col)) {
+             col = blt_table_next_column(col)) {
             Tcl_Obj *minObjPtr, *maxObjPtr;
 
             if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
@@ -5530,7 +5868,7 @@ MinMaxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumColumnsOp --
  *  
- *      $t numcolumns 
+ *      tableName numcolumns 
  *
  *---------------------------------------------------------------------------
  */
@@ -5545,31 +5883,25 @@ NumColumnsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
         long count;
 
-        if (Blt_GetLongFromObj(interp, objv[2], &count) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (count < 0) {
-            Tcl_AppendResult(interp, "bad count \"", Blt_Itoa(count), 
-                "\": # columns can't be negative.", (char *)NULL);
+        if (Blt_GetCountFromObj(interp, objv[2], COUNT_NNEG, &count) != TCL_OK){
             return TCL_ERROR;
         }
         if (count < blt_table_num_columns(table)) {
             BLT_TABLE_COLUMN col, next;
 
-            for (col = blt_table_first_column(table); col != NULL; col = next) {
-                next = blt_table_next_column(table, col);
-                if (blt_table_column_index(col) >= count) {
-                    blt_table_delete_column(table, col);
-                }
+            for (col = blt_table_column(table, count); col != NULL; 
+                 col = next) {
+                next = blt_table_next_column(col);
+                blt_table_delete_column(table, col);
             }
         } else if (count > blt_table_num_columns(table)) {
-            long extra;
+            size_t extra;
 
             extra = count - blt_table_num_columns(table);
             blt_table_extend_columns(interp, table, extra, NULL);
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_columns(table)));
+    Blt_SetLongObj(Tcl_GetObjResult(interp), blt_table_num_columns(table));
     return TCL_OK;
 }
 
@@ -5578,8 +5910,7 @@ NumColumnsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumRowsOp --
  *  
- *      $t numrows
- *      $t numcolumns 
+ *      tableName numrows
  *
  *---------------------------------------------------------------------------
  */
@@ -5594,31 +5925,44 @@ NumRowsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
         long count;
 
-        if (Blt_GetLongFromObj(interp, objv[2], &count) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (count < 0) {
-            Tcl_AppendResult(interp, "bad count \"", Blt_Itoa(count), 
-                "\": # columns can't be negative.", (char *)NULL);
+        if (Blt_GetCountFromObj(interp, objv[2], COUNT_NNEG, &count) != TCL_OK){
             return TCL_ERROR;
         }
         if (count < blt_table_num_rows(table)) {
             BLT_TABLE_ROW row, next;
 
-            for (row = blt_table_first_row(table); row != NULL; row = next) {
-                next = blt_table_next_row(table, row);
-                if (blt_table_row_index(row) >= count) {
-                    blt_table_delete_row(table, row);
-                }
+            for (row = blt_table_row(table, count); row != NULL; 
+                 row = next) {
+                next = blt_table_next_row(row);
+                blt_table_delete_row(table, row);
             }
         } else if (count > blt_table_num_rows(table)) {
-            long extra;
+            size_t extra;
 
             extra = count - blt_table_num_rows(table);
             blt_table_extend_rows(interp, table, extra, NULL);
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_rows(table)));
+    Blt_SetLongObj(Tcl_GetObjResult(interp), blt_table_num_rows(table));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PackOp --
+ *
+ *      tableName pack
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PackOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+
+    blt_table_pack(cmdPtr->table);
     return TCL_OK;
 }
 
@@ -5627,8 +5971,7 @@ NumRowsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RestoreOp --
  *
- * $t restore $string -overwrite -notags
- * $t restorefile $fileName -overwrite -notags
+ * tableName restore ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -5680,8 +6023,7 @@ RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the
  *      interpreter result.
  *
- * Example:
- *      $dest row copy $srcrow $destrow ?-table srcTable?
+ *      tableName row copy destRow srcRow ?-table srcTable?
  *
  *---------------------------------------------------------------------------
  */
@@ -5693,7 +6035,7 @@ RowCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     CopySwitches switches;
     BLT_TABLE srcTable, destTable;
     int result;
-    BLT_TABLE_ROW src, dest;
+    BLT_TABLE_ROW srcRow, destRow;
 
     /* Process switches following the row names. */
     switches.flags = 0;
@@ -5707,22 +6049,26 @@ RowCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (switches.table != NULL) {
         srcTable = switches.table;
     }
-    src = blt_table_get_row(interp, srcTable, objv[3]);
-    if (src == NULL) {
-        goto error;
+    destRow = NULL;
+    if ((switches.flags & COPY_NEW) == 0) {
+        destRow = blt_table_get_row(interp, destTable, objv[3]);
     }
-    dest = blt_table_get_row(interp, destTable, objv[4]);
-    if (dest == NULL) {
-        dest = blt_table_create_row(interp, destTable, Tcl_GetString(objv[4]));
-        if (dest == NULL) {
+    if (destRow == NULL) {
+        destRow = blt_table_create_row(interp, destTable,
+                                       Tcl_GetString(objv[3]));
+        if (destRow == NULL) {
             goto error;
         }
     }
-    if (CopyRow(interp, srcTable, destTable, src, dest) != TCL_OK) {
+    srcRow = blt_table_get_row(interp, srcTable, objv[4]);
+    if (srcRow == NULL) {
+        goto error;
+    }
+    if (CopyRow(interp, srcTable, destTable, srcRow, destRow) != TCL_OK) {
         goto error;
     }
     if ((switches.flags & COPY_NOTAGS) == 0) {
-        CopyRowTags(srcTable, destTable, src, dest);
+        CopyRowTags(srcTable, destTable, srcRow, destRow);
     }
     result = TCL_OK;
  error:
@@ -5745,8 +6091,7 @@ RowCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the
  *      interpreter result.
  *
- * Example:
- *      $t row create -before 0 -after 1 -label label
+ *      tableName row create -before 0 -after 1 -label label
  *      
  *---------------------------------------------------------------------------
  */
@@ -5757,26 +6102,23 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
     BLT_TABLE_ROW row;
-    InsertSwitches switches;
-    unsigned int flags;
+    InsertRowSwitches switches;
     
-    switches.row = NULL;
-    switches.label = NULL;
-    switches.tags = NULL;
+    memset(&switches, 0, sizeof(switches));
     switches.cmdPtr = cmdPtr;
     table = cmdPtr->table;
 
-    flags = INSERT_ROW;
-    if (Blt_ParseSwitches(interp, insertSwitches, objc - 3, objv + 3, 
-                &switches, flags) < 0) {
+    if (Blt_ParseSwitches(interp, insertRowSwitches, objc - 3, objv + 3, 
+                &switches, 0) < 0) {
         goto error;
     }
     row = blt_table_create_row(interp, table, switches.label);
     if (row == NULL) {
         goto error;
     }
-    if (switches.row != NULL) {
-        if (blt_table_move_row(interp, table, row, switches.row, 1) != TCL_OK) {
+    if (switches.destRow != NULL) {
+        if (blt_table_move_rows(interp, table, switches.destRow, row, row, 
+                    switches.flags & INSERT_AFTER) != TCL_OK) {
             goto error;
         }
     }
@@ -5796,11 +6138,11 @@ RowCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_row_index(row)));
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Tcl_SetObjResult(interp, GetRowIndexObj(table, row));
+    Blt_FreeSwitches(insertRowSwitches, &switches, 0);
     return TCL_OK;
  error:
-    Blt_FreeSwitches(insertSwitches, &switches, flags);
+    Blt_FreeSwitches(insertRowSwitches, &switches, 0);
     return TCL_ERROR;
 }
 
@@ -5860,8 +6202,7 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $dest row dup label ?label?... 
+ *      tableName row dup label ?label...? 
  *
  *---------------------------------------------------------------------------
  */
@@ -5872,7 +6213,7 @@ RowDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     Tcl_Obj *listObjPtr;
     BLT_TABLE_ITERATOR ri;
-    BLT_TABLE_ROW src;
+    BLT_TABLE_ROW srcRow;
     int result;
 
     if (blt_table_iterate_rows_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
@@ -5881,23 +6222,23 @@ RowDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = TCL_ERROR;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (src = blt_table_first_tagged_row(&ri); src != NULL; 
-         src = blt_table_next_tagged_row(&ri)) {
+    for (srcRow = blt_table_first_tagged_row(&ri); srcRow != NULL; 
+         srcRow = blt_table_next_tagged_row(&ri)) {
         const char *label;
-        long j;
+        size_t j;
         BLT_TABLE_ROW dest;
 
-        label = blt_table_row_label(src);
+        label = blt_table_row_label(srcRow);
         dest = blt_table_create_row(interp, cmdPtr->table, label);
         if (dest == NULL) {
             goto error;
         }
-        if (CopyRow(interp, cmdPtr->table, cmdPtr->table, src, dest)!= TCL_OK) {
+        if (CopyRow(interp, cmdPtr->table, cmdPtr->table, srcRow, dest)!= TCL_OK) {
             goto error;
         }
-        CopyRowTags(cmdPtr->table, cmdPtr->table, src, dest);
-        j = blt_table_row_index(dest);
-        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
+        CopyRowTags(cmdPtr->table, cmdPtr->table, srcRow, dest);
+        j = blt_table_row_index(cmdPtr->table, dest);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(j));
     }
     Tcl_SetObjResult(interp, listObjPtr);
     result = TCL_OK;
@@ -5918,11 +6259,10 @@ RowDupOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Results:
  *      A standard TCL result. If the tag or row index is invalid,
- *      TCL_ERROR is returned and an error message is left in the interpreter
- *      result.
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
- * Example:
- *      $t row empty row
+ *      tableName row empty rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -5933,7 +6273,7 @@ RowEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE_ROW row;
     Tcl_Obj *listObjPtr;
-    long i;
+    size_t i;
 
     row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
     if (row == NULL) {
@@ -5944,14 +6284,14 @@ RowEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
         
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             BLT_TABLE_VALUE value;
 
             value = blt_table_get_value(cmdPtr->table, row, col);
             if (value == NULL) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
@@ -5971,8 +6311,7 @@ RowEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row exists n
+ *      tableName row exists rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6001,8 +6340,7 @@ RowExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row extend numRows
+ *      tableName row extend numRows
  *      
  *---------------------------------------------------------------------------
  */
@@ -6012,9 +6350,8 @@ RowExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
-    Tcl_Obj *listObjPtr;
     BLT_TABLE_ROW *rows;
-    long i, numRows;
+    long numRows;
     ExtendSwitches switches;
     int result;
     
@@ -6034,7 +6371,7 @@ RowExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     rows = Blt_AssertMalloc(numRows * sizeof(BLT_TABLE_ROW));
     result = blt_table_extend_rows(interp, table, numRows, rows);
     if ((result == TCL_OK) && (switches.labels != NULL)) {
-        long i;
+        size_t i;
         const char **p;
         
         for (i = 0, p = switches.labels; *p != NULL; p++, i++) {
@@ -6045,11 +6382,14 @@ RowExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     }
     if (result == TCL_OK) {
+        size_t i;
+        Tcl_Obj *listObjPtr;
+
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (i = 0; i < numRows; i++) {
             Tcl_Obj *objPtr;
             
-            objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+            objPtr = GetRowIndexObj(table, rows[i]);
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
         }
         Tcl_SetObjResult(interp, listObjPtr);
@@ -6074,8 +6414,7 @@ RowExtendOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      the interpreter result.  If the row index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      $t row get ?-labels? row ?col...?
+ *      tableName row get ?-labels? rowName ?columnName...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6106,13 +6445,13 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
 
         for (col = blt_table_first_column(table); col != NULL;
-             col = blt_table_next_column(table, col)) {
+             col = blt_table_next_column(col)) {
             Tcl_Obj *objPtr;
             
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(table, col);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(table, row, col);
@@ -6136,7 +6475,7 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             if (needLabels) {
                 objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
             } else {
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(table, col);
             }
             Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             objPtr = blt_table_get_obj(table, row, col);
@@ -6164,8 +6503,7 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row index $row
+ *      tableName row index rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6186,7 +6524,7 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (row != NULL) {
             BLT_TABLE_ROW next;
             
-            index = blt_table_row_index(row);
+            index = blt_table_row_index(cmdPtr->table, row);
             next = blt_table_next_tagged_row(&iter);
             if (next != NULL) {
                 /* It's not an error to look for an index of a row that
@@ -6202,7 +6540,7 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), index);
+    Blt_SetLongObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
@@ -6217,8 +6555,7 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *
- * Example:
- *      $t row indices $row $row
+ *      tableName row indices rowName ?rowName ...?
  *      
  *---------------------------------------------------------------------------
  */
@@ -6240,7 +6577,7 @@ RowIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
          row = blt_table_next_tagged_row(&ri)) {
         Tcl_Obj *objPtr;
 
-        objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+        objPtr = GetRowIndexObj(cmdPtr->table, row);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -6258,8 +6595,7 @@ RowIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result. 
  *
- * Example:
- *      $t row isnumeric $row
+ *      tableName row isnumeric rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6278,7 +6614,7 @@ RowIsNumericOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     state = TRUE;
     for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
-         col = blt_table_next_column(cmdPtr->table, col)) {
+         col = blt_table_next_column(col)) {
         double d;
         
         d = blt_table_get_double(interp, cmdPtr->table, row, col);
@@ -6304,8 +6640,7 @@ RowIsNumericOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *      A standard TCL result. 
  *
- * Example:
- *      $t row isalpha $row
+ *      tableName row isalpha rowName
  *      
  *---------------------------------------------------------------------------
  */
@@ -6326,7 +6661,7 @@ RowIsHeaderOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_InitHashTable(&table, BLT_STRING_KEYS);
     state = TRUE;
     for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
-         col = blt_table_next_column(cmdPtr->table, col)) {
+         col = blt_table_next_column(col)) {
         const char *value;
         int isNew;
         
@@ -6361,9 +6696,7 @@ RowIsHeaderOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the interpreter
  *      result.
  *
- * Example:
- *
- *      $dst row concat $src -rows $rows  
+ *      destTable row join srcTable -rows rowList
  *
  *---------------------------------------------------------------------------
  */
@@ -6399,11 +6732,11 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
         goto error;
     }
     for (srcCol = blt_table_first_column(srcTable); srcCol != NULL; 
-         srcCol = blt_table_next_column(srcTable, srcCol)) {
+         srcCol = blt_table_next_column(srcCol)) {
         const char *label;
         BLT_TABLE_COLUMN dstCol;
         BLT_TABLE_ROW srcRow;
-        long i;
+        size_t i;
 
         label = blt_table_column_label(srcCol);
         dstCol = blt_table_get_column_by_label(cmdPtr->table, label);
@@ -6525,8 +6858,7 @@ RowLabelOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      the interpreter result.  If the row index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      $t row labels ?labelList?
+ *      tableName row labels ?labelList?
  *
  *---------------------------------------------------------------------------
  */
@@ -6544,7 +6876,7 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (row = blt_table_first_row(table); row != NULL;
-             row = blt_table_next_row(table, row)) {
+             row = blt_table_next_row(row)) {
             Tcl_Obj *objPtr;
             
             objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
@@ -6562,7 +6894,7 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         n = MIN(elc, blt_table_num_rows(table));
         for (i = 0, row = blt_table_first_row(table); (row != NULL) && (i < n); 
-             row = blt_table_next_row(table, row), i++) {
+             row = blt_table_next_row(row), i++) {
             const char *label;
 
             label = Tcl_GetString(elv[i]);
@@ -6586,9 +6918,7 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      the interpreter result.  If the row index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      
-$t row move from to ?n?
+ *      tableName row move destRow firstRow lastRow ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6597,36 +6927,44 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE_ROW from, to;
-    long count;
+    MoveSwitches switches;
+    BLT_TABLE_ROW destRow, firstRow, lastRow;
 
-    from = blt_table_get_row(interp, cmdPtr->table, objv[3]);
-    if (from == NULL) {
+    destRow = blt_table_get_row(interp, cmdPtr->table, objv[3]);
+    if (destRow == NULL) {
         return TCL_ERROR;
     }
-    to = blt_table_get_row(interp, cmdPtr->table, objv[4]);
-    if (to == NULL) {
+    firstRow = blt_table_get_row(interp, cmdPtr->table, objv[4]);
+    if (firstRow == NULL) {
         return TCL_ERROR;
     }
-    count = 1;
-    if (objc == 6) {
-        long lcount;
-
-        if (Blt_GetLongFromObj(interp, objv[5], &lcount) != TCL_OK) {
-            return TCL_ERROR;
-
-        }
-        if (lcount == 0) {
-            return TCL_OK;
-        }
-        if (lcount < 0) {
-            Tcl_AppendResult(interp, "# of rows can't be negative",
-                             (char *)NULL);
-            return TCL_ERROR;
-        }
-        count = lcount;
+    lastRow = blt_table_get_row(interp, cmdPtr->table, objv[5]);
+    if (lastRow == NULL) {
+        return TCL_ERROR;
     }
-    return blt_table_move_row(interp, cmdPtr->table, from, to, count);
+    /* Check if range is valid. */
+    if ((blt_table_row_index(cmdPtr->table, firstRow) > 
+         blt_table_row_index(cmdPtr->table, lastRow))) {
+        return TCL_OK;                  /* No range. */
+    }
+
+    /* Check that destination is outside the range of rows to be moved. */
+    if ((blt_table_row_index(cmdPtr->table, destRow) >= 
+         blt_table_row_index(cmdPtr->table, firstRow)) &&
+        (blt_table_row_index(cmdPtr->table, destRow) <= 
+         blt_table_row_index(cmdPtr->table, lastRow))) {
+        Tcl_AppendResult(interp, "destination row \"", Tcl_GetString(objv[3]),
+                 "\" can't be in the range of rows to be moved.", 
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, moveSwitches, objc - 6, objv + 6, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    return blt_table_move_rows(interp, cmdPtr->table, destRow, firstRow, 
+        lastRow, switches.flags & MOVE_AFTER);
 }
 
 
@@ -6641,10 +6979,7 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Always returns TCL_OK.  The interpreter result is a list of row
  *      labels.
  *      
- * Example:
- *      $t row names 
- *      $t row names pattern
- *      $t row names pattern1 pattern2...
+ *      tableName row names ?pattern...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6660,7 +6995,7 @@ RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     table = cmdPtr->table;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(table); row != NULL;
-         row = blt_table_next_row(table, row)) {
+         row = blt_table_next_row(row)) {
         const char *label;
         int match;
         int i;
@@ -6699,8 +7034,7 @@ RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      TCL_ERROR is returned and an error message is left in the interpreter
  *      result.
  *
- * Example:
- *      $t row empty row
+ *      tableName row nonempty row
  *      
  *---------------------------------------------------------------------------
  */
@@ -6711,7 +7045,7 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE_ROW row;
     Tcl_Obj *listObjPtr;
-    long i;
+    size_t i;
 
     row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
     if (row == NULL) {
@@ -6722,19 +7056,66 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         BLT_TABLE_COLUMN col;
         
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             BLT_TABLE_VALUE value;
 
             value = blt_table_get_value(cmdPtr->table, row, col);
             if (value != NULL) {
                 Tcl_Obj *objPtr;
 
-                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                objPtr = GetColumnIndexObj(cmdPtr->table, col);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
         }
     }
     Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RowReorderOp --
+ *
+ *      Reorders the table according to give TCL list of rows.
+ *
+ * Results:
+ *      A standard TCL result. 
+ *
+ *      tableName row reorder rowList
+ *      
+ *---------------------------------------------------------------------------
+ */
+static int
+RowReorderOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
+{
+    BLT_TABLE_ROW *map;
+    Cmd *cmdPtr = clientData;
+    Tcl_Obj **elv;
+    int elc;
+    size_t i;
+    
+    if (Tcl_ListObjGetElements(interp, objv[3], &elc, &elv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (elc != blt_table_num_rows(cmdPtr->table)) {
+        Tcl_AppendResult(interp,
+            "# of elements in the row list does not match the # of rows.",
+            (char *)NULL);
+        return TCL_ERROR;
+    }
+    map = Blt_AssertCalloc(elc, sizeof(BLT_TABLE_ROW));
+    for (i = 0; i < elc; i++) {
+        BLT_TABLE_ROW row;
+        
+        row = blt_table_get_row(interp, cmdPtr->table, elv[i]);
+        if (row == NULL) {
+            return TCL_ERROR;
+        }
+        map[i] = row;
+    }
+    blt_table_set_row_map(cmdPtr->table, map);
     return TCL_OK;
 }
 
@@ -6752,9 +7133,7 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
  *      is returned and an error message is left in the interpreter result.
  *      
- * Example:
- *      $t row set row ?switches? ?column value?...
- *      $t row set row ?switches? ?column value?...
+ *      tableName row set rowName ?switches? ?columnName value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -6765,7 +7144,7 @@ RowSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
     BLT_TABLE_ITERATOR ri;
-    long numCols;
+    size_t numCols;
     BLT_TABLE_ROW row;
 
     table = cmdPtr->table;
@@ -6785,7 +7164,7 @@ RowSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (row = blt_table_first_tagged_row(&ri); row != NULL; 
          row = blt_table_next_tagged_row(&ri)) {
-        long i;
+        size_t i;
 
         /* The remaining arguments are index/value pairs. */
         for (i = 4; i < objc; i += 2) {
@@ -7046,7 +7425,7 @@ RowTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static unsigned char *
 GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
 {
-    long numRows;
+    size_t numRows;
     int i;
     unsigned char *matches;
 
@@ -7058,13 +7437,13 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
 
         tag = Tcl_GetString(objv[i]);
         if (strcmp("all", tag) == 0) {
-            long j;
+            size_t j;
             for (j = 0; j < blt_table_num_rows(table); j++) {
                 matches[j] = TRUE;
             }
             return matches;             /* Don't care about other tags. */
         } 
-        if (strcmp("end", tag) == 0) {
+        if ((numRows > 0) && (strcmp("end", tag) == 0)) {
             matches[numRows - 1] = TRUE;
         }
     }
@@ -7086,11 +7465,10 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
         for (link = Blt_Chain_FirstLink(chain); link != NULL; 
              link = Blt_Chain_NextLink(link)) {
             BLT_TABLE_ROW row;
-            long j;
-
+            size_t j;
+            
             row = Blt_Chain_GetValue(link);
-            j = blt_table_row_index(row);
-            assert(j >= 0);
+            j = blt_table_row_index(table, row);
             matches[j] = TRUE;
         }
     }
@@ -7120,11 +7498,12 @@ RowTagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     if (matches != NULL) {
-        long j;
+        size_t j;
 
         for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
             if (matches[j]) {
-                Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(j));
+                Tcl_ListObjAppendElement(interp, listObjPtr,
+                                         Tcl_NewWideIntObj(j));
             }
         }
         Blt_Free(matches);
@@ -7155,14 +7534,13 @@ RowTagLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     if (matches != NULL) {
-        long j;
+        BLT_TABLE_ROW row;
 
-        for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
-            if (matches[j]) {
-                BLT_TABLE_ROW row;
+        for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+             row = blt_table_next_row(row)) {
+            if (matches[blt_table_row_index(cmdPtr->table, row)]) {
                 Tcl_Obj *objPtr;
                 
-                row = blt_table_row(cmdPtr->table, j);
                 objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
                 Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
             }
@@ -7190,10 +7568,10 @@ static int
 RowTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
-    Cmd *cmdPtr = clientData;
     BLT_TABLE table;
-    int i;
     BLT_TABLE_ROW from, to;
+    Cmd *cmdPtr = clientData;
+    int i;
 
     table = cmdPtr->table;
     from = blt_table_get_row(interp, table, objv[4]);
@@ -7204,20 +7582,20 @@ RowTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (to == NULL) {
         return TCL_ERROR;
     }
-    if (blt_table_row_index(from) > blt_table_row_index(to)) {
+    if (blt_table_row_index(table, from) > blt_table_row_index(table, to)) {
         return TCL_OK;
     }
     for (i = 6; i < objc; i++) {
+        BLT_TABLE_ROW row;
         const char *tag;
-        long j;
         
         tag = Tcl_GetString(objv[i]);
-        for (j = blt_table_row_index(from); j <= blt_table_row_index(to); j++) {
-            BLT_TABLE_ROW row;
-
-            row = blt_table_row(table, j);
+        for (row = from; /*empty*/; row = blt_table_next_row(row)) {
             if (blt_table_set_row_tag(interp, table, row, tag) != TCL_OK) {
                 return TCL_ERROR;
+            }
+            if (row == to) {
+                break;
             }
         }    
     }
@@ -7505,7 +7883,6 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
     BLT_TABLE_ROW row;
-    Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
     row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
@@ -7514,10 +7891,11 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (objc == 4) {
         BLT_TABLE_COLUMN col;
+        Tcl_Obj *listObjPtr;
 
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
         for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-             col = blt_table_next_column(cmdPtr->table, col)) {
+             col = blt_table_next_column(col)) {
             Tcl_Obj *objPtr;
             
             objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -7530,13 +7908,13 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
         Tcl_Obj **elv;
         int elc;
-        long i;
+        size_t i;
 
         if (Tcl_ListObjGetElements(interp, objv[4], &elc, &elv) != TCL_OK) {
             return TCL_ERROR;
         }
         if (elc > blt_table_num_columns(table)) {
-            long n;
+            size_t n;
 
             n = elc - blt_table_num_columns(table);
             if (blt_table_extend_columns(interp, table, n, NULL) != TCL_OK) {
@@ -7571,7 +7949,7 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec rowOps[] =
 {
-    {"copy",      3, RowCopyOp,     4, 0, "srcRow destRow ?switches?",},
+    {"copy",      2, RowCopyOp,     5, 0, "destRow srcRow ?switches?",},
     {"create",    2, RowCreateOp,   3, 0, "?switches...?",},
     {"delete",    2, RowDeleteOp,   3, 0, "?rowName ...?",},
     {"duplicate", 2, RowDupOp,      3, 0, "?rowName ...?",},
@@ -7586,9 +7964,10 @@ static Blt_OpSpec rowOps[] =
     {"join",      1, RowJoinOp,     4, 0, "srcTableName ?switches?",},
     {"label",     5, RowLabelOp,    4, 0, "rowName ?label?",},
     {"labels",    6, RowLabelsOp,   3, 4, "?labelList?",},
-    {"move",      1, RowMoveOp,     5, 6, "fromRow toRow ?numRows?",},
+    {"move",      1, RowMoveOp,     6, 0, "destRow firstRow lastRow ?switches?",},
     {"names",     2, RowNamesOp,    3, 0, "?pattern ...?",},
     {"nonempty",  3, RowNonEmptyOp, 4, 4, "rowName",},
+    {"reorder",   1, RowReorderOp,  4, 4, "rowList",},
     {"set",       1, RowSetOp,      5, 0, "rowName columnName ?value...?",},
     {"tag",       1, RowTagOp,      3, 0, "op args...",},
     {"unset",     1, RowUnsetOp,    4, 0, "rowName ?indices...?",},
@@ -7687,7 +8066,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
     BLT_TABLE_ROW *map;
     BLT_TABLE_COLUMN col;
     BLT_TABLE_SORT_ORDER *sp, *order;
@@ -7701,17 +8079,37 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     /* Process switches  */
     memset(&switches, 0, sizeof(SortSwitches));
-    switches.sortFlags = TABLE_SORT_AUTO;
-    table = switches.table = cmdPtr->table;
+    switches.tsFlags = TABLE_SORT_AUTO;
     rowIterSwitch.clientData = cmdPtr->table;
     columnIterSwitch.clientData = cmdPtr->table;
+    blt_table_iterate_all_columns(cmdPtr->table, &switches.ci);
     if (Blt_ParseSwitches(interp, sortSwitches, objc - 2, objv + 2, &switches, 
         BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;               
     }
+    if (switches.flags & SORT_ALTER) {
+        if (switches.flags & SORT_UNIQUE) {
+            Tcl_AppendResult(interp,
+                 "-alter and -unique switches are incompatible.",
+                (char *)NULL);
+            goto error;
+        }
+        if (switches.flags & SORT_NONEMPTY) {
+            Tcl_AppendResult(interp,
+                 "-alter and -empty switches are incompatible.",
+                (char *)NULL);
+            goto error;
+        }
+        if (switches.ri.numEntries > 0) {
+            Tcl_AppendResult(interp,
+                 "-alter and -rows switches are incompatible.",
+                (char *)NULL);
+            goto error;
+        }
+    }
     numColumns = switches.ci.numEntries;
     if (numColumns == 0) {
-        return TCL_OK;                  /* Nothing to sort. */
+        goto error;
     }
     sp = order = Blt_AssertCalloc(numColumns, sizeof(BLT_TABLE_SORT_ORDER));
     /* Then add the secondary sorting columns. */
@@ -7720,59 +8118,78 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
         sp->column = col;
         sp++;
     }
-    blt_table_sort_init(table, order, numColumns, switches.sortFlags);
-    numRows = switches.ri.numEntries;
-    if (numRows == 0) {
-        map = blt_table_sort_rows(table);
-        if (map == NULL) {
-            Tcl_AppendResult(interp, "out of memory: can't allocate sort map",
-                             (char *)NULL);
-            goto done;
+    blt_table_sort_init(cmdPtr->table, order, numColumns, switches.tsFlags);
+    col = order[0].column;
+    /* Create a row map, pruning out empty values if necessary. */
+    if (switches.ri.numEntries > 0) {
+        long i;
+        BLT_TABLE_ROW row;
+
+        i = 0;
+        map = Blt_AssertCalloc(switches.ri.numEntries, sizeof(BLT_TABLE_ROW));
+        for (row = blt_table_first_tagged_row(&switches.ri); row != NULL; 
+             row = blt_table_next_tagged_row(&switches.ri)) {
+            if (switches.flags & SORT_NONEMPTY) {
+                if (!blt_table_value_exists(cmdPtr->table, row, col)) {
+                    continue;
+                }
+            }
+            map[i] = row;
+            i++;
         }
-        numRows = blt_table_num_rows(table);
+        numRows = i;
     } else {
         long i;
         BLT_TABLE_ROW row;
 
         i = 0;
-        map = Blt_AssertCalloc(numRows, sizeof(BLT_TABLE_ROW));
-        for (row = blt_table_first_tagged_row(&switches.ri); row != NULL; 
-             row = blt_table_next_tagged_row(&switches.ri)) {
+        map = Blt_AssertCalloc(blt_table_num_rows(cmdPtr->table),
+                               sizeof(BLT_TABLE_ROW));
+        for (row = blt_table_first_row(cmdPtr->table); row != NULL; 
+             row = blt_table_next_row(row)) {
+            if (switches.flags & SORT_NONEMPTY) {
+                if (!blt_table_value_exists(cmdPtr->table, row, col)) {
+                    continue;
+                }
+            }
             map[i] = row;
             i++;
         }
-        blt_table_sort_rows_subset(table, numRows, map);
-        switches.flags |= SORT_LIST;
+        numRows = i;
     }
-    if (switches.flags & SORT_LIST) {
-        Tcl_Obj *listObjPtr;
-        BLT_TABLE_COLUMN col;
-
-        /* Return the new row order as a list. */
-        col = order[0].column;
-        if (switches.flags & SORT_UNIQUE) {
-            listObjPtr = PrintUniqueValues(interp, cmdPtr, numRows, map, col, 
-                switches.flags);
-        } else {
-            listObjPtr = PrintValues(interp, cmdPtr, numRows, map, col, 
-                                     switches.flags);
+    /* Sort the row map. */
+    blt_table_sort_row_map(cmdPtr->table, numRows, map);
+    
+    if ((switches.freqArrVarObjPtr != NULL) || 
+        (switches.freqListVarObjPtr != NULL) || 
+        (switches.flags & SORT_BYFREQ)) {
+        if (SortFrequencies(interp, cmdPtr, numRows, map, col, &switches) 
+            != TCL_OK) {
+            goto error;
         }
-        if (listObjPtr != NULL) {
-            Tcl_SetObjResult(interp, listObjPtr);
-        }
-        Blt_Free(map);
+    } 
+    if (switches.flags & SORT_UNIQUE) {
+        result = SetUniqueSortedResult(interp, cmdPtr, numRows, map, col, 
+                                       &switches);
     } else {
-        /* Make row order permanent. */
-        blt_table_set_row_map(table, map);
+        result = SetSortedResult(interp, cmdPtr, numRows, map, col, &switches);
     }
-    if (order != NULL) {
-        Blt_Free(order);
+    if (result != TCL_OK) {
+        goto error;
+    }
+    Blt_Free(order);
+    if (switches.flags & SORT_ALTER) {
+        /* Make row order permanent. */
+        blt_table_set_row_map(cmdPtr->table, map);
+    }
+    if (result != TCL_OK) {
+        goto error;
     }
     blt_table_sort_finish();
     Blt_FreeSwitches(sortSwitches, &switches, 0);
     return TCL_OK;
 
- done:
+ error:
     if (map != NULL) {
         Blt_Free(map);
     }
@@ -7893,7 +8310,7 @@ TraceCellOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
 
         do {
-            Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
+            Blt_FmtString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
             cmdPtr->nextTraceId++;
             hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, &isNew);
         } while (!isNew);
@@ -7997,7 +8414,7 @@ TraceColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char traceId[200];
         int isNew;
 
-        Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
+        Blt_FmtString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
         cmdPtr->nextTraceId++;
         tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
                 &isNew);
@@ -8237,7 +8654,7 @@ TraceRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
         char traceId[200];
         int isNew;
 
-        Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
+        Blt_FmtString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
         cmdPtr->nextTraceId++;
         tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
                 &isNew);
@@ -8373,7 +8790,7 @@ UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
-               Tcl_Obj *const *objv)
+              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
@@ -8434,7 +8851,7 @@ WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
         int isNew;
 
-        Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+        Blt_FmtString(name, 200, "watch%d", cmdPtr->nextWatch++);
         hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
         assert(isNew);
         Blt_SetHashValue(hPtr, watchPtr);
@@ -8548,8 +8965,7 @@ WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_NewStringObj(notifierPtr->tag, -1));
         } else {
             Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewLongObj(blt_table_row_index(notifierPtr->row)));
-        
+               GetRowIndexObj(watchPtr->cmdPtr->table, notifierPtr->row));
         }
     } else {
         Tcl_ListObjAppendElement(interp, listObjPtr, 
@@ -8559,7 +8975,7 @@ WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 Tcl_NewStringObj(notifierPtr->tag, -1));
         } else {
             Tcl_ListObjAppendElement(interp, listObjPtr, 
-                Tcl_NewLongObj(blt_table_column_index(notifierPtr->column)));
+                GetColumnIndexObj(watchPtr->cmdPtr->table, notifierPtr->column));
         }
     }
     Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->cmdObjPtr);
@@ -8708,7 +9124,7 @@ WatchRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
         int isNew;
 
-        Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+        Blt_FmtString(name, 200, "watch%d", cmdPtr->nextWatch++);
         hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
         assert(isNew);
         Blt_SetHashValue(hPtr, watchPtr);
@@ -8765,6 +9181,7 @@ static Blt_OpSpec tableOps[] =
     {"attach",     2, AttachOp,     2, 3, "tableName",},
     {"column",     3, ColumnOp,     3, 0, "op args...",},
     {"copy",       3, CopyOp,       3, 3, "tableName",},
+    {"clear",      2, ClearOp,      2, 2, "",},
     {"dir",        2, DirOp,        3, 0, "path ?switches?",},
     {"dump",       3, DumpOp,       2, 0, "?switches?",},
     {"duplicate",  3, DuplicateOp,  2, 3, "?tableName?",},
@@ -8782,6 +9199,7 @@ static Blt_OpSpec tableOps[] =
     {"minimum",    2, MinMaxOp,     2, 3, "?columnName?",},
     {"numcolumns", 4, NumColumnsOp, 2, 3, "?numColumns?",},
     {"numrows",    4, NumRowsOp,    2, 3, "?numRows?",},
+    {"pack",       1, PackOp,       2, 2, "",},
     {"restore",    2, RestoreOp,    2, 0, "?switches?",},
     {"row",        2, RowOp,        3, 0, "op args...",},
     {"set",        2, SetOp,        3, 0, "?rowName columnName value ...?",},
@@ -9139,9 +9557,9 @@ TableLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     initProcName = Blt_AssertMalloc(11 + length + 5 + 1);
-    Blt_FormatString(initProcName, 11 + length + 5 + 1, "blt_table_%s_init", fmt);
+    Blt_FmtString(initProcName, 11 + length + 5 + 1, "blt_table_%s_init", fmt);
     safeProcName = Blt_AssertMalloc(11 + length + 9 + 1);
-    Blt_FormatString(safeProcName, 11 + length + 9+1, "blt_table_%s_safe_init", fmt);
+    Blt_FmtString(safeProcName, 11 + length + 9+1, "blt_table_%s_safe_init", fmt);
 
     Tcl_DStringAppend(&libName, "/", -1);
     Tcl_UtfToTitle((char *)fmt);

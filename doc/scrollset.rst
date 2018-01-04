@@ -103,7 +103,7 @@ The following operations are available for scrollset widgets:
 
   **-fill** *fillMode*  
     If the **scrollset** window is bigger than the child widget,
-    this option specifies how the child widget is to be stretched to
+    this option specifies if the child widget is to be stretched to
     fill the window. *FillMode* can be either "none", "x", "y", or
     "both".  For example, if *fillMode* is "x", then the widget is stretched
     horizontally.  If *fillMode* is "both", the widget is stretched both
@@ -130,22 +130,6 @@ The following operations are available for scrollset widgets:
     just one distance, both the top and bottom are padded evenly.  The
     default value is "0".
 
-  **-padx** *numPixels*  
-    Sets the padding around the left and right of the child widget, if one
-    exists.  *NumPixels* can be a list of one or two screen distances.  If
-    *numPixels* has two elements, the left side of the widget is padded by
-    the first distance and the right side by the second.  If *numPixels*
-    has just one distance, both the left and right sides are padded evenly.
-    The default value is "0".
-
-  **-pady** *numPixels*  
-    Sets the padding around the top and bottom of the child widget, if one
-    exists.  *NumPixels* can be a list of one or two screen distances.  If
-    *numPixels* has two elements, the top of the widget is padded by the
-    first distance and the bottom by the second.  If *numPixels* has just
-    one distance, both the top and bottom sides are padded evenly.  The
-    default value is "0".
-
   **-reqheight** *numPixels*  
     If *numPixels* is not zero, it specifies the requested height of the
     child widget, overriding its the child widget's requested height.   
@@ -155,6 +139,14 @@ The following operations are available for scrollset widgets:
     If *pixels* is not zero, it specifies the requested width of the
     child widget, overriding the child widget's own requested width.  
     The default is "0".
+
+  **-xmode** *modeName*  
+    Specifies if the horizontal scrollbar should be dynamically mapped.
+    *ModeName* is either **dynamic** or **static**.  If *modeName* is
+    "static", then the horizontal scrollbar is always displayed. If
+    *modeName* is "dynamic", then the scrollbar is display only when it is
+    needed (the width of the scrollset window is smaller than the width of
+    the scrolling area of the child widget). The default is "dynamic".
 
   **-xscrollbar** *scrollbarName*  
     Specifies the horizontal scrollbar.  If *scrollbarName* is the empty
@@ -174,6 +166,14 @@ The following operations are available for scrollset widgets:
     Sets the width of the 3-D border around the outside edge of the widget.
     The **-relief** option determines how the border is to be drawn.  The
     default is "0".
+
+  **-ymode** *modeName*  
+    Specifies if the vertical scrollbar should be dynamically mapped.
+    *ModeName* is either **dynamic** or **static**.  If *modeName* is
+    "static", then the vertical scrollbar is always displayed. If
+    *modeName* is "dynamic", then the scrollbar is display only when it is
+    needed (the height of the scrollset window is smaller than the height
+    of the scrolling area of the child widget). The default is "dynamic".
 
   **-yscrollbar** *scrollbarName*  
     Specifies the vertical scrollbar.  If *scrollbarName* is the empty string,
@@ -231,7 +231,6 @@ The following operations are available for scrollset widgets:
   by *number* widget windows.  If *number* is negative then tabs farther to
   the left become visible; if it is positive then tabs farther to the right
   become visible.
-
 
 *pathName* **yset**  *first* *last*
   Scrolls the child window vertically so that the tab *tab* is visible in

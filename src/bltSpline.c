@@ -1194,7 +1194,7 @@ SplineCmd(
     SplineProc *proc;
     Blt_Vector *x, *y, *splX, *splY;
     double *xArr, *yArr;
-    int i;
+    long i;
     Point2d *origPts, *intpPts;
     int numOrigPts, numIntpPts;
     

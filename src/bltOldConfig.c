@@ -140,7 +140,7 @@ StringToDistance(
     int offset)                 /* Offset of pixel size in record */
 {
     int *valuePtr = (int *)(widgRec + offset);
-    return Blt_GetPixels(interp, tkwin, string, (unsigned long)clientData, 
+    return Blt_GetPixels(interp, tkwin, string, (uintptr_t)clientData, 
         valuePtr);
 }
 
@@ -265,7 +265,7 @@ PadToString(
     const char *result;
     char string[200];
 
-    Blt_FormatString(string, 200, "%d %d", padPtr->side1, padPtr->side2);
+    Blt_FmtString(string, 200, "%d %d", padPtr->side1, padPtr->side2);
     result = Blt_AssertStrdup(string);
     *freeProcPtr = (Tcl_FreeProc *)Blt_Free;
     return (CONST86 char *)result;

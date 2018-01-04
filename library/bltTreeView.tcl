@@ -58,130 +58,34 @@ namespace eval blt {
     }
 }
 
-# Create images used by the treeview widget.  
+if { [blt::winop xdpi] > 150 } {
+    image create picture ::blt::TreeView::closeIcon \
+        -file $blt_library/icons/32x32/folder.tga 
+    image create picture ::blt::TreeView::openIcon \
+        -file $blt_library/icons/32x32/folder-open.tga
+} else {
+    image create picture ::blt::TreeView::closeIcon \
+        -file $blt_library/icons/16x16/folder.tga 
+    image create picture ::blt::TreeView::openIcon \
+        -file $blt_library/icons/16x16/folder-open.tga
+}    
 
-# Closed folder
-image create picture ::blt::TreeView::closeIcon -data {
-    AAEBAABZACAAAAAAFgAWAAgIAAAAAACPrf8Aj5j/AOn+/wDC//8AJy3kADpE+gAo
-    LOMA5///AN7//wAFCLEANkT6AMD8/wDj//8AAAAKAJCt/wDa//8AkJj/ACgt5AAS
-    FN4AHynzAAAAEQAAAFYAyOz/AJWt/wDO+P8AAAAGAISP/wAAAF0AN0T6ANb//wA7
-    QfgAJC3kAAAAUgDa+f8AAABvAMz3/wAAAGQAka3/AOv+/wDD9/8AKDb6ACUx7wA8
-    RPoAKS3kAAAAWQDS//8Awfj/AMj3/wA6Q/oAm6//AML+/wCNmP8AJS3kADhE+gAY
-    H9sAzff/AM7//wBha/8Akq3/AJKY/wDz//8APUT6AAAADAB7mP8AKi3kANf7/wAa
-    I+4ANET6AJet/wDK//8ANEL6AC1B+gDv//8Ajpj/ACYt5AA5RPoABwm5AAAAfADO
-    9/8Ak63/AMH9/wA+RPoAKy3kAOv//wB9i/8AAABQACIt5ADK9/8AAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjFCkpKSkpKSkpKSkp
-    KSkpKSkpQxwAKjMEBAQEBAQEBAQEBAQEBAQEBAw3AERRUVFRUVFRUVFRUVFRUVFR
-    UVFRVwALRkZGRkZGRkZGRkZGRkZGRkZGRiAAHTk5OTk5OTk5OTk5OTk5OTk5OTk1
-    ADYuLi4uLi4uLi4uLi4uLi4uLi4uNQBMHh4eHh4eHh4eHh4eHh4eHh4eHksABhAQ
-    EBAQEBAQEBAQEBAQEBAQEBAFACsJCQkJCQkJCQkJCQkJCQkJCQkJEgA+DQ0NDQ0N
-    DQ0NDQ0NDQ0NDQ0NDRIAUggICAgICAgICAgICAgICAgICAgsAFJUVFRUVFRUVFRU
-    VFRUVFRUVFRUQQBIKDBYJE9POCQZJ0lJSUlJSUlJSVMARy8vLy8vLy8vLyI9PT09
-    PT09PT0HADFCQkJCQkJCQkIXMkUYUDsmDwFACgAfAwMDAwMDAwMDOk4lJSUlJSUl
-    LQ4ATVU0ETw8EQJKGxMaAAAAAAAAAAAAAD9WFhYWFhYWFiEVAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7wEAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAHgDbBwsACgAvAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAWgMAAAAAAABUUlVFVklTSU9OLVhGSUxFLgA=
-}
-
-# Open folder
-image create picture ::blt::TreeView::openIcon -data {
-    AAEJAAB/ACAAAAAAFgAWAAgIAAAAAADL//8AWJz/ANn//wDR9v8Al/P/AAAAEgAA
-    AFcAAAB0AHSJ/wDP9/8AAACRAAAABwCGmP8A5///AKr1/wDJ/v8Az/X/AFhb/wCi
-    rf8ATVX+AAAAUwDK3P8AWXb/AAAAKwDs//8AXmX/AKj0/wDH/f8AzP//AK32/wCE
-    lf8AVFv/AAAACgAAACcAAABEAHWJ/wAAABEAjOz/AAAAVgDK/v8An8b/AGp1/wDO
-    9v8ApPL/AK74/wB4iv8ABAWqAGmT/wBVW/8AWHX/AOv+/wAiK+YA6f//AIjq/wDS
-    //8AvPT/AJLw/wAAAAkAu///ANH1/wAAAKUAf63/AAAAQwDg//8AyvT/AML+/wAA
-    AC0AISvsAAAAcgDu//8AlMH/AK/4/wByif8Am63/ACk28wDF7v8AV2X/AJXx/wDl
-    //8AJy/eAFZb/wDz//8AAAAMAM31/wCzxv8A6v//AAAAAQCJrf8AGR7WAAAAnQB/
-    kP8AcIb/AAAAEwAAAE0Ayv//AKv2/wBSW/8Aep//AND2/wCm8v8Am6X/AO///wAA
-    ABoAc4n/ANj//wCAlv8Aw+f/AAAA3gAYHMoAd5b/AJOt/wDI/v8AQEj0AAAAjgCX
-    p/8AV1v/AJmk/wCF6P8ABgemAAAA5QCP7v8Arvf/AOv//wCZ9P8AAAAWAMX1/5UA
-    gQCAJZBDgFOAAIAAgCKAS48XgDKARIBngACARYBHkEKAYoBegACAL4B+kB2AKYAI
-    gACAUJE3gEyAWoAYgE2SA4BtgHKADZJAgHGAeIBVkg6AKoBsgFuAa4BBgFSAEYA8
-    gASAY4ArgAqAM4hGgHWAIYALgAKAdoA2gCaAeYA5gE6ABYB8gDiBGYB7glaCNYBz
-    gACAJ4A+hzuASIAsgGSAG4APgGCAHoB6gC2AMIA9gACAJ4BYhwGAKIAcgHCCEIAo
-    gV+AboAjgACAJ4BvkGmAaoAjgACAJ4BKkE+AH4A/gACAJ4ATh2aAFoAugCSACYFo
-    gUmAXIA0gF2AAIAVgGWHUoAagAeGI4B9gACAAIAGgFmAYYAxgHSAEoB0gFGAIIAU
-    gHeAV4gAggCAOoUhgAyKAJUAlQCVAO8BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAFAB4A2wcLAAoALwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYDAAAAAAAAVFJV
-    RVZJU0lPTi1YRklMRS4A
-}
-
-# Sort order increasing (down arrow)
-image create picture blt::TreeView::sortdown -data {
-    AAEBAAAjACAAAAAACQANAAgIAAA/QQAAyOUAAAAAAABAhAAAgDIAAAAOAAAAAwAA
-    zVwAALzpAACo4AAAzf8AAAAnAAAAHAAAnDYAAIiaAAAABgAAzZkAAAARAAB4EQAA
-    AAIAAIKhAAC22gAAzJoAAAABAACvYAAAxcAAAMzXAACnSwAAxj8AAAA3AAAADwAA
-    jcEAAL6aAAAABAAAFWICAgICExcCAgICAgIPAAsTAgICAhMYCAMMAgICAg0BCgki
-    BQICEhkKCgofHQYCHBYaChUgBBMCAgIWChQRAgICAgIWChQRAgICAgIWChQRAgIC
-    AgIWChQRAgICAgIWCg4eAgICAgIHEBshAgICAgICAgICAgLvAQAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAABQASANwHAAA1ADoAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAATAQAAAAAAAFRSVUVWSVNJT04tWEZJTEUuAA==
-}
-
-# Sort order decreasing (up arrow)
-image create picture blt::TreeView::sortup -data {
-    AAEBAAAnACAAAAAACQANAAgIewAAOgAAAABdAACaOwAASgAAAA4AAAADhQAA4YkA
-    AJp7AADZTAAAOQAAABFXAAClgwAAQAAAAA00AABsfQAAwAAAAAKKAAD2cAAAS4MA
-    AKFXAACkAAAABVkAAKFiAACRiwAA/wAAAAxrAADUAAAAATUAAB2ZAAAKAAAAD4oA
-    APUAAAAhjAAAegAAAASLAADWjAAAH2cAAGGMAABHAQEBIh4NEAEBAQEBEgIODQEB
-    AQEBBxgWCgEBAQEBBxgWCgEBAQEBBxgWCgEBAQEBBxgWCgEBAQUEExgLIBkbAQAX
-    CBgaFAMiASQjGBgYDxwBAQEmHxgGCRsBAQEBIRElIgEBAQEBHQwVAQEBAQEBAQEB
-    AQEB7wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAEgDcBwAANQA6AAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAIwEAAAAAAABUUlVFVklTSU9OLVhGSUxFLgA=
-}
-
-option add *BltTreeView*Column.increasingIcon blt::TreeView::sortup
-option add *BltTreeView*Column.decreasingIcon blt::TreeView::sortdown
 option add *BltTreeView.ColumnCommand blt::TreeView::SortColumn
+option add *BltTreeView.Icons \
+    [list ::blt::TreeView::closeIcon ::blt::TreeView::openIcon]
 
 if { $tcl_platform(platform) == "windows" } {
     if { $tk_version >= 8.3 } {
-	set cursor "@[file join $blt_library treeview.cur]"
+	set cursor "@[file join $blt_library cursors treeview.cur]"
     } else {
 	set cursor "size_we"
     }
     option add *BltTreeView.ResizeCursor [list $cursor]
 } else {
     option add *BltTreeView.ResizeCursor \
-	[list @$blt_library/treeview.xbm $blt_library/treeview_m.xbm black white]
+	[list @$blt_library/cursors/treeview.xbm \
+		$blt_library/cursors/treeview_m.xbm \
+		black white]
 }
 
 # Left
@@ -194,7 +98,6 @@ bind BltTreeView <KeyPress-Left> {
 #   Open the current node.
 bind BltTreeView <KeyPress-Right> {
     %W open focus
-    %W see focus -anchor w
 }
 
 # Up (arrow key)
@@ -217,25 +120,25 @@ bind BltTreeView <KeyPress-Down> {
 # Home
 #   Move the first entry.  Ignores nodes whose ancestors are closed.
 bind BltTreeView <KeyPress-Home> {
-    blt::TreeView::MoveFocus %W top
+    blt::TreeView::MoveFocus %W first
 }
 
 # End 
 #   Move the last entry. Ignores nodes whose ancestors are closed.
 bind BltTreeView <KeyPress-End> {
-    blt::TreeView::MoveFocus %W bottom
+    blt::TreeView::MoveFocus %W end
 }
 
 # PgUp 
 #   Move the first entry in the view.
 bind BltTreeView <KeyPress-Prior> {
-    blt::TreeView::MovePage %W view.first
+    %W yview scroll -1 pages
 }
 
 # PgDn
 #   Move the last entry in the view.
 bind BltTreeView <KeyPress-Next> {
-    blt::TreeView::MovePage %W view.last
+    %W yview scroll 1 pages
 }
 
 # Shift+Up (arrow key)
@@ -274,7 +177,6 @@ bind BltTreeView <KeyPress-space> {
 bind BltTreeView <KeyRelease-space> { 
     set blt::TreeView::_private(space) off
 }
-
 # Return
 #   Turn on space selection mode.
 bind BltTreeView <KeyPress-Return> {
@@ -357,7 +259,7 @@ bind BltTreeView <ButtonRelease-2> {
 #
 # Initialize --
 #
-#	Invoked by internally by Treeview_Init routine.  Initializes the
+#	Invoked internally by Treeview_Init routine.  Initializes the
 #	default bindings for the treeview widget entries.  These are local
 #	to the widget, so they can't be set through the widget's class bind
 #	tags.
@@ -380,32 +282,32 @@ proc blt::TreeView::Initialize { w } {
 
     # ButtonPress-1
     #   Save the index of the current entry (whose button was pressed).
-    $w button bind all <ButtonPress-1> {
+    $w entry bind all button <ButtonPress-1> {
+        blt::TreeView::trace "ButtonPress-1 for Button"
         set blt::TreeView::_private(lastButton) [%W index current]
     }
 
     # ButtonRelease-1
     #   If over the same button where the button was pressed, open or close
     #   the entry.
-    $w button bind all <ButtonRelease-1> {
+    $w entry bind all button <ButtonRelease-1> {
         blt::TreeView::trace "ButtonRelease-1 for Button"
-	if { [%W button contains %x %y] == $blt::TreeView::_private(lastButton) } {
-	    %W see -anchor nw current
+	if { [%W button contains %x %y] ==
+             $blt::TreeView::_private(lastButton) } {
 	    %W toggle current
 	} else {
             blt::TreeView::trace "not over button"
         }            
     }
-    $w button bind all <Enter> {
+    $w entry bind all button <Enter> {
         blt::TreeView::trace "Enter Button"
 	%W button activate current
         set blt::TreeView::_private(lastButton) [%W index current]
     }
-    $w button bind all <Leave> {
+    $w entry bind all button <Leave> {
         blt::TreeView::trace "Leave Button"
         set blt::TreeView::_private(lastButton) -1
 	%W button activate ""
-        
     }
 
     # Entry bindings
@@ -588,50 +490,52 @@ proc blt::TreeView::Initialize { w } {
 	# Do nothing.
     }
 
-    $w column bind all <Enter> {
+    $w column bind all title <Enter> {
 	%W column activate current
     }
-    $w column bind all <Leave> {
+    $w column bind all title <Leave> {
 	%W column deactivate
     }
-    $w column bind Rule <Enter> {
+    $w column bind all resize <Enter> {
 	%W column activate current
 	%W column resize activate current
     }
-    $w column bind Rule <Leave> {
+    $w column bind all resize <Leave> {
 	%W column deactivate
 	%W column resize deactivate 
     }
-    $w column bind Rule <ButtonPress-1> {
+    $w column bind all resize <ButtonPress-1> {
 	%W column resize anchor %x
     }
-    $w column bind Rule <B1-Motion> {
+    $w column bind all resize <B1-Motion> {
 	%W column resize mark %x
     }
-    $w column bind Rule <ButtonRelease-1> {
+    $w column bind all resize <ButtonRelease-1> {
 	%W column configure active -width [%W column resize set]
     }
-    $w column bind all <ButtonPress-1> {
+    $w column bind all title <ButtonPress-1> {
 	set blt::TreeView::_private(column) active
 	%W column configure $blt::TreeView::_private(column) \
 	    -titlerelief sunken
     }
-    $w column bind all <ButtonRelease-1> {
+    $w column bind all title <ButtonRelease-1> {
 	%W column invoke active
 	%W column configure active -titlerelief raised
     }
 
     # TextBoxStyle
-    $w bind TextBoxStyle <Enter> { 
+    $w cell bind TextBoxStyle <Enter> { 
+        blt::TreeView::trace "Entry TextBox"
 	%W cell activate current 
     }
-    $w bind TextBoxStyle <Leave> { 
+    $w cell bind TextBoxStyle <Leave> { 
+        blt::TreeView::trace "Leave TextBox"
 	%W cell deactivate 
     }
-    $w bind TextBoxStyle <ButtonPress-1> { 
+    $w cell bind TextBoxStyle <ButtonPress-1> { 
         blt::TreeView::SetSelectionAnchorFromCell %W active
     }
-    $w bind TextBoxStyle <B1-Motion> { 
+    $w cell bind TextBoxStyle <B1-Motion> { 
         blt::TreeView::trace "B1-Motion TextBox"
         if { $blt::TreeView::_private(activeSelection) } {
             set blt::TreeView::_private(x) %x
@@ -648,32 +552,32 @@ proc blt::TreeView::Initialize { w } {
             }
         }
     }
-    $w bind TextBoxStyle <ButtonRelease-1> { 
+    $w cell bind TextBoxStyle <ButtonRelease-1> { 
         blt::TreeView::trace "ButtonRelease-1 TextBox"
         set blt::TreeView::_private(activeSelection) 0
     }
 
-    $w bind TextBoxStyle <ButtonPress-3> { 
+    $w cell bind TextBoxStyle <ButtonPress-3> { 
         blt::TreeView::PostEditor %W current
     }
-    $w bind TextBoxStyle <ButtonRelease-3> { 
+    $w cell bind TextBoxStyle <ButtonRelease-3> { 
         blt::TreeView::UnpostEditor %W active
     }
 
     # CheckBoxStyle
-    $w bind CheckBoxStyle <Enter> { 
+    $w cell bind CheckBoxStyle <Enter> { 
 	%W cell activate current 
     }
-    $w bind CheckBoxStyle <Leave> { 
+    $w cell bind CheckBoxStyle <Leave> { 
 	%W cell deactivate 
     }
-    $w bind CheckBoxStyle <ButtonPress-1> { 
+    $w cell bind CheckBoxStyle <ButtonPress-1> { 
         blt::TreeView::trace "ButtonPress-1 for CheckBox"
 	if { [%W cell identify active %X %Y] == "text" } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
-    $w bind CheckBoxStyle <ButtonRelease-1> { 
+    $w cell bind CheckBoxStyle <ButtonRelease-1> { 
         blt::TreeView::trace "ButtonRelease-1 for CheckBox"
         if { [%W cell writable active]  && 
              [%W cell identify active %X %Y] == "button" } {
@@ -683,7 +587,7 @@ proc blt::TreeView::Initialize { w } {
         }
         set blt::TreeView::_private(activeSelection) 0
     }
-    $w bind CheckBoxStyle <B1-Motion> { 
+    $w cell bind CheckBoxStyle <B1-Motion> { 
         blt::TreeView::trace "B1-Motion CheckBox activeSelection=$blt::TreeView::_private(activeSelection)"
         if { $blt::TreeView::_private(activeSelection) } {
             blt::TreeView::trace "B1 Motion for CheckBox activeSelection"
@@ -703,19 +607,19 @@ proc blt::TreeView::Initialize { w } {
     }
 
     # ComboBoxStyle
-    $w bind ComboBoxStyle <Enter> { 
+    $w cell bind ComboBoxStyle <Enter> { 
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
 	    %W cell activate current 
 	}
     }
-    $w bind ComboBoxStyle <Leave> { 
+    $w cell bind ComboBoxStyle <Leave> { 
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
 	    %W cell deactivate 
 	}
     }
-    $w bind ComboBoxStyle <ButtonPress-1> { 
+    $w cell bind ComboBoxStyle <ButtonPress-1> { 
         blt::TreeView::trace "ButtonPress-1 ComboBox"
 	set blt::TreeView::_private(activeSelection) 0
 	if { [%W cell identify current %X %Y] == "button" } {
@@ -724,14 +628,14 @@ proc blt::TreeView::Initialize { w } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
-    $w bind CheckBoxStyle <Motion> { 
+    $w cell bind CheckBoxStyle <Motion> { 
 	if { [%W cell identify current %X %Y] == "button" } {
 	    #%W cell activate current
 	} else {
 	    #%W cell deactivate 
 	}
     }
-    $w bind ComboBoxStyle <B1-Motion> { 
+    $w cell bind ComboBoxStyle <B1-Motion> { 
         blt::TreeView::trace "B1 Motion ComboBox"
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
@@ -759,7 +663,7 @@ proc blt::TreeView::Initialize { w } {
     #
     # Otherwise unpost the menu.  The user clicked either on the menu
     # (selected an item) or outside the menu (canceling the operation).
-    $w bind ComboBoxStyle <ButtonRelease-1> { 
+    $w cell bind ComboBoxStyle <ButtonRelease-1> { 
         blt::TreeView::trace "ButtonRelease-1 ComboBox"
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
@@ -770,26 +674,26 @@ proc blt::TreeView::Initialize { w } {
     }
 
     # ImageBoxStyle
-    $w bind ImageBoxStyle <Enter> { 
+    $w cell bind ImageBoxStyle <Enter> { 
 	%W cell activate current 
     }
-    $w bind ImageBoxStyle <Leave> { 
+    $w cell bind ImageBoxStyle <Leave> { 
 	%W cell deactivate 
     }
 
     # RadioButtonStyle
-    $w bind RadioButtonStyle <Enter> { 
+    $w cell bind RadioButtonStyle <Enter> { 
 	%W cell activate current 
     }
-    $w bind RadioButtonStyle <Leave> { 
+    $w cell bind RadioButtonStyle <Leave> { 
 	%W cell deactivate 
     }
-    $w bind RadioButtonStyle <ButtonPress-1> { 
+    $w cell bind RadioButtonStyle <ButtonPress-1> { 
 	if { [%W cell writable active] } {
 	    blt::TreeView::SetRadioValue %W active
 	}
     }
-    $w bind RadioButtonStyle <B1-Motion> { 
+    $w cell bind RadioButtonStyle <B1-Motion> { 
 	break
     }
 }
@@ -1112,41 +1016,6 @@ proc blt::TreeView::MoveFocus { w index } {
 
 # ----------------------------------------------------------------------
 #
-# MovePage --
-#
-#	Invoked by KeyPress bindings.  Pages the current view up or down.
-#	The <where> argument should be either "top" or "bottom".
-#
-# ----------------------------------------------------------------------
-proc blt::TreeView::MovePage { w where } {
-
-    # If the focus is already at the top/bottom of the window, we want to
-    # scroll a page. It's really one page minus an entry because we want to
-    # see the last entry on the next/last page.
-    if { [$w index focus] == [$w index view.$where] } {
-        if {$where == "top"} {
-	    $w yview scroll -1 pages
-	    $w yview scroll 1 units
-        } else {
-	    $w yview scroll 1 pages
-	    $w yview scroll -1 units
-        }
-    }
-    update
-
-    # Adjust the entry focus and the view.  Also activate the entry.  just
-    # in case the mouse point is not in the widget.
-    $w entry highlight view.$where
-    $w focus view.$where
-    $w see view.$where
-    if { [$w cget -selectmode] == "single" } {
-        $w selection clearall
-        $w selection set focus
-    }
-}
-
-# ----------------------------------------------------------------------
-#
 # NextMatch --
 #
 #	Invoked by KeyPress bindings.  Searches for an entry that starts
@@ -1154,29 +1023,40 @@ proc blt::TreeView::MovePage { w where } {
 #
 # ----------------------------------------------------------------------
 proc blt::TreeView::NextMatch { w key } {
-    if {[string match {[ -~]} $key]} {
-	set last [$w index focus]
-	if { $last == -1 } {
-	    return;			# No focus. 
-	}
-	set next [$w index next]
-	if { $next == -1 } {
-	    set next $last
-	}
-	while { $next != $last } {
-	    set label [$w entry cget $next -label]
-	    set label [string index $label 0]
-	    if { [string tolower $label] == [string tolower $key] } {
-		break
-	    }
-	    set next [$w index -at $next next]
-	}
-	$w focus $next
-	if {[$w cget -selectmode] == "single"} {
-	    $w selection clearall
-	    $w selection set focus
-	}
-	$w see focus
+    if { ![string match {[ -~]} $key] } {
+        return
+    }
+    set last [$w index focus]
+    if { $last == -1 } {
+        return;			# No focus. 
+    }
+    # Get the next index (from focus)
+    set next [$w index next]
+    if { $next == -1 } {
+        set next 0
+    }
+    set next $last
+    while 1 {
+        set next [$w index next -from $next]
+        set label [$w entry cget $next -label]
+        set char [string index $label 0]
+        if { [string compare -nocase $char $key] == 0 } {
+            break
+        }
+        if { $next == $last } {
+            break
+        }
+        if { $next == -1 } {
+            set next 0
+        }
+    }
+    if { $next != $last } {
+        $w focus $next
+        if {[$w cget -selectmode] == "single"} {
+            $w selection clearall
+            $w selection set focus
+        }
+        $w see focus
     }
 }
 
@@ -1268,6 +1148,7 @@ proc blt::TreeView::SortColumn { w col } {
 	set decreasing [$w sort cget -decreasing]
 	set decreasing [expr !$decreasing]
     }
+    $w selection clearall
     $w sort configure -decreasing $decreasing \
 	-columns [list $col treeView] \
 	-mark $col

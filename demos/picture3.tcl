@@ -1,25 +1,26 @@
 package require BLT
 
-set dest [image create picture -width 800 -height 600]
+set dest [image create picture -width 900 -height 600]
 
 source ./data/usmap.tcl
 
 set count 0
 array set colors {
     0 red 
-    1 green 
-    2 blue 
+    1 green2 
+    2 dodgerblue 
     3 cyan 
-    4 black
+    4 orange
     5 purple
     6 brown
     7 violet
-    8 seagreen
+    8 limegreen
     9 lightblue
     10 yellow
     11 pink
     12 khaki
     13 grey
+    14 navyblue
 }
 
 blt::vector all
@@ -29,11 +30,37 @@ set subset *
 label .l -image $dest 
 $dest blank white
 set bg [image create picture -file images/blt98.gif]
-$dest copy $bg
+$dest copy $bg -to [list 0 0 [image width $dest] [image height $dest]]
 pack .l
-foreach region [array names us_regions $subset] {
+
+proc CompareRegions { name1 name2 } {
+    global us_regions
+
+    foreach { x1 y1 } $us_regions($name1) break
+    foreach { x2 y2 } $us_regions($name2) break
+    if { $x1 < $x2 } {
+	return 1
+    }
+    if { $x1 > $x2 } {
+	return -1
+    }
+    if { $y1 < $y2 } {
+	return 1
+    }
+    if { $y1 > $y2 } {
+	return -1
+    }
+    return 0
+}
+
+set cnum -1
+set regions [array names us_regions $subset]
+foreach region [lsort -command CompareRegions $regions] {
     set coords $us_regions($region)
-    set cnum [expr {int(rand()*14.0)}]
+    incr cnum
+    if { $cnum == 14 } {
+	set cnum 0
+    }
     all set $coords
 #     all split x y
 #     set min [blt::vector expr min(x)]
@@ -59,9 +86,6 @@ foreach region [array names us_regions $subset] {
 
 $dest draw circle 200 200 100 -color yellow -shadow 0 \
     -antialiased 1 -linewidth 10 
-#$dest draw text "Hi George"  200 200  -anchor c -rotate 0.0 \
-    -font "@/usr/share/fonts/100dpi/helvB24-ISO8859-1.pcf.gz" \
-    -alpha 155 -color black 
 
 #$dest draw line -coords "200 200 500 200" -color black
 

@@ -1,7 +1,7 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #include "bltAlloc.h"
 #include "bltChain.h"
-#include "bltHash.h.in"
+#include "bltHash.h"
 #include "bltTags.h"
 #include "bltList.h"
 #include "bltPool.h"
@@ -340,140 +340,134 @@ BLT_EXTERN Blt_TreeKey	Blt_Tree_GetKey(Blt_Tree tree, const char *string);
 BLT_EXTERN Blt_TreeKey	Blt_Tree_GetKeyFromNode(Blt_TreeNode node,
 				const char *string);
 #endif
-#ifndef Blt_Tree_GetKeyFromInterp_DECLARED
-#define Blt_Tree_GetKeyFromInterp_DECLARED
-/* 60 */
-BLT_EXTERN Blt_TreeKey	Blt_Tree_GetKeyFromInterp(Tcl_Interp *interp,
-				const char *string);
-#endif
 #ifndef Blt_Tree_CreateNode_DECLARED
 #define Blt_Tree_CreateNode_DECLARED
-/* 61 */
+/* 60 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_CreateNode(Blt_Tree tree,
 				Blt_TreeNode parent, const char *name,
 				long position);
 #endif
 #ifndef Blt_Tree_CreateNodeWithId_DECLARED
 #define Blt_Tree_CreateNodeWithId_DECLARED
-/* 62 */
+/* 61 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_CreateNodeWithId(Blt_Tree tree,
 				Blt_TreeNode parent, const char *name,
 				long inode, long position);
 #endif
 #ifndef Blt_Tree_DeleteNode_DECLARED
 #define Blt_Tree_DeleteNode_DECLARED
-/* 63 */
+/* 62 */
 BLT_EXTERN int		Blt_Tree_DeleteNode(Blt_Tree tree, Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_MoveNode_DECLARED
 #define Blt_Tree_MoveNode_DECLARED
-/* 64 */
+/* 63 */
 BLT_EXTERN int		Blt_Tree_MoveNode(Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeNode parent, Blt_TreeNode before);
 #endif
 #ifndef Blt_Tree_GetNodeFromIndex_DECLARED
 #define Blt_Tree_GetNodeFromIndex_DECLARED
-/* 65 */
+/* 64 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNodeFromIndex(Blt_Tree tree, long inode);
 #endif
 #ifndef Blt_Tree_FindChild_DECLARED
 #define Blt_Tree_FindChild_DECLARED
-/* 66 */
+/* 65 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_FindChild(Blt_TreeNode parent,
 				const char *name);
 #endif
 #ifndef Blt_Tree_NextNode_DECLARED
 #define Blt_Tree_NextNode_DECLARED
-/* 67 */
+/* 66 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_NextNode(Blt_TreeNode root,
 				Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_PrevNode_DECLARED
 #define Blt_Tree_PrevNode_DECLARED
-/* 68 */
+/* 67 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_PrevNode(Blt_TreeNode root,
 				Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_FirstChild_DECLARED
 #define Blt_Tree_FirstChild_DECLARED
-/* 69 */
+/* 68 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_FirstChild(Blt_TreeNode parent);
 #endif
 #ifndef Blt_Tree_LastChild_DECLARED
 #define Blt_Tree_LastChild_DECLARED
-/* 70 */
+/* 69 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_LastChild(Blt_TreeNode parent);
 #endif
 #ifndef Blt_Tree_IsBefore_DECLARED
 #define Blt_Tree_IsBefore_DECLARED
-/* 71 */
+/* 70 */
 BLT_EXTERN int		Blt_Tree_IsBefore(Blt_TreeNode node1,
 				Blt_TreeNode node2);
 #endif
 #ifndef Blt_Tree_IsAncestor_DECLARED
 #define Blt_Tree_IsAncestor_DECLARED
-/* 72 */
+/* 71 */
 BLT_EXTERN int		Blt_Tree_IsAncestor(Blt_TreeNode node1,
 				Blt_TreeNode node2);
 #endif
 #ifndef Blt_Tree_PrivateValue_DECLARED
 #define Blt_Tree_PrivateValue_DECLARED
-/* 73 */
+/* 72 */
 BLT_EXTERN int		Blt_Tree_PrivateValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key);
 #endif
 #ifndef Blt_Tree_PublicValue_DECLARED
 #define Blt_Tree_PublicValue_DECLARED
-/* 74 */
+/* 73 */
 BLT_EXTERN int		Blt_Tree_PublicValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key);
 #endif
 #ifndef Blt_Tree_GetValue_DECLARED
 #define Blt_Tree_GetValue_DECLARED
-/* 75 */
+/* 74 */
 BLT_EXTERN int		Blt_Tree_GetValue(Tcl_Interp *interp, Blt_Tree tree,
 				Blt_TreeNode node, const char *string,
 				Tcl_Obj **valuePtr);
 #endif
 #ifndef Blt_Tree_ValueExists_DECLARED
 #define Blt_Tree_ValueExists_DECLARED
-/* 76 */
+/* 75 */
 BLT_EXTERN int		Blt_Tree_ValueExists(Blt_Tree tree,
 				Blt_TreeNode node, const char *string);
 #endif
 #ifndef Blt_Tree_SetValue_DECLARED
 #define Blt_Tree_SetValue_DECLARED
-/* 77 */
+/* 76 */
 BLT_EXTERN int		Blt_Tree_SetValue(Tcl_Interp *interp, Blt_Tree tree,
 				Blt_TreeNode node, const char *string,
 				Tcl_Obj *valuePtr);
 #endif
 #ifndef Blt_Tree_UnsetValue_DECLARED
 #define Blt_Tree_UnsetValue_DECLARED
-/* 78 */
+/* 77 */
 BLT_EXTERN int		Blt_Tree_UnsetValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *string);
 #endif
 #ifndef Blt_Tree_AppendValue_DECLARED
 #define Blt_Tree_AppendValue_DECLARED
-/* 79 */
+/* 78 */
 BLT_EXTERN int		Blt_Tree_AppendValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *string, const char *value);
 #endif
 #ifndef Blt_Tree_ListAppendValue_DECLARED
 #define Blt_Tree_ListAppendValue_DECLARED
-/* 80 */
+/* 79 */
 BLT_EXTERN int		Blt_Tree_ListAppendValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *string, Tcl_Obj *valuePtr);
 #endif
 #ifndef Blt_Tree_GetArrayValue_DECLARED
 #define Blt_Tree_GetArrayValue_DECLARED
-/* 81 */
+/* 80 */
 BLT_EXTERN int		Blt_Tree_GetArrayValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *arrayName, const char *elemName,
@@ -481,7 +475,7 @@ BLT_EXTERN int		Blt_Tree_GetArrayValue(Tcl_Interp *interp,
 #endif
 #ifndef Blt_Tree_SetArrayValue_DECLARED
 #define Blt_Tree_SetArrayValue_DECLARED
-/* 82 */
+/* 81 */
 BLT_EXTERN int		Blt_Tree_SetArrayValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *arrayName, const char *elemName,
@@ -489,14 +483,14 @@ BLT_EXTERN int		Blt_Tree_SetArrayValue(Tcl_Interp *interp,
 #endif
 #ifndef Blt_Tree_UnsetArrayValue_DECLARED
 #define Blt_Tree_UnsetArrayValue_DECLARED
-/* 83 */
+/* 82 */
 BLT_EXTERN int		Blt_Tree_UnsetArrayValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *arrayName, const char *elemName);
 #endif
 #ifndef Blt_Tree_AppendArrayValue_DECLARED
 #define Blt_Tree_AppendArrayValue_DECLARED
-/* 84 */
+/* 83 */
 BLT_EXTERN int		Blt_Tree_AppendArrayValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *arrayName, const char *elemName,
@@ -504,7 +498,7 @@ BLT_EXTERN int		Blt_Tree_AppendArrayValue(Tcl_Interp *interp,
 #endif
 #ifndef Blt_Tree_ListAppendArrayValue_DECLARED
 #define Blt_Tree_ListAppendArrayValue_DECLARED
-/* 85 */
+/* 84 */
 BLT_EXTERN int		Blt_Tree_ListAppendArrayValue(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *arrayName, const char *elemName,
@@ -512,134 +506,134 @@ BLT_EXTERN int		Blt_Tree_ListAppendArrayValue(Tcl_Interp *interp,
 #endif
 #ifndef Blt_Tree_ArrayValueExists_DECLARED
 #define Blt_Tree_ArrayValueExists_DECLARED
-/* 86 */
+/* 85 */
 BLT_EXTERN int		Blt_Tree_ArrayValueExists(Blt_Tree tree,
 				Blt_TreeNode node, const char *arrayName,
 				const char *elemName);
 #endif
 #ifndef Blt_Tree_ArrayNames_DECLARED
 #define Blt_Tree_ArrayNames_DECLARED
-/* 87 */
+/* 86 */
 BLT_EXTERN int		Blt_Tree_ArrayNames(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				const char *arrayName, Tcl_Obj *listObjPtr);
 #endif
 #ifndef Blt_Tree_GetValueByKey_DECLARED
 #define Blt_Tree_GetValueByKey_DECLARED
-/* 88 */
+/* 87 */
 BLT_EXTERN int		Blt_Tree_GetValueByKey(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key, Tcl_Obj **valuePtr);
 #endif
 #ifndef Blt_Tree_SetValueByKey_DECLARED
 #define Blt_Tree_SetValueByKey_DECLARED
-/* 89 */
+/* 88 */
 BLT_EXTERN int		Blt_Tree_SetValueByKey(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key, Tcl_Obj *valuePtr);
 #endif
 #ifndef Blt_Tree_UnsetValueByKey_DECLARED
 #define Blt_Tree_UnsetValueByKey_DECLARED
-/* 90 */
+/* 89 */
 BLT_EXTERN int		Blt_Tree_UnsetValueByKey(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key);
 #endif
 #ifndef Blt_Tree_AppendValueByKey_DECLARED
 #define Blt_Tree_AppendValueByKey_DECLARED
-/* 91 */
+/* 90 */
 BLT_EXTERN int		Blt_Tree_AppendValueByKey(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key, const char *value);
 #endif
 #ifndef Blt_Tree_ListAppendValueByKey_DECLARED
 #define Blt_Tree_ListAppendValueByKey_DECLARED
-/* 92 */
+/* 91 */
 BLT_EXTERN int		Blt_Tree_ListAppendValueByKey(Tcl_Interp *interp,
 				Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKey key, Tcl_Obj *valuePtr);
 #endif
 #ifndef Blt_Tree_ValueExistsByKey_DECLARED
 #define Blt_Tree_ValueExistsByKey_DECLARED
-/* 93 */
+/* 92 */
 BLT_EXTERN int		Blt_Tree_ValueExistsByKey(Blt_Tree tree,
 				Blt_TreeNode node, Blt_TreeKey key);
 #endif
 #ifndef Blt_Tree_FirstKey_DECLARED
 #define Blt_Tree_FirstKey_DECLARED
-/* 94 */
+/* 93 */
 BLT_EXTERN Blt_TreeKey	Blt_Tree_FirstKey(Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeKeyIterator *iterPtr);
 #endif
 #ifndef Blt_Tree_NextKey_DECLARED
 #define Blt_Tree_NextKey_DECLARED
-/* 95 */
+/* 94 */
 BLT_EXTERN Blt_TreeKey	Blt_Tree_NextKey(Blt_Tree tree,
 				Blt_TreeKeyIterator *iterPtr);
 #endif
 #ifndef Blt_Tree_Apply_DECLARED
 #define Blt_Tree_Apply_DECLARED
-/* 96 */
+/* 95 */
 BLT_EXTERN int		Blt_Tree_Apply(Blt_TreeNode root,
 				Blt_TreeApplyProc *proc,
 				ClientData clientData);
 #endif
 #ifndef Blt_Tree_ApplyDFS_DECLARED
 #define Blt_Tree_ApplyDFS_DECLARED
-/* 97 */
+/* 96 */
 BLT_EXTERN int		Blt_Tree_ApplyDFS(Blt_TreeNode root,
 				Blt_TreeApplyProc *proc,
 				ClientData clientData, int order);
 #endif
 #ifndef Blt_Tree_ApplyBFS_DECLARED
 #define Blt_Tree_ApplyBFS_DECLARED
-/* 98 */
+/* 97 */
 BLT_EXTERN int		Blt_Tree_ApplyBFS(Blt_TreeNode root,
 				Blt_TreeApplyProc *proc,
 				ClientData clientData);
 #endif
 #ifndef Blt_Tree_SortNode_DECLARED
 #define Blt_Tree_SortNode_DECLARED
-/* 99 */
+/* 98 */
 BLT_EXTERN int		Blt_Tree_SortNode(Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeCompareNodesProc *proc);
 #endif
 #ifndef Blt_Tree_Exists_DECLARED
 #define Blt_Tree_Exists_DECLARED
-/* 100 */
+/* 99 */
 BLT_EXTERN int		Blt_Tree_Exists(Tcl_Interp *interp, const char *name);
 #endif
 #ifndef Blt_Tree_Open_DECLARED
 #define Blt_Tree_Open_DECLARED
-/* 101 */
+/* 100 */
 BLT_EXTERN Blt_Tree	Blt_Tree_Open(Tcl_Interp *interp, const char *name,
 				int flags);
 #endif
 #ifndef Blt_Tree_Close_DECLARED
 #define Blt_Tree_Close_DECLARED
-/* 102 */
+/* 101 */
 BLT_EXTERN void		Blt_Tree_Close(Blt_Tree tree);
 #endif
 #ifndef Blt_Tree_Attach_DECLARED
 #define Blt_Tree_Attach_DECLARED
-/* 103 */
+/* 102 */
 BLT_EXTERN int		Blt_Tree_Attach(Tcl_Interp *interp, Blt_Tree tree,
 				const char *name);
 #endif
 #ifndef Blt_Tree_GetFromObj_DECLARED
 #define Blt_Tree_GetFromObj_DECLARED
-/* 104 */
+/* 103 */
 BLT_EXTERN Blt_Tree	Blt_Tree_GetFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr);
 #endif
 #ifndef Blt_Tree_Size_DECLARED
 #define Blt_Tree_Size_DECLARED
-/* 105 */
+/* 104 */
 BLT_EXTERN int		Blt_Tree_Size(Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_CreateTrace_DECLARED
 #define Blt_Tree_CreateTrace_DECLARED
-/* 106 */
+/* 105 */
 BLT_EXTERN Blt_TreeTrace Blt_Tree_CreateTrace(Blt_Tree tree,
 				Blt_TreeNode node, const char *keyPattern,
 				const char *tagName, unsigned int mask,
@@ -648,12 +642,12 @@ BLT_EXTERN Blt_TreeTrace Blt_Tree_CreateTrace(Blt_Tree tree,
 #endif
 #ifndef Blt_Tree_DeleteTrace_DECLARED
 #define Blt_Tree_DeleteTrace_DECLARED
-/* 107 */
+/* 106 */
 BLT_EXTERN void		Blt_Tree_DeleteTrace(Blt_TreeTrace token);
 #endif
 #ifndef Blt_Tree_CreateEventHandler_DECLARED
 #define Blt_Tree_CreateEventHandler_DECLARED
-/* 108 */
+/* 107 */
 BLT_EXTERN void		Blt_Tree_CreateEventHandler(Blt_Tree tree,
 				unsigned int mask,
 				Blt_TreeNotifyEventProc *proc,
@@ -661,7 +655,7 @@ BLT_EXTERN void		Blt_Tree_CreateEventHandler(Blt_Tree tree,
 #endif
 #ifndef Blt_Tree_DeleteEventHandler_DECLARED
 #define Blt_Tree_DeleteEventHandler_DECLARED
-/* 109 */
+/* 108 */
 BLT_EXTERN void		Blt_Tree_DeleteEventHandler(Blt_Tree tree,
 				unsigned int mask,
 				Blt_TreeNotifyEventProc *proc,
@@ -669,131 +663,98 @@ BLT_EXTERN void		Blt_Tree_DeleteEventHandler(Blt_Tree tree,
 #endif
 #ifndef Blt_Tree_RelabelNode_DECLARED
 #define Blt_Tree_RelabelNode_DECLARED
-/* 110 */
+/* 109 */
 BLT_EXTERN void		Blt_Tree_RelabelNode(Blt_Tree tree,
 				Blt_TreeNode node, const char *string);
 #endif
 #ifndef Blt_Tree_RelabelNodeWithoutNotify_DECLARED
 #define Blt_Tree_RelabelNodeWithoutNotify_DECLARED
-/* 111 */
+/* 110 */
 BLT_EXTERN void		Blt_Tree_RelabelNodeWithoutNotify(Blt_TreeNode node,
 				const char *string);
 #endif
 #ifndef Blt_Tree_NodeIdAscii_DECLARED
 #define Blt_Tree_NodeIdAscii_DECLARED
-/* 112 */
+/* 111 */
 BLT_EXTERN const char *	 Blt_Tree_NodeIdAscii(Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_NodePath_DECLARED
 #define Blt_Tree_NodePath_DECLARED
-/* 113 */
+/* 112 */
 BLT_EXTERN const char *	 Blt_Tree_NodePath(Blt_TreeNode node,
 				Tcl_DString *resultPtr);
 #endif
 #ifndef Blt_Tree_NodeRelativePath_DECLARED
 #define Blt_Tree_NodeRelativePath_DECLARED
-/* 114 */
+/* 113 */
 BLT_EXTERN const char *	 Blt_Tree_NodeRelativePath(Blt_TreeNode root,
 				Blt_TreeNode node, const char *separator,
 				unsigned int flags, Tcl_DString *resultPtr);
 #endif
 #ifndef Blt_Tree_NodePosition_DECLARED
 #define Blt_Tree_NodePosition_DECLARED
-/* 115 */
+/* 114 */
 BLT_EXTERN long		Blt_Tree_NodePosition(Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_ClearTags_DECLARED
 #define Blt_Tree_ClearTags_DECLARED
-/* 116 */
+/* 115 */
 BLT_EXTERN void		Blt_Tree_ClearTags(Blt_Tree tree, Blt_TreeNode node);
 #endif
 #ifndef Blt_Tree_HasTag_DECLARED
 #define Blt_Tree_HasTag_DECLARED
-/* 117 */
+/* 116 */
 BLT_EXTERN int		Blt_Tree_HasTag(Blt_Tree tree, Blt_TreeNode node,
 				const char *tagName);
 #endif
 #ifndef Blt_Tree_AddTag_DECLARED
 #define Blt_Tree_AddTag_DECLARED
-/* 118 */
+/* 117 */
 BLT_EXTERN void		Blt_Tree_AddTag(Blt_Tree tree, Blt_TreeNode node,
 				const char *tagName);
 #endif
 #ifndef Blt_Tree_RemoveTag_DECLARED
 #define Blt_Tree_RemoveTag_DECLARED
-/* 119 */
+/* 118 */
 BLT_EXTERN void		Blt_Tree_RemoveTag(Blt_Tree tree, Blt_TreeNode node,
 				const char *tagName);
 #endif
 #ifndef Blt_Tree_ForgetTag_DECLARED
 #define Blt_Tree_ForgetTag_DECLARED
-/* 120 */
+/* 119 */
 BLT_EXTERN void		Blt_Tree_ForgetTag(Blt_Tree tree,
 				const char *tagName);
 #endif
 #ifndef Blt_Tree_TagHashTable_DECLARED
 #define Blt_Tree_TagHashTable_DECLARED
-/* 121 */
+/* 120 */
 BLT_EXTERN Blt_HashTable * Blt_Tree_TagHashTable(Blt_Tree tree,
 				const char *tagName);
 #endif
 #ifndef Blt_Tree_TagTableIsShared_DECLARED
 #define Blt_Tree_TagTableIsShared_DECLARED
-/* 122 */
+/* 121 */
 BLT_EXTERN int		Blt_Tree_TagTableIsShared(Blt_Tree tree);
 #endif
 #ifndef Blt_Tree_NewTagTable_DECLARED
 #define Blt_Tree_NewTagTable_DECLARED
-/* 123 */
+/* 122 */
 BLT_EXTERN void		Blt_Tree_NewTagTable(Blt_Tree tree);
 #endif
 #ifndef Blt_Tree_FirstTag_DECLARED
 #define Blt_Tree_FirstTag_DECLARED
-/* 124 */
+/* 123 */
 BLT_EXTERN Blt_HashEntry * Blt_Tree_FirstTag(Blt_Tree tree,
 				Blt_HashSearch *searchPtr);
 #endif
-#ifndef Blt_Tree_DumpNode_DECLARED
-#define Blt_Tree_DumpNode_DECLARED
-/* 125 */
-BLT_EXTERN void		Blt_Tree_DumpNode(Blt_Tree tree, Blt_TreeNode root,
-				Blt_TreeNode node, Tcl_DString *resultPtr);
-#endif
-#ifndef Blt_Tree_Dump_DECLARED
-#define Blt_Tree_Dump_DECLARED
-/* 126 */
-BLT_EXTERN int		Blt_Tree_Dump(Blt_Tree tree, Blt_TreeNode root,
-				Tcl_DString *resultPtr);
-#endif
-#ifndef Blt_Tree_DumpToFile_DECLARED
-#define Blt_Tree_DumpToFile_DECLARED
-/* 127 */
-BLT_EXTERN int		Blt_Tree_DumpToFile(Tcl_Interp *interp,
-				Blt_Tree tree, Blt_TreeNode root,
-				const char *fileName);
-#endif
-#ifndef Blt_Tree_Restore_DECLARED
-#define Blt_Tree_Restore_DECLARED
-/* 128 */
-BLT_EXTERN int		Blt_Tree_Restore(Tcl_Interp *interp, Blt_Tree tree,
-				Blt_TreeNode root, const char *string,
-				unsigned int flags);
-#endif
-#ifndef Blt_Tree_RestoreFromFile_DECLARED
-#define Blt_Tree_RestoreFromFile_DECLARED
-/* 129 */
-BLT_EXTERN int		Blt_Tree_RestoreFromFile(Tcl_Interp *interp,
-				Blt_Tree tree, Blt_TreeNode root,
-				const char *fileName, unsigned int flags);
-#endif
 #ifndef Blt_Tree_Depth_DECLARED
 #define Blt_Tree_Depth_DECLARED
-/* 130 */
+/* 124 */
 BLT_EXTERN long		Blt_Tree_Depth(Blt_Tree tree);
 #endif
 #ifndef Blt_Tree_RegisterFormat_DECLARED
 #define Blt_Tree_RegisterFormat_DECLARED
-/* 131 */
+/* 125 */
 BLT_EXTERN int		Blt_Tree_RegisterFormat(Tcl_Interp *interp,
 				const char *fmtName,
 				Blt_TreeImportProc *importProc,
@@ -801,252 +762,264 @@ BLT_EXTERN int		Blt_Tree_RegisterFormat(Tcl_Interp *interp,
 #endif
 #ifndef Blt_Tree_RememberTag_DECLARED
 #define Blt_Tree_RememberTag_DECLARED
-/* 132 */
+/* 126 */
 BLT_EXTERN Blt_TreeTagEntry * Blt_Tree_RememberTag(Blt_Tree tree,
 				const char *name);
 #endif
 #ifndef Blt_Tree_GetNodeFromObj_DECLARED
 #define Blt_Tree_GetNodeFromObj_DECLARED
-/* 133 */
+/* 127 */
 BLT_EXTERN int		Blt_Tree_GetNodeFromObj(Tcl_Interp *interp,
 				Blt_Tree tree, Tcl_Obj *objPtr,
 				Blt_TreeNode *nodePtr);
 #endif
 #ifndef Blt_Tree_GetNodeIterator_DECLARED
 #define Blt_Tree_GetNodeIterator_DECLARED
-/* 134 */
+/* 128 */
 BLT_EXTERN int		Blt_Tree_GetNodeIterator(Tcl_Interp *interp,
 				Blt_Tree tree, Tcl_Obj *objPtr,
 				Blt_TreeIterator *iterPtr);
 #endif
 #ifndef Blt_Tree_FirstTaggedNode_DECLARED
 #define Blt_Tree_FirstTaggedNode_DECLARED
-/* 135 */
+/* 129 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_FirstTaggedNode(Blt_TreeIterator *iterPtr);
 #endif
 #ifndef Blt_Tree_NextTaggedNode_DECLARED
 #define Blt_Tree_NextTaggedNode_DECLARED
-/* 136 */
+/* 130 */
 BLT_EXTERN Blt_TreeNode	 Blt_Tree_NextTaggedNode(Blt_TreeIterator *iterPtr);
 #endif
 #ifndef blt_table_release_tags_DECLARED
 #define blt_table_release_tags_DECLARED
-/* 137 */
+/* 131 */
 BLT_EXTERN void		blt_table_release_tags(BLT_TABLE table);
 #endif
 #ifndef blt_table_new_tags_DECLARED
 #define blt_table_new_tags_DECLARED
-/* 138 */
+/* 132 */
 BLT_EXTERN void		blt_table_new_tags(BLT_TABLE table);
 #endif
 #ifndef blt_table_get_column_tag_table_DECLARED
 #define blt_table_get_column_tag_table_DECLARED
-/* 139 */
+/* 133 */
 BLT_EXTERN Blt_HashTable * blt_table_get_column_tag_table(BLT_TABLE table);
 #endif
 #ifndef blt_table_get_row_tag_table_DECLARED
 #define blt_table_get_row_tag_table_DECLARED
-/* 140 */
+/* 134 */
 BLT_EXTERN Blt_HashTable * blt_table_get_row_tag_table(BLT_TABLE table);
 #endif
 #ifndef blt_table_exists_DECLARED
 #define blt_table_exists_DECLARED
-/* 141 */
+/* 135 */
 BLT_EXTERN int		blt_table_exists(Tcl_Interp *interp,
 				const char *name);
 #endif
 #ifndef blt_table_create_DECLARED
 #define blt_table_create_DECLARED
-/* 142 */
+/* 136 */
 BLT_EXTERN int		blt_table_create(Tcl_Interp *interp,
 				const char *name, BLT_TABLE *tablePtr);
 #endif
 #ifndef blt_table_open_DECLARED
 #define blt_table_open_DECLARED
-/* 143 */
+/* 137 */
 BLT_EXTERN int		blt_table_open(Tcl_Interp *interp, const char *name,
 				BLT_TABLE *tablePtr);
 #endif
 #ifndef blt_table_close_DECLARED
 #define blt_table_close_DECLARED
-/* 144 */
+/* 138 */
 BLT_EXTERN void		blt_table_close(BLT_TABLE table);
+#endif
+#ifndef blt_table_clear_DECLARED
+#define blt_table_clear_DECLARED
+/* 139 */
+BLT_EXTERN void		blt_table_clear(BLT_TABLE table);
+#endif
+#ifndef blt_table_pack_DECLARED
+#define blt_table_pack_DECLARED
+/* 140 */
+BLT_EXTERN void		blt_table_pack(BLT_TABLE table);
 #endif
 #ifndef blt_table_same_object_DECLARED
 #define blt_table_same_object_DECLARED
-/* 145 */
+/* 141 */
 BLT_EXTERN int		blt_table_same_object(BLT_TABLE table1,
 				BLT_TABLE table2);
 #endif
 #ifndef blt_table_row_get_label_table_DECLARED
 #define blt_table_row_get_label_table_DECLARED
-/* 146 */
+/* 142 */
 BLT_EXTERN Blt_HashTable * blt_table_row_get_label_table(BLT_TABLE table,
 				const char *label);
 #endif
 #ifndef blt_table_column_get_label_table_DECLARED
 #define blt_table_column_get_label_table_DECLARED
-/* 147 */
+/* 143 */
 BLT_EXTERN Blt_HashTable * blt_table_column_get_label_table(BLT_TABLE table,
 				const char *label);
 #endif
 #ifndef blt_table_get_row_DECLARED
 #define blt_table_get_row_DECLARED
-/* 148 */
+/* 144 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_get_row(Tcl_Interp *interp,
 				BLT_TABLE table, Tcl_Obj *objPtr);
 #endif
 #ifndef blt_table_get_column_DECLARED
 #define blt_table_get_column_DECLARED
-/* 149 */
+/* 145 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column(Tcl_Interp *interp,
 				BLT_TABLE table, Tcl_Obj *objPtr);
 #endif
 #ifndef blt_table_get_row_by_label_DECLARED
 #define blt_table_get_row_by_label_DECLARED
-/* 150 */
+/* 146 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_get_row_by_label(BLT_TABLE table,
 				const char *label);
 #endif
 #ifndef blt_table_get_column_by_label_DECLARED
 #define blt_table_get_column_by_label_DECLARED
-/* 151 */
+/* 147 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column_by_label(BLT_TABLE table,
 				const char *label);
 #endif
 #ifndef blt_table_get_row_by_index_DECLARED
 #define blt_table_get_row_by_index_DECLARED
-/* 152 */
+/* 148 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_get_row_by_index(BLT_TABLE table,
 				long index);
 #endif
 #ifndef blt_table_get_column_by_index_DECLARED
 #define blt_table_get_column_by_index_DECLARED
-/* 153 */
+/* 149 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column_by_index(BLT_TABLE table,
 				long index);
 #endif
 #ifndef blt_table_set_row_label_DECLARED
 #define blt_table_set_row_label_DECLARED
-/* 154 */
+/* 150 */
 BLT_EXTERN int		blt_table_set_row_label(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				const char *label);
 #endif
 #ifndef blt_table_set_column_label_DECLARED
 #define blt_table_set_column_label_DECLARED
-/* 155 */
+/* 151 */
 BLT_EXTERN int		blt_table_set_column_label(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_COLUMN column,
 				const char *label);
 #endif
 #ifndef blt_table_name_to_column_type_DECLARED
 #define blt_table_name_to_column_type_DECLARED
-/* 156 */
+/* 152 */
 BLT_EXTERN BLT_TABLE_COLUMN_TYPE blt_table_name_to_column_type(
 				const char *typeName);
 #endif
 #ifndef blt_table_set_column_type_DECLARED
 #define blt_table_set_column_type_DECLARED
-/* 157 */
+/* 153 */
 BLT_EXTERN int		blt_table_set_column_type(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_COLUMN column,
 				BLT_TABLE_COLUMN_TYPE type);
 #endif
 #ifndef blt_table_column_type_to_name_DECLARED
 #define blt_table_column_type_to_name_DECLARED
-/* 158 */
+/* 154 */
 BLT_EXTERN const char *	 blt_table_column_type_to_name(
 				BLT_TABLE_COLUMN_TYPE type);
 #endif
 #ifndef blt_table_set_column_tag_DECLARED
 #define blt_table_set_column_tag_DECLARED
-/* 159 */
+/* 155 */
 BLT_EXTERN int		blt_table_set_column_tag(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_COLUMN column,
 				const char *tag);
 #endif
 #ifndef blt_table_set_row_tag_DECLARED
 #define blt_table_set_row_tag_DECLARED
-/* 160 */
+/* 156 */
 BLT_EXTERN int		blt_table_set_row_tag(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				const char *tag);
 #endif
 #ifndef blt_table_create_row_DECLARED
 #define blt_table_create_row_DECLARED
-/* 161 */
+/* 157 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_create_row(Tcl_Interp *interp,
 				BLT_TABLE table, const char *label);
 #endif
 #ifndef blt_table_create_column_DECLARED
 #define blt_table_create_column_DECLARED
-/* 162 */
+/* 158 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_create_column(Tcl_Interp *interp,
 				BLT_TABLE table, const char *label);
 #endif
 #ifndef blt_table_extend_rows_DECLARED
 #define blt_table_extend_rows_DECLARED
-/* 163 */
+/* 159 */
 BLT_EXTERN int		blt_table_extend_rows(Tcl_Interp *interp,
 				BLT_TABLE table, size_t n,
 				BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_extend_columns_DECLARED
 #define blt_table_extend_columns_DECLARED
-/* 164 */
+/* 160 */
 BLT_EXTERN int		blt_table_extend_columns(Tcl_Interp *interp,
 				BLT_TABLE table, size_t n,
 				BLT_TABLE_COLUMN *columms);
 #endif
 #ifndef blt_table_delete_row_DECLARED
 #define blt_table_delete_row_DECLARED
-/* 165 */
+/* 161 */
 BLT_EXTERN int		blt_table_delete_row(BLT_TABLE table,
 				BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_delete_column_DECLARED
 #define blt_table_delete_column_DECLARED
-/* 166 */
+/* 162 */
 BLT_EXTERN int		blt_table_delete_column(BLT_TABLE table,
 				BLT_TABLE_COLUMN column);
 #endif
-#ifndef blt_table_move_row_DECLARED
-#define blt_table_move_row_DECLARED
-/* 167 */
-BLT_EXTERN int		blt_table_move_row(Tcl_Interp *interp,
-				BLT_TABLE table, BLT_TABLE_ROW from,
-				BLT_TABLE_ROW to, size_t n);
+#ifndef blt_table_move_rows_DECLARED
+#define blt_table_move_rows_DECLARED
+/* 163 */
+BLT_EXTERN int		blt_table_move_rows(Tcl_Interp *interp,
+				BLT_TABLE table, BLT_TABLE_ROW destRow,
+				BLT_TABLE_ROW firstRow,
+				BLT_TABLE_ROW lastRow, int after);
 #endif
-#ifndef blt_table_move_column_DECLARED
-#define blt_table_move_column_DECLARED
-/* 168 */
-BLT_EXTERN int		blt_table_move_column(Tcl_Interp *interp,
-				BLT_TABLE table, BLT_TABLE_COLUMN from,
-				BLT_TABLE_COLUMN to, size_t n);
+#ifndef blt_table_move_columns_DECLARED
+#define blt_table_move_columns_DECLARED
+/* 164 */
+BLT_EXTERN int		blt_table_move_columns(Tcl_Interp *interp,
+				BLT_TABLE table, BLT_TABLE_COLUMN destColumn,
+				BLT_TABLE_COLUMN firstColumn,
+				BLT_TABLE_COLUMN lastColumn, int after);
 #endif
 #ifndef blt_table_get_obj_DECLARED
 #define blt_table_get_obj_DECLARED
-/* 169 */
+/* 165 */
 BLT_EXTERN Tcl_Obj *	blt_table_get_obj(BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_set_obj_DECLARED
 #define blt_table_set_obj_DECLARED
-/* 170 */
+/* 166 */
 BLT_EXTERN int		blt_table_set_obj(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, Tcl_Obj *objPtr);
 #endif
 #ifndef blt_table_get_string_DECLARED
 #define blt_table_get_string_DECLARED
-/* 171 */
+/* 167 */
 BLT_EXTERN const char *	 blt_table_get_string(BLT_TABLE table,
 				BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_set_string_rep_DECLARED
 #define blt_table_set_string_rep_DECLARED
-/* 172 */
+/* 168 */
 BLT_EXTERN int		blt_table_set_string_rep(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, const char *string,
@@ -1054,7 +1027,7 @@ BLT_EXTERN int		blt_table_set_string_rep(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_set_string_DECLARED
 #define blt_table_set_string_DECLARED
-/* 173 */
+/* 169 */
 BLT_EXTERN int		blt_table_set_string(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, const char *string,
@@ -1062,7 +1035,7 @@ BLT_EXTERN int		blt_table_set_string(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_append_string_DECLARED
 #define blt_table_append_string_DECLARED
-/* 174 */
+/* 170 */
 BLT_EXTERN int		blt_table_append_string(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, const char *string,
@@ -1070,7 +1043,7 @@ BLT_EXTERN int		blt_table_append_string(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_set_bytes_DECLARED
 #define blt_table_set_bytes_DECLARED
-/* 175 */
+/* 171 */
 BLT_EXTERN int		blt_table_set_bytes(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column,
@@ -1078,174 +1051,198 @@ BLT_EXTERN int		blt_table_set_bytes(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_get_double_DECLARED
 #define blt_table_get_double_DECLARED
-/* 176 */
+/* 172 */
 BLT_EXTERN double	blt_table_get_double(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_set_double_DECLARED
 #define blt_table_set_double_DECLARED
-/* 177 */
+/* 173 */
 BLT_EXTERN int		blt_table_set_double(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, double value);
 #endif
 #ifndef blt_table_get_long_DECLARED
 #define blt_table_get_long_DECLARED
-/* 178 */
+/* 174 */
 BLT_EXTERN long		blt_table_get_long(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, long defValue);
 #endif
 #ifndef blt_table_set_long_DECLARED
 #define blt_table_set_long_DECLARED
-/* 179 */
+/* 175 */
 BLT_EXTERN int		blt_table_set_long(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, long value);
 #endif
 #ifndef blt_table_get_boolean_DECLARED
 #define blt_table_get_boolean_DECLARED
-/* 180 */
+/* 176 */
 BLT_EXTERN int		blt_table_get_boolean(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, int defValue);
 #endif
 #ifndef blt_table_set_boolean_DECLARED
 #define blt_table_set_boolean_DECLARED
-/* 181 */
+/* 177 */
 BLT_EXTERN int		blt_table_set_boolean(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				BLT_TABLE_COLUMN column, int value);
 #endif
+#ifndef blt_table_set_int64_DECLARED
+#define blt_table_set_int64_DECLARED
+/* 178 */
+BLT_EXTERN int		blt_table_set_int64(Tcl_Interp *interp,
+				BLT_TABLE table, BLT_TABLE_ROW row,
+				BLT_TABLE_COLUMN column, int64_t value);
+#endif
+#ifndef blt_table_get_int64_DECLARED
+#define blt_table_get_int64_DECLARED
+/* 179 */
+BLT_EXTERN int64_t	blt_table_get_int64(Tcl_Interp *interp,
+				BLT_TABLE table, BLT_TABLE_ROW row,
+				BLT_TABLE_COLUMN column, int64_t defValue);
+#endif
 #ifndef blt_table_get_value_DECLARED
 #define blt_table_get_value_DECLARED
-/* 182 */
+/* 180 */
 BLT_EXTERN BLT_TABLE_VALUE blt_table_get_value(BLT_TABLE table,
 				BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_set_value_DECLARED
 #define blt_table_set_value_DECLARED
-/* 183 */
+/* 181 */
 BLT_EXTERN int		blt_table_set_value(BLT_TABLE table,
 				BLT_TABLE_ROW row, BLT_TABLE_COLUMN column,
 				BLT_TABLE_VALUE value);
 #endif
 #ifndef blt_table_unset_value_DECLARED
 #define blt_table_unset_value_DECLARED
-/* 184 */
+/* 182 */
 BLT_EXTERN int		blt_table_unset_value(BLT_TABLE table,
 				BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_value_exists_DECLARED
 #define blt_table_value_exists_DECLARED
-/* 185 */
+/* 183 */
 BLT_EXTERN int		blt_table_value_exists(BLT_TABLE table,
 				BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_value_string_DECLARED
 #define blt_table_value_string_DECLARED
-/* 186 */
+/* 184 */
 BLT_EXTERN const char *	 blt_table_value_string(BLT_TABLE_VALUE value);
 #endif
 #ifndef blt_table_value_bytes_DECLARED
 #define blt_table_value_bytes_DECLARED
-/* 187 */
+/* 185 */
 BLT_EXTERN const unsigned char * blt_table_value_bytes(BLT_TABLE_VALUE value);
 #endif
 #ifndef blt_table_value_length_DECLARED
 #define blt_table_value_length_DECLARED
-/* 188 */
-BLT_EXTERN size_t	blt_table_value_length(BLT_TABLE_VALUE value);
+/* 186 */
+BLT_EXTERN unsigned int	 blt_table_value_length(BLT_TABLE_VALUE value);
 #endif
 #ifndef blt_table_tags_are_shared_DECLARED
 #define blt_table_tags_are_shared_DECLARED
-/* 189 */
+/* 187 */
 BLT_EXTERN int		blt_table_tags_are_shared(BLT_TABLE table);
 #endif
 #ifndef blt_table_clear_row_tags_DECLARED
 #define blt_table_clear_row_tags_DECLARED
-/* 190 */
+/* 188 */
 BLT_EXTERN void		blt_table_clear_row_tags(BLT_TABLE table,
 				BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_clear_column_tags_DECLARED
 #define blt_table_clear_column_tags_DECLARED
-/* 191 */
+/* 189 */
 BLT_EXTERN void		blt_table_clear_column_tags(BLT_TABLE table,
 				BLT_TABLE_COLUMN col);
 #endif
 #ifndef blt_table_get_row_tags_DECLARED
 #define blt_table_get_row_tags_DECLARED
-/* 192 */
+/* 190 */
 BLT_EXTERN Blt_Chain	blt_table_get_row_tags(BLT_TABLE table,
 				BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_get_column_tags_DECLARED
 #define blt_table_get_column_tags_DECLARED
-/* 193 */
+/* 191 */
 BLT_EXTERN Blt_Chain	blt_table_get_column_tags(BLT_TABLE table,
 				BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_get_tagged_rows_DECLARED
 #define blt_table_get_tagged_rows_DECLARED
-/* 194 */
+/* 192 */
 BLT_EXTERN Blt_Chain	blt_table_get_tagged_rows(BLT_TABLE table,
 				const char *tag);
 #endif
 #ifndef blt_table_get_tagged_columns_DECLARED
 #define blt_table_get_tagged_columns_DECLARED
-/* 195 */
+/* 193 */
 BLT_EXTERN Blt_Chain	blt_table_get_tagged_columns(BLT_TABLE table,
 				const char *tag);
 #endif
 #ifndef blt_table_row_has_tag_DECLARED
 #define blt_table_row_has_tag_DECLARED
-/* 196 */
+/* 194 */
 BLT_EXTERN int		blt_table_row_has_tag(BLT_TABLE table,
 				BLT_TABLE_ROW row, const char *tag);
 #endif
 #ifndef blt_table_column_has_tag_DECLARED
 #define blt_table_column_has_tag_DECLARED
-/* 197 */
+/* 195 */
 BLT_EXTERN int		blt_table_column_has_tag(BLT_TABLE table,
 				BLT_TABLE_COLUMN column, const char *tag);
 #endif
 #ifndef blt_table_forget_row_tag_DECLARED
 #define blt_table_forget_row_tag_DECLARED
-/* 198 */
+/* 196 */
 BLT_EXTERN int		blt_table_forget_row_tag(Tcl_Interp *interp,
 				BLT_TABLE table, const char *tag);
 #endif
 #ifndef blt_table_forget_column_tag_DECLARED
 #define blt_table_forget_column_tag_DECLARED
-/* 199 */
+/* 197 */
 BLT_EXTERN int		blt_table_forget_column_tag(Tcl_Interp *interp,
 				BLT_TABLE table, const char *tag);
 #endif
 #ifndef blt_table_unset_row_tag_DECLARED
 #define blt_table_unset_row_tag_DECLARED
-/* 200 */
+/* 198 */
 BLT_EXTERN int		blt_table_unset_row_tag(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_ROW row,
 				const char *tag);
 #endif
 #ifndef blt_table_unset_column_tag_DECLARED
 #define blt_table_unset_column_tag_DECLARED
-/* 201 */
+/* 199 */
 BLT_EXTERN int		blt_table_unset_column_tag(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_COLUMN column,
 				const char *tag);
 #endif
 #ifndef blt_table_first_column_DECLARED
 #define blt_table_first_column_DECLARED
-/* 202 */
+/* 200 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_first_column(BLT_TABLE table);
+#endif
+#ifndef blt_table_last_column_DECLARED
+#define blt_table_last_column_DECLARED
+/* 201 */
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_last_column(BLT_TABLE table);
 #endif
 #ifndef blt_table_next_column_DECLARED
 #define blt_table_next_column_DECLARED
+/* 202 */
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE_COLUMN column);
+#endif
+#ifndef blt_table_previous_column_DECLARED
+#define blt_table_previous_column_DECLARED
 /* 203 */
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE table,
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_previous_column(
 				BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_first_row_DECLARED
@@ -1253,41 +1250,50 @@ BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE table,
 /* 204 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_first_row(BLT_TABLE table);
 #endif
+#ifndef blt_table_last_row_DECLARED
+#define blt_table_last_row_DECLARED
+/* 205 */
+BLT_EXTERN BLT_TABLE_ROW blt_table_last_row(BLT_TABLE table);
+#endif
 #ifndef blt_table_next_row_DECLARED
 #define blt_table_next_row_DECLARED
-/* 205 */
-BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE table,
-				BLT_TABLE_ROW row);
+/* 206 */
+BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE_ROW row);
+#endif
+#ifndef blt_table_previous_row_DECLARED
+#define blt_table_previous_row_DECLARED
+/* 207 */
+BLT_EXTERN BLT_TABLE_ROW blt_table_previous_row(BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_row_spec_DECLARED
 #define blt_table_row_spec_DECLARED
-/* 206 */
+/* 208 */
 BLT_EXTERN BLT_TABLE_ROWCOLUMN_SPEC blt_table_row_spec(BLT_TABLE table,
 				Tcl_Obj *objPtr, const char **sp);
 #endif
 #ifndef blt_table_column_spec_DECLARED
 #define blt_table_column_spec_DECLARED
-/* 207 */
+/* 209 */
 BLT_EXTERN BLT_TABLE_ROWCOLUMN_SPEC blt_table_column_spec(BLT_TABLE table,
 				Tcl_Obj *objPtr, const char **sp);
 #endif
 #ifndef blt_table_iterate_rows_DECLARED
 #define blt_table_iterate_rows_DECLARED
-/* 208 */
+/* 210 */
 BLT_EXTERN int		blt_table_iterate_rows(Tcl_Interp *interp,
 				BLT_TABLE table, Tcl_Obj *objPtr,
 				BLT_TABLE_ITERATOR *iter);
 #endif
 #ifndef blt_table_iterate_columns_DECLARED
 #define blt_table_iterate_columns_DECLARED
-/* 209 */
+/* 211 */
 BLT_EXTERN int		blt_table_iterate_columns(Tcl_Interp *interp,
 				BLT_TABLE table, Tcl_Obj *objPtr,
 				BLT_TABLE_ITERATOR *iter);
 #endif
 #ifndef blt_table_iterate_rows_objv_DECLARED
 #define blt_table_iterate_rows_objv_DECLARED
-/* 210 */
+/* 212 */
 BLT_EXTERN int		blt_table_iterate_rows_objv(Tcl_Interp *interp,
 				BLT_TABLE table, int objc,
 				Tcl_Obj *const *objv,
@@ -1295,7 +1301,7 @@ BLT_EXTERN int		blt_table_iterate_rows_objv(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_iterate_columns_objv_DECLARED
 #define blt_table_iterate_columns_objv_DECLARED
-/* 211 */
+/* 213 */
 BLT_EXTERN int		blt_table_iterate_columns_objv(Tcl_Interp *interp,
 				BLT_TABLE table, int objc,
 				Tcl_Obj *const *objv,
@@ -1303,73 +1309,73 @@ BLT_EXTERN int		blt_table_iterate_columns_objv(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_free_iterator_objv_DECLARED
 #define blt_table_free_iterator_objv_DECLARED
-/* 212 */
+/* 214 */
 BLT_EXTERN void		blt_table_free_iterator_objv(
 				BLT_TABLE_ITERATOR *iterPtr);
 #endif
 #ifndef blt_table_iterate_all_rows_DECLARED
 #define blt_table_iterate_all_rows_DECLARED
-/* 213 */
+/* 215 */
 BLT_EXTERN void		blt_table_iterate_all_rows(BLT_TABLE table,
 				BLT_TABLE_ITERATOR *iterPtr);
 #endif
 #ifndef blt_table_iterate_all_columns_DECLARED
 #define blt_table_iterate_all_columns_DECLARED
-/* 214 */
+/* 216 */
 BLT_EXTERN void		blt_table_iterate_all_columns(BLT_TABLE table,
 				BLT_TABLE_ITERATOR *iterPtr);
 #endif
 #ifndef blt_table_first_tagged_row_DECLARED
 #define blt_table_first_tagged_row_DECLARED
-/* 215 */
+/* 217 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iter);
 #endif
 #ifndef blt_table_first_tagged_column_DECLARED
 #define blt_table_first_tagged_column_DECLARED
-/* 216 */
+/* 218 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_first_tagged_column(
 				BLT_TABLE_ITERATOR *iter);
 #endif
 #ifndef blt_table_next_tagged_row_DECLARED
 #define blt_table_next_tagged_row_DECLARED
-/* 217 */
+/* 219 */
 BLT_EXTERN BLT_TABLE_ROW blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iter);
 #endif
 #ifndef blt_table_next_tagged_column_DECLARED
 #define blt_table_next_tagged_column_DECLARED
-/* 218 */
+/* 220 */
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_tagged_column(
 				BLT_TABLE_ITERATOR *iter);
 #endif
 #ifndef blt_table_list_rows_DECLARED
 #define blt_table_list_rows_DECLARED
-/* 219 */
+/* 221 */
 BLT_EXTERN int		blt_table_list_rows(Tcl_Interp *interp,
 				BLT_TABLE table, int objc,
 				Tcl_Obj *const *objv, Blt_Chain chain);
 #endif
 #ifndef blt_table_list_columns_DECLARED
 #define blt_table_list_columns_DECLARED
-/* 220 */
+/* 222 */
 BLT_EXTERN int		blt_table_list_columns(Tcl_Interp *interp,
 				BLT_TABLE table, int objc,
 				Tcl_Obj *const *objv, Blt_Chain chain);
 #endif
 #ifndef blt_table_clear_row_traces_DECLARED
 #define blt_table_clear_row_traces_DECLARED
-/* 221 */
+/* 223 */
 BLT_EXTERN void		blt_table_clear_row_traces(BLT_TABLE table,
 				BLT_TABLE_ROW row);
 #endif
 #ifndef blt_table_clear_column_traces_DECLARED
 #define blt_table_clear_column_traces_DECLARED
-/* 222 */
+/* 224 */
 BLT_EXTERN void		blt_table_clear_column_traces(BLT_TABLE table,
 				BLT_TABLE_COLUMN column);
 #endif
 #ifndef blt_table_create_trace_DECLARED
 #define blt_table_create_trace_DECLARED
-/* 223 */
+/* 225 */
 BLT_EXTERN BLT_TABLE_TRACE blt_table_create_trace(BLT_TABLE table,
 				BLT_TABLE_ROW row, BLT_TABLE_COLUMN column,
 				const char *rowTag, const char *columnTag,
@@ -1380,7 +1386,7 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_trace(BLT_TABLE table,
 #endif
 #ifndef blt_table_trace_column_DECLARED
 #define blt_table_trace_column_DECLARED
-/* 224 */
+/* 226 */
 BLT_EXTERN void		blt_table_trace_column(BLT_TABLE table,
 				BLT_TABLE_COLUMN column, unsigned int mask,
 				BLT_TABLE_TRACE_PROC *proc,
@@ -1389,7 +1395,7 @@ BLT_EXTERN void		blt_table_trace_column(BLT_TABLE table,
 #endif
 #ifndef blt_table_trace_row_DECLARED
 #define blt_table_trace_row_DECLARED
-/* 225 */
+/* 227 */
 BLT_EXTERN void		blt_table_trace_row(BLT_TABLE table,
 				BLT_TABLE_ROW row, unsigned int mask,
 				BLT_TABLE_TRACE_PROC *proc,
@@ -1398,7 +1404,7 @@ BLT_EXTERN void		blt_table_trace_row(BLT_TABLE table,
 #endif
 #ifndef blt_table_create_column_trace_DECLARED
 #define blt_table_create_column_trace_DECLARED
-/* 226 */
+/* 228 */
 BLT_EXTERN BLT_TABLE_TRACE blt_table_create_column_trace(BLT_TABLE table,
 				BLT_TABLE_COLUMN column, unsigned int mask,
 				BLT_TABLE_TRACE_PROC *proc,
@@ -1407,7 +1413,7 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_column_trace(BLT_TABLE table,
 #endif
 #ifndef blt_table_create_column_tag_trace_DECLARED
 #define blt_table_create_column_tag_trace_DECLARED
-/* 227 */
+/* 229 */
 BLT_EXTERN BLT_TABLE_TRACE blt_table_create_column_tag_trace(BLT_TABLE table,
 				const char *tag, unsigned int mask,
 				BLT_TABLE_TRACE_PROC *proc,
@@ -1416,7 +1422,7 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_column_tag_trace(BLT_TABLE table,
 #endif
 #ifndef blt_table_create_row_trace_DECLARED
 #define blt_table_create_row_trace_DECLARED
-/* 228 */
+/* 230 */
 BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_trace(BLT_TABLE table,
 				BLT_TABLE_ROW row, unsigned int mask,
 				BLT_TABLE_TRACE_PROC *proc,
@@ -1425,7 +1431,7 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_trace(BLT_TABLE table,
 #endif
 #ifndef blt_table_create_row_tag_trace_DECLARED
 #define blt_table_create_row_tag_trace_DECLARED
-/* 229 */
+/* 231 */
 BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_tag_trace(BLT_TABLE table,
 				const char *tag, unsigned int mask,
 				BLT_TABLE_TRACE_PROC *proc,
@@ -1434,13 +1440,13 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_tag_trace(BLT_TABLE table,
 #endif
 #ifndef blt_table_delete_trace_DECLARED
 #define blt_table_delete_trace_DECLARED
-/* 230 */
+/* 232 */
 BLT_EXTERN void		blt_table_delete_trace(BLT_TABLE table,
 				BLT_TABLE_TRACE trace);
 #endif
 #ifndef blt_table_create_notifier_DECLARED
 #define blt_table_create_notifier_DECLARED
-/* 231 */
+/* 233 */
 BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_notifier(Tcl_Interp *interp,
 				BLT_TABLE table, unsigned int mask,
 				BLT_TABLE_NOTIFY_EVENT_PROC *proc,
@@ -1449,7 +1455,7 @@ BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_notifier(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_create_row_notifier_DECLARED
 #define blt_table_create_row_notifier_DECLARED
-/* 232 */
+/* 234 */
 BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_notifier(
 				Tcl_Interp *interp, BLT_TABLE table,
 				BLT_TABLE_ROW row, unsigned int mask,
@@ -1459,7 +1465,7 @@ BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_notifier(
 #endif
 #ifndef blt_table_create_row_tag_notifier_DECLARED
 #define blt_table_create_row_tag_notifier_DECLARED
-/* 233 */
+/* 235 */
 BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_tag_notifier(
 				Tcl_Interp *interp, BLT_TABLE table,
 				const char *tag, unsigned int mask,
@@ -1469,7 +1475,7 @@ BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_tag_notifier(
 #endif
 #ifndef blt_table_create_column_notifier_DECLARED
 #define blt_table_create_column_notifier_DECLARED
-/* 234 */
+/* 236 */
 BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_notifier(
 				Tcl_Interp *interp, BLT_TABLE table,
 				BLT_TABLE_COLUMN column, unsigned int mask,
@@ -1479,7 +1485,7 @@ BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_notifier(
 #endif
 #ifndef blt_table_create_column_tag_notifier_DECLARED
 #define blt_table_create_column_tag_notifier_DECLARED
-/* 235 */
+/* 237 */
 BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_tag_notifier(
 				Tcl_Interp *interp, BLT_TABLE table,
 				const char *tag, unsigned int mask,
@@ -1489,79 +1495,79 @@ BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_tag_notifier(
 #endif
 #ifndef blt_table_delete_notifier_DECLARED
 #define blt_table_delete_notifier_DECLARED
-/* 236 */
+/* 238 */
 BLT_EXTERN void		blt_table_delete_notifier(BLT_TABLE table,
 				BLT_TABLE_NOTIFIER notifier);
 #endif
 #ifndef blt_table_sort_init_DECLARED
 #define blt_table_sort_init_DECLARED
-/* 237 */
+/* 239 */
 BLT_EXTERN void		blt_table_sort_init(BLT_TABLE table,
 				BLT_TABLE_SORT_ORDER *order,
-				size_t numCompares, unsigned int flags);
+				long numCompares, unsigned int flags);
 #endif
 #ifndef blt_table_sort_rows_DECLARED
 #define blt_table_sort_rows_DECLARED
-/* 238 */
+/* 240 */
 BLT_EXTERN BLT_TABLE_ROW * blt_table_sort_rows(BLT_TABLE table);
 #endif
-#ifndef blt_table_sort_rows_subset_DECLARED
-#define blt_table_sort_rows_subset_DECLARED
-/* 239 */
-BLT_EXTERN void		blt_table_sort_rows_subset(BLT_TABLE table,
-				long numRows, BLT_TABLE_ROW *rows);
+#ifndef blt_table_sort_row_map_DECLARED
+#define blt_table_sort_row_map_DECLARED
+/* 241 */
+BLT_EXTERN void		blt_table_sort_row_map(BLT_TABLE table, long numRows,
+				BLT_TABLE_ROW *rows);
 #endif
 #ifndef blt_table_sort_finish_DECLARED
 #define blt_table_sort_finish_DECLARED
-/* 240 */
+/* 242 */
 BLT_EXTERN void		blt_table_sort_finish(void );
 #endif
 #ifndef blt_table_get_compare_proc_DECLARED
 #define blt_table_get_compare_proc_DECLARED
-/* 241 */
+/* 243 */
 BLT_EXTERN BLT_TABLE_COMPARE_PROC * blt_table_get_compare_proc(
 				BLT_TABLE table, BLT_TABLE_COLUMN column,
 				unsigned int flags);
 #endif
 #ifndef blt_table_get_row_map_DECLARED
 #define blt_table_get_row_map_DECLARED
-/* 242 */
+/* 244 */
 BLT_EXTERN BLT_TABLE_ROW * blt_table_get_row_map(BLT_TABLE table);
 #endif
 #ifndef blt_table_get_column_map_DECLARED
 #define blt_table_get_column_map_DECLARED
-/* 243 */
+/* 245 */
 BLT_EXTERN BLT_TABLE_COLUMN * blt_table_get_column_map(BLT_TABLE table);
 #endif
 #ifndef blt_table_set_row_map_DECLARED
 #define blt_table_set_row_map_DECLARED
-/* 244 */
+/* 246 */
 BLT_EXTERN void		blt_table_set_row_map(BLT_TABLE table,
 				BLT_TABLE_ROW *map);
 #endif
 #ifndef blt_table_set_column_map_DECLARED
 #define blt_table_set_column_map_DECLARED
-/* 245 */
+/* 247 */
 BLT_EXTERN void		blt_table_set_column_map(BLT_TABLE table,
 				BLT_TABLE_COLUMN *map);
 #endif
 #ifndef blt_table_restore_DECLARED
 #define blt_table_restore_DECLARED
-/* 246 */
+/* 248 */
 BLT_EXTERN int		blt_table_restore(Tcl_Interp *interp,
 				BLT_TABLE table, char *string,
 				unsigned int flags);
 #endif
 #ifndef blt_table_file_restore_DECLARED
 #define blt_table_file_restore_DECLARED
-/* 247 */
+/* 249 */
 BLT_EXTERN int		blt_table_file_restore(Tcl_Interp *interp,
 				BLT_TABLE table, const char *fileName,
 				unsigned int flags);
 #endif
 #ifndef blt_table_register_format_DECLARED
 #define blt_table_register_format_DECLARED
-/* 248 */
+/* 250 */
 BLT_EXTERN int		blt_table_register_format(Tcl_Interp *interp,
 				const char *name,
 				BLT_TABLE_IMPORT_PROC *importProc,
@@ -1569,96 +1575,118 @@ BLT_EXTERN int		blt_table_register_format(Tcl_Interp *interp,
 #endif
 #ifndef blt_table_unset_keys_DECLARED
 #define blt_table_unset_keys_DECLARED
-/* 249 */
+/* 251 */
 BLT_EXTERN void		blt_table_unset_keys(BLT_TABLE table);
 #endif
 #ifndef blt_table_get_keys_DECLARED
 #define blt_table_get_keys_DECLARED
-/* 250 */
+/* 252 */
 BLT_EXTERN int		blt_table_get_keys(BLT_TABLE table,
 				BLT_TABLE_COLUMN **keysPtr);
 #endif
 #ifndef blt_table_set_keys_DECLARED
 #define blt_table_set_keys_DECLARED
-/* 251 */
+/* 253 */
 BLT_EXTERN int		blt_table_set_keys(BLT_TABLE table, int numKeys,
 				BLT_TABLE_COLUMN *keys, int unique);
 #endif
 #ifndef blt_table_key_lookup_DECLARED
 #define blt_table_key_lookup_DECLARED
-/* 252 */
+/* 254 */
 BLT_EXTERN int		blt_table_key_lookup(Tcl_Interp *interp,
 				BLT_TABLE table, int objc,
 				Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr);
 #endif
 #ifndef blt_table_get_column_limits_DECLARED
 #define blt_table_get_column_limits_DECLARED
-/* 253 */
+/* 255 */
 BLT_EXTERN int		blt_table_get_column_limits(Tcl_Interp *interp,
 				BLT_TABLE table, BLT_TABLE_COLUMN col,
 				Tcl_Obj **minObjPtrPtr,
 				Tcl_Obj **maxObjPtrPtr);
 #endif
+#ifndef blt_table_row_DECLARED
+#define blt_table_row_DECLARED
+/* 256 */
+BLT_EXTERN BLT_TABLE_ROW blt_table_row(BLT_TABLE table, long index);
+#endif
+#ifndef blt_table_column_DECLARED
+#define blt_table_column_DECLARED
+/* 257 */
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_column(BLT_TABLE table, long index);
+#endif
+#ifndef blt_table_row_index_DECLARED
+#define blt_table_row_index_DECLARED
+/* 258 */
+BLT_EXTERN long		blt_table_row_index(BLT_TABLE table,
+				BLT_TABLE_ROW row);
+#endif
+#ifndef blt_table_column_index_DECLARED
+#define blt_table_column_index_DECLARED
+/* 259 */
+BLT_EXTERN long		blt_table_column_index(BLT_TABLE table,
+				BLT_TABLE_COLUMN column);
+#endif
 #ifndef Blt_VecMin_DECLARED
 #define Blt_VecMin_DECLARED
-/* 254 */
+/* 260 */
 BLT_EXTERN double	Blt_VecMin(Blt_Vector *vPtr);
 #endif
 #ifndef Blt_VecMax_DECLARED
 #define Blt_VecMax_DECLARED
-/* 255 */
+/* 261 */
 BLT_EXTERN double	Blt_VecMax(Blt_Vector *vPtr);
 #endif
 #ifndef Blt_AllocVectorId_DECLARED
 #define Blt_AllocVectorId_DECLARED
-/* 256 */
+/* 262 */
 BLT_EXTERN Blt_VectorId	 Blt_AllocVectorId(Tcl_Interp *interp,
 				const char *vecName);
 #endif
 #ifndef Blt_SetVectorChangedProc_DECLARED
 #define Blt_SetVectorChangedProc_DECLARED
-/* 257 */
+/* 263 */
 BLT_EXTERN void		Blt_SetVectorChangedProc(Blt_VectorId clientId,
 				Blt_VectorChangedProc *proc,
 				ClientData clientData);
 #endif
 #ifndef Blt_FreeVectorId_DECLARED
 #define Blt_FreeVectorId_DECLARED
-/* 258 */
+/* 264 */
 BLT_EXTERN void		Blt_FreeVectorId(Blt_VectorId clientId);
 #endif
 #ifndef Blt_GetVectorById_DECLARED
 #define Blt_GetVectorById_DECLARED
-/* 259 */
+/* 265 */
 BLT_EXTERN int		Blt_GetVectorById(Tcl_Interp *interp,
 				Blt_VectorId clientId,
 				Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_NameOfVectorId_DECLARED
 #define Blt_NameOfVectorId_DECLARED
-/* 260 */
+/* 266 */
 BLT_EXTERN const char *	 Blt_NameOfVectorId(Blt_VectorId clientId);
 #endif
 #ifndef Blt_NameOfVector_DECLARED
 #define Blt_NameOfVector_DECLARED
-/* 261 */
+/* 267 */
 BLT_EXTERN const char *	 Blt_NameOfVector(Blt_Vector *vecPtr);
 #endif
 #ifndef Blt_VectorNotifyPending_DECLARED
 #define Blt_VectorNotifyPending_DECLARED
-/* 262 */
+/* 268 */
 BLT_EXTERN int		Blt_VectorNotifyPending(Blt_VectorId clientId);
 #endif
 #ifndef Blt_CreateVector_DECLARED
 #define Blt_CreateVector_DECLARED
-/* 263 */
+/* 269 */
 BLT_EXTERN int		Blt_CreateVector(Tcl_Interp *interp,
 				const char *vecName, int size,
 				Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_CreateVector2_DECLARED
 #define Blt_CreateVector2_DECLARED
-/* 264 */
+/* 270 */
 BLT_EXTERN int		Blt_CreateVector2(Tcl_Interp *interp,
 				const char *vecName, const char *cmdName,
 				const char *varName, int initialSize,
@@ -1666,60 +1694,60 @@ BLT_EXTERN int		Blt_CreateVector2(Tcl_Interp *interp,
 #endif
 #ifndef Blt_GetVector_DECLARED
 #define Blt_GetVector_DECLARED
-/* 265 */
+/* 271 */
 BLT_EXTERN int		Blt_GetVector(Tcl_Interp *interp,
 				const char *vecName, Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_GetVectorFromObj_DECLARED
 #define Blt_GetVectorFromObj_DECLARED
-/* 266 */
+/* 272 */
 BLT_EXTERN int		Blt_GetVectorFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_VectorExists_DECLARED
 #define Blt_VectorExists_DECLARED
-/* 267 */
+/* 273 */
 BLT_EXTERN int		Blt_VectorExists(Tcl_Interp *interp,
 				const char *vecName);
 #endif
 #ifndef Blt_ResetVector_DECLARED
 #define Blt_ResetVector_DECLARED
-/* 268 */
+/* 274 */
 BLT_EXTERN int		Blt_ResetVector(Blt_Vector *vecPtr, double *dataArr,
 				int n, int arraySize, Tcl_FreeProc *freeProc);
 #endif
 #ifndef Blt_ResizeVector_DECLARED
 #define Blt_ResizeVector_DECLARED
-/* 269 */
+/* 275 */
 BLT_EXTERN int		Blt_ResizeVector(Blt_Vector *vecPtr, int n);
 #endif
 #ifndef Blt_DeleteVectorByName_DECLARED
 #define Blt_DeleteVectorByName_DECLARED
-/* 270 */
+/* 276 */
 BLT_EXTERN int		Blt_DeleteVectorByName(Tcl_Interp *interp,
 				const char *vecName);
 #endif
 #ifndef Blt_DeleteVector_DECLARED
 #define Blt_DeleteVector_DECLARED
-/* 271 */
+/* 277 */
 BLT_EXTERN int		Blt_DeleteVector(Blt_Vector *vecPtr);
 #endif
 #ifndef Blt_ExprVector_DECLARED
 #define Blt_ExprVector_DECLARED
-/* 272 */
+/* 278 */
 BLT_EXTERN int		Blt_ExprVector(Tcl_Interp *interp, char *expr,
 				Blt_Vector *vecPtr);
 #endif
 #ifndef Blt_InstallIndexProc_DECLARED
 #define Blt_InstallIndexProc_DECLARED
-/* 273 */
+/* 279 */
 BLT_EXTERN void		Blt_InstallIndexProc(Tcl_Interp *interp,
 				const char *indexName,
 				Blt_VectorIndexProc *procPtr);
 #endif
 #ifndef Blt_VectorExists2_DECLARED
 #define Blt_VectorExists2_DECLARED
-/* 274 */
+/* 280 */
 BLT_EXTERN int		Blt_VectorExists2(Tcl_Interp *interp,
 				const char *vecName);
 #endif
@@ -1792,221 +1820,227 @@ typedef struct BltTclProcs {
     void (*blt_Pool_Destroy) (Blt_Pool pool); /* 57 */
     Blt_TreeKey (*blt_Tree_GetKey) (Blt_Tree tree, const char *string); /* 58 */
     Blt_TreeKey (*blt_Tree_GetKeyFromNode) (Blt_TreeNode node, const char *string); /* 59 */
-    Blt_TreeKey (*blt_Tree_GetKeyFromInterp) (Tcl_Interp *interp, const char *string); /* 60 */
-    Blt_TreeNode (*blt_Tree_CreateNode) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long position); /* 61 */
-    Blt_TreeNode (*blt_Tree_CreateNodeWithId) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long inode, long position); /* 62 */
-    int (*blt_Tree_DeleteNode) (Blt_Tree tree, Blt_TreeNode node); /* 63 */
-    int (*blt_Tree_MoveNode) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeNode parent, Blt_TreeNode before); /* 64 */
-    Blt_TreeNode (*blt_Tree_GetNodeFromIndex) (Blt_Tree tree, long inode); /* 65 */
-    Blt_TreeNode (*blt_Tree_FindChild) (Blt_TreeNode parent, const char *name); /* 66 */
-    Blt_TreeNode (*blt_Tree_NextNode) (Blt_TreeNode root, Blt_TreeNode node); /* 67 */
-    Blt_TreeNode (*blt_Tree_PrevNode) (Blt_TreeNode root, Blt_TreeNode node); /* 68 */
-    Blt_TreeNode (*blt_Tree_FirstChild) (Blt_TreeNode parent); /* 69 */
-    Blt_TreeNode (*blt_Tree_LastChild) (Blt_TreeNode parent); /* 70 */
-    int (*blt_Tree_IsBefore) (Blt_TreeNode node1, Blt_TreeNode node2); /* 71 */
-    int (*blt_Tree_IsAncestor) (Blt_TreeNode node1, Blt_TreeNode node2); /* 72 */
-    int (*blt_Tree_PrivateValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 73 */
-    int (*blt_Tree_PublicValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 74 */
-    int (*blt_Tree_GetValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, Tcl_Obj **valuePtr); /* 75 */
-    int (*blt_Tree_ValueExists) (Blt_Tree tree, Blt_TreeNode node, const char *string); /* 76 */
-    int (*blt_Tree_SetValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, Tcl_Obj *valuePtr); /* 77 */
-    int (*blt_Tree_UnsetValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string); /* 78 */
-    int (*blt_Tree_AppendValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, const char *value); /* 79 */
-    int (*blt_Tree_ListAppendValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, Tcl_Obj *valuePtr); /* 80 */
-    int (*blt_Tree_GetArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, Tcl_Obj **valueObjPtrPtr); /* 81 */
-    int (*blt_Tree_SetArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, Tcl_Obj *valueObjPtr); /* 82 */
-    int (*blt_Tree_UnsetArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName); /* 83 */
-    int (*blt_Tree_AppendArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, const char *value); /* 84 */
-    int (*blt_Tree_ListAppendArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, Tcl_Obj *valueObjPtr); /* 85 */
-    int (*blt_Tree_ArrayValueExists) (Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName); /* 86 */
-    int (*blt_Tree_ArrayNames) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, Tcl_Obj *listObjPtr); /* 87 */
-    int (*blt_Tree_GetValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, Tcl_Obj **valuePtr); /* 88 */
-    int (*blt_Tree_SetValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, Tcl_Obj *valuePtr); /* 89 */
-    int (*blt_Tree_UnsetValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 90 */
-    int (*blt_Tree_AppendValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, const char *value); /* 91 */
-    int (*blt_Tree_ListAppendValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, Tcl_Obj *valuePtr); /* 92 */
-    int (*blt_Tree_ValueExistsByKey) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 93 */
-    Blt_TreeKey (*blt_Tree_FirstKey) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeKeyIterator *iterPtr); /* 94 */
-    Blt_TreeKey (*blt_Tree_NextKey) (Blt_Tree tree, Blt_TreeKeyIterator *iterPtr); /* 95 */
-    int (*blt_Tree_Apply) (Blt_TreeNode root, Blt_TreeApplyProc *proc, ClientData clientData); /* 96 */
-    int (*blt_Tree_ApplyDFS) (Blt_TreeNode root, Blt_TreeApplyProc *proc, ClientData clientData, int order); /* 97 */
-    int (*blt_Tree_ApplyBFS) (Blt_TreeNode root, Blt_TreeApplyProc *proc, ClientData clientData); /* 98 */
-    int (*blt_Tree_SortNode) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeCompareNodesProc *proc); /* 99 */
-    int (*blt_Tree_Exists) (Tcl_Interp *interp, const char *name); /* 100 */
-    Blt_Tree (*blt_Tree_Open) (Tcl_Interp *interp, const char *name, int flags); /* 101 */
-    void (*blt_Tree_Close) (Blt_Tree tree); /* 102 */
-    int (*blt_Tree_Attach) (Tcl_Interp *interp, Blt_Tree tree, const char *name); /* 103 */
-    Blt_Tree (*blt_Tree_GetFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr); /* 104 */
-    int (*blt_Tree_Size) (Blt_TreeNode node); /* 105 */
-    Blt_TreeTrace (*blt_Tree_CreateTrace) (Blt_Tree tree, Blt_TreeNode node, const char *keyPattern, const char *tagName, unsigned int mask, Blt_TreeTraceProc *proc, ClientData clientData); /* 106 */
-    void (*blt_Tree_DeleteTrace) (Blt_TreeTrace token); /* 107 */
-    void (*blt_Tree_CreateEventHandler) (Blt_Tree tree, unsigned int mask, Blt_TreeNotifyEventProc *proc, ClientData clientData); /* 108 */
-    void (*blt_Tree_DeleteEventHandler) (Blt_Tree tree, unsigned int mask, Blt_TreeNotifyEventProc *proc, ClientData clientData); /* 109 */
-    void (*blt_Tree_RelabelNode) (Blt_Tree tree, Blt_TreeNode node, const char *string); /* 110 */
-    void (*blt_Tree_RelabelNodeWithoutNotify) (Blt_TreeNode node, const char *string); /* 111 */
-    const char * (*blt_Tree_NodeIdAscii) (Blt_TreeNode node); /* 112 */
-    const char * (*blt_Tree_NodePath) (Blt_TreeNode node, Tcl_DString *resultPtr); /* 113 */
-    const char * (*blt_Tree_NodeRelativePath) (Blt_TreeNode root, Blt_TreeNode node, const char *separator, unsigned int flags, Tcl_DString *resultPtr); /* 114 */
-    long (*blt_Tree_NodePosition) (Blt_TreeNode node); /* 115 */
-    void (*blt_Tree_ClearTags) (Blt_Tree tree, Blt_TreeNode node); /* 116 */
-    int (*blt_Tree_HasTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 117 */
-    void (*blt_Tree_AddTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 118 */
-    void (*blt_Tree_RemoveTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 119 */
-    void (*blt_Tree_ForgetTag) (Blt_Tree tree, const char *tagName); /* 120 */
-    Blt_HashTable * (*blt_Tree_TagHashTable) (Blt_Tree tree, const char *tagName); /* 121 */
-    int (*blt_Tree_TagTableIsShared) (Blt_Tree tree); /* 122 */
-    void (*blt_Tree_NewTagTable) (Blt_Tree tree); /* 123 */
-    Blt_HashEntry * (*blt_Tree_FirstTag) (Blt_Tree tree, Blt_HashSearch *searchPtr); /* 124 */
-    void (*blt_Tree_DumpNode) (Blt_Tree tree, Blt_TreeNode root, Blt_TreeNode node, Tcl_DString *resultPtr); /* 125 */
-    int (*blt_Tree_Dump) (Blt_Tree tree, Blt_TreeNode root, Tcl_DString *resultPtr); /* 126 */
-    int (*blt_Tree_DumpToFile) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root, const char *fileName); /* 127 */
-    int (*blt_Tree_Restore) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root, const char *string, unsigned int flags); /* 128 */
-    int (*blt_Tree_RestoreFromFile) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode root, const char *fileName, unsigned int flags); /* 129 */
-    long (*blt_Tree_Depth) (Blt_Tree tree); /* 130 */
-    int (*blt_Tree_RegisterFormat) (Tcl_Interp *interp, const char *fmtName, Blt_TreeImportProc *importProc, Blt_TreeExportProc *exportProc); /* 131 */
-    Blt_TreeTagEntry * (*blt_Tree_RememberTag) (Blt_Tree tree, const char *name); /* 132 */
-    int (*blt_Tree_GetNodeFromObj) (Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, Blt_TreeNode *nodePtr); /* 133 */
-    int (*blt_Tree_GetNodeIterator) (Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, Blt_TreeIterator *iterPtr); /* 134 */
-    Blt_TreeNode (*blt_Tree_FirstTaggedNode) (Blt_TreeIterator *iterPtr); /* 135 */
-    Blt_TreeNode (*blt_Tree_NextTaggedNode) (Blt_TreeIterator *iterPtr); /* 136 */
-    void (*blt_table_release_tags) (BLT_TABLE table); /* 137 */
-    void (*blt_table_new_tags) (BLT_TABLE table); /* 138 */
-    Blt_HashTable * (*blt_table_get_column_tag_table) (BLT_TABLE table); /* 139 */
-    Blt_HashTable * (*blt_table_get_row_tag_table) (BLT_TABLE table); /* 140 */
-    int (*blt_table_exists) (Tcl_Interp *interp, const char *name); /* 141 */
-    int (*blt_table_create) (Tcl_Interp *interp, const char *name, BLT_TABLE *tablePtr); /* 142 */
-    int (*blt_table_open) (Tcl_Interp *interp, const char *name, BLT_TABLE *tablePtr); /* 143 */
-    void (*blt_table_close) (BLT_TABLE table); /* 144 */
-    int (*blt_table_same_object) (BLT_TABLE table1, BLT_TABLE table2); /* 145 */
-    Blt_HashTable * (*blt_table_row_get_label_table) (BLT_TABLE table, const char *label); /* 146 */
-    Blt_HashTable * (*blt_table_column_get_label_table) (BLT_TABLE table, const char *label); /* 147 */
-    BLT_TABLE_ROW (*blt_table_get_row) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr); /* 148 */
-    BLT_TABLE_COLUMN (*blt_table_get_column) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr); /* 149 */
-    BLT_TABLE_ROW (*blt_table_get_row_by_label) (BLT_TABLE table, const char *label); /* 150 */
-    BLT_TABLE_COLUMN (*blt_table_get_column_by_label) (BLT_TABLE table, const char *label); /* 151 */
-    BLT_TABLE_ROW (*blt_table_get_row_by_index) (BLT_TABLE table, long index); /* 152 */
-    BLT_TABLE_COLUMN (*blt_table_get_column_by_index) (BLT_TABLE table, long index); /* 153 */
-    int (*blt_table_set_row_label) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *label); /* 154 */
-    int (*blt_table_set_column_label) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *label); /* 155 */
-    BLT_TABLE_COLUMN_TYPE (*blt_table_name_to_column_type) (const char *typeName); /* 156 */
-    int (*blt_table_set_column_type) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, BLT_TABLE_COLUMN_TYPE type); /* 157 */
-    const char * (*blt_table_column_type_to_name) (BLT_TABLE_COLUMN_TYPE type); /* 158 */
-    int (*blt_table_set_column_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 159 */
-    int (*blt_table_set_row_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 160 */
-    BLT_TABLE_ROW (*blt_table_create_row) (Tcl_Interp *interp, BLT_TABLE table, const char *label); /* 161 */
-    BLT_TABLE_COLUMN (*blt_table_create_column) (Tcl_Interp *interp, BLT_TABLE table, const char *label); /* 162 */
-    int (*blt_table_extend_rows) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_ROW *rows); /* 163 */
-    int (*blt_table_extend_columns) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_COLUMN *columms); /* 164 */
-    int (*blt_table_delete_row) (BLT_TABLE table, BLT_TABLE_ROW row); /* 165 */
-    int (*blt_table_delete_column) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 166 */
-    int (*blt_table_move_row) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW from, BLT_TABLE_ROW to, size_t n); /* 167 */
-    int (*blt_table_move_column) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN from, BLT_TABLE_COLUMN to, size_t n); /* 168 */
-    Tcl_Obj * (*blt_table_get_obj) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 169 */
-    int (*blt_table_set_obj) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, Tcl_Obj *objPtr); /* 170 */
-    const char * (*blt_table_get_string) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 171 */
-    int (*blt_table_set_string_rep) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, int length); /* 172 */
-    int (*blt_table_set_string) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, int length); /* 173 */
-    int (*blt_table_append_string) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, int length); /* 174 */
-    int (*blt_table_set_bytes) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const unsigned char *string, int length); /* 175 */
-    double (*blt_table_get_double) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 176 */
-    int (*blt_table_set_double) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, double value); /* 177 */
-    long (*blt_table_get_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long defValue); /* 178 */
-    int (*blt_table_set_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long value); /* 179 */
-    int (*blt_table_get_boolean) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int defValue); /* 180 */
-    int (*blt_table_set_boolean) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int value); /* 181 */
-    BLT_TABLE_VALUE (*blt_table_get_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 182 */
-    int (*blt_table_set_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, BLT_TABLE_VALUE value); /* 183 */
-    int (*blt_table_unset_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 184 */
-    int (*blt_table_value_exists) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 185 */
-    const char * (*blt_table_value_string) (BLT_TABLE_VALUE value); /* 186 */
-    const unsigned char * (*blt_table_value_bytes) (BLT_TABLE_VALUE value); /* 187 */
-    size_t (*blt_table_value_length) (BLT_TABLE_VALUE value); /* 188 */
-    int (*blt_table_tags_are_shared) (BLT_TABLE table); /* 189 */
-    void (*blt_table_clear_row_tags) (BLT_TABLE table, BLT_TABLE_ROW row); /* 190 */
-    void (*blt_table_clear_column_tags) (BLT_TABLE table, BLT_TABLE_COLUMN col); /* 191 */
-    Blt_Chain (*blt_table_get_row_tags) (BLT_TABLE table, BLT_TABLE_ROW row); /* 192 */
-    Blt_Chain (*blt_table_get_column_tags) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 193 */
-    Blt_Chain (*blt_table_get_tagged_rows) (BLT_TABLE table, const char *tag); /* 194 */
-    Blt_Chain (*blt_table_get_tagged_columns) (BLT_TABLE table, const char *tag); /* 195 */
-    int (*blt_table_row_has_tag) (BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 196 */
-    int (*blt_table_column_has_tag) (BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 197 */
-    int (*blt_table_forget_row_tag) (Tcl_Interp *interp, BLT_TABLE table, const char *tag); /* 198 */
-    int (*blt_table_forget_column_tag) (Tcl_Interp *interp, BLT_TABLE table, const char *tag); /* 199 */
-    int (*blt_table_unset_row_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 200 */
-    int (*blt_table_unset_column_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 201 */
-    BLT_TABLE_COLUMN (*blt_table_first_column) (BLT_TABLE table); /* 202 */
-    BLT_TABLE_COLUMN (*blt_table_next_column) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 203 */
+    Blt_TreeNode (*blt_Tree_CreateNode) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long position); /* 60 */
+    Blt_TreeNode (*blt_Tree_CreateNodeWithId) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long inode, long position); /* 61 */
+    int (*blt_Tree_DeleteNode) (Blt_Tree tree, Blt_TreeNode node); /* 62 */
+    int (*blt_Tree_MoveNode) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeNode parent, Blt_TreeNode before); /* 63 */
+    Blt_TreeNode (*blt_Tree_GetNodeFromIndex) (Blt_Tree tree, long inode); /* 64 */
+    Blt_TreeNode (*blt_Tree_FindChild) (Blt_TreeNode parent, const char *name); /* 65 */
+    Blt_TreeNode (*blt_Tree_NextNode) (Blt_TreeNode root, Blt_TreeNode node); /* 66 */
+    Blt_TreeNode (*blt_Tree_PrevNode) (Blt_TreeNode root, Blt_TreeNode node); /* 67 */
+    Blt_TreeNode (*blt_Tree_FirstChild) (Blt_TreeNode parent); /* 68 */
+    Blt_TreeNode (*blt_Tree_LastChild) (Blt_TreeNode parent); /* 69 */
+    int (*blt_Tree_IsBefore) (Blt_TreeNode node1, Blt_TreeNode node2); /* 70 */
+    int (*blt_Tree_IsAncestor) (Blt_TreeNode node1, Blt_TreeNode node2); /* 71 */
+    int (*blt_Tree_PrivateValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 72 */
+    int (*blt_Tree_PublicValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 73 */
+    int (*blt_Tree_GetValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, Tcl_Obj **valuePtr); /* 74 */
+    int (*blt_Tree_ValueExists) (Blt_Tree tree, Blt_TreeNode node, const char *string); /* 75 */
+    int (*blt_Tree_SetValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, Tcl_Obj *valuePtr); /* 76 */
+    int (*blt_Tree_UnsetValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string); /* 77 */
+    int (*blt_Tree_AppendValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, const char *value); /* 78 */
+    int (*blt_Tree_ListAppendValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *string, Tcl_Obj *valuePtr); /* 79 */
+    int (*blt_Tree_GetArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, Tcl_Obj **valueObjPtrPtr); /* 80 */
+    int (*blt_Tree_SetArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, Tcl_Obj *valueObjPtr); /* 81 */
+    int (*blt_Tree_UnsetArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName); /* 82 */
+    int (*blt_Tree_AppendArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, const char *value); /* 83 */
+    int (*blt_Tree_ListAppendArrayValue) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName, Tcl_Obj *valueObjPtr); /* 84 */
+    int (*blt_Tree_ArrayValueExists) (Blt_Tree tree, Blt_TreeNode node, const char *arrayName, const char *elemName); /* 85 */
+    int (*blt_Tree_ArrayNames) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, const char *arrayName, Tcl_Obj *listObjPtr); /* 86 */
+    int (*blt_Tree_GetValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, Tcl_Obj **valuePtr); /* 87 */
+    int (*blt_Tree_SetValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, Tcl_Obj *valuePtr); /* 88 */
+    int (*blt_Tree_UnsetValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 89 */
+    int (*blt_Tree_AppendValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, const char *value); /* 90 */
+    int (*blt_Tree_ListAppendValueByKey) (Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key, Tcl_Obj *valuePtr); /* 91 */
+    int (*blt_Tree_ValueExistsByKey) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeKey key); /* 92 */
+    Blt_TreeKey (*blt_Tree_FirstKey) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeKeyIterator *iterPtr); /* 93 */
+    Blt_TreeKey (*blt_Tree_NextKey) (Blt_Tree tree, Blt_TreeKeyIterator *iterPtr); /* 94 */
+    int (*blt_Tree_Apply) (Blt_TreeNode root, Blt_TreeApplyProc *proc, ClientData clientData); /* 95 */
+    int (*blt_Tree_ApplyDFS) (Blt_TreeNode root, Blt_TreeApplyProc *proc, ClientData clientData, int order); /* 96 */
+    int (*blt_Tree_ApplyBFS) (Blt_TreeNode root, Blt_TreeApplyProc *proc, ClientData clientData); /* 97 */
+    int (*blt_Tree_SortNode) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeCompareNodesProc *proc); /* 98 */
+    int (*blt_Tree_Exists) (Tcl_Interp *interp, const char *name); /* 99 */
+    Blt_Tree (*blt_Tree_Open) (Tcl_Interp *interp, const char *name, int flags); /* 100 */
+    void (*blt_Tree_Close) (Blt_Tree tree); /* 101 */
+    int (*blt_Tree_Attach) (Tcl_Interp *interp, Blt_Tree tree, const char *name); /* 102 */
+    Blt_Tree (*blt_Tree_GetFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr); /* 103 */
+    int (*blt_Tree_Size) (Blt_TreeNode node); /* 104 */
+    Blt_TreeTrace (*blt_Tree_CreateTrace) (Blt_Tree tree, Blt_TreeNode node, const char *keyPattern, const char *tagName, unsigned int mask, Blt_TreeTraceProc *proc, ClientData clientData); /* 105 */
+    void (*blt_Tree_DeleteTrace) (Blt_TreeTrace token); /* 106 */
+    void (*blt_Tree_CreateEventHandler) (Blt_Tree tree, unsigned int mask, Blt_TreeNotifyEventProc *proc, ClientData clientData); /* 107 */
+    void (*blt_Tree_DeleteEventHandler) (Blt_Tree tree, unsigned int mask, Blt_TreeNotifyEventProc *proc, ClientData clientData); /* 108 */
+    void (*blt_Tree_RelabelNode) (Blt_Tree tree, Blt_TreeNode node, const char *string); /* 109 */
+    void (*blt_Tree_RelabelNodeWithoutNotify) (Blt_TreeNode node, const char *string); /* 110 */
+    const char * (*blt_Tree_NodeIdAscii) (Blt_TreeNode node); /* 111 */
+    const char * (*blt_Tree_NodePath) (Blt_TreeNode node, Tcl_DString *resultPtr); /* 112 */
+    const char * (*blt_Tree_NodeRelativePath) (Blt_TreeNode root, Blt_TreeNode node, const char *separator, unsigned int flags, Tcl_DString *resultPtr); /* 113 */
+    long (*blt_Tree_NodePosition) (Blt_TreeNode node); /* 114 */
+    void (*blt_Tree_ClearTags) (Blt_Tree tree, Blt_TreeNode node); /* 115 */
+    int (*blt_Tree_HasTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 116 */
+    void (*blt_Tree_AddTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 117 */
+    void (*blt_Tree_RemoveTag) (Blt_Tree tree, Blt_TreeNode node, const char *tagName); /* 118 */
+    void (*blt_Tree_ForgetTag) (Blt_Tree tree, const char *tagName); /* 119 */
+    Blt_HashTable * (*blt_Tree_TagHashTable) (Blt_Tree tree, const char *tagName); /* 120 */
+    int (*blt_Tree_TagTableIsShared) (Blt_Tree tree); /* 121 */
+    void (*blt_Tree_NewTagTable) (Blt_Tree tree); /* 122 */
+    Blt_HashEntry * (*blt_Tree_FirstTag) (Blt_Tree tree, Blt_HashSearch *searchPtr); /* 123 */
+    long (*blt_Tree_Depth) (Blt_Tree tree); /* 124 */
+    int (*blt_Tree_RegisterFormat) (Tcl_Interp *interp, const char *fmtName, Blt_TreeImportProc *importProc, Blt_TreeExportProc *exportProc); /* 125 */
+    Blt_TreeTagEntry * (*blt_Tree_RememberTag) (Blt_Tree tree, const char *name); /* 126 */
+    int (*blt_Tree_GetNodeFromObj) (Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, Blt_TreeNode *nodePtr); /* 127 */
+    int (*blt_Tree_GetNodeIterator) (Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, Blt_TreeIterator *iterPtr); /* 128 */
+    Blt_TreeNode (*blt_Tree_FirstTaggedNode) (Blt_TreeIterator *iterPtr); /* 129 */
+    Blt_TreeNode (*blt_Tree_NextTaggedNode) (Blt_TreeIterator *iterPtr); /* 130 */
+    void (*blt_table_release_tags) (BLT_TABLE table); /* 131 */
+    void (*blt_table_new_tags) (BLT_TABLE table); /* 132 */
+    Blt_HashTable * (*blt_table_get_column_tag_table) (BLT_TABLE table); /* 133 */
+    Blt_HashTable * (*blt_table_get_row_tag_table) (BLT_TABLE table); /* 134 */
+    int (*blt_table_exists) (Tcl_Interp *interp, const char *name); /* 135 */
+    int (*blt_table_create) (Tcl_Interp *interp, const char *name, BLT_TABLE *tablePtr); /* 136 */
+    int (*blt_table_open) (Tcl_Interp *interp, const char *name, BLT_TABLE *tablePtr); /* 137 */
+    void (*blt_table_close) (BLT_TABLE table); /* 138 */
+    void (*blt_table_clear) (BLT_TABLE table); /* 139 */
+    void (*blt_table_pack) (BLT_TABLE table); /* 140 */
+    int (*blt_table_same_object) (BLT_TABLE table1, BLT_TABLE table2); /* 141 */
+    Blt_HashTable * (*blt_table_row_get_label_table) (BLT_TABLE table, const char *label); /* 142 */
+    Blt_HashTable * (*blt_table_column_get_label_table) (BLT_TABLE table, const char *label); /* 143 */
+    BLT_TABLE_ROW (*blt_table_get_row) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr); /* 144 */
+    BLT_TABLE_COLUMN (*blt_table_get_column) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr); /* 145 */
+    BLT_TABLE_ROW (*blt_table_get_row_by_label) (BLT_TABLE table, const char *label); /* 146 */
+    BLT_TABLE_COLUMN (*blt_table_get_column_by_label) (BLT_TABLE table, const char *label); /* 147 */
+    BLT_TABLE_ROW (*blt_table_get_row_by_index) (BLT_TABLE table, long index); /* 148 */
+    BLT_TABLE_COLUMN (*blt_table_get_column_by_index) (BLT_TABLE table, long index); /* 149 */
+    int (*blt_table_set_row_label) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *label); /* 150 */
+    int (*blt_table_set_column_label) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *label); /* 151 */
+    BLT_TABLE_COLUMN_TYPE (*blt_table_name_to_column_type) (const char *typeName); /* 152 */
+    int (*blt_table_set_column_type) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, BLT_TABLE_COLUMN_TYPE type); /* 153 */
+    const char * (*blt_table_column_type_to_name) (BLT_TABLE_COLUMN_TYPE type); /* 154 */
+    int (*blt_table_set_column_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 155 */
+    int (*blt_table_set_row_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 156 */
+    BLT_TABLE_ROW (*blt_table_create_row) (Tcl_Interp *interp, BLT_TABLE table, const char *label); /* 157 */
+    BLT_TABLE_COLUMN (*blt_table_create_column) (Tcl_Interp *interp, BLT_TABLE table, const char *label); /* 158 */
+    int (*blt_table_extend_rows) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_ROW *rows); /* 159 */
+    int (*blt_table_extend_columns) (Tcl_Interp *interp, BLT_TABLE table, size_t n, BLT_TABLE_COLUMN *columms); /* 160 */
+    int (*blt_table_delete_row) (BLT_TABLE table, BLT_TABLE_ROW row); /* 161 */
+    int (*blt_table_delete_column) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 162 */
+    int (*blt_table_move_rows) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW destRow, BLT_TABLE_ROW firstRow, BLT_TABLE_ROW lastRow, int after); /* 163 */
+    int (*blt_table_move_columns) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN destColumn, BLT_TABLE_COLUMN firstColumn, BLT_TABLE_COLUMN lastColumn, int after); /* 164 */
+    Tcl_Obj * (*blt_table_get_obj) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 165 */
+    int (*blt_table_set_obj) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, Tcl_Obj *objPtr); /* 166 */
+    const char * (*blt_table_get_string) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 167 */
+    int (*blt_table_set_string_rep) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, int length); /* 168 */
+    int (*blt_table_set_string) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, int length); /* 169 */
+    int (*blt_table_append_string) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, int length); /* 170 */
+    int (*blt_table_set_bytes) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const unsigned char *string, int length); /* 171 */
+    double (*blt_table_get_double) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 172 */
+    int (*blt_table_set_double) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, double value); /* 173 */
+    long (*blt_table_get_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long defValue); /* 174 */
+    int (*blt_table_set_long) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long value); /* 175 */
+    int (*blt_table_get_boolean) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int defValue); /* 176 */
+    int (*blt_table_set_boolean) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int value); /* 177 */
+    int (*blt_table_set_int64) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t value); /* 178 */
+    int64_t (*blt_table_get_int64) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int64_t defValue); /* 179 */
+    BLT_TABLE_VALUE (*blt_table_get_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 180 */
+    int (*blt_table_set_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, BLT_TABLE_VALUE value); /* 181 */
+    int (*blt_table_unset_value) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 182 */
+    int (*blt_table_value_exists) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column); /* 183 */
+    const char * (*blt_table_value_string) (BLT_TABLE_VALUE value); /* 184 */
+    const unsigned char * (*blt_table_value_bytes) (BLT_TABLE_VALUE value); /* 185 */
+    unsigned int (*blt_table_value_length) (BLT_TABLE_VALUE value); /* 186 */
+    int (*blt_table_tags_are_shared) (BLT_TABLE table); /* 187 */
+    void (*blt_table_clear_row_tags) (BLT_TABLE table, BLT_TABLE_ROW row); /* 188 */
+    void (*blt_table_clear_column_tags) (BLT_TABLE table, BLT_TABLE_COLUMN col); /* 189 */
+    Blt_Chain (*blt_table_get_row_tags) (BLT_TABLE table, BLT_TABLE_ROW row); /* 190 */
+    Blt_Chain (*blt_table_get_column_tags) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 191 */
+    Blt_Chain (*blt_table_get_tagged_rows) (BLT_TABLE table, const char *tag); /* 192 */
+    Blt_Chain (*blt_table_get_tagged_columns) (BLT_TABLE table, const char *tag); /* 193 */
+    int (*blt_table_row_has_tag) (BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 194 */
+    int (*blt_table_column_has_tag) (BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 195 */
+    int (*blt_table_forget_row_tag) (Tcl_Interp *interp, BLT_TABLE table, const char *tag); /* 196 */
+    int (*blt_table_forget_column_tag) (Tcl_Interp *interp, BLT_TABLE table, const char *tag); /* 197 */
+    int (*blt_table_unset_row_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, const char *tag); /* 198 */
+    int (*blt_table_unset_column_tag) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, const char *tag); /* 199 */
+    BLT_TABLE_COLUMN (*blt_table_first_column) (BLT_TABLE table); /* 200 */
+    BLT_TABLE_COLUMN (*blt_table_last_column) (BLT_TABLE table); /* 201 */
+    BLT_TABLE_COLUMN (*blt_table_next_column) (BLT_TABLE_COLUMN column); /* 202 */
+    BLT_TABLE_COLUMN (*blt_table_previous_column) (BLT_TABLE_COLUMN column); /* 203 */
     BLT_TABLE_ROW (*blt_table_first_row) (BLT_TABLE table); /* 204 */
-    BLT_TABLE_ROW (*blt_table_next_row) (BLT_TABLE table, BLT_TABLE_ROW row); /* 205 */
-    BLT_TABLE_ROWCOLUMN_SPEC (*blt_table_row_spec) (BLT_TABLE table, Tcl_Obj *objPtr, const char **sp); /* 206 */
-    BLT_TABLE_ROWCOLUMN_SPEC (*blt_table_column_spec) (BLT_TABLE table, Tcl_Obj *objPtr, const char **sp); /* 207 */
-    int (*blt_table_iterate_rows) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter); /* 208 */
-    int (*blt_table_iterate_columns) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter); /* 209 */
-    int (*blt_table_iterate_rows_objv) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr); /* 210 */
-    int (*blt_table_iterate_columns_objv) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr); /* 211 */
-    void (*blt_table_free_iterator_objv) (BLT_TABLE_ITERATOR *iterPtr); /* 212 */
-    void (*blt_table_iterate_all_rows) (BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr); /* 213 */
-    void (*blt_table_iterate_all_columns) (BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr); /* 214 */
-    BLT_TABLE_ROW (*blt_table_first_tagged_row) (BLT_TABLE_ITERATOR *iter); /* 215 */
-    BLT_TABLE_COLUMN (*blt_table_first_tagged_column) (BLT_TABLE_ITERATOR *iter); /* 216 */
-    BLT_TABLE_ROW (*blt_table_next_tagged_row) (BLT_TABLE_ITERATOR *iter); /* 217 */
-    BLT_TABLE_COLUMN (*blt_table_next_tagged_column) (BLT_TABLE_ITERATOR *iter); /* 218 */
-    int (*blt_table_list_rows) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, Blt_Chain chain); /* 219 */
-    int (*blt_table_list_columns) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, Blt_Chain chain); /* 220 */
-    void (*blt_table_clear_row_traces) (BLT_TABLE table, BLT_TABLE_ROW row); /* 221 */
-    void (*blt_table_clear_column_traces) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 222 */
-    BLT_TABLE_TRACE (*blt_table_create_trace) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *rowTag, const char *columnTag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 223 */
-    void (*blt_table_trace_column) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 224 */
-    void (*blt_table_trace_row) (BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 225 */
-    BLT_TABLE_TRACE (*blt_table_create_column_trace) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 226 */
-    BLT_TABLE_TRACE (*blt_table_create_column_tag_trace) (BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 227 */
-    BLT_TABLE_TRACE (*blt_table_create_row_trace) (BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 228 */
-    BLT_TABLE_TRACE (*blt_table_create_row_tag_trace) (BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 229 */
-    void (*blt_table_delete_trace) (BLT_TABLE table, BLT_TABLE_TRACE trace); /* 230 */
-    BLT_TABLE_NOTIFIER (*blt_table_create_notifier) (Tcl_Interp *interp, BLT_TABLE table, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 231 */
-    BLT_TABLE_NOTIFIER (*blt_table_create_row_notifier) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 232 */
-    BLT_TABLE_NOTIFIER (*blt_table_create_row_tag_notifier) (Tcl_Interp *interp, BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 233 */
-    BLT_TABLE_NOTIFIER (*blt_table_create_column_notifier) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 234 */
-    BLT_TABLE_NOTIFIER (*blt_table_create_column_tag_notifier) (Tcl_Interp *interp, BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 235 */
-    void (*blt_table_delete_notifier) (BLT_TABLE table, BLT_TABLE_NOTIFIER notifier); /* 236 */
-    void (*blt_table_sort_init) (BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, size_t numCompares, unsigned int flags); /* 237 */
-    BLT_TABLE_ROW * (*blt_table_sort_rows) (BLT_TABLE table); /* 238 */
-    void (*blt_table_sort_rows_subset) (BLT_TABLE table, long numRows, BLT_TABLE_ROW *rows); /* 239 */
-    void (*blt_table_sort_finish) (void); /* 240 */
-    BLT_TABLE_COMPARE_PROC * (*blt_table_get_compare_proc) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int flags); /* 241 */
-    BLT_TABLE_ROW * (*blt_table_get_row_map) (BLT_TABLE table); /* 242 */
-    BLT_TABLE_COLUMN * (*blt_table_get_column_map) (BLT_TABLE table); /* 243 */
-    void (*blt_table_set_row_map) (BLT_TABLE table, BLT_TABLE_ROW *map); /* 244 */
-    void (*blt_table_set_column_map) (BLT_TABLE table, BLT_TABLE_COLUMN *map); /* 245 */
-    int (*blt_table_restore) (Tcl_Interp *interp, BLT_TABLE table, char *string, unsigned int flags); /* 246 */
-    int (*blt_table_file_restore) (Tcl_Interp *interp, BLT_TABLE table, const char *fileName, unsigned int flags); /* 247 */
-    int (*blt_table_register_format) (Tcl_Interp *interp, const char *name, BLT_TABLE_IMPORT_PROC *importProc, BLT_TABLE_EXPORT_PROC *exportProc); /* 248 */
-    void (*blt_table_unset_keys) (BLT_TABLE table); /* 249 */
-    int (*blt_table_get_keys) (BLT_TABLE table, BLT_TABLE_COLUMN **keysPtr); /* 250 */
-    int (*blt_table_set_keys) (BLT_TABLE table, int numKeys, BLT_TABLE_COLUMN *keys, int unique); /* 251 */
-    int (*blt_table_key_lookup) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr); /* 252 */
-    int (*blt_table_get_column_limits) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN col, Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr); /* 253 */
-    double (*blt_VecMin) (Blt_Vector *vPtr); /* 254 */
-    double (*blt_VecMax) (Blt_Vector *vPtr); /* 255 */
-    Blt_VectorId (*blt_AllocVectorId) (Tcl_Interp *interp, const char *vecName); /* 256 */
-    void (*blt_SetVectorChangedProc) (Blt_VectorId clientId, Blt_VectorChangedProc *proc, ClientData clientData); /* 257 */
-    void (*blt_FreeVectorId) (Blt_VectorId clientId); /* 258 */
-    int (*blt_GetVectorById) (Tcl_Interp *interp, Blt_VectorId clientId, Blt_Vector **vecPtrPtr); /* 259 */
-    const char * (*blt_NameOfVectorId) (Blt_VectorId clientId); /* 260 */
-    const char * (*blt_NameOfVector) (Blt_Vector *vecPtr); /* 261 */
-    int (*blt_VectorNotifyPending) (Blt_VectorId clientId); /* 262 */
-    int (*blt_CreateVector) (Tcl_Interp *interp, const char *vecName, int size, Blt_Vector **vecPtrPtr); /* 263 */
-    int (*blt_CreateVector2) (Tcl_Interp *interp, const char *vecName, const char *cmdName, const char *varName, int initialSize, Blt_Vector **vecPtrPtr); /* 264 */
-    int (*blt_GetVector) (Tcl_Interp *interp, const char *vecName, Blt_Vector **vecPtrPtr); /* 265 */
-    int (*blt_GetVectorFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr); /* 266 */
-    int (*blt_VectorExists) (Tcl_Interp *interp, const char *vecName); /* 267 */
-    int (*blt_ResetVector) (Blt_Vector *vecPtr, double *dataArr, int n, int arraySize, Tcl_FreeProc *freeProc); /* 268 */
-    int (*blt_ResizeVector) (Blt_Vector *vecPtr, int n); /* 269 */
-    int (*blt_DeleteVectorByName) (Tcl_Interp *interp, const char *vecName); /* 270 */
-    int (*blt_DeleteVector) (Blt_Vector *vecPtr); /* 271 */
-    int (*blt_ExprVector) (Tcl_Interp *interp, char *expr, Blt_Vector *vecPtr); /* 272 */
-    void (*blt_InstallIndexProc) (Tcl_Interp *interp, const char *indexName, Blt_VectorIndexProc *procPtr); /* 273 */
-    int (*blt_VectorExists2) (Tcl_Interp *interp, const char *vecName); /* 274 */
+    BLT_TABLE_ROW (*blt_table_last_row) (BLT_TABLE table); /* 205 */
+    BLT_TABLE_ROW (*blt_table_next_row) (BLT_TABLE_ROW row); /* 206 */
+    BLT_TABLE_ROW (*blt_table_previous_row) (BLT_TABLE_ROW row); /* 207 */
+    BLT_TABLE_ROWCOLUMN_SPEC (*blt_table_row_spec) (BLT_TABLE table, Tcl_Obj *objPtr, const char **sp); /* 208 */
+    BLT_TABLE_ROWCOLUMN_SPEC (*blt_table_column_spec) (BLT_TABLE table, Tcl_Obj *objPtr, const char **sp); /* 209 */
+    int (*blt_table_iterate_rows) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter); /* 210 */
+    int (*blt_table_iterate_columns) (Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter); /* 211 */
+    int (*blt_table_iterate_rows_objv) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr); /* 212 */
+    int (*blt_table_iterate_columns_objv) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr); /* 213 */
+    void (*blt_table_free_iterator_objv) (BLT_TABLE_ITERATOR *iterPtr); /* 214 */
+    void (*blt_table_iterate_all_rows) (BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr); /* 215 */
+    void (*blt_table_iterate_all_columns) (BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr); /* 216 */
+    BLT_TABLE_ROW (*blt_table_first_tagged_row) (BLT_TABLE_ITERATOR *iter); /* 217 */
+    BLT_TABLE_COLUMN (*blt_table_first_tagged_column) (BLT_TABLE_ITERATOR *iter); /* 218 */
+    BLT_TABLE_ROW (*blt_table_next_tagged_row) (BLT_TABLE_ITERATOR *iter); /* 219 */
+    BLT_TABLE_COLUMN (*blt_table_next_tagged_column) (BLT_TABLE_ITERATOR *iter); /* 220 */
+    int (*blt_table_list_rows) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, Blt_Chain chain); /* 221 */
+    int (*blt_table_list_columns) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, Blt_Chain chain); /* 222 */
+    void (*blt_table_clear_row_traces) (BLT_TABLE table, BLT_TABLE_ROW row); /* 223 */
+    void (*blt_table_clear_column_traces) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 224 */
+    BLT_TABLE_TRACE (*blt_table_create_trace) (BLT_TABLE table, BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *rowTag, const char *columnTag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 225 */
+    void (*blt_table_trace_column) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 226 */
+    void (*blt_table_trace_row) (BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 227 */
+    BLT_TABLE_TRACE (*blt_table_create_column_trace) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 228 */
+    BLT_TABLE_TRACE (*blt_table_create_column_tag_trace) (BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 229 */
+    BLT_TABLE_TRACE (*blt_table_create_row_trace) (BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 230 */
+    BLT_TABLE_TRACE (*blt_table_create_row_tag_trace) (BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData); /* 231 */
+    void (*blt_table_delete_trace) (BLT_TABLE table, BLT_TABLE_TRACE trace); /* 232 */
+    BLT_TABLE_NOTIFIER (*blt_table_create_notifier) (Tcl_Interp *interp, BLT_TABLE table, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 233 */
+    BLT_TABLE_NOTIFIER (*blt_table_create_row_notifier) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 234 */
+    BLT_TABLE_NOTIFIER (*blt_table_create_row_tag_notifier) (Tcl_Interp *interp, BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 235 */
+    BLT_TABLE_NOTIFIER (*blt_table_create_column_notifier) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 236 */
+    BLT_TABLE_NOTIFIER (*blt_table_create_column_tag_notifier) (Tcl_Interp *interp, BLT_TABLE table, const char *tag, unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData); /* 237 */
+    void (*blt_table_delete_notifier) (BLT_TABLE table, BLT_TABLE_NOTIFIER notifier); /* 238 */
+    void (*blt_table_sort_init) (BLT_TABLE table, BLT_TABLE_SORT_ORDER *order, long numCompares, unsigned int flags); /* 239 */
+    BLT_TABLE_ROW * (*blt_table_sort_rows) (BLT_TABLE table); /* 240 */
+    void (*blt_table_sort_row_map) (BLT_TABLE table, long numRows, BLT_TABLE_ROW *rows); /* 241 */
+    void (*blt_table_sort_finish) (void); /* 242 */
+    BLT_TABLE_COMPARE_PROC * (*blt_table_get_compare_proc) (BLT_TABLE table, BLT_TABLE_COLUMN column, unsigned int flags); /* 243 */
+    BLT_TABLE_ROW * (*blt_table_get_row_map) (BLT_TABLE table); /* 244 */
+    BLT_TABLE_COLUMN * (*blt_table_get_column_map) (BLT_TABLE table); /* 245 */
+    void (*blt_table_set_row_map) (BLT_TABLE table, BLT_TABLE_ROW *map); /* 246 */
+    void (*blt_table_set_column_map) (BLT_TABLE table, BLT_TABLE_COLUMN *map); /* 247 */
+    int (*blt_table_restore) (Tcl_Interp *interp, BLT_TABLE table, char *string, unsigned int flags); /* 248 */
+    int (*blt_table_file_restore) (Tcl_Interp *interp, BLT_TABLE table, const char *fileName, unsigned int flags); /* 249 */
+    int (*blt_table_register_format) (Tcl_Interp *interp, const char *name, BLT_TABLE_IMPORT_PROC *importProc, BLT_TABLE_EXPORT_PROC *exportProc); /* 250 */
+    void (*blt_table_unset_keys) (BLT_TABLE table); /* 251 */
+    int (*blt_table_get_keys) (BLT_TABLE table, BLT_TABLE_COLUMN **keysPtr); /* 252 */
+    int (*blt_table_set_keys) (BLT_TABLE table, int numKeys, BLT_TABLE_COLUMN *keys, int unique); /* 253 */
+    int (*blt_table_key_lookup) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr); /* 254 */
+    int (*blt_table_get_column_limits) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN col, Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr); /* 255 */
+    BLT_TABLE_ROW (*blt_table_row) (BLT_TABLE table, long index); /* 256 */
+    BLT_TABLE_COLUMN (*blt_table_column) (BLT_TABLE table, long index); /* 257 */
+    long (*blt_table_row_index) (BLT_TABLE table, BLT_TABLE_ROW row); /* 258 */
+    long (*blt_table_column_index) (BLT_TABLE table, BLT_TABLE_COLUMN column); /* 259 */
+    double (*blt_VecMin) (Blt_Vector *vPtr); /* 260 */
+    double (*blt_VecMax) (Blt_Vector *vPtr); /* 261 */
+    Blt_VectorId (*blt_AllocVectorId) (Tcl_Interp *interp, const char *vecName); /* 262 */
+    void (*blt_SetVectorChangedProc) (Blt_VectorId clientId, Blt_VectorChangedProc *proc, ClientData clientData); /* 263 */
+    void (*blt_FreeVectorId) (Blt_VectorId clientId); /* 264 */
+    int (*blt_GetVectorById) (Tcl_Interp *interp, Blt_VectorId clientId, Blt_Vector **vecPtrPtr); /* 265 */
+    const char * (*blt_NameOfVectorId) (Blt_VectorId clientId); /* 266 */
+    const char * (*blt_NameOfVector) (Blt_Vector *vecPtr); /* 267 */
+    int (*blt_VectorNotifyPending) (Blt_VectorId clientId); /* 268 */
+    int (*blt_CreateVector) (Tcl_Interp *interp, const char *vecName, int size, Blt_Vector **vecPtrPtr); /* 269 */
+    int (*blt_CreateVector2) (Tcl_Interp *interp, const char *vecName, const char *cmdName, const char *varName, int initialSize, Blt_Vector **vecPtrPtr); /* 270 */
+    int (*blt_GetVector) (Tcl_Interp *interp, const char *vecName, Blt_Vector **vecPtrPtr); /* 271 */
+    int (*blt_GetVectorFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr); /* 272 */
+    int (*blt_VectorExists) (Tcl_Interp *interp, const char *vecName); /* 273 */
+    int (*blt_ResetVector) (Blt_Vector *vecPtr, double *dataArr, int n, int arraySize, Tcl_FreeProc *freeProc); /* 274 */
+    int (*blt_ResizeVector) (Blt_Vector *vecPtr, int n); /* 275 */
+    int (*blt_DeleteVectorByName) (Tcl_Interp *interp, const char *vecName); /* 276 */
+    int (*blt_DeleteVector) (Blt_Vector *vecPtr); /* 277 */
+    int (*blt_ExprVector) (Tcl_Interp *interp, char *expr, Blt_Vector *vecPtr); /* 278 */
+    void (*blt_InstallIndexProc) (Tcl_Interp *interp, const char *indexName, Blt_VectorIndexProc *procPtr); /* 279 */
+    int (*blt_VectorExists2) (Tcl_Interp *interp, const char *vecName); /* 280 */
 } BltTclProcs;
 
 #ifdef __cplusplus
@@ -2260,865 +2294,889 @@ extern BltTclProcs *bltTclProcsPtr;
 #define Blt_Tree_GetKeyFromNode \
 	(bltTclProcsPtr->blt_Tree_GetKeyFromNode) /* 59 */
 #endif
-#ifndef Blt_Tree_GetKeyFromInterp
-#define Blt_Tree_GetKeyFromInterp \
-	(bltTclProcsPtr->blt_Tree_GetKeyFromInterp) /* 60 */
-#endif
 #ifndef Blt_Tree_CreateNode
 #define Blt_Tree_CreateNode \
-	(bltTclProcsPtr->blt_Tree_CreateNode) /* 61 */
+	(bltTclProcsPtr->blt_Tree_CreateNode) /* 60 */
 #endif
 #ifndef Blt_Tree_CreateNodeWithId
 #define Blt_Tree_CreateNodeWithId \
-	(bltTclProcsPtr->blt_Tree_CreateNodeWithId) /* 62 */
+	(bltTclProcsPtr->blt_Tree_CreateNodeWithId) /* 61 */
 #endif
 #ifndef Blt_Tree_DeleteNode
 #define Blt_Tree_DeleteNode \
-	(bltTclProcsPtr->blt_Tree_DeleteNode) /* 63 */
+	(bltTclProcsPtr->blt_Tree_DeleteNode) /* 62 */
 #endif
 #ifndef Blt_Tree_MoveNode
 #define Blt_Tree_MoveNode \
-	(bltTclProcsPtr->blt_Tree_MoveNode) /* 64 */
+	(bltTclProcsPtr->blt_Tree_MoveNode) /* 63 */
 #endif
 #ifndef Blt_Tree_GetNodeFromIndex
 #define Blt_Tree_GetNodeFromIndex \
-	(bltTclProcsPtr->blt_Tree_GetNodeFromIndex) /* 65 */
+	(bltTclProcsPtr->blt_Tree_GetNodeFromIndex) /* 64 */
 #endif
 #ifndef Blt_Tree_FindChild
 #define Blt_Tree_FindChild \
-	(bltTclProcsPtr->blt_Tree_FindChild) /* 66 */
+	(bltTclProcsPtr->blt_Tree_FindChild) /* 65 */
 #endif
 #ifndef Blt_Tree_NextNode
 #define Blt_Tree_NextNode \
-	(bltTclProcsPtr->blt_Tree_NextNode) /* 67 */
+	(bltTclProcsPtr->blt_Tree_NextNode) /* 66 */
 #endif
 #ifndef Blt_Tree_PrevNode
 #define Blt_Tree_PrevNode \
-	(bltTclProcsPtr->blt_Tree_PrevNode) /* 68 */
+	(bltTclProcsPtr->blt_Tree_PrevNode) /* 67 */
 #endif
 #ifndef Blt_Tree_FirstChild
 #define Blt_Tree_FirstChild \
-	(bltTclProcsPtr->blt_Tree_FirstChild) /* 69 */
+	(bltTclProcsPtr->blt_Tree_FirstChild) /* 68 */
 #endif
 #ifndef Blt_Tree_LastChild
 #define Blt_Tree_LastChild \
-	(bltTclProcsPtr->blt_Tree_LastChild) /* 70 */
+	(bltTclProcsPtr->blt_Tree_LastChild) /* 69 */
 #endif
 #ifndef Blt_Tree_IsBefore
 #define Blt_Tree_IsBefore \
-	(bltTclProcsPtr->blt_Tree_IsBefore) /* 71 */
+	(bltTclProcsPtr->blt_Tree_IsBefore) /* 70 */
 #endif
 #ifndef Blt_Tree_IsAncestor
 #define Blt_Tree_IsAncestor \
-	(bltTclProcsPtr->blt_Tree_IsAncestor) /* 72 */
+	(bltTclProcsPtr->blt_Tree_IsAncestor) /* 71 */
 #endif
 #ifndef Blt_Tree_PrivateValue
 #define Blt_Tree_PrivateValue \
-	(bltTclProcsPtr->blt_Tree_PrivateValue) /* 73 */
+	(bltTclProcsPtr->blt_Tree_PrivateValue) /* 72 */
 #endif
 #ifndef Blt_Tree_PublicValue
 #define Blt_Tree_PublicValue \
-	(bltTclProcsPtr->blt_Tree_PublicValue) /* 74 */
+	(bltTclProcsPtr->blt_Tree_PublicValue) /* 73 */
 #endif
 #ifndef Blt_Tree_GetValue
 #define Blt_Tree_GetValue \
-	(bltTclProcsPtr->blt_Tree_GetValue) /* 75 */
+	(bltTclProcsPtr->blt_Tree_GetValue) /* 74 */
 #endif
 #ifndef Blt_Tree_ValueExists
 #define Blt_Tree_ValueExists \
-	(bltTclProcsPtr->blt_Tree_ValueExists) /* 76 */
+	(bltTclProcsPtr->blt_Tree_ValueExists) /* 75 */
 #endif
 #ifndef Blt_Tree_SetValue
 #define Blt_Tree_SetValue \
-	(bltTclProcsPtr->blt_Tree_SetValue) /* 77 */
+	(bltTclProcsPtr->blt_Tree_SetValue) /* 76 */
 #endif
 #ifndef Blt_Tree_UnsetValue
 #define Blt_Tree_UnsetValue \
-	(bltTclProcsPtr->blt_Tree_UnsetValue) /* 78 */
+	(bltTclProcsPtr->blt_Tree_UnsetValue) /* 77 */
 #endif
 #ifndef Blt_Tree_AppendValue
 #define Blt_Tree_AppendValue \
-	(bltTclProcsPtr->blt_Tree_AppendValue) /* 79 */
+	(bltTclProcsPtr->blt_Tree_AppendValue) /* 78 */
 #endif
 #ifndef Blt_Tree_ListAppendValue
 #define Blt_Tree_ListAppendValue \
-	(bltTclProcsPtr->blt_Tree_ListAppendValue) /* 80 */
+	(bltTclProcsPtr->blt_Tree_ListAppendValue) /* 79 */
 #endif
 #ifndef Blt_Tree_GetArrayValue
 #define Blt_Tree_GetArrayValue \
-	(bltTclProcsPtr->blt_Tree_GetArrayValue) /* 81 */
+	(bltTclProcsPtr->blt_Tree_GetArrayValue) /* 80 */
 #endif
 #ifndef Blt_Tree_SetArrayValue
 #define Blt_Tree_SetArrayValue \
-	(bltTclProcsPtr->blt_Tree_SetArrayValue) /* 82 */
+	(bltTclProcsPtr->blt_Tree_SetArrayValue) /* 81 */
 #endif
 #ifndef Blt_Tree_UnsetArrayValue
 #define Blt_Tree_UnsetArrayValue \
-	(bltTclProcsPtr->blt_Tree_UnsetArrayValue) /* 83 */
+	(bltTclProcsPtr->blt_Tree_UnsetArrayValue) /* 82 */
 #endif
 #ifndef Blt_Tree_AppendArrayValue
 #define Blt_Tree_AppendArrayValue \
-	(bltTclProcsPtr->blt_Tree_AppendArrayValue) /* 84 */
+	(bltTclProcsPtr->blt_Tree_AppendArrayValue) /* 83 */
 #endif
 #ifndef Blt_Tree_ListAppendArrayValue
 #define Blt_Tree_ListAppendArrayValue \
-	(bltTclProcsPtr->blt_Tree_ListAppendArrayValue) /* 85 */
+	(bltTclProcsPtr->blt_Tree_ListAppendArrayValue) /* 84 */
 #endif
 #ifndef Blt_Tree_ArrayValueExists
 #define Blt_Tree_ArrayValueExists \
-	(bltTclProcsPtr->blt_Tree_ArrayValueExists) /* 86 */
+	(bltTclProcsPtr->blt_Tree_ArrayValueExists) /* 85 */
 #endif
 #ifndef Blt_Tree_ArrayNames
 #define Blt_Tree_ArrayNames \
-	(bltTclProcsPtr->blt_Tree_ArrayNames) /* 87 */
+	(bltTclProcsPtr->blt_Tree_ArrayNames) /* 86 */
 #endif
 #ifndef Blt_Tree_GetValueByKey
 #define Blt_Tree_GetValueByKey \
-	(bltTclProcsPtr->blt_Tree_GetValueByKey) /* 88 */
+	(bltTclProcsPtr->blt_Tree_GetValueByKey) /* 87 */
 #endif
 #ifndef Blt_Tree_SetValueByKey
 #define Blt_Tree_SetValueByKey \
-	(bltTclProcsPtr->blt_Tree_SetValueByKey) /* 89 */
+	(bltTclProcsPtr->blt_Tree_SetValueByKey) /* 88 */
 #endif
 #ifndef Blt_Tree_UnsetValueByKey
 #define Blt_Tree_UnsetValueByKey \
-	(bltTclProcsPtr->blt_Tree_UnsetValueByKey) /* 90 */
+	(bltTclProcsPtr->blt_Tree_UnsetValueByKey) /* 89 */
 #endif
 #ifndef Blt_Tree_AppendValueByKey
 #define Blt_Tree_AppendValueByKey \
-	(bltTclProcsPtr->blt_Tree_AppendValueByKey) /* 91 */
+	(bltTclProcsPtr->blt_Tree_AppendValueByKey) /* 90 */
 #endif
 #ifndef Blt_Tree_ListAppendValueByKey
 #define Blt_Tree_ListAppendValueByKey \
-	(bltTclProcsPtr->blt_Tree_ListAppendValueByKey) /* 92 */
+	(bltTclProcsPtr->blt_Tree_ListAppendValueByKey) /* 91 */
 #endif
 #ifndef Blt_Tree_ValueExistsByKey
 #define Blt_Tree_ValueExistsByKey \
-	(bltTclProcsPtr->blt_Tree_ValueExistsByKey) /* 93 */
+	(bltTclProcsPtr->blt_Tree_ValueExistsByKey) /* 92 */
 #endif
 #ifndef Blt_Tree_FirstKey
 #define Blt_Tree_FirstKey \
-	(bltTclProcsPtr->blt_Tree_FirstKey) /* 94 */
+	(bltTclProcsPtr->blt_Tree_FirstKey) /* 93 */
 #endif
 #ifndef Blt_Tree_NextKey
 #define Blt_Tree_NextKey \
-	(bltTclProcsPtr->blt_Tree_NextKey) /* 95 */
+	(bltTclProcsPtr->blt_Tree_NextKey) /* 94 */
 #endif
 #ifndef Blt_Tree_Apply
 #define Blt_Tree_Apply \
-	(bltTclProcsPtr->blt_Tree_Apply) /* 96 */
+	(bltTclProcsPtr->blt_Tree_Apply) /* 95 */
 #endif
 #ifndef Blt_Tree_ApplyDFS
 #define Blt_Tree_ApplyDFS \
-	(bltTclProcsPtr->blt_Tree_ApplyDFS) /* 97 */
+	(bltTclProcsPtr->blt_Tree_ApplyDFS) /* 96 */
 #endif
 #ifndef Blt_Tree_ApplyBFS
 #define Blt_Tree_ApplyBFS \
-	(bltTclProcsPtr->blt_Tree_ApplyBFS) /* 98 */
+	(bltTclProcsPtr->blt_Tree_ApplyBFS) /* 97 */
 #endif
 #ifndef Blt_Tree_SortNode
 #define Blt_Tree_SortNode \
-	(bltTclProcsPtr->blt_Tree_SortNode) /* 99 */
+	(bltTclProcsPtr->blt_Tree_SortNode) /* 98 */
 #endif
 #ifndef Blt_Tree_Exists
 #define Blt_Tree_Exists \
-	(bltTclProcsPtr->blt_Tree_Exists) /* 100 */
+	(bltTclProcsPtr->blt_Tree_Exists) /* 99 */
 #endif
 #ifndef Blt_Tree_Open
 #define Blt_Tree_Open \
-	(bltTclProcsPtr->blt_Tree_Open) /* 101 */
+	(bltTclProcsPtr->blt_Tree_Open) /* 100 */
 #endif
 #ifndef Blt_Tree_Close
 #define Blt_Tree_Close \
-	(bltTclProcsPtr->blt_Tree_Close) /* 102 */
+	(bltTclProcsPtr->blt_Tree_Close) /* 101 */
 #endif
 #ifndef Blt_Tree_Attach
 #define Blt_Tree_Attach \
-	(bltTclProcsPtr->blt_Tree_Attach) /* 103 */
+	(bltTclProcsPtr->blt_Tree_Attach) /* 102 */
 #endif
 #ifndef Blt_Tree_GetFromObj
 #define Blt_Tree_GetFromObj \
-	(bltTclProcsPtr->blt_Tree_GetFromObj) /* 104 */
+	(bltTclProcsPtr->blt_Tree_GetFromObj) /* 103 */
 #endif
 #ifndef Blt_Tree_Size
 #define Blt_Tree_Size \
-	(bltTclProcsPtr->blt_Tree_Size) /* 105 */
+	(bltTclProcsPtr->blt_Tree_Size) /* 104 */
 #endif
 #ifndef Blt_Tree_CreateTrace
 #define Blt_Tree_CreateTrace \
-	(bltTclProcsPtr->blt_Tree_CreateTrace) /* 106 */
+	(bltTclProcsPtr->blt_Tree_CreateTrace) /* 105 */
 #endif
 #ifndef Blt_Tree_DeleteTrace
 #define Blt_Tree_DeleteTrace \
-	(bltTclProcsPtr->blt_Tree_DeleteTrace) /* 107 */
+	(bltTclProcsPtr->blt_Tree_DeleteTrace) /* 106 */
 #endif
 #ifndef Blt_Tree_CreateEventHandler
 #define Blt_Tree_CreateEventHandler \
-	(bltTclProcsPtr->blt_Tree_CreateEventHandler) /* 108 */
+	(bltTclProcsPtr->blt_Tree_CreateEventHandler) /* 107 */
 #endif
 #ifndef Blt_Tree_DeleteEventHandler
 #define Blt_Tree_DeleteEventHandler \
-	(bltTclProcsPtr->blt_Tree_DeleteEventHandler) /* 109 */
+	(bltTclProcsPtr->blt_Tree_DeleteEventHandler) /* 108 */
 #endif
 #ifndef Blt_Tree_RelabelNode
 #define Blt_Tree_RelabelNode \
-	(bltTclProcsPtr->blt_Tree_RelabelNode) /* 110 */
+	(bltTclProcsPtr->blt_Tree_RelabelNode) /* 109 */
 #endif
 #ifndef Blt_Tree_RelabelNodeWithoutNotify
 #define Blt_Tree_RelabelNodeWithoutNotify \
-	(bltTclProcsPtr->blt_Tree_RelabelNodeWithoutNotify) /* 111 */
+	(bltTclProcsPtr->blt_Tree_RelabelNodeWithoutNotify) /* 110 */
 #endif
 #ifndef Blt_Tree_NodeIdAscii
 #define Blt_Tree_NodeIdAscii \
-	(bltTclProcsPtr->blt_Tree_NodeIdAscii) /* 112 */
+	(bltTclProcsPtr->blt_Tree_NodeIdAscii) /* 111 */
 #endif
 #ifndef Blt_Tree_NodePath
 #define Blt_Tree_NodePath \
-	(bltTclProcsPtr->blt_Tree_NodePath) /* 113 */
+	(bltTclProcsPtr->blt_Tree_NodePath) /* 112 */
 #endif
 #ifndef Blt_Tree_NodeRelativePath
 #define Blt_Tree_NodeRelativePath \
-	(bltTclProcsPtr->blt_Tree_NodeRelativePath) /* 114 */
+	(bltTclProcsPtr->blt_Tree_NodeRelativePath) /* 113 */
 #endif
 #ifndef Blt_Tree_NodePosition
 #define Blt_Tree_NodePosition \
-	(bltTclProcsPtr->blt_Tree_NodePosition) /* 115 */
+	(bltTclProcsPtr->blt_Tree_NodePosition) /* 114 */
 #endif
 #ifndef Blt_Tree_ClearTags
 #define Blt_Tree_ClearTags \
-	(bltTclProcsPtr->blt_Tree_ClearTags) /* 116 */
+	(bltTclProcsPtr->blt_Tree_ClearTags) /* 115 */
 #endif
 #ifndef Blt_Tree_HasTag
 #define Blt_Tree_HasTag \
-	(bltTclProcsPtr->blt_Tree_HasTag) /* 117 */
+	(bltTclProcsPtr->blt_Tree_HasTag) /* 116 */
 #endif
 #ifndef Blt_Tree_AddTag
 #define Blt_Tree_AddTag \
-	(bltTclProcsPtr->blt_Tree_AddTag) /* 118 */
+	(bltTclProcsPtr->blt_Tree_AddTag) /* 117 */
 #endif
 #ifndef Blt_Tree_RemoveTag
 #define Blt_Tree_RemoveTag \
-	(bltTclProcsPtr->blt_Tree_RemoveTag) /* 119 */
+	(bltTclProcsPtr->blt_Tree_RemoveTag) /* 118 */
 #endif
 #ifndef Blt_Tree_ForgetTag
 #define Blt_Tree_ForgetTag \
-	(bltTclProcsPtr->blt_Tree_ForgetTag) /* 120 */
+	(bltTclProcsPtr->blt_Tree_ForgetTag) /* 119 */
 #endif
 #ifndef Blt_Tree_TagHashTable
 #define Blt_Tree_TagHashTable \
-	(bltTclProcsPtr->blt_Tree_TagHashTable) /* 121 */
+	(bltTclProcsPtr->blt_Tree_TagHashTable) /* 120 */
 #endif
 #ifndef Blt_Tree_TagTableIsShared
 #define Blt_Tree_TagTableIsShared \
-	(bltTclProcsPtr->blt_Tree_TagTableIsShared) /* 122 */
+	(bltTclProcsPtr->blt_Tree_TagTableIsShared) /* 121 */
 #endif
 #ifndef Blt_Tree_NewTagTable
 #define Blt_Tree_NewTagTable \
-	(bltTclProcsPtr->blt_Tree_NewTagTable) /* 123 */
+	(bltTclProcsPtr->blt_Tree_NewTagTable) /* 122 */
 #endif
 #ifndef Blt_Tree_FirstTag
 #define Blt_Tree_FirstTag \
-	(bltTclProcsPtr->blt_Tree_FirstTag) /* 124 */
-#endif
-#ifndef Blt_Tree_DumpNode
-#define Blt_Tree_DumpNode \
-	(bltTclProcsPtr->blt_Tree_DumpNode) /* 125 */
-#endif
-#ifndef Blt_Tree_Dump
-#define Blt_Tree_Dump \
-	(bltTclProcsPtr->blt_Tree_Dump) /* 126 */
-#endif
-#ifndef Blt_Tree_DumpToFile
-#define Blt_Tree_DumpToFile \
-	(bltTclProcsPtr->blt_Tree_DumpToFile) /* 127 */
-#endif
-#ifndef Blt_Tree_Restore
-#define Blt_Tree_Restore \
-	(bltTclProcsPtr->blt_Tree_Restore) /* 128 */
-#endif
-#ifndef Blt_Tree_RestoreFromFile
-#define Blt_Tree_RestoreFromFile \
-	(bltTclProcsPtr->blt_Tree_RestoreFromFile) /* 129 */
+	(bltTclProcsPtr->blt_Tree_FirstTag) /* 123 */
 #endif
 #ifndef Blt_Tree_Depth
 #define Blt_Tree_Depth \
-	(bltTclProcsPtr->blt_Tree_Depth) /* 130 */
+	(bltTclProcsPtr->blt_Tree_Depth) /* 124 */
 #endif
 #ifndef Blt_Tree_RegisterFormat
 #define Blt_Tree_RegisterFormat \
-	(bltTclProcsPtr->blt_Tree_RegisterFormat) /* 131 */
+	(bltTclProcsPtr->blt_Tree_RegisterFormat) /* 125 */
 #endif
 #ifndef Blt_Tree_RememberTag
 #define Blt_Tree_RememberTag \
-	(bltTclProcsPtr->blt_Tree_RememberTag) /* 132 */
+	(bltTclProcsPtr->blt_Tree_RememberTag) /* 126 */
 #endif
 #ifndef Blt_Tree_GetNodeFromObj
 #define Blt_Tree_GetNodeFromObj \
-	(bltTclProcsPtr->blt_Tree_GetNodeFromObj) /* 133 */
+	(bltTclProcsPtr->blt_Tree_GetNodeFromObj) /* 127 */
 #endif
 #ifndef Blt_Tree_GetNodeIterator
 #define Blt_Tree_GetNodeIterator \
-	(bltTclProcsPtr->blt_Tree_GetNodeIterator) /* 134 */
+	(bltTclProcsPtr->blt_Tree_GetNodeIterator) /* 128 */
 #endif
 #ifndef Blt_Tree_FirstTaggedNode
 #define Blt_Tree_FirstTaggedNode \
-	(bltTclProcsPtr->blt_Tree_FirstTaggedNode) /* 135 */
+	(bltTclProcsPtr->blt_Tree_FirstTaggedNode) /* 129 */
 #endif
 #ifndef Blt_Tree_NextTaggedNode
 #define Blt_Tree_NextTaggedNode \
-	(bltTclProcsPtr->blt_Tree_NextTaggedNode) /* 136 */
+	(bltTclProcsPtr->blt_Tree_NextTaggedNode) /* 130 */
 #endif
 #ifndef blt_table_release_tags
 #define blt_table_release_tags \
-	(bltTclProcsPtr->blt_table_release_tags) /* 137 */
+	(bltTclProcsPtr->blt_table_release_tags) /* 131 */
 #endif
 #ifndef blt_table_new_tags
 #define blt_table_new_tags \
-	(bltTclProcsPtr->blt_table_new_tags) /* 138 */
+	(bltTclProcsPtr->blt_table_new_tags) /* 132 */
 #endif
 #ifndef blt_table_get_column_tag_table
 #define blt_table_get_column_tag_table \
-	(bltTclProcsPtr->blt_table_get_column_tag_table) /* 139 */
+	(bltTclProcsPtr->blt_table_get_column_tag_table) /* 133 */
 #endif
 #ifndef blt_table_get_row_tag_table
 #define blt_table_get_row_tag_table \
-	(bltTclProcsPtr->blt_table_get_row_tag_table) /* 140 */
+	(bltTclProcsPtr->blt_table_get_row_tag_table) /* 134 */
 #endif
 #ifndef blt_table_exists
 #define blt_table_exists \
-	(bltTclProcsPtr->blt_table_exists) /* 141 */
+	(bltTclProcsPtr->blt_table_exists) /* 135 */
 #endif
 #ifndef blt_table_create
 #define blt_table_create \
-	(bltTclProcsPtr->blt_table_create) /* 142 */
+	(bltTclProcsPtr->blt_table_create) /* 136 */
 #endif
 #ifndef blt_table_open
 #define blt_table_open \
-	(bltTclProcsPtr->blt_table_open) /* 143 */
+	(bltTclProcsPtr->blt_table_open) /* 137 */
 #endif
 #ifndef blt_table_close
 #define blt_table_close \
-	(bltTclProcsPtr->blt_table_close) /* 144 */
+	(bltTclProcsPtr->blt_table_close) /* 138 */
+#endif
+#ifndef blt_table_clear
+#define blt_table_clear \
+	(bltTclProcsPtr->blt_table_clear) /* 139 */
+#endif
+#ifndef blt_table_pack
+#define blt_table_pack \
+	(bltTclProcsPtr->blt_table_pack) /* 140 */
 #endif
 #ifndef blt_table_same_object
 #define blt_table_same_object \
-	(bltTclProcsPtr->blt_table_same_object) /* 145 */
+	(bltTclProcsPtr->blt_table_same_object) /* 141 */
 #endif
 #ifndef blt_table_row_get_label_table
 #define blt_table_row_get_label_table \
-	(bltTclProcsPtr->blt_table_row_get_label_table) /* 146 */
+	(bltTclProcsPtr->blt_table_row_get_label_table) /* 142 */
 #endif
 #ifndef blt_table_column_get_label_table
 #define blt_table_column_get_label_table \
-	(bltTclProcsPtr->blt_table_column_get_label_table) /* 147 */
+	(bltTclProcsPtr->blt_table_column_get_label_table) /* 143 */
 #endif
 #ifndef blt_table_get_row
 #define blt_table_get_row \
-	(bltTclProcsPtr->blt_table_get_row) /* 148 */
+	(bltTclProcsPtr->blt_table_get_row) /* 144 */
 #endif
 #ifndef blt_table_get_column
 #define blt_table_get_column \
-	(bltTclProcsPtr->blt_table_get_column) /* 149 */
+	(bltTclProcsPtr->blt_table_get_column) /* 145 */
 #endif
 #ifndef blt_table_get_row_by_label
 #define blt_table_get_row_by_label \
-	(bltTclProcsPtr->blt_table_get_row_by_label) /* 150 */
+	(bltTclProcsPtr->blt_table_get_row_by_label) /* 146 */
 #endif
 #ifndef blt_table_get_column_by_label
 #define blt_table_get_column_by_label \
-	(bltTclProcsPtr->blt_table_get_column_by_label) /* 151 */
+	(bltTclProcsPtr->blt_table_get_column_by_label) /* 147 */
 #endif
 #ifndef blt_table_get_row_by_index
 #define blt_table_get_row_by_index \
-	(bltTclProcsPtr->blt_table_get_row_by_index) /* 152 */
+	(bltTclProcsPtr->blt_table_get_row_by_index) /* 148 */
 #endif
 #ifndef blt_table_get_column_by_index
 #define blt_table_get_column_by_index \
-	(bltTclProcsPtr->blt_table_get_column_by_index) /* 153 */
+	(bltTclProcsPtr->blt_table_get_column_by_index) /* 149 */
 #endif
 #ifndef blt_table_set_row_label
 #define blt_table_set_row_label \
-	(bltTclProcsPtr->blt_table_set_row_label) /* 154 */
+	(bltTclProcsPtr->blt_table_set_row_label) /* 150 */
 #endif
 #ifndef blt_table_set_column_label
 #define blt_table_set_column_label \
-	(bltTclProcsPtr->blt_table_set_column_label) /* 155 */
+	(bltTclProcsPtr->blt_table_set_column_label) /* 151 */
 #endif
 #ifndef blt_table_name_to_column_type
 #define blt_table_name_to_column_type \
-	(bltTclProcsPtr->blt_table_name_to_column_type) /* 156 */
+	(bltTclProcsPtr->blt_table_name_to_column_type) /* 152 */
 #endif
 #ifndef blt_table_set_column_type
 #define blt_table_set_column_type \
-	(bltTclProcsPtr->blt_table_set_column_type) /* 157 */
+	(bltTclProcsPtr->blt_table_set_column_type) /* 153 */
 #endif
 #ifndef blt_table_column_type_to_name
 #define blt_table_column_type_to_name \
-	(bltTclProcsPtr->blt_table_column_type_to_name) /* 158 */
+	(bltTclProcsPtr->blt_table_column_type_to_name) /* 154 */
 #endif
 #ifndef blt_table_set_column_tag
 #define blt_table_set_column_tag \
-	(bltTclProcsPtr->blt_table_set_column_tag) /* 159 */
+	(bltTclProcsPtr->blt_table_set_column_tag) /* 155 */
 #endif
 #ifndef blt_table_set_row_tag
 #define blt_table_set_row_tag \
-	(bltTclProcsPtr->blt_table_set_row_tag) /* 160 */
+	(bltTclProcsPtr->blt_table_set_row_tag) /* 156 */
 #endif
 #ifndef blt_table_create_row
 #define blt_table_create_row \
-	(bltTclProcsPtr->blt_table_create_row) /* 161 */
+	(bltTclProcsPtr->blt_table_create_row) /* 157 */
 #endif
 #ifndef blt_table_create_column
 #define blt_table_create_column \
-	(bltTclProcsPtr->blt_table_create_column) /* 162 */
+	(bltTclProcsPtr->blt_table_create_column) /* 158 */
 #endif
 #ifndef blt_table_extend_rows
 #define blt_table_extend_rows \
-	(bltTclProcsPtr->blt_table_extend_rows) /* 163 */
+	(bltTclProcsPtr->blt_table_extend_rows) /* 159 */
 #endif
 #ifndef blt_table_extend_columns
 #define blt_table_extend_columns \
-	(bltTclProcsPtr->blt_table_extend_columns) /* 164 */
+	(bltTclProcsPtr->blt_table_extend_columns) /* 160 */
 #endif
 #ifndef blt_table_delete_row
 #define blt_table_delete_row \
-	(bltTclProcsPtr->blt_table_delete_row) /* 165 */
+	(bltTclProcsPtr->blt_table_delete_row) /* 161 */
 #endif
 #ifndef blt_table_delete_column
 #define blt_table_delete_column \
-	(bltTclProcsPtr->blt_table_delete_column) /* 166 */
+	(bltTclProcsPtr->blt_table_delete_column) /* 162 */
 #endif
-#ifndef blt_table_move_row
-#define blt_table_move_row \
-	(bltTclProcsPtr->blt_table_move_row) /* 167 */
+#ifndef blt_table_move_rows
+#define blt_table_move_rows \
+	(bltTclProcsPtr->blt_table_move_rows) /* 163 */
 #endif
-#ifndef blt_table_move_column
-#define blt_table_move_column \
-	(bltTclProcsPtr->blt_table_move_column) /* 168 */
+#ifndef blt_table_move_columns
+#define blt_table_move_columns \
+	(bltTclProcsPtr->blt_table_move_columns) /* 164 */
 #endif
 #ifndef blt_table_get_obj
 #define blt_table_get_obj \
-	(bltTclProcsPtr->blt_table_get_obj) /* 169 */
+	(bltTclProcsPtr->blt_table_get_obj) /* 165 */
 #endif
 #ifndef blt_table_set_obj
 #define blt_table_set_obj \
-	(bltTclProcsPtr->blt_table_set_obj) /* 170 */
+	(bltTclProcsPtr->blt_table_set_obj) /* 166 */
 #endif
 #ifndef blt_table_get_string
 #define blt_table_get_string \
-	(bltTclProcsPtr->blt_table_get_string) /* 171 */
+	(bltTclProcsPtr->blt_table_get_string) /* 167 */
 #endif
 #ifndef blt_table_set_string_rep
 #define blt_table_set_string_rep \
-	(bltTclProcsPtr->blt_table_set_string_rep) /* 172 */
+	(bltTclProcsPtr->blt_table_set_string_rep) /* 168 */
 #endif
 #ifndef blt_table_set_string
 #define blt_table_set_string \
-	(bltTclProcsPtr->blt_table_set_string) /* 173 */
+	(bltTclProcsPtr->blt_table_set_string) /* 169 */
 #endif
 #ifndef blt_table_append_string
 #define blt_table_append_string \
-	(bltTclProcsPtr->blt_table_append_string) /* 174 */
+	(bltTclProcsPtr->blt_table_append_string) /* 170 */
 #endif
 #ifndef blt_table_set_bytes
 #define blt_table_set_bytes \
-	(bltTclProcsPtr->blt_table_set_bytes) /* 175 */
+	(bltTclProcsPtr->blt_table_set_bytes) /* 171 */
 #endif
 #ifndef blt_table_get_double
 #define blt_table_get_double \
-	(bltTclProcsPtr->blt_table_get_double) /* 176 */
+	(bltTclProcsPtr->blt_table_get_double) /* 172 */
 #endif
 #ifndef blt_table_set_double
 #define blt_table_set_double \
-	(bltTclProcsPtr->blt_table_set_double) /* 177 */
+	(bltTclProcsPtr->blt_table_set_double) /* 173 */
 #endif
 #ifndef blt_table_get_long
 #define blt_table_get_long \
-	(bltTclProcsPtr->blt_table_get_long) /* 178 */
+	(bltTclProcsPtr->blt_table_get_long) /* 174 */
 #endif
 #ifndef blt_table_set_long
 #define blt_table_set_long \
-	(bltTclProcsPtr->blt_table_set_long) /* 179 */
+	(bltTclProcsPtr->blt_table_set_long) /* 175 */
 #endif
 #ifndef blt_table_get_boolean
 #define blt_table_get_boolean \
-	(bltTclProcsPtr->blt_table_get_boolean) /* 180 */
+	(bltTclProcsPtr->blt_table_get_boolean) /* 176 */
 #endif
 #ifndef blt_table_set_boolean
 #define blt_table_set_boolean \
-	(bltTclProcsPtr->blt_table_set_boolean) /* 181 */
+	(bltTclProcsPtr->blt_table_set_boolean) /* 177 */
+#endif
+#ifndef blt_table_set_int64
+#define blt_table_set_int64 \
+	(bltTclProcsPtr->blt_table_set_int64) /* 178 */
+#endif
+#ifndef blt_table_get_int64
+#define blt_table_get_int64 \
+	(bltTclProcsPtr->blt_table_get_int64) /* 179 */
 #endif
 #ifndef blt_table_get_value
 #define blt_table_get_value \
-	(bltTclProcsPtr->blt_table_get_value) /* 182 */
+	(bltTclProcsPtr->blt_table_get_value) /* 180 */
 #endif
 #ifndef blt_table_set_value
 #define blt_table_set_value \
-	(bltTclProcsPtr->blt_table_set_value) /* 183 */
+	(bltTclProcsPtr->blt_table_set_value) /* 181 */
 #endif
 #ifndef blt_table_unset_value
 #define blt_table_unset_value \
-	(bltTclProcsPtr->blt_table_unset_value) /* 184 */
+	(bltTclProcsPtr->blt_table_unset_value) /* 182 */
 #endif
 #ifndef blt_table_value_exists
 #define blt_table_value_exists \
-	(bltTclProcsPtr->blt_table_value_exists) /* 185 */
+	(bltTclProcsPtr->blt_table_value_exists) /* 183 */
 #endif
 #ifndef blt_table_value_string
 #define blt_table_value_string \
-	(bltTclProcsPtr->blt_table_value_string) /* 186 */
+	(bltTclProcsPtr->blt_table_value_string) /* 184 */
 #endif
 #ifndef blt_table_value_bytes
 #define blt_table_value_bytes \
-	(bltTclProcsPtr->blt_table_value_bytes) /* 187 */
+	(bltTclProcsPtr->blt_table_value_bytes) /* 185 */
 #endif
 #ifndef blt_table_value_length
 #define blt_table_value_length \
-	(bltTclProcsPtr->blt_table_value_length) /* 188 */
+	(bltTclProcsPtr->blt_table_value_length) /* 186 */
 #endif
 #ifndef blt_table_tags_are_shared
 #define blt_table_tags_are_shared \
-	(bltTclProcsPtr->blt_table_tags_are_shared) /* 189 */
+	(bltTclProcsPtr->blt_table_tags_are_shared) /* 187 */
 #endif
 #ifndef blt_table_clear_row_tags
 #define blt_table_clear_row_tags \
-	(bltTclProcsPtr->blt_table_clear_row_tags) /* 190 */
+	(bltTclProcsPtr->blt_table_clear_row_tags) /* 188 */
 #endif
 #ifndef blt_table_clear_column_tags
 #define blt_table_clear_column_tags \
-	(bltTclProcsPtr->blt_table_clear_column_tags) /* 191 */
+	(bltTclProcsPtr->blt_table_clear_column_tags) /* 189 */
 #endif
 #ifndef blt_table_get_row_tags
 #define blt_table_get_row_tags \
-	(bltTclProcsPtr->blt_table_get_row_tags) /* 192 */
+	(bltTclProcsPtr->blt_table_get_row_tags) /* 190 */
 #endif
 #ifndef blt_table_get_column_tags
 #define blt_table_get_column_tags \
-	(bltTclProcsPtr->blt_table_get_column_tags) /* 193 */
+	(bltTclProcsPtr->blt_table_get_column_tags) /* 191 */
 #endif
 #ifndef blt_table_get_tagged_rows
 #define blt_table_get_tagged_rows \
-	(bltTclProcsPtr->blt_table_get_tagged_rows) /* 194 */
+	(bltTclProcsPtr->blt_table_get_tagged_rows) /* 192 */
 #endif
 #ifndef blt_table_get_tagged_columns
 #define blt_table_get_tagged_columns \
-	(bltTclProcsPtr->blt_table_get_tagged_columns) /* 195 */
+	(bltTclProcsPtr->blt_table_get_tagged_columns) /* 193 */
 #endif
 #ifndef blt_table_row_has_tag
 #define blt_table_row_has_tag \
-	(bltTclProcsPtr->blt_table_row_has_tag) /* 196 */
+	(bltTclProcsPtr->blt_table_row_has_tag) /* 194 */
 #endif
 #ifndef blt_table_column_has_tag
 #define blt_table_column_has_tag \
-	(bltTclProcsPtr->blt_table_column_has_tag) /* 197 */
+	(bltTclProcsPtr->blt_table_column_has_tag) /* 195 */
 #endif
 #ifndef blt_table_forget_row_tag
 #define blt_table_forget_row_tag \
-	(bltTclProcsPtr->blt_table_forget_row_tag) /* 198 */
+	(bltTclProcsPtr->blt_table_forget_row_tag) /* 196 */
 #endif
 #ifndef blt_table_forget_column_tag
 #define blt_table_forget_column_tag \
-	(bltTclProcsPtr->blt_table_forget_column_tag) /* 199 */
+	(bltTclProcsPtr->blt_table_forget_column_tag) /* 197 */
 #endif
 #ifndef blt_table_unset_row_tag
 #define blt_table_unset_row_tag \
-	(bltTclProcsPtr->blt_table_unset_row_tag) /* 200 */
+	(bltTclProcsPtr->blt_table_unset_row_tag) /* 198 */
 #endif
 #ifndef blt_table_unset_column_tag
 #define blt_table_unset_column_tag \
-	(bltTclProcsPtr->blt_table_unset_column_tag) /* 201 */
+	(bltTclProcsPtr->blt_table_unset_column_tag) /* 199 */
 #endif
 #ifndef blt_table_first_column
 #define blt_table_first_column \
-	(bltTclProcsPtr->blt_table_first_column) /* 202 */
+	(bltTclProcsPtr->blt_table_first_column) /* 200 */
+#endif
+#ifndef blt_table_last_column
+#define blt_table_last_column \
+	(bltTclProcsPtr->blt_table_last_column) /* 201 */
 #endif
 #ifndef blt_table_next_column
 #define blt_table_next_column \
-	(bltTclProcsPtr->blt_table_next_column) /* 203 */
+	(bltTclProcsPtr->blt_table_next_column) /* 202 */
+#endif
+#ifndef blt_table_previous_column
+#define blt_table_previous_column \
+	(bltTclProcsPtr->blt_table_previous_column) /* 203 */
 #endif
 #ifndef blt_table_first_row
 #define blt_table_first_row \
 	(bltTclProcsPtr->blt_table_first_row) /* 204 */
 #endif
+#ifndef blt_table_last_row
+#define blt_table_last_row \
+	(bltTclProcsPtr->blt_table_last_row) /* 205 */
+#endif
 #ifndef blt_table_next_row
 #define blt_table_next_row \
-	(bltTclProcsPtr->blt_table_next_row) /* 205 */
+	(bltTclProcsPtr->blt_table_next_row) /* 206 */
+#endif
+#ifndef blt_table_previous_row
+#define blt_table_previous_row \
+	(bltTclProcsPtr->blt_table_previous_row) /* 207 */
 #endif
 #ifndef blt_table_row_spec
 #define blt_table_row_spec \
-	(bltTclProcsPtr->blt_table_row_spec) /* 206 */
+	(bltTclProcsPtr->blt_table_row_spec) /* 208 */
 #endif
 #ifndef blt_table_column_spec
 #define blt_table_column_spec \
-	(bltTclProcsPtr->blt_table_column_spec) /* 207 */
+	(bltTclProcsPtr->blt_table_column_spec) /* 209 */
 #endif
 #ifndef blt_table_iterate_rows
 #define blt_table_iterate_rows \
-	(bltTclProcsPtr->blt_table_iterate_rows) /* 208 */
+	(bltTclProcsPtr->blt_table_iterate_rows) /* 210 */
 #endif
 #ifndef blt_table_iterate_columns
 #define blt_table_iterate_columns \
-	(bltTclProcsPtr->blt_table_iterate_columns) /* 209 */
+	(bltTclProcsPtr->blt_table_iterate_columns) /* 211 */
 #endif
 #ifndef blt_table_iterate_rows_objv
 #define blt_table_iterate_rows_objv \
-	(bltTclProcsPtr->blt_table_iterate_rows_objv) /* 210 */
+	(bltTclProcsPtr->blt_table_iterate_rows_objv) /* 212 */
 #endif
 #ifndef blt_table_iterate_columns_objv
 #define blt_table_iterate_columns_objv \
-	(bltTclProcsPtr->blt_table_iterate_columns_objv) /* 211 */
+	(bltTclProcsPtr->blt_table_iterate_columns_objv) /* 213 */
 #endif
 #ifndef blt_table_free_iterator_objv
 #define blt_table_free_iterator_objv \
-	(bltTclProcsPtr->blt_table_free_iterator_objv) /* 212 */
+	(bltTclProcsPtr->blt_table_free_iterator_objv) /* 214 */
 #endif
 #ifndef blt_table_iterate_all_rows
 #define blt_table_iterate_all_rows \
-	(bltTclProcsPtr->blt_table_iterate_all_rows) /* 213 */
+	(bltTclProcsPtr->blt_table_iterate_all_rows) /* 215 */
 #endif
 #ifndef blt_table_iterate_all_columns
 #define blt_table_iterate_all_columns \
-	(bltTclProcsPtr->blt_table_iterate_all_columns) /* 214 */
+	(bltTclProcsPtr->blt_table_iterate_all_columns) /* 216 */
 #endif
 #ifndef blt_table_first_tagged_row
 #define blt_table_first_tagged_row \
-	(bltTclProcsPtr->blt_table_first_tagged_row) /* 215 */
+	(bltTclProcsPtr->blt_table_first_tagged_row) /* 217 */
 #endif
 #ifndef blt_table_first_tagged_column
 #define blt_table_first_tagged_column \
-	(bltTclProcsPtr->blt_table_first_tagged_column) /* 216 */
+	(bltTclProcsPtr->blt_table_first_tagged_column) /* 218 */
 #endif
 #ifndef blt_table_next_tagged_row
 #define blt_table_next_tagged_row \
-	(bltTclProcsPtr->blt_table_next_tagged_row) /* 217 */
+	(bltTclProcsPtr->blt_table_next_tagged_row) /* 219 */
 #endif
 #ifndef blt_table_next_tagged_column
 #define blt_table_next_tagged_column \
-	(bltTclProcsPtr->blt_table_next_tagged_column) /* 218 */
+	(bltTclProcsPtr->blt_table_next_tagged_column) /* 220 */
 #endif
 #ifndef blt_table_list_rows
 #define blt_table_list_rows \
-	(bltTclProcsPtr->blt_table_list_rows) /* 219 */
+	(bltTclProcsPtr->blt_table_list_rows) /* 221 */
 #endif
 #ifndef blt_table_list_columns
 #define blt_table_list_columns \
-	(bltTclProcsPtr->blt_table_list_columns) /* 220 */
+	(bltTclProcsPtr->blt_table_list_columns) /* 222 */
 #endif
 #ifndef blt_table_clear_row_traces
 #define blt_table_clear_row_traces \
-	(bltTclProcsPtr->blt_table_clear_row_traces) /* 221 */
+	(bltTclProcsPtr->blt_table_clear_row_traces) /* 223 */
 #endif
 #ifndef blt_table_clear_column_traces
 #define blt_table_clear_column_traces \
-	(bltTclProcsPtr->blt_table_clear_column_traces) /* 222 */
+	(bltTclProcsPtr->blt_table_clear_column_traces) /* 224 */
 #endif
 #ifndef blt_table_create_trace
 #define blt_table_create_trace \
-	(bltTclProcsPtr->blt_table_create_trace) /* 223 */
+	(bltTclProcsPtr->blt_table_create_trace) /* 225 */
 #endif
 #ifndef blt_table_trace_column
 #define blt_table_trace_column \
-	(bltTclProcsPtr->blt_table_trace_column) /* 224 */
+	(bltTclProcsPtr->blt_table_trace_column) /* 226 */
 #endif
 #ifndef blt_table_trace_row
 #define blt_table_trace_row \
-	(bltTclProcsPtr->blt_table_trace_row) /* 225 */
+	(bltTclProcsPtr->blt_table_trace_row) /* 227 */
 #endif
 #ifndef blt_table_create_column_trace
 #define blt_table_create_column_trace \
-	(bltTclProcsPtr->blt_table_create_column_trace) /* 226 */
+	(bltTclProcsPtr->blt_table_create_column_trace) /* 228 */
 #endif
 #ifndef blt_table_create_column_tag_trace
 #define blt_table_create_column_tag_trace \
-	(bltTclProcsPtr->blt_table_create_column_tag_trace) /* 227 */
+	(bltTclProcsPtr->blt_table_create_column_tag_trace) /* 229 */
 #endif
 #ifndef blt_table_create_row_trace
 #define blt_table_create_row_trace \
-	(bltTclProcsPtr->blt_table_create_row_trace) /* 228 */
+	(bltTclProcsPtr->blt_table_create_row_trace) /* 230 */
 #endif
 #ifndef blt_table_create_row_tag_trace
 #define blt_table_create_row_tag_trace \
-	(bltTclProcsPtr->blt_table_create_row_tag_trace) /* 229 */
+	(bltTclProcsPtr->blt_table_create_row_tag_trace) /* 231 */
 #endif
 #ifndef blt_table_delete_trace
 #define blt_table_delete_trace \
-	(bltTclProcsPtr->blt_table_delete_trace) /* 230 */
+	(bltTclProcsPtr->blt_table_delete_trace) /* 232 */
 #endif
 #ifndef blt_table_create_notifier
 #define blt_table_create_notifier \
-	(bltTclProcsPtr->blt_table_create_notifier) /* 231 */
+	(bltTclProcsPtr->blt_table_create_notifier) /* 233 */
 #endif
 #ifndef blt_table_create_row_notifier
 #define blt_table_create_row_notifier \
-	(bltTclProcsPtr->blt_table_create_row_notifier) /* 232 */
+	(bltTclProcsPtr->blt_table_create_row_notifier) /* 234 */
 #endif
 #ifndef blt_table_create_row_tag_notifier
 #define blt_table_create_row_tag_notifier \
-	(bltTclProcsPtr->blt_table_create_row_tag_notifier) /* 233 */
+	(bltTclProcsPtr->blt_table_create_row_tag_notifier) /* 235 */
 #endif
 #ifndef blt_table_create_column_notifier
 #define blt_table_create_column_notifier \
-	(bltTclProcsPtr->blt_table_create_column_notifier) /* 234 */
+	(bltTclProcsPtr->blt_table_create_column_notifier) /* 236 */
 #endif
 #ifndef blt_table_create_column_tag_notifier
 #define blt_table_create_column_tag_notifier \
-	(bltTclProcsPtr->blt_table_create_column_tag_notifier) /* 235 */
+	(bltTclProcsPtr->blt_table_create_column_tag_notifier) /* 237 */
 #endif
 #ifndef blt_table_delete_notifier
 #define blt_table_delete_notifier \
-	(bltTclProcsPtr->blt_table_delete_notifier) /* 236 */
+	(bltTclProcsPtr->blt_table_delete_notifier) /* 238 */
 #endif
 #ifndef blt_table_sort_init
 #define blt_table_sort_init \
-	(bltTclProcsPtr->blt_table_sort_init) /* 237 */
+	(bltTclProcsPtr->blt_table_sort_init) /* 239 */
 #endif
 #ifndef blt_table_sort_rows
 #define blt_table_sort_rows \
-	(bltTclProcsPtr->blt_table_sort_rows) /* 238 */
+	(bltTclProcsPtr->blt_table_sort_rows) /* 240 */
 #endif
-#ifndef blt_table_sort_rows_subset
-#define blt_table_sort_rows_subset \
-	(bltTclProcsPtr->blt_table_sort_rows_subset) /* 239 */
+#ifndef blt_table_sort_row_map
+#define blt_table_sort_row_map \
+	(bltTclProcsPtr->blt_table_sort_row_map) /* 241 */
 #endif
 #ifndef blt_table_sort_finish
 #define blt_table_sort_finish \
-	(bltTclProcsPtr->blt_table_sort_finish) /* 240 */
+	(bltTclProcsPtr->blt_table_sort_finish) /* 242 */
 #endif
 #ifndef blt_table_get_compare_proc
 #define blt_table_get_compare_proc \
-	(bltTclProcsPtr->blt_table_get_compare_proc) /* 241 */
+	(bltTclProcsPtr->blt_table_get_compare_proc) /* 243 */
 #endif
 #ifndef blt_table_get_row_map
 #define blt_table_get_row_map \
-	(bltTclProcsPtr->blt_table_get_row_map) /* 242 */
+	(bltTclProcsPtr->blt_table_get_row_map) /* 244 */
 #endif
 #ifndef blt_table_get_column_map
 #define blt_table_get_column_map \
-	(bltTclProcsPtr->blt_table_get_column_map) /* 243 */
+	(bltTclProcsPtr->blt_table_get_column_map) /* 245 */
 #endif
 #ifndef blt_table_set_row_map
 #define blt_table_set_row_map \
-	(bltTclProcsPtr->blt_table_set_row_map) /* 244 */
+	(bltTclProcsPtr->blt_table_set_row_map) /* 246 */
 #endif
 #ifndef blt_table_set_column_map
 #define blt_table_set_column_map \
-	(bltTclProcsPtr->blt_table_set_column_map) /* 245 */
+	(bltTclProcsPtr->blt_table_set_column_map) /* 247 */
 #endif
 #ifndef blt_table_restore
 #define blt_table_restore \
-	(bltTclProcsPtr->blt_table_restore) /* 246 */
+	(bltTclProcsPtr->blt_table_restore) /* 248 */
 #endif
 #ifndef blt_table_file_restore
 #define blt_table_file_restore \
-	(bltTclProcsPtr->blt_table_file_restore) /* 247 */
+	(bltTclProcsPtr->blt_table_file_restore) /* 249 */
 #endif
 #ifndef blt_table_register_format
 #define blt_table_register_format \
-	(bltTclProcsPtr->blt_table_register_format) /* 248 */
+	(bltTclProcsPtr->blt_table_register_format) /* 250 */
 #endif
 #ifndef blt_table_unset_keys
 #define blt_table_unset_keys \
-	(bltTclProcsPtr->blt_table_unset_keys) /* 249 */
+	(bltTclProcsPtr->blt_table_unset_keys) /* 251 */
 #endif
 #ifndef blt_table_get_keys
 #define blt_table_get_keys \
-	(bltTclProcsPtr->blt_table_get_keys) /* 250 */
+	(bltTclProcsPtr->blt_table_get_keys) /* 252 */
 #endif
 #ifndef blt_table_set_keys
 #define blt_table_set_keys \
-	(bltTclProcsPtr->blt_table_set_keys) /* 251 */
+	(bltTclProcsPtr->blt_table_set_keys) /* 253 */
 #endif
 #ifndef blt_table_key_lookup
 #define blt_table_key_lookup \
-	(bltTclProcsPtr->blt_table_key_lookup) /* 252 */
+	(bltTclProcsPtr->blt_table_key_lookup) /* 254 */
 #endif
 #ifndef blt_table_get_column_limits
 #define blt_table_get_column_limits \
-	(bltTclProcsPtr->blt_table_get_column_limits) /* 253 */
+	(bltTclProcsPtr->blt_table_get_column_limits) /* 255 */
+#endif
+#ifndef blt_table_row
+#define blt_table_row \
+	(bltTclProcsPtr->blt_table_row) /* 256 */
+#endif
+#ifndef blt_table_column
+#define blt_table_column \
+	(bltTclProcsPtr->blt_table_column) /* 257 */
+#endif
+#ifndef blt_table_row_index
+#define blt_table_row_index \
+	(bltTclProcsPtr->blt_table_row_index) /* 258 */
+#endif
+#ifndef blt_table_column_index
+#define blt_table_column_index \
+	(bltTclProcsPtr->blt_table_column_index) /* 259 */
 #endif
 #ifndef Blt_VecMin
 #define Blt_VecMin \
-	(bltTclProcsPtr->blt_VecMin) /* 254 */
+	(bltTclProcsPtr->blt_VecMin) /* 260 */
 #endif
 #ifndef Blt_VecMax
 #define Blt_VecMax \
-	(bltTclProcsPtr->blt_VecMax) /* 255 */
+	(bltTclProcsPtr->blt_VecMax) /* 261 */
 #endif
 #ifndef Blt_AllocVectorId
 #define Blt_AllocVectorId \
-	(bltTclProcsPtr->blt_AllocVectorId) /* 256 */
+	(bltTclProcsPtr->blt_AllocVectorId) /* 262 */
 #endif
 #ifndef Blt_SetVectorChangedProc
 #define Blt_SetVectorChangedProc \
-	(bltTclProcsPtr->blt_SetVectorChangedProc) /* 257 */
+	(bltTclProcsPtr->blt_SetVectorChangedProc) /* 263 */
 #endif
 #ifndef Blt_FreeVectorId
 #define Blt_FreeVectorId \
-	(bltTclProcsPtr->blt_FreeVectorId) /* 258 */
+	(bltTclProcsPtr->blt_FreeVectorId) /* 264 */
 #endif
 #ifndef Blt_GetVectorById
 #define Blt_GetVectorById \
-	(bltTclProcsPtr->blt_GetVectorById) /* 259 */
+	(bltTclProcsPtr->blt_GetVectorById) /* 265 */
 #endif
 #ifndef Blt_NameOfVectorId
 #define Blt_NameOfVectorId \
-	(bltTclProcsPtr->blt_NameOfVectorId) /* 260 */
+	(bltTclProcsPtr->blt_NameOfVectorId) /* 266 */
 #endif
 #ifndef Blt_NameOfVector
 #define Blt_NameOfVector \
-	(bltTclProcsPtr->blt_NameOfVector) /* 261 */
+	(bltTclProcsPtr->blt_NameOfVector) /* 267 */
 #endif
 #ifndef Blt_VectorNotifyPending
 #define Blt_VectorNotifyPending \
-	(bltTclProcsPtr->blt_VectorNotifyPending) /* 262 */
+	(bltTclProcsPtr->blt_VectorNotifyPending) /* 268 */
 #endif
 #ifndef Blt_CreateVector
 #define Blt_CreateVector \
-	(bltTclProcsPtr->blt_CreateVector) /* 263 */
+	(bltTclProcsPtr->blt_CreateVector) /* 269 */
 #endif
 #ifndef Blt_CreateVector2
 #define Blt_CreateVector2 \
-	(bltTclProcsPtr->blt_CreateVector2) /* 264 */
+	(bltTclProcsPtr->blt_CreateVector2) /* 270 */
 #endif
 #ifndef Blt_GetVector
 #define Blt_GetVector \
-	(bltTclProcsPtr->blt_GetVector) /* 265 */
+	(bltTclProcsPtr->blt_GetVector) /* 271 */
 #endif
 #ifndef Blt_GetVectorFromObj
 #define Blt_GetVectorFromObj \
-	(bltTclProcsPtr->blt_GetVectorFromObj) /* 266 */
+	(bltTclProcsPtr->blt_GetVectorFromObj) /* 272 */
 #endif
 #ifndef Blt_VectorExists
 #define Blt_VectorExists \
-	(bltTclProcsPtr->blt_VectorExists) /* 267 */
+	(bltTclProcsPtr->blt_VectorExists) /* 273 */
 #endif
 #ifndef Blt_ResetVector
 #define Blt_ResetVector \
-	(bltTclProcsPtr->blt_ResetVector) /* 268 */
+	(bltTclProcsPtr->blt_ResetVector) /* 274 */
 #endif
 #ifndef Blt_ResizeVector
 #define Blt_ResizeVector \
-	(bltTclProcsPtr->blt_ResizeVector) /* 269 */
+	(bltTclProcsPtr->blt_ResizeVector) /* 275 */
 #endif
 #ifndef Blt_DeleteVectorByName
 #define Blt_DeleteVectorByName \
-	(bltTclProcsPtr->blt_DeleteVectorByName) /* 270 */
+	(bltTclProcsPtr->blt_DeleteVectorByName) /* 276 */
 #endif
 #ifndef Blt_DeleteVector
 #define Blt_DeleteVector \
-	(bltTclProcsPtr->blt_DeleteVector) /* 271 */
+	(bltTclProcsPtr->blt_DeleteVector) /* 277 */
 #endif
 #ifndef Blt_ExprVector
 #define Blt_ExprVector \
-	(bltTclProcsPtr->blt_ExprVector) /* 272 */
+	(bltTclProcsPtr->blt_ExprVector) /* 278 */
 #endif
 #ifndef Blt_InstallIndexProc
 #define Blt_InstallIndexProc \
-	(bltTclProcsPtr->blt_InstallIndexProc) /* 273 */
+	(bltTclProcsPtr->blt_InstallIndexProc) /* 279 */
 #endif
 #ifndef Blt_VectorExists2
 #define Blt_VectorExists2 \
-	(bltTclProcsPtr->blt_VectorExists2) /* 274 */
+	(bltTclProcsPtr->blt_VectorExists2) /* 280 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */

@@ -137,14 +137,11 @@ unset var path\n\
 
 static Tcl_AppInitProc *cmdProcs[] =
 {
-#ifndef NO_BGEXEC
+#ifndef NO_BASE64
     Blt_Base64CmdInitProc,
 #endif
 #ifndef NO_BGEXEC
     Blt_BgexecCmdInitProc,
-#endif
-#ifndef NO_PTYEXEC
-    Blt_PtyExecCmdInitProc,
 #endif
 #ifndef NO_CHECKSUM
     Blt_ChecksumCmdInitProc,
@@ -375,7 +372,7 @@ Blt_TclInit(Tcl_Interp *interp) /* Interpreter to add extra commands */
     args[0] = args[1] = TCL_EITHER;
     Tcl_CreateMathFunc(interp, "min", 2, args, MinMathProc, (ClientData)0);
     Tcl_CreateMathFunc(interp, "max", 2, args, MaxMathProc, (ClientData)0);
-    Blt_RegisterArrayObj();
+    Blt_RegisterObjTypes();
     bltNaN = MakeNaN();
 #ifdef USE_BLT_STUBS
     result = Tcl_PkgProvideEx(interp, "blt_tcl", BLT_VERSION, &bltTclProcs);

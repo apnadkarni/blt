@@ -846,7 +846,7 @@ FindShift(unsigned int mask)
     int bit;
 
     for (bit = 0; bit < 32; bit++) {
-        if (mask & (1 << bit)) {
+        if (mask & (1U << bit)) {
             break;
         }
     }
@@ -1282,7 +1282,7 @@ IcoWriteImageData(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 
     /* Color table. */
     if (bitsPerPixel == 8) {
-        unsigned long i;
+        size_t i;
         Blt_HashEntry *hPtr;
         Blt_HashSearch cursor;
 
@@ -1291,11 +1291,9 @@ IcoWriteImageData(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
         for (hPtr = Blt_FirstHashEntry(&colorTable, &cursor); hPtr != NULL;
              hPtr = Blt_NextHashEntry(&cursor)) {
             Blt_Pixel pixel;
-            unsigned long key;
 
             Blt_SetHashValue(hPtr, i);
-            key = (unsigned long)Blt_GetHashKey(&colorTable, hPtr);
-            pixel.u32 = (unsigned int)key;
+            pixel.u32 = (size_t)Blt_GetHashKey(&colorTable, hPtr);
 
             /* Colormap components are ordered BGBA. */
             bp[0] = pixel.Blue;
@@ -1377,22 +1375,20 @@ IcoWriteImageData(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
                 dp = destRowPtr;
                 for (sp = srcRowPtr, send = sp+srcPtr->width; sp < send; sp++) {
                     Blt_HashEntry *hPtr;
-                    unsigned long index;
-                    union {
-                        Blt_Pixel color;
-                        char *key;
-                    } value;
+                    size_t index;
+                    Blt_Pixel color;
 
-                    value.color.u32 = sp->u32;
-                    value.color.Alpha = 0xFF;
-                    hPtr = Blt_FindHashEntry(&colorTable, value.key);
+                    color.u32 = sp->u32;
+                    color.Alpha = 0xFF;
+                    hPtr = Blt_FindHashEntry(&colorTable,
+                                             (char *)(size_t)color.u32);
                     if (hPtr == NULL) {
 #ifdef notdef
                         Blt_Warn("can't find %x\n", sp->u32);
 #endif
                         continue;
                     }
-                    index = (unsigned long)Blt_GetHashValue(hPtr);
+                    index = (size_t)Blt_GetHashValue(hPtr);
                     *dp = (unsigned char)(index & 0xFF);
                     dp++;
                 }

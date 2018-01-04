@@ -419,33 +419,33 @@ struct _LineElement {
     Axis *zAxisPtr;
 };
 
-static Blt_OptionParseProc ObjToSmoothProc;
-static Blt_OptionPrintProc SmoothToObjProc;
+static Blt_OptionParseProc ObjToSmooth;
+static Blt_OptionPrintProc SmoothToObj;
 static Blt_CustomOption smoothOption =
 {
-    ObjToSmoothProc, SmoothToObjProc, NULL, (ClientData)0
+    ObjToSmooth, SmoothToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToPenDirProc;
-static Blt_OptionPrintProc PenDirToObjProc;
+static Blt_OptionParseProc ObjToPenDir;
+static Blt_OptionPrintProc PenDirToObj;
 static Blt_CustomOption penDirOption =
 {
-    ObjToPenDirProc, PenDirToObjProc, NULL, (ClientData)0
+    ObjToPenDir, PenDirToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToErrorBarsProc;
-static Blt_OptionPrintProc ErrorBarsToObjProc;
+static Blt_OptionParseProc ObjToErrorBars;
+static Blt_OptionPrintProc ErrorBarsToObj;
 static Blt_CustomOption errorbarsOption =
 {
-    ObjToErrorBarsProc, ErrorBarsToObjProc, NULL, (ClientData)0
+    ObjToErrorBars, ErrorBarsToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeSymbolProc;
-static Blt_OptionParseProc ObjToSymbolProc;
-static Blt_OptionPrintProc SymbolToObjProc;
+static Blt_OptionParseProc ObjToSymbol;
+static Blt_OptionPrintProc SymbolToObj;
 static Blt_CustomOption symbolOption =
 {
-    ObjToSymbolProc, SymbolToObjProc, FreeSymbolProc, (ClientData)0
+    ObjToSymbol, SymbolToObj, FreeSymbolProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeBackground;
@@ -525,7 +525,7 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
@@ -661,9 +661,9 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_CUSTOM, "-areabackground", "areaBackground", 
         "AreaBackground", DEF_PATTERN_BG, 0, BLT_CONFIG_NULL_OK,
         &backgroundOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
-    {BLT_CONFIG_COLOR, "-color", "color", "Color",
-        DEF_PEN_COLOR, Blt_Offset(LineElement, builtinPen.traceColor), 0},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
+    {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_PEN_COLOR,
+        Blt_Offset(LineElement, builtinPen.traceColor), 0},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
         Blt_Offset(LineElement, builtinPen.traceDashes), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-data", "data", "Data", DEF_DATA, 0, 0, 
@@ -937,7 +937,7 @@ FreeSymbolProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSymbolProc --
+ * ObjToSymbol --
  *
  *      Convert the string representation of a line style or symbol name
  *      into its numeric form.
@@ -950,14 +950,8 @@ FreeSymbolProc(
  */
 /*ARGSUSED*/
 static int
-ObjToSymbolProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing symbol type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToSymbol(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
     const char *string;
@@ -1105,7 +1099,7 @@ BackgroundToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * SymbolToObjProc --
+ * SymbolToObj --
  *
  *      Convert the symbol value into a string.
  *
@@ -1116,13 +1110,8 @@ BackgroundToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SymbolToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+SymbolToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
     SymbolTable *p;
@@ -1143,7 +1132,7 @@ SymbolToObjProc(
 }
 
 /*
- * ObjToErrorBarsProc --
+ * ObjToErrorBars --
  *
  *      Convert the string representation of a errorbar flags into its numeric
  *      form.
@@ -1154,14 +1143,8 @@ SymbolToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToErrorBarsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to return results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing smooth type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToErrorBars(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *flagsPtr = (int *)(widgRec + offset);
     unsigned int mask;
@@ -1205,7 +1188,7 @@ ObjToErrorBarsProc(
 }
 
 /*
- * ErrorBarsToObjProc --
+ * ErrorBarsToObj --
  *
  *      Convert the error flags value into a list of strings.
  *
@@ -1214,13 +1197,8 @@ ObjToErrorBarsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ErrorBarsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ErrorBarsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
 {
     int mask = *(int *)(widgRec + offset);
     Tcl_Obj *objPtr, *listObjPtr;
@@ -1283,7 +1261,7 @@ NameOfSmooth(unsigned int flags)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSmoothProc --
+ * ObjToSmooth --
  *
  *      Convert the string representation of a line style or smooth name
  *      into its numeric form.
@@ -1296,15 +1274,8 @@ NameOfSmooth(unsigned int flags)
  */
 /*ARGSUSED*/
 static int
-ObjToSmoothProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing smooth type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToSmooth(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     SmoothingTable *smoothPtr;
@@ -1327,7 +1298,7 @@ linear, step, natural, or quadratic", (char *)NULL);
 /*
  *---------------------------------------------------------------------------
  *
- * SmoothToObjProc --
+ * SmoothToObj --
  *
  *      Convert the smooth value into a string.
  *
@@ -1338,13 +1309,8 @@ linear, step, natural, or quadratic", (char *)NULL);
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SmoothToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+SmoothToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     int smooth = *(int *)(widgRec + offset);
 
@@ -1355,7 +1321,7 @@ SmoothToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPenDirProc --
+ * ObjToPenDir --
  *
  *      Convert the string representation of a line style or symbol name
  *      into its numeric form.
@@ -1368,15 +1334,8 @@ SmoothToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPenDirProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing pen direction */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToPenDir(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *penDirPtr = (int *)(widgRec + offset);
     int length;
@@ -1441,13 +1400,8 @@ NameOfPenDir(int penDir)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PenDirToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PenDirToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     int penDir = *(int *)(widgRec + offset);
 
@@ -2371,9 +2325,7 @@ GenerateParametricSplineOld(Trace *tracePtr)
     int smooth;
 
     Blt_GraphExtents(elemPtr, &exts);
-    xpoints = ypoints = NULL;
     xspline = yspline = NULL;
-    distance = NULL;
 
     /* 
      * Populate the x2 array with both the original X-coordinates and extra
@@ -3127,7 +3079,7 @@ FindProc(Graph *graphPtr, Element *basePtr, int x, int y, int r)
             dy = (double)(y - p->y);
             d = hypot(dx, dy);
             if (d < r) {
-                Blt_Chain_Append(chain, (ClientData)((long)p->index));
+                Blt_Chain_Append(chain, (ClientData)((size_t)p->index));
             }
         }
     }
@@ -3585,11 +3537,10 @@ MapActiveSymbols(LineElement *elemPtr)
         tracePtr = Blt_Chain_GetValue(link);
         for (p = tracePtr->head; p != NULL; p = p->next) {
             Blt_HashEntry *hPtr;
-            long lindex;
 
             p->flags &= ~ACTIVE_POINT;
-            lindex = (long)p->index;
-            hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)lindex);
+            hPtr = Blt_FindHashEntry(&elemPtr->activeTable,
+                                     (char *)(size_t)p->index);
             if (hPtr != NULL) {
                 p->flags |= ACTIVE_POINT;
             }
@@ -3619,27 +3570,28 @@ MapActiveSymbols(LineElement *elemPtr)
 static void
 ReducePoints(MapInfo *mapPtr, double tolerance)
 {
-    int i, np;
+    long i, numPoints;
     Point2d *screenPts, *origPts;
-    int *map, *simple;
+    long *map, *simple;
 
-    simple    = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
-    map       = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
+    simple    = Blt_AssertMalloc(tracePtr->numPoints * sizeof(long));
+    map       = Blt_AssertMalloc(tracePtr->numPoints * sizeof(long));
     screenPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
     origPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
 
-    np = Blt_SimplifyLine(origPts, 0, tracePtr->numScreenPts - 1, 
+    numPoints = Blt_SimplifyLine(origPts, 0, tracePtr->numScreenPts - 1, 
         tolerance, simple);
-    for (i = 0; i < np; i++) {
-        int k;
+    for (i = 0; i < numPoints; i++) {
+        long k;
 
         k = simple[i];
         screenPts[i] = mapPtr->screenPts[k];
         map[i] = mapPtr->map[k];
     }
 #ifdef notdef
-    if (np < mapPtr->numScreenPts) {
-        fprintf(stderr, "reduced from %d to %d\n", mapPtr->numScreenPts, np);
+    if (numPoints < mapPtr->numScreenPts) {
+        fprintf(stderr, "reduced from %d to %d\n", mapPtr->numScreenPts,
+                numPoints);
     }
 #endif
     Blt_Free(mapPtr->screenPts);
@@ -3647,7 +3599,7 @@ ReducePoints(MapInfo *mapPtr, double tolerance)
     Blt_Free(simple);
     mapPtr->screenPts = screenPts;
     mapPtr->map = map;
-    mapPtr->numScreenPts = np;
+    mapPtr->numScreenPts = numPoints;
 }
 #endif
 
@@ -4233,7 +4185,7 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     Blt_PaintBrush brush;
     Blt_Painter painter;
     Blt_Picture picture;
-    Point2f *vertices;
+    Point2d *vertices;
     int i;
     int w, h;
     int x1, x2, y1, y2;
@@ -4245,16 +4197,17 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    picture = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h,
-        1.0);
+    picture = Blt_CreatePicture(w, h);
     if (picture == NULL) {
         return;                         /* Background is obscured. */
     }
-    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2f));
+    Blt_BlankPicture(picture, 0x0);
+    Blt_Picture_SetCompositeFlag(picture);
+    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2d));
     /* Translate the polygon */
     for (i = 0; i < numPoints; i++) {
-        vertices[i].x = (float)(points[i].x - x1);
-        vertices[i].y = (float)(points[i].y - y1);
+        vertices[i].x = points[i].x - x1;
+        vertices[i].y = points[i].y - y1;
     }
     if ((elemPtr->zAxisPtr != NULL) && (elemPtr->zAxisPtr->palette != NULL)) {
         brush = Blt_NewLinearGradientBrush();
@@ -4263,10 +4216,10 @@ PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
         Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
     } else if (elemPtr->brush != NULL) {
         brush = elemPtr->brush;
-        Blt_SetBrushRegion(brush, 0, 0, w, h);
+        Blt_SetBrushArea(brush, 0, 0, w, h);
     } else if (elemPtr->areaBg != NULL) {
         brush = Blt_Bg_PaintBrush(elemPtr->areaBg);
-        Blt_SetBrushRegion(brush, 0, 0, w, h);
+        Blt_SetBrushArea(brush, 0, 0, w, h);
     } else {
         Blt_Free(vertices);
         return;
@@ -4519,13 +4472,13 @@ DrawValues(Graph *graphPtr, Drawable drawable, Trace *tracePtr, LinePen *penPtr)
         x = tracePtr->elemPtr->x.values[p->index];
         y = tracePtr->elemPtr->y.values[p->index];
         if (penPtr->valueFlags == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueFlags == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueFlags == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_DrawText(graphPtr->tkwin, drawable, string, 
              &penPtr->valueStyle, ROUND(p->x), ROUND(p->y));
@@ -5396,13 +5349,13 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
         x = tracePtr->elemPtr->x.values[p->index];
         y = tracePtr->elemPtr->y.values[p->index];
         if (penPtr->valueFlags == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueFlags == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueFlags == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_Ps_DrawText(ps, string, &penPtr->valueStyle, x, y);
     }

@@ -348,9 +348,10 @@ TrimWhitespace(XmlReader *readerPtr)
     for (node = root; node != NULL; node = next) {
         next = Blt_Tree_NextNode(root, node);
         if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
-            Tcl_Obj *objPtr, *newPtr;
+            Tcl_Obj *objPtr;
             int length;
             const char *first, *last, *pend, *string;
+
             if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, node,
                         SYM_CDATA, &objPtr) != TCL_OK) {
                 continue;
@@ -367,6 +368,8 @@ TrimWhitespace(XmlReader *readerPtr)
                 }
             }
             if (last > first) {
+                Tcl_Obj *newPtr;
+
                 newPtr = Tcl_NewStringObj(first, last - first);
                 Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
                                   SYM_CDATA, newPtr);
@@ -395,7 +398,6 @@ ConvertSingleCDATA(XmlReader *readerPtr)
     Blt_TreeNode root, node, next;
 
     root = readerPtr->root;
- fprintf(stderr, "ConvertSingleCDATA\n");
     for (node = root; node != NULL; node = next) {
         next = Blt_Tree_NextNode(root, node);
         if (Blt_Tree_NodeDegree(node) == 1) {
@@ -408,16 +410,12 @@ ConvertSingleCDATA(XmlReader *readerPtr)
             if (strcmp(Blt_Tree_NodeLabel(child), SYM_CDATA) == 0) {
                 Blt_TreeNode parent;
                 Tcl_Obj *objPtr;
-                int length;
-                const char *string, *label;
-            fprintf(stderr, "%s has single child %s\n", Blt_Tree_NodeLabel(node), Blt_Tree_NodeLabel(child));
+                const char *label;
+
                 if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, child,
                                       SYM_CDATA, &objPtr) != TCL_OK) {
                     continue;
                 }
-                string = Tcl_GetStringFromObj(objPtr, &length);
-            fprintf(stderr, "child %s CDATA=%s\n", Blt_Tree_NodeLabel(node),
-                    string);
                 parent = Blt_Tree_ParentNode(node);
                 label = Blt_Tree_NodeLabel(node);
                 if (!Blt_Tree_ValueExists(readerPtr->tree, parent, label)) {
@@ -823,8 +821,8 @@ GetExternalEntityRefProc(XML_Parser parser, const XML_Char *context,
         }
         argv[i] = NULL;
         Tcl_JoinPath(argc, argv, &ds);
-        Blt_Free(baseNames);
-        Blt_Free(sysIdNames);
+        Tcl_Free((char *)baseNames);
+        Tcl_Free((char *)sysIdNames);
         Blt_Free(argv);
     } else {
         Tcl_DStringAppend(&ds, systemId, -1);
@@ -888,7 +886,7 @@ ImportXmlFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode parent,
             Blt_Tree_SetValue(interp, tree, parent, SYM_BASEURI, 
                Tcl_NewStringObj(Tcl_DStringValue(&ds), Tcl_DStringLength(&ds)));
         }
-        Blt_Free(argv);
+        Tcl_Free((char *)argv);
         Tcl_DStringFree(&ds);
     }
     if (flags & IMPORT_EXTREF) {

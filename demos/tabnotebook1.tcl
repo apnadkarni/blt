@@ -1,7 +1,6 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
 
 # Create a tabset widget.  
 
@@ -35,7 +34,7 @@ foreach label { First Second Third Fourth } {
 # Each tab has a text label and an optional Tk image.
 
 set image [image create picture -file ./images/mini-book1.gif]
-.ts tab configure 0 -image $image
+.ts tab configure 0 -icon $image
 
 #
 # How to embed a widget into a page.  

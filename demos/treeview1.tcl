@@ -68,18 +68,10 @@ proc Find { tree parent dir } {
     }
 }
 
-proc GetAbsolutePath { dir } {
-    set saved [pwd]
-    cd $dir
-    set path [pwd] 
-    cd $saved
-    return $path
-}
-
 button .b -font { Helvetica 11 bold }
-#set top [GetAbsolutePath ..]
-set top [GetAbsolutePath "$env(HOME)"]
-set top [GetAbsolutePath ".."]
+#set top [file normalize ..]
+set top [file normalize "$env(HOME)"]
+set top [file normalize $blt_library/..]
 set trim "$top"
 
 set tree [blt::tree create]    
@@ -93,15 +85,12 @@ blt::scrollset .ss \
 blt::tk::scrollbar .ss.x
 blt::tk::scrollbar .ss.y
 
-option add *BltTreeView.Entry.RuleHeight 1
-option add *BltTreeView.Column.ruleWidth 1
-
 blt::treeview $view \
     -width 0 \
     -height 4i \
     -selectmode multiple \
     -separator / \
-    -tree $tree  -font "Arial 10"
+    -tree $tree  -font "Arial 9"
 
 $view column configure treeView -text "name" -edit yes \
     -sorttype dictionary 
@@ -128,7 +117,7 @@ blt::table . \
 set count 0
 Find $tree root $top
 puts "$count entries"
-
+$tree set all uid 123456789
 $view style checkbox check \
     -onvalue "file" -offvalue "directory" \
     -showvalue yes
@@ -149,8 +138,7 @@ blt::tk::scrollbar $view.menu.ybar
 $view.menu add -text directory -value directory
 $view.menu add -text file -value file
 
-$view column configure uid -style combo 
-$view column configure type -style check
+$view column configure type -style combo
 
 $view style create textbox textbox \
     -editor $view.editor -edit yes -fg red

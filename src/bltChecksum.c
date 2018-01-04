@@ -772,7 +772,7 @@ Crc32Op(ClientData clientData, Tcl_Interp *interp, int objc,
         char buf[200];
         crc = crc ^ 0xffffffffUL;
 
-        Blt_FormatString(buf, 200, "%lx", crc);
+        Blt_FmtString(buf, 200, "%lx", crc);
         Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, -1);
     }
     Blt_FreeSwitches(checksumSwitches, (char *)&args, 0);
@@ -784,7 +784,6 @@ static int
 MD5Op(ClientData clientData, Tcl_Interp *interp, int objc,
       Tcl_Obj *const *objv)
 {
-    unsigned long crc;
     int result;
     ChecksumArgs args;
     char out[33];
@@ -794,8 +793,6 @@ MD5Op(ClientData clientData, Tcl_Interp *interp, int objc,
         &args, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    crc = 0L;
-    crc = crc ^ 0xffffffffUL;
     if ((args.dataObjPtr != NULL) && (args.fileObjPtr != NULL)) {
         Tcl_AppendResult(interp, "can't set both -file and -data switches.",
                          (char *)NULL);

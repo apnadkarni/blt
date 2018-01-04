@@ -6,10 +6,7 @@ set imgData {
     ZTKAsiCtWq0JADs=
 }
 
-#set icon [image create picture -data $imgData]
-set icon [image create picture -file images/mini-book1.gif]
-#set icon [image create picture -file images/blt98.gif]
-#set image [image create picture -file ~/images.jpeg]
+set icon [image create picture -data $imgData]
 set activebg [blt::background create linear \
 		  -highcolor  grey70 -lowcolor grey85 \
 		  -jitter 10 -colorscale log]
@@ -35,15 +32,14 @@ proc ToggleHideChars {} {
 blt::comboentry .e \
     -textvariable t \
     -font { arial 11 } \
-    -image $image \
     -iconvariable icon \
     -edit yes \
-    -textwidth 22 \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
-    -clearbutton yes \
-    -clearcommand { .e delete 0 end } 
+    -xbutton yes \
+    -hint "Enter Search String" 
+
 
 blt::combobutton .b \
     -textvariable t \
@@ -70,19 +66,19 @@ blt::table configure . c0 -pad { 2 0 }
 blt::table configure . c1 -pad { 0 2 }
 
 blt::combomenu .e.m  -relief sunken -bg white -textvariable t
-.e.m add -text "one" -accelerator "^A" 
-.e.m add -text "two" -accelerator "^B" 
-.e.m add -text "three" -accelerator "^C"
-.e.m add -text "four" -accelerator "^D" 
-.e.m add -type cascade -text "cascade" -accelerator "^E" -menu .e.m.m
+.e.m add -text "one" -accelerator "Ctrl+A" 
+.e.m add -text "two" -accelerator "Ctrl+B" 
+.e.m add -text "three" -accelerator "Ctrl+C"
+.e.m add -text "four" -accelerator "Ctrl+D" 
+.e.m add -type cascade -text "cascade" -accelerator "Ctrl+E" -menu .e.m.m
 
 blt::combomenu .e.m.m -relief sunken -bg white -textvariable t
 .e.m.m add -text "five" -accelerator "^A"
 .e.m.m add -text "six" -accelerator "^B" 
 .e.m.m add -text "seven" -accelerator "^C" 
 .e.m.m add -text "eight" -accelerator "^D" 
-.e.m.m add -text "nine" -accelerator "^D" -command "set t {really really really long entry}"
-.e.m.m add -type cascade -text "cascade" -accelerator "^E" 
+.e.m.m add -text "nine" -accelerator "^E" -command "set t {really really really long entry}"
+.e.m.m add -type cascade -text "cascade" -accelerator "^F" 
 
 
 after idle { 

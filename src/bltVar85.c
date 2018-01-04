@@ -50,7 +50,7 @@
 /* 
  * Variable resolver routines.
  *
- * The following bit of magic is from [incr Tcl].  The following routine
+ * The following bit of magic is from [incr Tcl].  The following routines
  * are taken from [incr Tcl] to roughly duplicate how Tcl internally
  * creates variables.
  *
@@ -72,7 +72,6 @@ typedef struct TclVarHashTable {
  * Var structure in the heap, a hash table entry holds the variable name
  * and a pointer to the Var structure.
  */
-
 typedef struct Var {
     int flags;                  /* Miscellaneous bits of information about
                                  * variable. See below for definitions. */

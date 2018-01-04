@@ -224,7 +224,6 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsInit;
 DLLEXPORT extern Tcl_AppInitProc Blt_PicturePsSafeInit;
 
 #ifdef WIN32
-  #define close(fd)               CloseHandle((HANDLE)fd)
   #define kill                    KillProcess
   #define waitpid                 WaitProcess
 #endif  /* WIN32 */
@@ -472,8 +471,8 @@ PbmComment(char *bp)
 
     p = bp;
     if (*p == '#') {
-        /* Comment: file end of line */
-        while((*p != '\n') && (p != '\0')) {
+        /* Find end of comment line */
+        while((*p != '\n') && (*p != '\0')) {
             p++;
         }
     }
@@ -754,7 +753,7 @@ PbmToPicture(Tcl_Interp *interp, Blt_DBuffer dbuffer)
 #ifdef WIN32
 
 typedef struct {
-    int fd;
+    HANDLE hFile;
     Blt_DBuffer dbuffer;
     int lastError;
 } PsWriter;
@@ -785,7 +784,7 @@ WriteBufferProc(void *clientData)
     HANDLE hFile;
     DWORD count;
 
-    hFile = (HANDLE)writerPtr->fd;
+    hFile = writerPtr->hFile;
     bp = Blt_DBuffer_Bytes(writerPtr->dbuffer);
     for (bytesLeft = Blt_DBuffer_Length(writerPtr->dbuffer); bytesLeft > 0;
          bytesLeft -= count) {
@@ -807,8 +806,8 @@ WriteBufferProc(void *clientData)
 
 static PsWriter writer;
 
-static int
-WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+static HANDLE
+WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     HANDLE hThread;
     ClientData clientData;
@@ -818,7 +817,7 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
     Blt_DBuffer_Init(writer.dbuffer);
     /* Copy the input to a new buffer. */
     Blt_DBuffer_Concat(writer.dbuffer, dbuffer);
-    writer.fd = fd;
+    writer.hFile = filePtr;
     writer.lastError = 0;
     clientData = &writer;
     hThread = CreateThread(
@@ -830,19 +829,19 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
         0,                              /* Creation flags */
         &id);                           /* (out) Will contain Id of new
                                          * thread. */
-    return (int)hThread;
+    return hThread;
 }
 
 
 static int
-ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     DWORD numBytes;
     HANDLE hFile;
     int result;
 
     Blt_DBuffer_Free(dbuffer);
-    hFile = (HANDLE)fd;
+    hFile = filePtr;
     numBytes = 0;
     for (;;) {
         DWORD numRead;
@@ -874,11 +873,12 @@ ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
 
 #else  /* WIN32 */
 
-static int
-WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+static pid_t
+WriteToGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     pid_t child;
-
+    int fd = (size_t)filePtr;
+    
     child = fork();
     if (child == -1) {
         Tcl_AppendResult(interp, "can't fork process: ", Tcl_PosixError(interp),
@@ -904,9 +904,10 @@ WriteToGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
 }
 
 static int
-ReadFromGhostscript(Tcl_Interp *interp, int fd, Blt_DBuffer dbuffer)
+ReadFromGhostscript(Tcl_Interp *interp, void *filePtr, Blt_DBuffer dbuffer)
 {
     int numBytes;
+    int fd = (size_t)filePtr;
     
     Blt_DBuffer_Free(dbuffer);
     numBytes = 0;
@@ -941,15 +942,13 @@ PsToPbm(
     Blt_DBuffer dbuffer,
     PsImportSwitches *switchesPtr)
 {
-    int in, out;                        /* File descriptors for ghostscript
+    void *in, *out;                     /* File descriptors for ghostscript
                                          * subprocess. */
     char string1[200];
     char string2[200];
     int numPids;
     Blt_Pid *pids;
     int result;
-    pid_t child;
-    const char **p;
     const char *args[] = {
         "gs",                           /* Ghostscript command */
         "-dEPSCrop",                    /* (optional) crop page to bbox  */
@@ -988,6 +987,7 @@ PsToPbm(
         int i;
         Tcl_Obj *objv[11];
         int objc = 11;
+        const char **p;
 
         for (i = 0, p = args; *p != NULL; p++, i++) {
             objv[i] = Tcl_NewStringObj(*p, -1);
@@ -1002,15 +1002,29 @@ PsToPbm(
     if (numPids < 0) {
         return TCL_ERROR;
     }
-    Tcl_DetachPids(numPids, (Tcl_Pid *)pids);
+    Blt_DetachPids(numPids, pids);
     Blt_Free(pids);
-    child = WriteToGhostscript(interp, in, dbuffer);
-    if (child == 0) {
-        return TCL_ERROR;
-    }
-    result = ReadFromGhostscript(interp, out, dbuffer);
 #ifdef WIN32
-    CloseHandle((HANDLE)child);
+    {
+        HANDLE hThread;
+        
+        hThread = WriteToGhostscript(interp, in, dbuffer);
+        if (hThread == NULL) {
+            return TCL_ERROR;
+        }
+        result = ReadFromGhostscript(interp, out, dbuffer);
+        CloseHandle(hThread);
+    }
+#else
+    {
+        pid_t child;
+        
+        child = WriteToGhostscript(interp, in, dbuffer);
+        if (child == 0) {
+            return TCL_ERROR;
+        }
+        result = ReadFromGhostscript(interp, out, dbuffer);
+    }
 #endif
     Tcl_ReapDetachedProcs();
 #ifdef notdef

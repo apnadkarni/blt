@@ -340,16 +340,17 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_HTEXT_BACKGROUND, Blt_Offset(HText, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
         DEF_HTEXT_CURSOR, Blt_Offset(HText, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BOOLEAN, "-exportselection", "exportSelection", "ExportSelection",
-        DEF_HTEXT_EXPORT_SELECTION, Blt_Offset(HText, exportSelection), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_STRING, "-file", "file", "File",
-        DEF_HTEXT_FILE_NAME, Blt_Offset(HText, fileName), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_FONT, "-font", "font", "Font",
-        DEF_HTEXT_FONT, Blt_Offset(HText, font), 0},
+    {BLT_CONFIG_BOOLEAN, "-exportselection", "exportSelection",
+        "ExportSelection", DEF_HTEXT_EXPORT_SELECTION,
+        Blt_Offset(HText, exportSelection), 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_STRING, "-file", "file", "File", DEF_HTEXT_FILE_NAME,
+        Blt_Offset(HText, fileName), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_HTEXT_FONT,
+        Blt_Offset(HText, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_HTEXT_FOREGROUND, Blt_Offset(HText, normalFg), 0},
     {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_HTEXT_HEIGHT, 
@@ -903,10 +904,10 @@ LineSearch(
     int yCoord,                 /* Search y-coordinate  */
     int low, int high)          /* Range of lines to search */
 {
-    int median;
-    Line *linePtr;
-
     while (low <= high) {
+        int median;
+        Line *linePtr;
+
         median = (low + high) >> 1;
         linePtr = htPtr->lineArr + median;
         if (yCoord < linePtr->offset) {
@@ -941,10 +942,10 @@ IndexSearch(
     int key,                    /* Search index */
     int low, int high)          /* Range of lines to search */
 {
-    int median;
-    Line *linePtr;
-
     while (low <= high) {
+        int median;
+        Line *linePtr;
+
         median = (low + high) >> 1;
         linePtr = htPtr->lineArr + median;
         if (key < linePtr->textStart) {
@@ -1020,11 +1021,12 @@ GetXYPosIndex(
     textLength = linePtr->textEnd - linePtr->textStart;
     if (Blt_Chain_GetLength(linePtr->chain) > 0) {
         Blt_ChainLink link;
-        int deltaX;
-        EmbeddedWidget *winPtr;
 
         for (link = Blt_Chain_FirstLink(linePtr->chain); link != NULL;
             link = Blt_Chain_NextLink(link)) {
+            int deltaX;
+            EmbeddedWidget *winPtr;
+
             winPtr = Blt_Chain_GetValue(link);
             deltaX = winPtr->precedingTextWidth + winPtr->cavityWidth;
             if ((curX + deltaX) > x) {
@@ -1272,7 +1274,7 @@ GetTextPosition(
         if (lindex < 0) {
             char string[200];
 
-            Blt_FormatString(string, 200, 
+            Blt_FmtString(string, 200, 
                 "can't determine line number from index \"%d\"", tindex);
             Tcl_AppendResult(htPtr->interp, string, (char *)NULL);
             return TCL_ERROR;
@@ -1986,7 +1988,6 @@ CollectCommand(
     char cmdArr[])              /* Output buffer to be filled with the Tcl
                                  * command */
 {
-    int c;
     int i;
     int state, count;
 
@@ -1994,6 +1995,8 @@ CollectCommand(
 
     state = count = 0;
     for (i = 0; i < maxBytes; i++) {
+        int c;
+
         c = inputArr[i];
         if (c == htPtr->specChar) {
             state++;
@@ -2213,12 +2216,12 @@ TextVarProc(
             if (lineNum < 0) {
                 lineNum = 0;
             }
-            Blt_FormatString(buf, 200, "%d", lineNum);
+            Blt_FmtString(buf, 200, "%d", lineNum);
             Tcl_SetVar2(interp, name1, name2, buf, flags);
         } else if ((c == 'i') && (strcmp(name2, "index") == 0)) {
             char buf[200];
 
-            Blt_FormatString(buf, 200, "%d", htPtr->numChars - 1);
+            Blt_FmtString(buf, 200, "%d", htPtr->numChars - 1);
             Tcl_SetVar2(interp, name1, name2, buf, flags);
         } else if ((c == 'f') && (strcmp(name2, "file") == 0)) {
             const char *fileName;
@@ -3442,7 +3445,7 @@ SelectLine(
     if (lineNum < 0) {
         char string[200];
 
-        Blt_FormatString(string, 200, "can't determine line number from index \"%d\"",
+        Blt_FmtString(string, 200, "can't determine line number from index \"%d\"",
             tindex);
         Tcl_AppendResult(htPtr->interp, string, (char *)NULL);
         return TCL_ERROR;
@@ -3736,7 +3739,7 @@ GotoOp(
         if (line < 0) {
             char string[200];
 
-            Blt_FormatString(string, 200, 
+            Blt_FmtString(string, 200, 
                 "can't determine line number from index \"%d\"", tindex);
             Tcl_AppendResult(htPtr->interp, string, (char *)NULL);
             return TCL_ERROR;
@@ -3943,9 +3946,10 @@ CgetOp(
 {
     char *itemPtr;
     Blt_ConfigSpec *specsPtr;
-    char *string;
 
     if (objc > 3) {
+        const char *string;
+
         string = Tcl_GetString(objv[2]);
         if (string[0] == '.') {
             Tk_Window tkwin;
@@ -4308,7 +4312,7 @@ LinePosOp(
     if (GetTextPosition(htPtr, tindex, &line, &cpos) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_FormatString(string, 200, "%d.%d", line, cpos);
+    Blt_FmtString(string, 200, "%d.%d", line, cpos);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
     return TCL_OK;
 }

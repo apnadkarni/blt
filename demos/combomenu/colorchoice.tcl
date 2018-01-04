@@ -1,5 +1,5 @@
 package require BLT
-set colors {
+set rgbNames {
     000000 black
     000000 gray0
     000000 grey0
@@ -754,6 +754,62 @@ set colors {
     FFFFFF white
 }
 
+
+
+set colors {
+#DCFFD8
+#FFD0D0
+#D4D5FF
+#FFFFC9
+#D6FBFF
+#EDD3FF
+#E7FFCF
+#FFEAC3
+#D9E5FF
+#C4FFE0
+#FFD5ED
+#FFDBA8
+#B5CFFF
+#FF7684
+#85FF9B
+white
+#CEFFF8
+#FFDFD0
+#D0FFCF
+#AFFFFF
+#FFFFC2
+#FFE0F4
+#D8E9FF
+#ECD5FF
+#D2FFCA
+#FFF9C4
+#EFFFD8
+	#a2b5cd
+	#7ac5cd
+	#66cdaa
+	#a2cd5a
+	#cd9b9b
+	#cdba96
+	#cd3333
+	#cd6600
+	#cd8c95
+	#cd00cd
+	#9a32cd
+	#6ca6cd
+	#9ac0cd
+	#9bcd9b
+	#00cd66
+	#cdc673
+	#cdad00
+	#cd5555
+	#cd853f
+	#cd7054
+	#cd5b45
+	#cd6889
+	#cd69c9
+	#551a8b
+}
+
 if { [file exists ../library] } {
     set blt_library ../library
 }
@@ -767,7 +823,6 @@ blt::comboentry .e \
     -iconvariable myIcon1 \
     -textbackground $bg \
     -menu .e.m \
-    -menuanchor ne \
     -exportselection yes 
 
 
@@ -788,7 +843,8 @@ $bg blank 0x0000000
 $bg draw rectangle 5 5 -width 13 -height 25 -color 0xFF00000
 $bg blur $bg 4
 
-foreach {rgb name} $colors {
+if 1 {
+foreach {rgb name} $rgbNames {
     set icon [image create picture -width 27 -height 27]
     $icon blank 0x0
     $icon draw circle 12 12 11 -color black \
@@ -797,7 +853,17 @@ foreach {rgb name} $colors {
     	-antialiased 1 -linewidth 0
     .e.m add -text $name -icon $icon
 }
-
+} else {
+foreach {rgb} $colors {
+    set icon [image create picture -width 27 -height 27]
+    $icon blank 0x0
+    $icon draw circle 12 12 11 -color black \
+    	-antialiased 1 -linewidth 0 -shadow { -width 1 -offset 2 }
+    $icon draw circle 12 12 10 -color $rgb \
+    	-antialiased 1 -linewidth 0
+    .e.m add -text $rgb -icon $icon
+}
+}
 button .quit -text "Exit" -command exit
 blt::table . \
     0,0 .e -fill both -padx 2 -pady 2  \

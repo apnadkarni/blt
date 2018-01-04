@@ -61,9 +61,9 @@
 #define STD_SELECT_BACKGROUND   "SystemHighlight"
 #define STD_SELECT_FOREGROUND   "SystemHighlightText"
 #define STD_TEXT_FOREGROUND     "SystemWindowText"
-#define STD_FONT                "Arial 8"
+#define STD_FONT                "Arial 10"
 #define STD_FONT_LARGE          "Arial 12"
-#define STD_FONT_SMALL          "Arial 6"
+#define STD_FONT_SMALL          "Arial 9"
 
 /* DOS Encapsulated PostScript File Header */
 #pragma pack(2)
@@ -100,17 +100,13 @@ typedef struct {
 #ifdef __GNUC__ 
 #include <wingdi.h>
 #include <windowsx.h>
-#undef Status
 #include <winspool.h>
-#define Status int
 /*
  * Add definitions missing from windgi.h, windowsx.h, and winspool.h
  */
 #include <missing.h> 
 #endif /* __GNUC__ */
 
-#undef XCopyArea                
-#define XCopyArea               Blt_EmulateXCopyArea
 #undef XCopyPlane               
 #define XCopyPlane              Blt_EmulateXCopyPlane
 #undef XDrawArcs                
@@ -135,6 +131,8 @@ typedef struct {
 #define XFillPolygon            Blt_EmulateXFillPolygon
 #undef XFillRectangle           
 #define XFillRectangle          Blt_EmulateXFillRectangle
+#undef XFillRectangle           
+#define XFillRectangle          Blt_EmulateXFillRectangle
 #undef XFillRectangles          
 #define XFillRectangles         Blt_EmulateXFillRectangles
 #undef XFree                    
@@ -145,6 +143,8 @@ typedef struct {
 #define XLowerWindow            Blt_EmulateXLowerWindow
 #undef XMaxRequestSize          
 #define XMaxRequestSize         Blt_EmulateXMaxRequestSize
+#undef XPolygonRegion             
+#define XPolygonRegion          Blt_EmulateXPolygonRegion
 #undef XRaiseWindow             
 #define XRaiseWindow            Blt_EmulateXRaiseWindow
 #undef XReparentWindow          
@@ -158,9 +158,6 @@ typedef struct {
 
 extern GC Blt_EmulateXCreateGC(Display *display, Drawable drawable,
     unsigned long mask, XGCValues *valuesPtr);
-extern void Blt_EmulateXCopyArea(Display *display, Drawable src, Drawable dest,
-    GC gc, int src_x, int src_y, unsigned int width, unsigned int height,
-    int dest_x, int dest_y);
 extern void Blt_EmulateXCopyPlane(Display *display, Drawable src,
     Drawable dest, GC gc, int src_x, int src_y, unsigned int width,
     unsigned int height, int dest_x, int dest_y, unsigned long plane);
@@ -196,6 +193,7 @@ extern int Blt_EmulateXGetWindowAttributes(Display *display, Window window,
 extern void Blt_EmulateXLowerWindow(Display *display, Window window);
 extern void Blt_EmulateXMapWindow(Display *display, Window window);
 extern long Blt_EmulateXMaxRequestSize(Display *display);
+extern Region Blt_EmulateXPolygonRegion(XPoint *points, int numPoints,  int mode);
 extern void Blt_EmulateXRaiseWindow(Display *display, Window window);
 extern void Blt_EmulateXReparentWindow(Display *display, Window window,
     Window parent, int x, int y);
@@ -213,6 +211,11 @@ BLT_EXTERN unsigned char *Blt_GetBitmapData(Display *display, Pixmap bitmap,
         int width, int height, int *pitchPtr);
 
 extern HPALETTE Blt_GetSystemPalette(void);
+typedef struct _DCState DCState;
+
+extern HDC Blt_GetDCAndState(Display *display, Drawable drawable, GC gc,
+        DCState *statePtr);
+extern void Blt_ReleaseDCAndState(DCState *statePtr);
 
 BLT_EXTERN HPEN Blt_GCToPen(HDC dc, GC gc);
 BLT_EXTERN void Blt_TextOut(HDC dc, GC gc, HFONT hfont, const char *text, 

@@ -169,7 +169,6 @@ blt::comboentry .e \
     -iconvariable myIcon1 \
     -textwidth 6 \
     -menu .e.m \
-    -menuanchor se \
     -exportselection yes \
     -xscrollcommand { .s set }  \
     -postcommand {.e.m configure -width [winfo width .e] ; update} \
@@ -264,7 +263,6 @@ set labels {
 }
 
 blt::combomenu .e.m \
-    -bg $bg \
     -textvariable myText1 \
     -iconvariable myIcon1 \
     -disabledforeground grey45  \

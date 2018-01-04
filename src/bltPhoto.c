@@ -636,20 +636,19 @@ Blt_GetPictureFromPhotoImage(Tk_Image tkImage)
 }
 
 Blt_Picture
-Blt_GetPictureFromImage(Tcl_Interp *interp, Tk_Image tkImage, int *isPicturePtr)
+Blt_GetPictureFromImage(Tcl_Interp *interp, Tk_Image tkImage)
 {
     Blt_Picture picture;
     Tk_ImageType *typePtr;
     char c;
     
-    *isPicturePtr = FALSE;
     typePtr = Blt_Image_GetType(tkImage);
     c = typePtr->name[0];
     if ((c == 'p') && (strcmp(typePtr->name, "photo") == 0)) {
         picture = Blt_GetPictureFromPhotoImage(tkImage);
     } else if ((c == 'p') && (strcmp(typePtr->name, "picture") == 0)) {
         picture = Blt_GetPictureFromPictureImage(tkImage);
-        *isPicturePtr = TRUE;
+        Blt_Picture_IncrRefCount(picture);
     } else if ((c == 'b') && (strcmp(typePtr->name, "bitmap") == 0)) {
         picture = Blt_GetPictureFromBitmapImage(tkImage);
     } else  {

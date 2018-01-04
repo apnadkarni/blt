@@ -460,10 +460,10 @@ static Blt_CustomOption tagsOption = {
     ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 
 static Blt_ConfigSpec paneSetSpecs[] =
@@ -476,8 +476,7 @@ static Blt_ConfigSpec paneSetSpecs[] =
         Blt_Offset(Paneset, activeRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Paneset, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_BACKGROUND, "-disabledsashcolor", "disabledSashColor", 
         "DisabledSashColor", DEF_DISABLED_SASH_COLOR,
         Blt_Offset(Paneset, disabledSashBg), 0},
@@ -515,7 +514,7 @@ static Blt_ConfigSpec paneSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         (char *)NULL, Blt_Offset(Pane, bg), 
         BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_OBJ, "-data", "data", "Data", DEF_PANE_DATA, 
         Blt_Offset(Pane, dataObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-deletecommand", "deleteCommand", "DeleteCommand",
@@ -772,38 +771,41 @@ EventuallyRedraw(Paneset *setPtr)
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Pane *panePtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Pane *panePtr, Tcl_Obj *objPtr)
 {
     Paneset *setPtr;
-    long dummy;
-    
-    if (strcmp(tagName, "all") == 0) {
+    const char *string;
+    char c;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tags. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     setPtr = panePtr->setPtr;
-    Blt_Tags_AddItemToTag(&setPtr->tags, tagName, panePtr);
+    Blt_Tags_AddItemToTag(&setPtr->tags, string, panePtr);
     return TCL_OK;
 }
 
@@ -1158,7 +1160,7 @@ ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, panePtr, Tcl_GetString(objv[i]));
+        SetTag(interp, panePtr, objv[i]);
     }
     return TCL_OK;
 }
@@ -1194,7 +1196,7 @@ TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -1206,8 +1208,8 @@ TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window parent,
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
@@ -1231,7 +1233,7 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the state.
  *
@@ -1242,8 +1244,8 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StateToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -1690,11 +1692,11 @@ GetPaneByIndex(Tcl_Interp *interp, Paneset *setPtr, const char *string,
 {
     Pane *panePtr;
     char c;
-    long pos;
+    int64_t pos;
 
     panePtr = NULL;
     c = string[0];
-    if (Blt_GetLong(NULL, string, &pos) == TCL_OK) {
+    if (Blt_GetInt64(NULL, string, &pos) == TCL_OK) {
         Blt_ChainLink link;
 
         link = Blt_Chain_GetNthLink(setPtr->panes, pos);
@@ -4614,23 +4616,24 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Paneset *setPtr = clientData;
-    const char *tag;
-    long paneId;
-
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &paneId) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
     if (objc == 4) {
         /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&setPtr->tags, tag);
+        Blt_Tags_AddTag(&setPtr->tags, string);
     } else {
         int i;
 
@@ -4643,7 +4646,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
                  panePtr = NextTaggedPane(&iter)) {
-                Blt_Tags_AddItemToTag(&setPtr->tags, tag, panePtr);
+                Blt_Tags_AddItemToTag(&setPtr->tags, string, panePtr);
             }
         }
     }
@@ -4665,18 +4668,19 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Paneset *setPtr = clientData;
-    const char *tag;
-    long paneId;
+    const char *string;
+    char c;
     int i;
 
-    tag = Tcl_GetString(objv[3]);
-    if (Blt_GetLongFromObj(NULL, objv[3], &paneId) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[3]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[3]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
@@ -4689,7 +4693,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
              panePtr = NextTaggedPane(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, panePtr);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, string, panePtr);
         }
     }
     return TCL_OK;
@@ -4756,16 +4760,15 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 3; i < objc; i++) {
-        const char *tag;
-        long paneId;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &paneId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        if ((isdigit(string[0])) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_Tags_ForgetTag(&setPtr->tags, tag);
+        Blt_Tags_ForgetTag(&setPtr->tags, string);
     }
     return TCL_OK;
 }
@@ -4942,21 +4945,22 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         
     Blt_InitHashTable(&paneTable, BLT_ONE_WORD_KEYS);
     for (i = 3; i < objc; i++) {
-        long paneId;
-        const char *tag;
-
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &paneId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        const char *string;
+        char c;
+        
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             goto error;
         }
-        if (strcmp(tag, "all") == 0) {
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
             break;
         } else {
             Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
+            chain = Blt_Tags_GetItemList(&setPtr->tags, string);
             if (chain != NULL) {
                 Blt_ChainLink link;
 
@@ -4971,7 +4975,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             continue;
         }
-        Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
+        Tcl_AppendResult(interp, "can't find a tag \"", string, "\"",
                          (char *)NULL);
         goto error;
     }
@@ -5025,24 +5029,25 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        const char *tag;
+        const char *string;
+        char c;
         Pane *panePtr;
-        long paneId;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &paneId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                              (char *)NULL);     
             return TCL_ERROR;
         }
         for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
              panePtr = NextTaggedPane(&iter)) {
-            Blt_Tags_AddItemToTag(&setPtr->tags, tag, panePtr);
+            Blt_Tags_AddItemToTag(&setPtr->tags, string, panePtr);
         }    
     }
     return TCL_OK;
@@ -5238,8 +5243,7 @@ PanesetInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
 /* ARGSUSED */
 static int
 PanesetCmd(
-    ClientData clientData,              /* Main window associated with
-                                         * interpreter. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,                 /* Current interpreter. */
     int objc,                           /* # of arguments. */
     Tcl_Obj *const *objv)               /* Argument strings. */
@@ -5259,12 +5263,14 @@ PanesetCmd(
      * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::Paneset::Initialize")) {
-        const char cmd[] = "source [file join $blt_library bltPaneset.tcl]\n";
+        static const  char cmd[] = {
+            "source [file join $blt_library bltPaneset.tcl]\n"
+        };
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             char info[200];
             
-            Blt_FormatString(info, 200,
-                             "\n    (while loading bindings for %.50s)", 
+            Blt_FmtString(info, 200,
+                             "\n\t(while loading bindings for %.50s)", 
                       Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             return TCL_ERROR;

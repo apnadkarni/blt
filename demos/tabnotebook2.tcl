@@ -15,10 +15,9 @@ blt::tabset .t \
     -tabwidth same \
     -scrollcommand { .s set } \
     -slant right \
-    -textside right \
     -tiers 2 
 
-label .t.l -image testImage
+label .t.l -imageicon testImage
 
 set attributes {
     graph1 "Graph \#1" red	.t.graph1  
@@ -37,7 +36,7 @@ foreach label { there bunky another test of a widget } {
 }
 
 set img [image create picture -file ./images/blt98.gif]
-.t tab configure $id -image label2 
+.t tab configure $id -icon label2 
 
 blt::table . \
     .t 0,0 -fill both \

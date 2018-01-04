@@ -64,7 +64,6 @@ Blt_PhotoImageMask(
     TkWinBitmap *twdPtr;
     int offset, count;
     int x, y;
-    unsigned char *srcPtr;
     int destBytesPerRow;
     int destHeight;
     unsigned char *destBits;
@@ -77,6 +76,8 @@ Blt_PhotoImageMask(
 
     /* FIXME: figure out why this is so! */
     for (y = src.height - 1; y >= 0; y--) {
+        unsigned char *srcPtr;
+
         srcPtr = src.pixelPtr + offset;
         for (x = 0; x < src.width; x++) {
             if (srcPtr[src.offset[3]] == 0x00) {
@@ -230,8 +231,8 @@ Blt_RotateBitmap(
 
     display = Tk_Display(tkwin);
     root = Tk_RootWindow(tkwin);
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rotWidth, &rotHeight,
-        (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rotWidth, &rotHeight, (Point2d *)NULL);
 
     destWidth = (int)ceil(rotWidth);
     destHeight = (int)ceil(rotHeight);
@@ -314,8 +315,6 @@ Blt_RotateBitmap(
         double theta, sinTheta, cosTheta;
         double srcCX, srcCY;    /* Center of source rectangle */
         double destCX, destCY;  /* Center of destination rectangle */
-        double tx, ty;
-        double rx, ry;          /* Angle of rotation for x and y coordinates */
 
         theta = angle * DEG2RAD;
         sinTheta = sin(theta), cosTheta = cos(theta);
@@ -331,8 +330,12 @@ Blt_RotateBitmap(
         /* Rotate each pixel of dest image, placing results in source image */
 
         for (y = 0; y < destHeight; y++) {
+            double ty;
+
             ty = y - destCY;
             for (x = 0; x < destWidth; x++) {
+                double tx;
+                double rx, ry; /* Angle of rotation for x and y coordinates */
 
                 /* Translate origin to center of destination image */
                 tx = x - destCX;
@@ -514,8 +517,8 @@ Blt_ScaleRotateBitmapArea(
     destHeight = regionHeight;
 
     angle = FMOD(angle, 360.0f);
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rWidth, &rHeight,
-               (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rWidth, &rHeight, (Point2d *)NULL);
     xScale = rWidth / (double)virtWidth;
     yScale = rHeight / (double)virtHeight;
 

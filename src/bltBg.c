@@ -69,7 +69,7 @@
 #define REPEAT_MASK \
     (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
 #define ORIENT_MASK \
-    (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
+    (BLT_PAINTBRUSH_VERTICAL|BLT_PAINTBRUSH_HORIZONTAL)
 #define COLOR_SCALE_MASK \
         (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
@@ -114,6 +114,7 @@ typedef struct {
     Blt_ConfigSpec *specs;              /* Configuration specifications
                                          * this background. */
     Blt_HashTable instTable;
+    int xOffset, yOffset;
 } BackgroundObject;
 
 #define REFERENCE_PENDING        (1<<0)
@@ -253,9 +254,8 @@ static Blt_CustomOption orientOption =
 
 static Blt_ConfigSpec bgSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-background", "color", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "color", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-background", "color"},
+    {BLT_CONFIG_SYNONYM, "-bg", "color"},
     {BLT_CONFIG_BORDER, "-border", "color", "Color", DEF_BORDER, 
         Blt_Offset(BackgroundObject, border), 0},
     {BLT_CONFIG_CUSTOM, "-relativeto", (char *)NULL, (char *)NULL, 
@@ -673,11 +673,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
 {
     BackgroundObject *corePtr = clientData;
     Blt_TileBrush *brushPtr = (Blt_TileBrush *)corePtr->brush;
-    int isNew;
 
     /* Get picture from image. */
-    if ((brushPtr->tile != NULL) &&
-        (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+    if (brushPtr->tile != NULL) {
         Blt_FreePicture(brushPtr->tile);
     }
     if (Blt_Image_IsDeleted(brushPtr->tkImage)) {
@@ -685,14 +683,9 @@ ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
         return;                         /* Image was deleted. */
     }
     brushPtr->tile = Blt_GetPictureFromImage(corePtr->dataPtr->interp,
-        brushPtr->tkImage, &isNew);
+        brushPtr->tkImage);
     if (Blt_Picture_IsPremultiplied(brushPtr->tile)) {
         Blt_UnmultiplyColors(brushPtr->tile);
-    }
-    if (isNew) {
-        brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
-    } else {
-        brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
     }
 }
 
@@ -780,9 +773,9 @@ ImageToObj(
  *
  * ObjToPosition --
  *
- *      Translate the given string to the gradient type it represents.
- *      Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
- *      and "radial"".
+ *      Translate the given string to the position it represents.
+ *      Positions are "nw", "sw", "n", "ne", "se", "s", "e", "c", w",
+ *      "bottom", "top", "center", "left", "right".
  *
  * Results:
  *      The return value is a standard TCL result.  
@@ -1019,9 +1012,9 @@ ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_VERTICAL;
+        flag = BLT_PAINTBRUSH_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-        flag = BLT_PAINTBRUSH_ORIENT_HORIZONTAL;
+        flag = BLT_PAINTBRUSH_HORIZONTAL;
     } else {
         Tcl_AppendResult(interp, "unknown orient value \"", string,
                 "\": should be vertical or horizontal.", (char *)NULL);
@@ -1053,9 +1046,9 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Tcl_Obj *objPtr;
     
     switch (*flagsPtr & ORIENT_MASK) {
-    case BLT_PAINTBRUSH_ORIENT_VERTICAL:
+    case BLT_PAINTBRUSH_VERTICAL:
         objPtr = Tcl_NewStringObj("vertical", 8);       break;
-    case BLT_PAINTBRUSH_ORIENT_HORIZONTAL:
+    case BLT_PAINTBRUSH_HORIZONTAL:
         objPtr = Tcl_NewStringObj("horizontal", 10);    break;
     default:
         objPtr = Tcl_NewStringObj("???", 3);            break;
@@ -1066,8 +1059,12 @@ OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * PaletteChangedProc
+ * PaletteChangedProc --
  *
+ *      Palettes are used by the underlying paint brush but are not
+ *      directly controlled by them.  We have to manage changes to the
+ *      palette by notifying clients of the background object to redraw
+ *      themselves.
  *
  * Results:
  *      None.
@@ -1079,23 +1076,35 @@ static void
 PaletteChangedProc(Blt_Palette palette, ClientData clientData, 
                    unsigned int flags)
 {
-     if (flags & PALETTE_DELETE_NOTIFY) {
-         PaintBrush *brushPtr = clientData;
+    BackgroundObject *corePtr = clientData;
 
-         brushPtr->palette = NULL;
-    }
+    NotifyClients(corePtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreePalette --
+ *
+ *      Free the palette (reducing its reference count).  Remove the
+ *      notifier that we setup for the palette.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static void
 FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
-
+    
     if (*palPtr != NULL) {
-        Blt_PaintBrush brush = (Blt_PaintBrush)widgRec;
+        BackgroundObject *corePtr = clientData;
 
-        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, brush);
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, corePtr);
+        Blt_Palette_Delete(*palPtr);
         *palPtr = NULL;
     }
 }
@@ -1105,7 +1114,10 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToPalette --
  *
- *      Convert the string representation of a palette into its token.
+ *      Convert the string representation of a palette into its token.  We
+ *      have to notify background clients when the palette changes.  Since
+ *      the BackgroundObject is a proxy for the PaintBrush, we won't be 
+ *      notified by the paint brush.
  *
  * Results:
  *      The return value is a standard TCL result.  The palette token is
@@ -1118,19 +1130,31 @@ static int
 ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
+    BackgroundObject *corePtr = clientData;
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
-    Blt_PaintBrush brush = (Blt_PaintBrush)(widgRec);
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-        FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
-        return TCL_OK;
+    Blt_Palette palette;
+    int length;
+
+    Tcl_GetStringFromObj(objPtr, &length);
+    palette = NULL;
+    /* If the palette is the empty string (""), just remove the current
+     * palette. */
+    if (length > 0) {
+        if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
-    if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
-        return TCL_ERROR;
+    if (*palPtr != NULL) {
+        /* Delete the old palette and its associated notifier. */
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, corePtr);
+        Blt_Palette_Delete(*palPtr);
     }
-    Blt_Palette_CreateNotifier(*palPtr, PaletteChangedProc, brush);
+    /* Create a notifier to tell us when the palette changes or is
+     * deleted. */
+    if (palette != NULL) {
+        Blt_Palette_CreateNotifier(palette, PaletteChangedProc, corePtr);
+    }
+    *palPtr = palette;
     return TCL_OK;
 }
 
@@ -1152,6 +1176,7 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              char *widgRec, int offset, int flags)
 {
     Blt_Palette palette = *(Blt_Palette *)(widgRec + offset);
+
     if (palette == NULL) {
         return Tcl_NewStringObj("", -1);
     } 
@@ -1484,10 +1509,6 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
                     corePtr->flags & RELATIVETO_MASK, Tk_PathName(tkRef),
                     Tk_PathName(tkwin));
                     
-#ifdef notdef
-            corePtr->flags = RELATIVETO_SELF;
-            tkRef = tkwin;
-#endif
             abort();
         }
     }
@@ -1632,9 +1653,10 @@ ShiftLine(
 
     if (shiftTable[0] == 0) {
         int i;
-        double tangent, cosine;
 
         for (i = 0; i <= 128; i++) {
+            double tangent, cosine;
+
             tangent = i/128.0;
             cosine = 128/cos(atan(tangent)) + .5;
             shiftTable[i] = (int) cosine;
@@ -2010,6 +2032,7 @@ ConfigureBackground(Tcl_Interp *interp, BackgroundObject *corePtr, int objc,
         }
     }
     imageOption.clientData = corePtr;
+    paletteOption.clientData = corePtr;
     result = Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, bgSpecs,
         numBgArgs, bgArgs, (char *)corePtr, flags);
     if (result == TCL_OK) {
@@ -2165,7 +2188,7 @@ GetBgInstance(Tk_Window tkwin, int w, int h, BackgroundObject *corePtr)
     instPtr->hashPtr = hPtr;
     Tk_CreateEventHandler(instPtr->tkwin, StructureNotifyMask,
               InstanceEventProc, instPtr);
-    Blt_SetBrushRegion(corePtr->brush, 0, 0, w, h);
+    Blt_SetBrushArea(corePtr->brush, 0, 0, w, h);
     Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush, TRUE);
 
     /* Create a pixmap the size of the reference window. */
@@ -2215,8 +2238,10 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
     }
     /* Handle the simple case where it's a solid color background. */
     if (corePtr->flags & BACKGROUND_SOLID) {
-        Tk_Fill3DRectangle(tkwin, drawable, corePtr->border, x, y, w, h, 0,
-                           TK_RELIEF_FLAT);
+        GC gc;
+        
+        gc = Tk_3DBorderGC(tkwin, corePtr->border, TK_3D_FLAT_GC);
+	XFillRectangle(corePtr->display, drawable, gc, x, y, w, h);
         return;
     }
     GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
@@ -2224,7 +2249,10 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
         BgInstance *instPtr;
         int xOffset, yOffset;           /* Starting upper left corner of
                                          * region. */
+        
         GetOffsets(tkwin, corePtr, 0, 0, &xOffset, &yOffset);
+        xOffset += corePtr->xOffset;
+        yOffset += corePtr->yOffset;
         instPtr = GetBgInstance(tkwin, rw, rh, corePtr);
         if (instPtr == NULL) {
             return;
@@ -2408,7 +2436,7 @@ DestroyBackground(Bg *bgPtr)
     BackgroundObject *corePtr = bgPtr->corePtr;
 
     Blt_Chain_DeleteLink(corePtr->chain, bgPtr->link);
-    if (Blt_Chain_GetLength(corePtr->chain) <= 0) {
+    if (Blt_Chain_GetLength(corePtr->chain) == 0) {
         DestroyBackgroundObject(corePtr);
     }
     Blt_Free(bgPtr);
@@ -2483,7 +2511,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
         /* Generate a unique name for the paintbrush.  */
         do {
-            Blt_FormatString(name, 200, "background%d", dataPtr->nextId++);
+            Blt_FmtString(name, 200, "background%d", dataPtr->nextId++);
             hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
         } while (!isNew);
     } 
@@ -2698,7 +2726,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (corePtr->brush != NULL) {
         Tcl_SetStringObj(Tcl_GetObjResult(interp),
-                     Blt_GetBrushType(corePtr->brush), -1);
+                     Blt_GetBrushTypeName(corePtr->brush), -1);
     }
     return TCL_OK;
 }
@@ -2946,9 +2974,6 @@ Blt_Bg_SetChangedProc(
 void
 Blt_Bg_Free(Bg *bgPtr)
 {
-    BackgroundObject *corePtr = bgPtr->corePtr;
-
-    assert(corePtr != NULL);
     DestroyBackground(bgPtr);
 }
 
@@ -2992,6 +3017,8 @@ Blt_Bg_SetOrigin(Tk_Window tkwin, Bg *bgPtr, int x, int y)
     if (bgPtr->corePtr->brush != NULL) {
         Blt_SetBrushOrigin(bgPtr->corePtr->brush, x, y);
     }
+    bgPtr->corePtr->xOffset = x;
+    bgPtr->corePtr->yOffset = y;
 }
 
 /*
@@ -3284,20 +3311,45 @@ void
 Blt_Bg_SetClipRegion(Tk_Window tkwin, Bg *bgPtr, TkRegion rgn)
 {
     Blt_Painter painter;
+    Tk_Window tkRef;
+    Blt_HashEntry *hPtr;
 
     Blt_3DBorder_SetClipRegion(tkwin, bgPtr->corePtr->border, rgn);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_SetPainterClipRegion(painter, rgn);
+
+    tkRef = GetReferenceWindow(bgPtr->corePtr, tkwin);
+    hPtr = Blt_FindHashEntry(&bgPtr->corePtr->instTable, tkRef);
+    if (hPtr != NULL) {
+        BgInstance *instPtr;
+        
+        instPtr = Blt_GetHashValue(hPtr);
+        if (instPtr != NULL) {
+            TkSetRegion(Tk_Display(tkwin), instPtr->gc, rgn);
+        }
+    }
 }
 
 void
 Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Bg *bgPtr)
 {
     Blt_Painter painter;
+    Tk_Window tkRef;
+    Blt_HashEntry *hPtr;
 
     Blt_3DBorder_UnsetClipRegion(tkwin, bgPtr->corePtr->border);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_UnsetPainterClipRegion(painter);
+    tkRef = GetReferenceWindow(bgPtr->corePtr, tkwin);
+    hPtr = Blt_FindHashEntry(&bgPtr->corePtr->instTable, tkRef);
+    if (hPtr != NULL) {
+        BgInstance *instPtr;
+        
+        instPtr = Blt_GetHashValue(hPtr);
+        if (instPtr != NULL) {
+            XSetClipMask(Tk_Display(tkwin), instPtr->gc, None);
+        }
+    }
 }
 
 unsigned int

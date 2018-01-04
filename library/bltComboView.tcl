@@ -1,4 +1,4 @@
-# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
+# -*- mode: tcl; tcl-indent-level: 4; indent-tabs-mode: nil -*- 
 #
 # bltComboView.tcl
 #
@@ -60,9 +60,14 @@ namespace eval blt {
 # a cascaded chain of menus, after the focus has already been
 # restored to wherever it was before menu selection started.
 
-bind BltComboView <Enter> { 
+bind BltComboView <Visibility> { 
     blt::ComboView::trace "blt::ComboView %# <Enter> %W"
     focus %W
+}
+
+bind BltComboView <Unmap> { 
+    blt::ComboView::trace "blt::ComboView %# <Ummap> %W"
+    %W postcascade none
 }
 
 bind BltComboView <Leave> { 
@@ -73,7 +78,7 @@ bind BltComboView <Leave> {
 }
 
 bind BltComboView <Motion> { 
-    blt::ComboView::trace "blt::ComboView Motion %\# %X,%Y"
+    #blt::ComboView::trace "blt::ComboView Motion %W %X,%Y"
     blt::ComboView::MotionEvent %W %X %Y
 }
 
@@ -90,7 +95,6 @@ bind BltComboView <ButtonRelease> {
 bind BltComboView <B1-Motion> { 
     blt::ComboView::MotionEvent %W %X %Y
 }
-
 
 bind BltComboView <B1-Enter> {
     after cancel $blt::ComboView::_private(afterId)
@@ -154,16 +158,16 @@ bind BltComboView <KeyPress-Return> {
     blt::ComboView::SelectItem %W
 }
 
-bind BltComboView <Escape> {
+bind BltComboView <KeyPress-Escape> {
     blt::ComboView::trace "blt::ComboView Keypress-escape %W"
     blt::ComboView::Cancel
 }
 
-bind BltComboView <Left> {
+bind BltComboView <KeyPress-Left> {
     blt::ComboView::LastMenu
 }
 
-bind BltComboView <Right> {
+bind BltComboView <KeyPress-Right> {
     blt::ComboView::NextMenu
 }
 
@@ -274,8 +278,12 @@ proc ::blt::ComboView::ButtonPressEvent { view x y } {
     # The button press event did not occur inside of any menu.
     $view unpost 
     set _private(cascades) ""
+
+    # Pop the grab before invoking the menu item command.
+    puts stderr "1. grab pop"
+    blt::grab pop $view
     event generate $view <<MenuSelect>>
-    #blt::grab pop $view
+    $view invoke $item
 }
 
 proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
@@ -287,7 +295,9 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	if { [$view type $item] == "cascade" } {
 	    set cascade [$view item cget $item -menu]
 	    if { $cascade != "" } {
-		blt::grab push $view -global
+                if { [winfo class $view] != "BltComboView" } {
+                    blt::grab push $view -global
+                }
 		$view postcascade $item
 		set _private(cascades) $cascade
 		update
@@ -298,9 +308,11 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	} 
 	$view unpost
 	set _private(cascades) ""
-	#blt::grab pop $view
+        if { [winfo class $view] != "BltComboView" } {
+            puts stderr "2. grab pop"
+            blt::grab pop $view
+        }
 	event generate $view <<MenuSelect>>
- puts stderr "grab stack = [blt::grab list]"
 	$view invoke $item
 	return
     }
@@ -323,8 +335,10 @@ proc ::blt::ComboView::ButtonReleaseEvent { view x y } {
 	} 
 	$m unpost
 	set _private(cascades) ""
- puts stderr "grab stack = [blt::grab list]"
-	blt::grab pop $view
+        if { [winfo class $view] != "BltComboView" } {
+            puts stderr "3. grab pop"
+            blt::grab pop $view
+        }
 	event generate $view <<MenuSelect>>
 	$m invoke $item
 	return
@@ -338,8 +352,9 @@ proc ::blt::ComboView::MotionEvent { altview x y } {
     if { $view == "" } {
 	set view $altview
     } 
-    if { ([winfo class $view] != "BltComboMenu" &&
-	    [winfo class $view] != "BltComboView") } {
+	set view $altview
+    if { [winfo class $view] != "BltComboMenu" &&
+         [winfo class $view] != "BltComboView" } {
 	return
     }
     # Handle the top most menu first.
@@ -348,7 +363,9 @@ proc ::blt::ComboView::MotionEvent { altview x y } {
 	if { [$view type $item] == "cascade" } {
 	    set cascade [$view item cget $item -menu]
 	    if { $cascade != "" } {
-		blt::grab push $view -global
+                if { [winfo class $view] != "BltComboView" } {
+                    blt::grab push $view -global
+                }
 		focus $cascade
 		bind $cascade <Unmap> \
 		    [list blt::ComboView::ReleaseGrab $view %W]
@@ -485,8 +502,10 @@ proc ::blt::ComboView::SelectItem { view } {
     } 
     $m unpost
     set _private(cascades) ""
- puts stderr "grab stack = [blt::grab list]"
-    blt::grab pop $m
+    if { [winfo class $m] != "BltComboView" } {
+        puts stderr "4. grab pop"
+        blt::grab pop $m
+    }
     event generate $m <<MenuSelect>>
     $m invoke $item
 }
@@ -496,16 +515,20 @@ proc ::blt::ComboView::Cancel {} {
 
     set m [blt::grab current]
     if { $m == "" || [winfo class $m] != "BltComboView" } {
-	return
+	returnd
     }
     $m unpost 
     event generate $m <<MenuSelect>>
-    blt::grab pop $m
+    puts stderr "5. grab pop"
+    #blt::grab pop $m
 }
 
 proc ::blt::ComboView::ReleaseGrab { view menu } {
     variable _private 
 
     bind $menu <Unmap> {}
-    blt::grab pop $view
+    if { [winfo class $view] != "BltComboView" } {
+        puts stderr "6. grab pop"
+        blt::grab pop $view
+    }
 }

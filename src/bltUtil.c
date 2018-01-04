@@ -455,221 +455,15 @@ Tcl_GetVar2Ex(
 }
 #endif
 
-
-
-/*
- *----------------------------------------------------------------------
- *
- * Blt_GetLongFromString --
- *
- *      Given a string, produce the corresponding long integer value.  This
- *      differs from TclGetLong in that it doesn't accept octal values.
- *
- * Results:
-
- *      The return value is normally TCL_OK; in this case *longPtr will be
- *      set to the long integer value equivalent to string. If string is
- *      improperly formed then TCL_ERROR is returned and an error message
- *      will be left in the interp's result if interp is non-NULL.
- *
- * Side effects:
- *      None.
- *
- *----------------------------------------------------------------------
- */
-
 int
-Blt_GetLong(interp, string, longPtr)
-    Tcl_Interp *interp;                 /* Interpreter used for error
-                                         * reporting if not NULL. */
-    const char *string;                 /* String containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
-    long *longPtr;                      /* Place to store converted long
-                                         * result. */
+Blt_ObjIsInteger(Tcl_Obj *objPtr)
 {
-    char *end;
-    const char *p;
-    long i;
-
-    /*
-     * Note: don't depend on strtoul to handle sign characters; it won't
-     * in some implementations.
-     */
-    p = string;
-    errno = 0;
-    for ( ; isspace(UCHAR(*p)); p++) {  /* INTL: ISO space. */
-        /* Empty loop body. */
-    }
-    if (*p == '-') {
-        p++;
-        i = -(long)strtoul(p, &end, 10); /* INTL: TCL source. */
-    } else if (*p == '+') {
-        p++;
-        i = strtoul(p, &end, 10);       /* INTL: TCL source. */
-    } else {
-        i = strtoul(p, &end, 10);       /* INTL: TCL source. */
-    }
-    if (end == p) {
-        badInteger:
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "expected integer but got \"", string,
-                    "\"", (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    if (errno == ERANGE) {
-        if (interp != NULL) {
-            Tcl_SetResult(interp,
-                        (char *)"integer value too large to represent",
-                          TCL_STATIC);
-            Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
-                    Tcl_GetStringResult(interp), (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    while ((*end != '\0') && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-        end++;
-    }
-    if (*end != 0) {
-        goto badInteger;
-    }
-    *longPtr = i;
-    return TCL_OK;
-}
-
-/*
- *----------------------------------------------------------------------
- *
- * Blt_GetLongFromObj --
- *
- *      Given an string, produce the corresponding long integer value.
- *      This differs from TclGetLong in that it doesn't accept octal
- *      values.
- *
- * Results:
- *      The return value is normally TCL_OK; in this case *longPtr will be
- *      set to the long integer value equivalent to string. If string is
- *      improperly formed then TCL_ERROR is returned and an error message
- *      will be left in the interp's result if interp is non-NULL.
- *
- * Side effects:
- *      None.
- *
- *----------------------------------------------------------------------
- */
-int
-Blt_GetLongFromObj(interp, objPtr, longPtr)
-    Tcl_Interp *interp;                 /* Interpreter to report back to. */
-    Tcl_Obj *objPtr;                    /* Object containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
-    long *longPtr;                      /* Place to store converted long
-                                         * result. */
-{
-    static const Tcl_ObjType *tclStringTypePtr = NULL;
-
-    if (tclStringTypePtr == NULL) {
-        Tcl_Obj *objPtr;
-        
-        objPtr = Tcl_NewStringObj("", -1);
-        tclStringTypePtr = objPtr->typePtr;
-        Tcl_DecrRefCount(objPtr);
-    }
-    if ((objPtr->typePtr == NULL) || (objPtr->typePtr == tclStringTypePtr)) {
-        return Blt_GetLong(interp, Tcl_GetString(objPtr), longPtr);
-    }
-    /* It's OK to use Tcl_GetLongFromObj, since that can be no leading 0. */
-    return Tcl_GetLongFromObj(interp, objPtr, longPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetDoubleFromString --
- *
- *      Converts a string into a double precision number.  This differs
- *      from Tcl's version in that it also allows NaN and +/-Inf.  There
- *      are cases where NaNs are used to indicate holes in the data.
- *
- * Results:
- *      Returns a standard TCL result.
- *
- *---------------------------------------------------------------------------
- */
-int
-Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, double *valuePtr)
-{
-    char *end;
-    double d;
+    int64_t value;
     
-    errno = 0;
-    d = strtod(s, &end); /* INTL: TCL source. */
-    if (end == s) {
-        badDouble:
-        if (interp != NULL) {
-            Tcl_AppendResult(interp, "expected floating-point number "
-                "but got \"", s, "\"", (char *) NULL);
-        }
-        return TCL_ERROR;
+    if (Blt_GetInt64FromObj(NULL, objPtr, &value) == TCL_OK) {
+        return TRUE;
     }
-    if (errno != 0 && (d == HUGE_VAL || d == -HUGE_VAL || d == 0)) {
-        if (interp != NULL) {
-            char msg[64 + TCL_INTEGER_SPACE];
-        
-            sprintf(msg, "unknown floating-point error, errno = %d", errno);
-            Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
-            Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
-        }
-        return TCL_ERROR;
-    }
-    while ((*end != 0) && isspace(UCHAR(*end))) { /* INTL: ISO space. */
-        end++;
-    }
-    if (*end != 0) {
-        goto badDouble;
-    }
-    *valuePtr = d;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetDoubleFromString --
- *
- *      Converts a Tcl_Obj into a double precision number.  This differs
- *      from Tcl's version in that it also allows NaN and +/-Inf.  There
- *      are cases where NaNs are used to indicate holes in the data.
- *
- * Results:
- *      Returns a standard TCL result.
- *
- * Side Effects:
- *      tclDoubleType is no longer available (in 8.5) as a global variable.
- *      We have to get a double obj and save its type pointer.
- *
- *---------------------------------------------------------------------------
- */
-int
-Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
-{
-    const char *string;
-    static const Tcl_ObjType *tclDoubleTypePtr = NULL;
-
-    if (tclDoubleTypePtr == NULL) {
-        Tcl_Obj *objPtr;
-        
-        objPtr = Tcl_NewDoubleObj(0.0);
-        tclDoubleTypePtr = objPtr->typePtr;
-        Tcl_DecrRefCount(objPtr);
-    }
-    if (objPtr->typePtr == tclDoubleTypePtr) {
-        *valuePtr = objPtr->internalRep.doubleValue;
-        return TCL_OK;
-    }
-    string = Tcl_GetString(objPtr);
-    return Blt_GetDoubleFromString(interp, string, valuePtr);
+    return FALSE;
 }
 
 /*
@@ -993,7 +787,7 @@ Blt_DStringAppendElements(Tcl_DString *dsPtr, ...)
 
 /*ARGSUSED*/
 int 
-Blt_FormatString(char *s, size_t size, const char *fmt, /*args*/ ...) 
+Blt_FmtString(char *s, size_t size, const char *fmt, /*args*/ ...) 
 {
     va_list ap;
     int n;
@@ -1012,21 +806,21 @@ static char stringRep[200];
 const char *
 Blt_Itoa(int value)
 {
-    Blt_FormatString(stringRep, 200, "%d", value);
+    Blt_FmtString(stringRep, 200, "%d", value);
     return stringRep;
 }
 
 const char *
 Blt_Ltoa(long value)
 {
-    Blt_FormatString(stringRep, 200, "%ld", value);
+    Blt_FmtString(stringRep, 200, "%ld", value);
     return stringRep;
 }
 
 const char *
 Blt_Utoa(unsigned int value)
 {
-    Blt_FormatString(stringRep, 200, "%u", value);
+    Blt_FmtString(stringRep, 200, "%u", value);
     return stringRep;
 }
 
@@ -1112,45 +906,6 @@ Blt_InitHexTable(unsigned char *hexTable)
     hexTable['f'] = hexTable['F'] = 15;
 }
 
-int
-Blt_GetCountFromObj(
-    Tcl_Interp *interp,
-    Tcl_Obj *objPtr,
-    int check,                          /* Can be COUNT_POS, COUNT_NNEG,
-                                         * or COUNT_ANY, */
-    long *valuePtr)
-{
-    long count;
-
-    if (Blt_GetLongFromObj(interp, objPtr, &count) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    switch (check) {
-    case COUNT_NNEG:
-        if (count < 0) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
-                                 "\": can't be negative", (char *)NULL);
-            }
-            return TCL_ERROR;
-        }
-        break;
-    case COUNT_POS:
-        if (count <= 0) {
-            if (interp != NULL) {
-                Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
-                                 "\": must be positive", (char *)NULL);
-            }
-            return TCL_ERROR;
-        }
-        break;
-    case COUNT_ANY:
-        break;
-    }
-    *valuePtr = count;
-    return TCL_OK;
-}
-
 
 #ifdef notdef
 /*
@@ -1184,15 +939,15 @@ Blt_GetPosition(
                                          * index.  Can be an integer or
                                          * "end" to refer to the last
                                          * index. */
-    long *indexPtr)                     /* Holds the converted index. */
+    size_t *indexPtr)                   /* Holds the converted index. */
 {
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
         *indexPtr = -1;                 /* Indicates last position in
                                          * hierarchy. */
     } else {
-        long position;
+        int64_t position;
 
-        if (Blt_GetLong(interp, string, &position) != TCL_OK) {
+        if (Blt_GetInt64(interp, string, &position) != TCL_OK) {
             return TCL_ERROR;
         }
         if (position < 0) {
@@ -1202,7 +957,7 @@ Blt_GetPosition(
             }
             return TCL_ERROR;
         }
-        *indexPtr = position;
+        *indexPtr = (size_t)position;
     }
     return TCL_OK;
 }
@@ -1248,9 +1003,9 @@ Blt_GetPositionFromObj(
         *indexPtr = -1;                 /* Indicates last position in
                                          * hierarchy. */
     } else {
-        long position;
+        int64_t position;
 
-        if (Blt_GetLongFromObj(interp, objPtr, &position) != TCL_OK) {
+        if (Blt_GetInt64FromObj(interp, objPtr, &position) != TCL_OK) {
             return TCL_ERROR;
         }
         if (position < 0) {
@@ -1491,7 +1246,6 @@ BinaryOpSearch(Blt_OpSpec *specs, int low, int high, const char *string,
     }
     return -1;                          /* Can't find operation */
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -1738,10 +1492,10 @@ Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath,
  */
 
 #define MAXULPS 4
-#define SIGNBITMASK     0x8000000000000000UL
-#define FRACBITMASK     0x007FFFFFFFFFFFFFUL
-#define EXPBITMASK      0x7F80000000000000UL
-#define INFBITMASK      0x7ff0000000000000UL
+#define SIGNBITMASK     0x8000000000000000ULL
+#define FRACBITMASK     0x007FFFFFFFFFFFFFULL
+#define EXPBITMASK      0x7F80000000000000ULL
+#define INFBITMASK      0x7ff0000000000000ULL
 
 typedef uint64_t Bits;
 
@@ -1756,8 +1510,9 @@ IsNaN(const Bits x)
     return (((EXPBITMASK & x) == EXPBITMASK) && ((FRACBITMASK & x) != 0));
 }
  
+#ifdef notdef
 static INLINE int
-isInfinite(const Bits  x)
+IsInfinite(const Bits  x)
 {
     return ((x & INFBITMASK) == EXPBITMASK);
 }
@@ -1767,6 +1522,7 @@ Signof(const Bits x)
 {
     return (x & SIGNBITMASK);
 }
+#endif
 
 static INLINE Bits 
 SignAndMagnitudeToBiased(const Bits sam)
@@ -1935,139 +1691,6 @@ Blt_AlmostEquals2(double A, double B)
     return FALSE;
 }
 #endif
-
-const char *
-Blt_NameOfSide(int side)
-{
-    switch (side) {
-    case SIDE_LEFT:
-        return "left";
-    case SIDE_RIGHT:
-        return "right";
-    case SIDE_BOTTOM:
-        return "bottom";
-    case SIDE_TOP:
-        return "top";
-    }
-    return "unknown side value";
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetSideFromObj --
- *
- *      Converts the fill style string into its numeric representation.
- *
- *      Valid style strings are "left", "right", "top", or  "bottom".
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED */
-int
-Blt_GetSideFromObj(
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tcl_Obj *objPtr,                    /* Value string */
-    int *sidePtr)                       /* (out) Token representing side:
-                                         * either SIDE_LEFT, SIDE_RIGHT,
-                                         * SIDE_TOP, or SIDE_BOTTOM. */
-{
-    char c;
-    const char *string;
-    int length;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
-        *sidePtr = SIDE_LEFT;
-    } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
-        *sidePtr = SIDE_RIGHT;
-    } else if ((c == 't') && (strncmp(string, "top", length) == 0)) {
-        *sidePtr = SIDE_TOP;
-    } else if ((c == 'b') && (strncmp(string, "bottom", length) == 0)) {
-        *sidePtr = SIDE_BOTTOM;
-    } else {
-        Tcl_AppendResult(interp, "bad side \"", string,
-            "\": should be left, right, top, or bottom", (char *)NULL);
-        return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
-static double
-FindSplit(Point2d *points, int i, int j, int *split)    
-{    
-    double maxDist2;
-    
-    maxDist2 = -1.0;
-    if ((i + 1) < j) {
-        int k;
-        double a, b, c; 
-
-        /* 
-         * 
-         *  dist2 P(k) =  |  1  P(i).x  P(i).y  |
-         *                |  1  P(j).x  P(j).y  |
-         *                |  1  P(k).x  P(k).y  |
-         *       ------------------------------------------
-         *       (P(i).x - P(j).x)^2 + (P(i).y - P(j).y)^2
-         */
-
-        a = points[i].y - points[j].y;
-        b = points[j].x - points[i].x;
-        c = (points[i].x * points[j].y) - (points[i].y * points[j].x);
-        for (k = (i + 1); k < j; k++) {
-            double dist2;
-
-            dist2 = (points[k].x * a) + (points[k].y * b) + c;
-            if (dist2 < 0.0) {
-                dist2 = -dist2; 
-            }
-            if (dist2 > maxDist2) {
-                maxDist2 = dist2;       /* Track the maximum. */
-                *split = k;
-            }
-        }
-        /* Correction for segment length---should be redone if can == 0 */
-        maxDist2 *= maxDist2 / (a * a + b * b);
-    } 
-    return maxDist2;
-}
-
-/* Douglas-Peucker line simplification algorithm */
-int
-Blt_SimplifyLine(Point2d *inputPts, int low, int high, double tolerance,
-                 int *indices)
-{
-#define StackPush(a)    s++, stack[s] = (a)
-#define StackPop(a)     (a) = stack[s], s--
-#define StackEmpty()    (s < 0)
-#define StackTop()      stack[s]
-    int *stack;
-    int split = -1; 
-    double dist2, tolerance2;
-    int s = -1;                 /* Points to top stack item. */
-    int count;
-
-    stack = Blt_AssertMalloc(sizeof(int) * (high - low + 1));
-    StackPush(high);
-    count = 0;
-    indices[count++] = 0;
-    tolerance2 = tolerance * tolerance;
-    while (!StackEmpty()) {
-        dist2 = FindSplit(inputPts, low, StackTop(), &split);
-        if (dist2 > tolerance2) {
-            StackPush(split);
-        } else {
-            indices[count++] = StackTop();
-            StackPop(low);
-        }
-    } 
-    Blt_Free(stack);
-    return count;
-}
-
 /* 
  * Converts the list from TCL memory into normal memory. This is
  * because the list could be either a split list or a (malloc-ed)

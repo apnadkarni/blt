@@ -540,7 +540,7 @@ CreateEventWindow(TableEditor *tedPtr)
 
         parent = Tk_Parent(master);
         namePtr = Blt_AssertMalloc(strlen(Tk_Name(master)) + 5);
-        Blt_FormatString(namePtr, strlen(Tk_Name(master)) + 5, "ted_%s", 
+        Blt_FmtString(namePtr, strlen(Tk_Name(master)) + 5, "ted_%s", 
                  Tk_Name(master));
         tkwin = Tk_CreateWindow(interp, parent, namePtr, (char *)NULL);
         Blt_Free(namePtr);
@@ -588,7 +588,7 @@ CreateEntry(TableEditor *tedPtr, TableEntry *tePtr)
      */
 
     master = tedPtr->tablePtr->tkwin;
-    Blt_FormatString(string, 200, "bltTableEditor%d", tedPtr->nextWindowId);
+    Blt_FmtString(string, 200, "bltTableEditor%d", tedPtr->nextWindowId);
     tedPtr->nextWindowId++;
     tkwin = Tk_CreateWindow(tedPtr->interp, master, string, (char *)NULL);
     if (tkwin == NULL) {

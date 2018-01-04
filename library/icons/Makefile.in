@@ -1,0 +1,50 @@
+# ------------------------------------------------------------------------
+# 	Makefile for library files and directories of BLT library
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir = 	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+so_prefix =	@BLT_SO_PREFIX@
+so_ext =	@BLT_SO_EXT@
+lib_suffix =	@BLT_LIB_SUFFIX@
+destdir =	@BLT_LIBRARY@
+
+INSTALL =	@INSTALL@
+INSTALL_DATA =  @INSTALL_DATA@
+RM =		rm -f
+SHELL =		/bin/sh
+MKDIR_P =	@MKDIR_P@
+
+
+subdirs =	16x16 32x32 64x64
+
+all: 
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i all || exit 1 ; \
+	done
+
+install:
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $$i $(DESTDIR)$(destdir) ; \
+	done 
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i install || exit 1 ; \
+	done
+
+clean:
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i clean || exit 1 ; \
+	done
+
+distclean: clean
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i distclean || exit 1 ; \
+	done
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile

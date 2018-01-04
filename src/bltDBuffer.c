@@ -312,11 +312,10 @@ Blt_DBuffer_DeleteData(DBuffer *srcPtr, size_t index, size_t numBytes)
     size_t i, j, k;
     
     oldLength = Blt_DBuffer_Length(srcPtr);
-    if ((index < 0) || ((index + numBytes) > oldLength)) {
+    if ((index + numBytes) > oldLength) {
         return FALSE;
     }
     bp = Blt_DBuffer_Bytes(srcPtr);
-    assert((index >= 0) && ((index + numBytes) <= oldLength));
     newLength = oldLength - numBytes;
     trailing = newLength - index;
     for (i = index, j = index + numBytes, k = 0; k < trailing; i++, j++, k++) {

@@ -292,6 +292,12 @@ Blt_Ps_GetValue(PostScript *psPtr, int *lengthPtr)
     return (const char *)Blt_DBuffer_Bytes(psPtr->dbuffer);
 }
 
+const char *
+Blt_Ps_GetString(PostScript *psPtr)
+{
+    return Blt_DBuffer_String(psPtr->dbuffer);
+}
+
 void
 Blt_Ps_SetInterp(PostScript *psPtr, Tcl_Interp *interp)
 {
@@ -565,12 +571,11 @@ Blt_Ps_XSetBitmapData(
     Pixmap bitmap,
     int width, int height)
 {
-    unsigned char byte;
     int x, y, bitPos;
     unsigned long pixel;
     int byteCount;
     char string[10];
-    unsigned char *srcBits, *srcPtr;
+    unsigned char *srcBits;
     int bytesPerRow;
 
     srcBits = Blt_GetBitmapData(display, bitmap, width, height, &bytesPerRow);
@@ -581,6 +586,9 @@ Blt_Ps_XSetBitmapData(
     Blt_Ps_Append(psPtr, "\t<");
     byteCount = bitPos = 0;             /* Suppress compiler warning */
     for (y = height - 1; y >= 0; y--) {
+        unsigned char byte;
+        unsigned char *srcPtr;
+
         srcPtr = srcBits + (bytesPerRow * y);
         byte = 0;
         for (x = 0; x < width; x++) {
@@ -743,10 +751,17 @@ Blt_Ps_XSetDashes(Blt_Ps ps, Blt_Dashes *dashesPtr)
 
     Blt_Ps_Append(ps, "[ ");
     if (dashesPtr != NULL) {
-        unsigned char *vp;
+        unsigned char *p;
 
-        for (vp = dashesPtr->values; *vp != 0; vp++) {
-            Blt_Ps_Format(ps, " %d", *vp);
+        for (p = dashesPtr->values; *p != 0; p++) {
+            unsigned int value;
+
+            value = (unsigned int)*p;
+            fprintf(stderr, "value=%d\n", value);
+            if (value == 0) {
+                break;
+            }
+            Blt_Ps_Format(ps, " %d", value);
         }
     }
     Blt_Ps_Append(ps, "] 0 setdash\n");
@@ -1349,13 +1364,97 @@ Blt_Ps_XSetFont(PostScript *psPtr, Blt_Font font)
         
         Tcl_DStringInit(&ds);
         pointSize = (double)Blt_Font_PostscriptName(font, &ds);
+        pointSize = Blt_Font_PointSize(font);
         Blt_Ps_Format(psPtr, "%g /%s SetFont\n", pointSize, 
                 Tcl_DStringValue(&ds));
         Tcl_DStringFree(&ds);
         return;
     }
-    Blt_Ps_Append(psPtr, "12.0 /Helvetica-Bold SetFont\n");
+    Blt_Ps_Format(psPtr, "%g /Helvetica-Bold SetFont\n", 
+                  Blt_Font_PointSize(font));
 }
+
+void
+Blt_Ps_TextString(Blt_Ps ps, const char *string, int numBytes) 
+{
+    char *bp, *dst;
+    int count;                  /* Counts the # of bytes written to the
+                                 * intermediate scratch buffer. */
+    const char *src, *end;
+    unsigned char c;
+#if HAVE_UTF
+    Tcl_UniChar ch;
+#endif
+    int limit;
+
+    limit = POSTSCRIPT_BUFSIZ - 4; /* High water mark for scratch buffer. */
+
+    Blt_Ps_Append(ps, "(");
+    count = 0;
+    dst = Blt_Ps_GetScratchBuffer(ps);
+    src = string;
+    end = string + numBytes;
+    while (src < end) {
+        if (count > limit) {
+            /* Don't let the scatch buffer overflow */
+            dst = Blt_Ps_GetScratchBuffer(ps);
+            dst[count] = '\0';
+            Blt_Ps_Append(ps, dst);
+            count = 0;
+        }
+#if HAVE_UTF
+        /*
+         * INTL: For now we just treat the characters as binary data and
+         * display the lower byte.  Eventually this should be revised to
+         * handle international postscript fonts.
+         */
+        src += Tcl_UtfToUniChar(src, &ch);
+        c = (unsigned char)(ch & 0xff);
+#else 
+        c = *src++;
+#endif
+        
+        if ((c == '\\') || (c == '(') || (c == ')')) {
+            /*
+             * If special PostScript characters characters "\", "(", and
+             * ")" are contained in the text string, prepend backslashes
+             * to them.
+             */
+            *dst++ = '\\';
+            *dst++ = c;
+            count += 2;
+        } else if ((c < ' ') || (c > '~')) {
+            /* Convert non-printable characters into octal. */
+            Blt_FmtString(dst, 5, "\\%03o", c);
+            dst += 4;
+            count += 4;
+        } else {
+            *dst++ = c;
+            count++;
+        }
+    }
+    bp = Blt_Ps_GetScratchBuffer(ps);
+    bp[count] = '\0';
+    Blt_Ps_Append(ps, bp);
+    Blt_Ps_Append(ps, ")");
+}    
+
+void
+Blt_Ps_TextLayout(Blt_Ps ps, int x, int y, TextLayout *textPtr)
+{
+    TextFragment *fragPtr;
+    int i;
+
+    fragPtr = textPtr->fragments;
+    for (i = 0; i < textPtr->numFragments; i++, fragPtr++) {
+        if (fragPtr->numBytes > 0) {
+            Blt_Ps_TextString(ps, fragPtr->text, fragPtr->numBytes);
+            Blt_Ps_Format(ps, " %d %d %d DrawAdjText\n",
+                          fragPtr->w, x + fragPtr->x, y + fragPtr->y);
+        }
+    }
+}
+
 
 static void
 TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
@@ -1375,14 +1474,14 @@ TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
     limit = POSTSCRIPT_BUFSIZ - 4; /* High water mark for scratch buffer. */
     fragPtr = textPtr->fragments;
     for (i = 0; i < textPtr->numFragments; i++, fragPtr++) {
-        if (fragPtr->count < 1) {
+        if (fragPtr->numBytes < 1) {
             continue;
         }
         Blt_Ps_Append(ps, "(");
         count = 0;
         dst = Blt_Ps_GetScratchBuffer(ps);
         src = fragPtr->text;
-        end = fragPtr->text + fragPtr->count;
+        end = fragPtr->text + fragPtr->numBytes;
         while (src < end) {
             if (count > limit) {
                 /* Don't let the scatch buffer overflow */
@@ -1414,7 +1513,7 @@ TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
                 count += 2;
             } else if ((c < ' ') || (c > '~')) {
                 /* Convert non-printable characters into octal. */
-                Blt_FormatString(dst, 5, "\\%03o", c);
+                Blt_FmtString(dst, 5, "\\%03o", c);
                 dst += 4;
                 count += 4;
             } else {
@@ -1426,7 +1525,7 @@ TextLayoutToPostScript(Blt_Ps ps, int x, int y, TextLayout *textPtr)
         bp[count] = '\0';
         Blt_Ps_Append(ps, bp);
         Blt_Ps_Format(ps, ") %d %d %d DrawAdjText\n",
-            fragPtr->width, x + fragPtr->x, y + fragPtr->y);
+            fragPtr->w, x + fragPtr->x, y + fragPtr->y);
     }
 }
 
@@ -1468,8 +1567,8 @@ Blt_Ps_DrawText(
         double rw, rh;
         
         angle = FMOD(tsPtr->angle, (double)360.0);
-        Blt_GetBoundingBox(textPtr->width, textPtr->height, angle, &rw, &rh, 
-        (Point2d *)NULL);
+        Blt_GetBoundingBox((double)textPtr->width, (double)textPtr->height, 
+                angle, &rw, &rh, (Point2d *)NULL);
         /*
          * Find the center of the bounding box
          */

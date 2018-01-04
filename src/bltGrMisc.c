@@ -68,6 +68,8 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
+#define ARROW_IPAD 2
+
 static Blt_OptionParseProc ObjToPoint;
 static Blt_OptionPrintProc PointToObj;
 Blt_CustomOption bltPointOption =
@@ -75,13 +77,14 @@ Blt_CustomOption bltPointOption =
     ObjToPoint, PointToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToLimitsProc;
-static Blt_OptionPrintProc LimitsToObjProc;
+static Blt_OptionParseProc ObjToLimits;
+static Blt_OptionPrintProc LimitsToObj;
 Blt_CustomOption bltLimitsOption =
 {
-    ObjToLimitsProc, LimitsToObjProc, NULL, (ClientData)0
+    ObjToLimits, LimitsToObj, NULL, (ClientData)0
 };
 
+#define ARROW_IPAD 2
 
 /*
  *---------------------------------------------------------------------------
@@ -162,14 +165,8 @@ Blt_GetXY(Tcl_Interp *interp, Tk_Window tkwin, const char *string,
  */
 /*ARGSUSED*/
 static int
-ObjToPoint(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* New legend position string */
-    char *widgRec,              /* Widget record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToPoint(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     XPoint *pointPtr = (XPoint *)(widgRec + offset);
     int x, y;
@@ -195,13 +192,8 @@ ObjToPoint(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PointToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PointToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)
 {
     XPoint *pointPtr = (XPoint *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -209,7 +201,7 @@ PointToObj(
     if ((pointPtr->x != -SHRT_MAX) && (pointPtr->y != -SHRT_MAX)) {
         char string[200];
 
-        Blt_FormatString(string, 200, "@%d,%d", pointPtr->x, pointPtr->y);
+        Blt_FmtString(string, 200, "@%d,%d", pointPtr->x, pointPtr->y);
         objPtr = Tcl_NewStringObj(string, -1);
     } else { 
         objPtr = Tcl_NewStringObj("", -1);
@@ -220,7 +212,7 @@ PointToObj(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLimitsProc --
+ * ObjToLimits --
  *
  *      Converts the list of elements into zero or more pixel values which
  *      determine the range of pixel values possible.  An element can be in
@@ -247,15 +239,8 @@ PointToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToLimitsProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    Tk_Window tkwin,                    /* Widget of paneset */
-    Tcl_Obj *objPtr,                    /* New width list */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToLimits(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Limits *limitsPtr = (Blt_Limits *)(widgRec + offset);
 
@@ -269,7 +254,7 @@ ObjToLimitsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * LimitsToObjProc --
+ * LimitsToObj --
  *
  *      Convert the limits of the pixel values allowed into a list.
  *
@@ -280,13 +265,8 @@ ObjToLimitsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LimitsToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Row/column structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+LimitsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Blt_Limits *limitsPtr = (Blt_Limits *)(widgRec + offset);
     Tcl_Obj *listObjPtr;
@@ -313,504 +293,6 @@ LimitsToObjProc(
     return listObjPtr;
 }
 
-int
-Blt_PointInSegments(
-    Point2d *samplePtr,
-    Segment2d *segments,
-    int numSegments,
-    double halo)
-{
-    Segment2d *sp, *send;
-    double minDist;
-
-    minDist = DBL_MAX;
-    for (sp = segments, send = sp + numSegments; sp < send; sp++) {
-        double dist;
-        double left, right, top, bottom;
-        Point2d p, t;
-
-        t = Blt_GetProjection((int)samplePtr->x, (int)samplePtr->y, 
-                              &sp->p, &sp->q);
-        if (sp->p.x > sp->q.x) {
-            right = sp->p.x, left = sp->q.x;
-        } else {
-            right = sp->q.x, left = sp->p.x;
-        }
-        if (sp->p.y > sp->q.y) {
-            bottom = sp->p.y, top = sp->q.y;
-        } else {
-            bottom = sp->q.y, top = sp->p.y;
-        }
-        p.x = BOUND(t.x, left, right);
-        p.y = BOUND(t.y, top, bottom);
-        dist = hypot(p.x - samplePtr->x, p.y - samplePtr->y);
-        if (dist < minDist) {
-            minDist = dist;
-        }
-    }
-    return (minDist < halo);
-}
-
-int
-Blt_PointInPolygon(
-    Point2d *s,                         /* Sample point. */
-    Point2d *points,                    /* Points representing the
-                                         * polygon. */
-    int numPoints)                      /* # of points in above array. */
-{
-    Point2d *p, *q, *qend;
-    int count;
-
-    count = 0;
-    for (p = points, q = p + 1, qend = p + numPoints; q < qend; p++, q++) {
-        if (((p->y <= s->y) && (s->y < q->y)) || 
-            ((q->y <= s->y) && (s->y < p->y))) {
-            double b;
-
-            b = (q->x - p->x) * (s->y - p->y) / (q->y - p->y) + p->x;
-            if (s->x < b) {
-                count++;                /* Count the # of intersections. */
-            }
-        }
-    }
-    return (count & 0x01);
-}
-
-int
-Blt_RegionInPolygon(
-    Region2d *regionPtr,
-    Point2d *points,
-    int numPoints,
-    int enclosed)
-{
-    Point2d *pp, *pend;
-
-    if (enclosed) {
-        /*  
-         * All points of the polygon must be inside the rectangle.
-         */
-        for (pp = points, pend = pp + numPoints; pp < pend; pp++) {
-            if ((pp->x < regionPtr->left) || (pp->x > regionPtr->right) ||
-                (pp->y < regionPtr->top) || (pp->y > regionPtr->bottom)) {
-                return FALSE;   /* One point is exterior. */
-            }
-        }
-        return TRUE;
-    } else {
-        Point2d r;
-        /*
-         * If any segment of the polygon clips the bounding region, the
-         * polygon overlaps the rectangle.
-         */
-        points[numPoints] = points[0];
-        for (pp = points, pend = pp + numPoints; pp < pend; pp++) {
-            Point2d p, q;
-
-            p = *pp;
-            q = *(pp + 1);
-            if (Blt_LineRectClip(regionPtr, &p, &q)) {
-                return TRUE;
-            }
-        }
-        /* 
-         * Otherwise the polygon and rectangle are either disjoint or
-         * enclosed.  Check if one corner of the rectangle is inside the
-         * polygon.
-         */
-        r.x = regionPtr->left;
-        r.y = regionPtr->top;
-        return Blt_PointInPolygon(&r, points, numPoints);
-    }
-}
-
-static int 
-ClipTest (double ds, double dr, double *t1, double *t2)
-{
-  double t;
-
-  if (ds < 0.0) {
-      t = dr / ds;
-      if (t > *t2) {
-          return FALSE;
-      } 
-      if (t > *t1) {
-          *t1 = t;
-      }
-  } else if (ds > 0.0) {
-      t = dr / ds;
-      if (t < *t1) {
-          return FALSE;
-      } 
-      if (t < *t2) {
-          *t2 = t;
-      }
-  } else {
-      /* d = 0, so line is parallel to this clipping edge */
-      if (dr < 0.0) {                   /* Line is outside clipping edge */
-          return FALSE;
-      }
-  }
-  return TRUE;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_LineRectClip --
- *
- *      Clips the given line segment to a rectangular region.  The
- *      coordinates of the clipped line segment are returned.  The original
- *      coordinates are overwritten.
- *
- *      Reference: 
- *        Liang, Y-D., and B. Barsky, A new concept and method for
- *        Line Clipping, ACM, TOG,3(1), 1984, pp.1-22.
- *
- * Results:
- *      Returns if line segment is visible within the region. The coordinates
- *      of the original line segment are overwritten by the clipped
- *      coordinates.
- *
- *---------------------------------------------------------------------------
- */
-int 
-Blt_LineRectClip(
-    Region2d *regionPtr,                /* Rectangular region to clip. */
-    Point2d *p, Point2d *q)             /* (in/out) Coordinates of original
-                                         * and clipped line segment. */
-{
-    double t1, t2;
-    double dx, dy;
-
-    t1 = 0.0, t2 = 1.0;
-    dx = q->x - p->x;
-    if ((ClipTest (-dx, p->x - regionPtr->left, &t1, &t2)) &&
-        (ClipTest (dx, regionPtr->right - p->x, &t1, &t2))) {
-        dy = q->y - p->y;
-        if ((ClipTest (-dy, p->y - regionPtr->top, &t1, &t2)) && 
-            (ClipTest (dy, regionPtr->bottom - p->y, &t1, &t2))) {
-            int flags;
-
-            flags = CLIP_INSIDE;
-            if (t2 < 1.0) {
-                q->x = p->x + t2 * dx;
-                q->y = p->y + t2 * dy;
-                flags |= CLIP_RIGHT;
-            }
-            if (t1 > 0.0) {
-                p->x += t1 * dx;
-                p->y += t1 * dy;
-                flags |= CLIP_LEFT;
-            }
-            return flags;
-        }
-    }
-    return CLIP_OUTSIDE;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_PolyRectClip --
- *
- *      Clips the given polygon to a rectangular region.  The resulting
- *      polygon is returned. Note that the resulting polyon may be complex,
- *      connected by zero width/height segments.  The drawing routine (such
- *      as XFillPolygon) will not draw a connecting segment.
- *
- *      Reference:  
- *        Liang Y. D. and Brian A. Barsky, "Analysis and Algorithm for
- *        Polygon Clipping", Communications of ACM, Vol. 26,
- *        p.868-877, 1983
- *
- * Results:
- *      Returns the number of points in the clipped polygon. The points of
- *      the clipped polygon are stored in *outputPts*.
- *
- *---------------------------------------------------------------------------
- */
-#define EPSILON  FLT_EPSILON
-#define AddVertex(vx, vy)           r->x=(vx), r->y=(vy), r++, count++ 
-#define LastVertex(vx, vy)          r->x=(vx), r->y=(vy), count++ 
-
-int 
-Blt_PolyRectClip(
-    Region2d *regionPtr,                /* Rectangular region clipping the
-                                         * polygon. */
-    Point2d *points,                    /* Points of polygon to be
-                                         * clipped. */
-    int numPoints,                      /* # of points in polygon. */
-    Point2d *clipPts)                   /* (out) Points of clipped
-                                         * polygon. */
-{
-    Point2d *p;                         /* First vertex of input polygon
-                                         * edge. */
-    Point2d *pend;
-    Point2d *q;                         /* Last vertex of input polygon
-                                         * edge. */
-    Point2d *r;
-    int count;
-
-    r = clipPts;
-    count = 0;                          /* Counts # of vertices in output
-                                         * polygon. */
-
-    points[numPoints] = points[0];
-    for (p = points, q = p + 1, pend = p + numPoints; p < pend; p++, q++) {
-        double dx, dy;
-        double tin1, tin2, tinx, tiny;
-        double xin, yin, xout, yout;
-
-        dx = q->x - p->x;               /* X-direction */
-        dy = q->y - p->y;               /* Y-direction */
-
-        if (FABS(dx) < EPSILON) { 
-            dx = (p->x > regionPtr->left) ? -EPSILON : EPSILON ;
-        }
-        if (FABS(dy) < EPSILON) { 
-            dy = (p->y > regionPtr->top) ? -EPSILON : EPSILON ;
-        }
-
-        if (dx > 0.0) {         /* Left */
-            xin = regionPtr->left;
-            xout = regionPtr->right + 1.0;
-        } else {                /* Right */
-            xin = regionPtr->right + 1.0;
-            xout = regionPtr->left;
-        }
-        if (dy > 0.0) {         /* Top */
-            yin = regionPtr->top;
-            yout = regionPtr->bottom + 1.0;
-        } else {                /* Bottom */
-            yin = regionPtr->bottom + 1.0;
-            yout = regionPtr->top;
-        }
-        
-        tinx = (xin - p->x) / dx;
-        tiny = (yin - p->y) / dy;
-        
-        if (tinx < tiny) {              /* Hits x first */
-            tin1 = tinx;
-            tin2 = tiny;
-        } else {                        /* Hits y first */
-            tin1 = tiny;
-            tin2 = tinx;
-        }
-        
-        if (tin1 <= 1.0) {
-            if (tin1 > 0.0) {
-                AddVertex(xin, yin);
-            }
-            if (tin2 <= 1.0) {
-                double toutx, touty, tout1;
-
-                toutx = (xout - p->x) / dx;
-                touty = (yout - p->y) / dy;
-                tout1 = MIN(toutx, touty);
-                
-                if ((tin2 > 0.0) || (tout1 > 0.0)) {
-                    if (tin2 <= tout1) {
-                        if (tin2 > 0.0) {
-                            if (tinx > tiny) {
-                                AddVertex(xin, p->y + tinx * dy);
-                            } else {
-                                AddVertex(p->x + tiny * dx, yin);
-                            }
-                        }
-                        if (tout1 < 1.0) {
-                            if (toutx < touty) {
-                                AddVertex(xout, p->y + toutx * dy);
-                            } else {
-                                AddVertex(p->x + touty * dx, yout);
-                            }
-                        } else {
-                            AddVertex(q->x, q->y);
-                        }
-                    } else {
-                        if (tinx > tiny) {
-                            AddVertex(xin, yout);
-                        } else {
-                            AddVertex(xout, yin);
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-    if (count > 0) {
-        LastVertex(clipPts[0].x, clipPts[0].y);
-    }
-    return count;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetProjection --
- *
- *      Computes the projection of a point on a line.  The line (given by
- *      two points), is assumed the be infinite.
- *
- *      Compute the slope (angle) of the line and rotate it 90 degrees.
- *      Using the slope-intercept method (we know the second line from the
- *      sample test point and the computed slope), then find the
- *      intersection of both lines. This will be the projection of the
- *      sample point on the first line.
- *
- * Results:
- *      Returns the coordinates of the projection on the line.
- *
- *---------------------------------------------------------------------------
- */
-Point2d
-Blt_GetProjection(
-    int x, int y,                       /* Screen coordinates of the sample
-                                         * point. */
-    Point2d *p, Point2d *q)             /* Line segment to project point
-                                         * onto */
-{
-    double dx, dy;
-    Point2d t;
-
-    dx = p->x - q->x;
-    dy = p->y - q->y;
-
-    /* Test for horizontal and vertical lines */
-    if (FABS(dx) < DBL_EPSILON) {
-        t.x = p->x, t.y = (double)y;
-    } else if (FABS(dy) < DBL_EPSILON) {
-        t.x = (double)x, t.y = p->y;
-    } else {
-        double m1, m2;                  /* Slope of both lines */
-        double b1, b2;                  /* y-intercepts */
-        double midX, midY;              /* Midpoint of line segment. */
-        double ax, ay, bx, by;
-
-        /* Compute the slope and intercept of PQ. */
-        m1 = (dy / dx);
-        b1 = p->y - (p->x * m1);
-
-        /* 
-         * Compute the slope and intercept of a second line segment: one
-         * that intersects through sample X-Y coordinate with a slope
-         * perpendicular to original line.
-         */
-        /* Find midpoint of PQ. */
-        midX = (p->x + q->x) * 0.5;
-        midY = (p->y + q->y) * 0.5;
-
-        /* Rotate the line 90 degrees */
-        ax = midX - (0.5 * dy);
-        ay = midY - (0.5 * -dx);
-        bx = midX + (0.5 * dy);
-        by = midY + (0.5 * -dx);
-
-        m2 = (ay - by) / (ax - bx);
-        b2 = y - (x * m2);
-
-        /*
-         * Given the equations of two lines which contain the same point,
-         *
-         *    y = m1 * x + b1
-         *    y = m2 * x + b2
-         *
-         * solve for the intersection.
-         *
-         *    x = (b2 - b1) / (m1 - m2)
-         *    y = m1 * x + b1
-         *
-         */
-        t.x = (b2 - b1) / (m1 - m2);
-        t.y = m1 * t.x + b1;
-    }
-    return t;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GetProjection2 --
- *
- *      Computes the projection of a point on a line.  The line (given by
- *      x1, y1, x2, y2), is assumed the be infinite.
- *
- *      Compute the slope (angle) of the line and rotate it 90 degrees.
- *      Using the slope-intercept method (we know the second line from the
- *      sample test point and the computed slope), then find the
- *      intersection of both lines. This will be the projection of the
- *      sample point on the first line.
- *
- * Results:
- *      Returns the coordinates of the projection on the line.
- *
- *---------------------------------------------------------------------------
- */
-Point2d
-Blt_GetProjection2(
-    int x, int y,                       /* Screen coordinates of the sample
-                                         * point. */
-    double x1, double y1,
-    double x2, double y2)               /* Line segment to project point
-                                         * onto */
-{
-    double dx, dy;
-    Point2d t;
-
-    dx = x1 - x2;
-    dy = y1 - y2;
-
-    /* Test for horizontal and vertical lines */
-    if (FABS(dx) < DBL_EPSILON) {
-        t.x = x1, t.y = (double)y;
-    } else if (FABS(dy) < DBL_EPSILON) {
-        t.x = (double)x, t.y = y1;
-    } else {
-        double m1, m2;                  /* Slope of both lines */
-        double b1, b2;                  /* y-intercepts */
-        double cx, cy;                  /* Midpoint of line segment. */
-        double ax, ay, bx, by;
-
-        /* Compute the slope and intercept of PQ. */
-        m1 = (dy / dx);
-        b1 = y1 - (x1 * m1);
-
-        /* 
-         * Compute the slope and intercept of a second line segment: one
-         * that intersects through sample X-Y coordinate with a slope
-         * perpendicular to original line.
-         */
-        /* Find midpoint of PQ. */
-        cx = (x1 + x2) * 0.5;
-        cy = (y1 + y2) * 0.5;
-
-        /* Rotate the line 90 degrees */
-        ax = cx - (0.5 * dy);
-        ay = cy - (0.5 * -dx);
-        bx = cx + (0.5 * dy);
-        by = cy + (0.5 * -dx);
-
-        m2 = (ay - by) / (ax - bx);
-        b2 = y - (x * m2);
-
-        /*
-         * Given the equations of two lines which contain the same point,
-         *
-         *    y = m1 * x + b1
-         *    y = m2 * x + b2
-         *
-         * solve for the intersection.
-         *
-         *    x = (b2 - b1) / (m1 - m2)
-         *    y = m1 * x + b1
-         *
-         */
-        t.x = (b2 - b1) / (m1 - m2);
-        t.y = m1 * t.x + b1;
-    }
-    return t;
-}
-
 
 typedef struct {
     double hue, sat, val;
@@ -819,6 +301,12 @@ typedef struct {
 #define SetColor(c,r,g,b) ((c)->red = (int)((r) * 65535.0), \
                            (c)->green = (int)((g) * 65535.0), \
                            (c)->blue = (int)((b) * 65535.0))
+
+void
+Blt_PixelToXColor(Blt_Pixel *pixelPtr, XColor *colorPtr)
+{
+    SetColor(colorPtr, pixelPtr->Red, pixelPtr->Green, pixelPtr->Blue);
+}
 
 #ifdef notdef
 void
@@ -1409,17 +897,6 @@ Blt_SetDashes(Display *display, GC gc, Blt_Dashes *dashesPtr)
 #endif
 
 void
-Blt_ScreenDPI(Tk_Window tkwin, int *xPtr, int *yPtr) 
-{
-    Screen *screen;
-
-#define MM_INCH         25.4
-    screen = Tk_Screen(tkwin);
-    *xPtr = (int)((WidthOfScreen(screen) * MM_INCH)/WidthMMOfScreen(screen));
-    *yPtr = (int)((HeightOfScreen(screen) * MM_INCH)/HeightMMOfScreen(screen));
-}
-
-void
 Blt_DrawSegments2d(
     Display *display,
     Drawable drawable,
@@ -1447,14 +924,13 @@ Blt_DrawSegments2d(
 }
 
 void
-Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, int x, int y, int w, 
-              int h, int borderWidth, int orientation)
+Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, int x, int y,
+                 int w, int h, int borderWidth, int orientation)
 {
     XPoint arrow[4];
     int  s2, s;
     int ax, ay;
 
-#define ARROW_IPAD 1
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;
@@ -1518,11 +994,10 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
 {
     int s;
     int s2;
-    int ax, ay;
+    int cx, cy;
     int dx, dy;
     GC gc;
 
-#define ARROW_IPAD 1
     w -= 2 * (ARROW_IPAD + borderWidth);
     h -= 2 * (ARROW_IPAD + borderWidth);
     x += ARROW_IPAD + borderWidth;
@@ -1539,33 +1014,33 @@ Blt_DrawArrow(Display *display, Drawable drawable, XColor *color, int x, int y,
         break;
     }
     s2 = (s / 2) + 1;
-    ax = x + w / 2;
-    ay = y + h / 2;
+    cx = x + w / 2 - 1;
+    cy = y + h / 2;
 
     gc = Tk_GCForColor(color, drawable);
     switch (orientation) {
     case ARROW_UP:
-        ay -= s2 / 2;
-        for (dx = 0; dx < s2; dx++, ay++) {
-            XDrawLine(display, drawable, gc, ax - dx, ay, ax + dx, ay);
+        cy -= s2 / 2;
+        for (dx = 0; dx < s2; dx++, cy++) {
+            XDrawLine(display, drawable, gc, cx - dx, cy, cx + dx, cy);
         }
         break;
     case ARROW_DOWN:
-        ay += s2 / 2;
-        for (dx = 0; dx < s2; dx++, ay--) {
-            XDrawLine(display, drawable, gc, ax - dx, ay, ax + dx, ay);
+        cy += s2 / 2;
+        for (dx = 0; dx < s2; dx++, cy--) {
+            XDrawLine(display, drawable, gc, cx - dx, cy, cx + dx, cy);
         }
         break;
     case ARROW_LEFT:
-        ax -= s2 / 2;
-        for (dy = 0; dy < s2; dy++, ax++) {
-            XDrawLine(display, drawable, gc, ax, ay - dy, ax, ay + dy);
+        cx -= s2 / 2;
+        for (dy = 0; dy < s2; dy++, cx++) {
+            XDrawLine(display, drawable, gc, cx, cy - dy, cx, cy + dy);
         }
         break;
     case ARROW_RIGHT:
-        ax += s2 / 2;
-        for (dy = 0; dy < s2; dy++, ax--) {
-            XDrawLine(display, drawable, gc, ax, ay - dy, ax, ay + dy);
+        cx += s2 / 2;
+        for (dy = 0; dy < s2; dy++, cx--) {
+            XDrawLine(display, drawable, gc, cx, cy - dy, cx, cy + dy);
         }
         break;
     }

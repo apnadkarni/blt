@@ -556,7 +556,7 @@ static Blt_ConfigSpec contourSpecs[] =
     {BLT_CONFIG_CUSTOM, "-activepen", "activePen", "ActivePen",
         DEF_ACTIVE_PEN, Blt_Offset(ContourElement, activePenPtr),
         BLT_CONFIG_NULL_OK, &bltContourPenOption},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_COLOR, 
         Blt_Offset(ContourElement, builtinPen.traceColor), NORMAL_PEN, 
         &colorOption},
@@ -3459,13 +3459,13 @@ DrawValues(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
         x = vertices[p->index].x;
         y = vertices[p->index].y;
         if (penPtr->valueFlags == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueFlags == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueFlags == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_DrawText(graphPtr->tkwin, drawable, string, 
              &penPtr->valueStyle, ROUND(p->x), ROUND(p->y));
@@ -4562,13 +4562,13 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
         x = vertices[p->index].x;
         y = vertices[p->index].y;
         if (penPtr->valueFlags == SHOW_X) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x); 
         } else if (penPtr->valueFlags == SHOW_Y) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, y); 
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, y); 
         } else if (penPtr->valueFlags == SHOW_BOTH) {
-            Blt_FormatString(string, TCL_DOUBLE_SPACE, fmt, x);
+            Blt_FmtString(string, TCL_DOUBLE_SPACE, fmt, x);
             strcat(string, ",");
-            Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
+            Blt_FmtString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
         }
         Blt_Ps_DrawText(ps, string, &penPtr->valueStyle, p->x, p->y);
     }
@@ -4596,7 +4596,8 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
 static void
 ActiveToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 {
-#ifdef FIXME
+#ifdef notdef
+    /* FIXME */
     ContourElement *elemPtr = (ContourElement *)basePtr;
 #endif
 }
@@ -5309,7 +5310,6 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
     InitEdgeEquation(renPtr->eq + 0, v1, v2);
     InitEdgeEquation(renPtr->eq + 1, v2, v3);
     InitEdgeEquation(renPtr->eq + 2, v3, v1);
-    scale = 0.0;
     /*
      * Orient edges so that the triangle's interior lies within all of
      * their positive half-spaces. Assuring that the area is positive
@@ -5327,9 +5327,7 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
         FlipEquation(renPtr->eq + 2);
         area = -area;
     }
-    if (scale <= 0.0) {
-        scale = 1.0 / ((double) area);
-    }
+    scale = 1.0 / ((double) area);
     sp0 = scale * Az;
     sp1 = scale * Bz;
     sp2 = scale * Cz;

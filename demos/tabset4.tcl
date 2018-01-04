@@ -8,15 +8,11 @@ source scripts/stipples.tcl
 
 blt::tabset .t \
     -side left \
-    -justify left \
-    -iconposition bottom \
-    -iconposition left \
     -scrollincrement 10 \
     -scrollcommand { .s set } \
-    -rotate 0 \
     -selectcommand {  MakePicture .t }  \
     -pagewidth 500 -pageheight 500 \
-    -scrolltabs 0
+  -scrolltabs 1
 
 scrollbar .s -command { .t view } -orient horizontal
  
@@ -49,7 +45,7 @@ proc ResizePicture { file maxSize } {
 }
 
 proc MakePicture { w index } {
-    set file [$w id $index]
+    set file [$w nameof $index]
     set src [image create picture -file $file]
     set tail [file tail $file]
     set root [file root $tail]
@@ -68,7 +64,7 @@ proc MakePicture { w index } {
 	image delete $old
     } else {
 	label $label -image $dst 
-	.t tab configure $index -window $label -padx 4m -pady 4m -fill both 
+	.t tab configure $index -window $label -padx 1i -pady 0m -fill both 
     }
     .t dockall
     image delete $src
@@ -81,12 +77,12 @@ blt::table . \
 blt::table configure . r1 -resize none 
 focus .t
 
-foreach f $files {
+foreach f [lrange $files 0 3] {
     set tail [file tail $f]
     set root [file root $tail]
     regsub -all {\.} $root {_} root
-    set thumb [ResizePicture $f .5i]
-    .t insert end $f -image $thumb -fill both -text $root
+    set thumb [ResizePicture $f .25i]
+    .t insert end $f -icon $thumb -fill both -text $root
 }
 
 .t focus 0

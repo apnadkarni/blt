@@ -252,7 +252,7 @@ test vector.36 {myVec length 10} {
 
 test vector.37 {myVec length -20} {
     list [catch {myVec length -20} msg] $msg
-} {1 {bad vector size "-20"}}
+} {1 {invalid length "-20": can't be negative.}}
 
 test vector.38 {myVec length 0} {
     list [catch {myVec length 0} msg] $msg
@@ -566,23 +566,23 @@ test vector.112 {blt::vector expr myVec1^3} {
 
 test vector.113 {blt::vector expr sum(myVec1)} {
     list [catch {blt::vector expr sum(myVec1)} msg] $msg
-} {0 11.0}
+} {0 8.0}
 
 test vector.114 {blt::vector expr skew(myVec1)} {
     list [catch {blt::vector expr skew(myVec1)} msg] $msg
-} {0 0.6807767048090729}
+} {0 0.6415002990995843}
 
 test vector.115 {blt::vector expr var(myVec1)} {
     list [catch {blt::vector expr var(myVec1)} msg] $msg
-} {0 2.34375}
+} {0 3.0}
 
 test vector.116 {blt::vector expr sdev(myVec1)} {
     list [catch {blt::vector expr sdev(myVec1)} msg] $msg
-} {0 1.5309310892394863}
+} {0 1.7320508075688772}
 
 test vector.117 {blt::vector expr adev(myVec1)} {
     list [catch {blt::vector expr adev(myVec1)} msg] $msg
-} {0 1.0833333333333333}
+} {0 1.3333333333333333}
 
 test vector.118 {blt::vector expr prod(myVec1)} {
     list [catch {blt::vector expr prod(myVec1)} msg] $msg
@@ -590,11 +590,11 @@ test vector.118 {blt::vector expr prod(myVec1)} {
 
 test vector.119 {blt::vector expr mean(myVec1)} {
     list [catch {blt::vector expr mean(myVec1)} msg] $msg
-} {0 2.75}
+} {0 2.0}
 
 test vector.120 {blt::vector expr skew(myVec1)} {
     list [catch {blt::vector expr skew(myVec1)} msg] $msg
-} {0 0.6807767048090729}
+} {0 0.6415002990995843}
 
 test vector.121 {blt::vector expr tanh(myVec1)} {
     list [catch {blt::vector expr tanh(myVec1)} msg] $msg
@@ -679,7 +679,7 @@ test vector.140 {blt::vector expr q1(myVec1)} {
 
 test vector.141 {blt::vector expr q2(myVec1)} {
     list [catch {blt::vector expr q2(myVec1)} msg] $msg
-} {0 2.75}
+} {0 2.0}
 
 test vector.142 {blt::vector expr q3(myVec1)} {
     list [catch {blt::vector expr q3(myVec1)} msg] $msg
@@ -804,8 +804,12 @@ test vector.170 {myVec3 length} {
     list [catch {myVec3 length} msg] $msg
 } {0 10}
 
-test vector.171 {myVec3 value set 0:++end 2.0} {
-    list [catch {myVec3 value set 0:++end 2.0} msg] $msg
+test vector.171 {myVec3 value set ++end 2.0} {
+    list [catch {myVec3 value set ++end 2.0} msg] $msg
+} {0 2.0}
+
+test vector.171 {myVec3 value set 0:end 2.0} {
+    list [catch {myVec3 value set 0:end 2.0} msg] $msg
 } {0 2.0}
 
 test vector.172 {myVec3 length} {
@@ -1004,11 +1008,11 @@ test vector.215 {myVec3 value get ++end} {
 
 test vector.216 {myVec3 value get min} {
     list [catch {myVec3 value get min} msg] $msg
-} {1 {bad index "min"}}
+} {0 1.0}
 
 test vector.217 {myVec3 value get max} {
     list [catch {myVec3 value get max} msg] $msg
-} {1 {bad index "max"}}
+} {0 10.0}
 
 test vector.218 {myVec3 value get 0} {
     list [catch {myVec3 value get 0} msg] $msg
@@ -1089,6 +1093,14 @@ test vector.236 {myVec6 populate myVec2 2} {
 test vector.237 {myVec6 values} {
     list [catch {myVec6 values} msg] $msg
 } {0 {1.0 1.3333333333333333 1.6666666666666665 2.0 2.3333333333333335 2.6666666666666665 3.0 3.3333333333333335 3.6666666666666665 4.0 4.333333333333333 4.666666666666667 5.0 5.333333333333333 5.666666666666667 6.0 6.333333333333333 6.666666666666667 7.0 7.333333333333333 7.666666666666667 8.0 8.333333333333334 8.666666666666666 9.0 9.333333333333334 9.666666666666666 10.0 10.333333333333334 10.666666666666666 11.0 11.333333333333334 11.666666666666666 12.0 12.333333333333334 12.666666666666666 13.0 13.333333333333334 13.666666666666666 14.0 14.333333333333334 14.666666666666666 15.0 15.333333333333334 15.666666666666666 16.0 16.333333333333332 16.666666666666668 17.0 17.333333333333332 17.666666666666668 18.0 18.333333333333332 18.666666666666668 19.0 19.333333333333332 19.666666666666668 20.0}}
+
+test vector.237 {sum} {
+    list [catch {
+	myVec6 set { 1 2 3 4 }
+    	blt::vector expr sum(myVec6)
+	} msg] $msg
+} {0 10.0}
+
 
 exit 0
 

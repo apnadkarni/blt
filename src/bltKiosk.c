@@ -358,7 +358,7 @@ GetWmState(Client *clientPtr)
         } else {
 #ifndef notdef
         fprintf(stderr, "window 0x%x: state=%d iw=%x\n",
-            (unsigned int)clientPtr->id, array[0], array[1]);
+            (unsigned int)clientPtr->id, state, array[1]);
 #endif
         }
     }

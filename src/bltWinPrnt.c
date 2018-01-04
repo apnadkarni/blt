@@ -1369,7 +1369,7 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         title = Tcl_GetString(objv[3]);
         data = Tcl_GetStringFromObj(objv[4], &size);
     } else {
-        Blt_FormatString(string, 200, "Print Job #%d", nextJob++);
+        Blt_FmtString(string, 200, "Print Job #%d", nextJob++);
         title = string;
         data = Tcl_GetStringFromObj(objv[3], &size);
     }

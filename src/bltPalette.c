@@ -2,7 +2,7 @@
 /*
  * bltPalette.c --
  *
- * This module implements palettes for the BLT graph widget.
+ * This module implements palettes.
  *
  * Copyright 2015 George A. Howlett. All rights reserved.  
  *
@@ -113,9 +113,10 @@ typedef struct _Blt_Palette {
                                          * 1, 255, ... */
     double min, max;                    /* Absolute min and max
                                          * values. This is needed if the
-                                         * palette contains absolute values.
-                                         * normalize the palette entries
-                                         * to relative 0..1 values. */
+                                         * palette contains absolute
+                                         * values.  normalize the palette
+                                         * entries to relative 0..1
+                                         * values. */
     int numColors;                      /* # of entries in color array. */
     int numOpacities;                   /* # of entries in opacity
                                          * array. */
@@ -378,16 +379,17 @@ NotifyClients(Palette *palPtr, unsigned int flags)
      Blt_ChainLink link;
 
      for (link = Blt_Chain_FirstLink(palPtr->notifiers); link != NULL;
-        link = Blt_Chain_NextLink(link)) {
+          link = Blt_Chain_NextLink(link)) {
          PaletteNotifier *notifyPtr;
-
-         /* Notify each client that the paint brush has changed. The client
-          * should schedule itself for redrawing.  */
+         
+         /* Notify each client that the palette has changed or is in the
+          * process of being destroyed. The client should schedule itself
+          * for redrawing.  */
          notifyPtr = Blt_Chain_GetValue(link);
-        if (notifyPtr->proc != NULL) {
-            (*notifyPtr->proc)(palPtr, notifyPtr->clientData, flags);
-        }
-    }
+         if (notifyPtr->proc != NULL) {
+             (*notifyPtr->proc)(palPtr, notifyPtr->clientData, flags);
+         }
+     }
 }
 
 static int
@@ -421,7 +423,6 @@ GetStepFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *stepPtr)
     const char *string;
     char *end;
     double value;
-    extern int errno;
     
     string = Tcl_GetString(objPtr);
     errno = 0;
@@ -834,7 +835,6 @@ NewPalette(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
 static void
 DestroyPalette(Palette *palPtr)
 {
-    NotifyClients(palPtr, PALETTE_DELETE_NOTIFY);
     if (palPtr->hashPtr != NULL) {
         Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable, palPtr->hashPtr);
     }
@@ -1525,7 +1525,9 @@ LoadData(Tcl_Interp *interp, Palette *palPtr)
     } else {
         return TCL_OK;
     }
-    NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    if (Blt_Chain_GetLength(palPtr->notifiers) > 0) {
+        NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    }
     return result;
 }
 
@@ -1674,6 +1676,7 @@ InterpolateColorAndOpacity(Palette *palPtr, double value, Blt_Pixel *colorPtr)
     Blt_Pixel color;
 
     if (InterpolateColor(palPtr, value, &color))  {
+        color.Alpha = palPtr->alpha;
         if (palPtr->numOpacities > 0) {
             unsigned int alpha;
 
@@ -1708,9 +1711,7 @@ DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
     if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
         char info[2000];
 
-        Blt_FormatString(info, 2000, "\n    (while loading palettes)");
-        fprintf(stderr, "error load palettes: %s: %s\n", info,
-                Tcl_GetString(Tcl_GetObjResult(interp)));
+        Blt_FmtString(info, 2000, "\n\t(while loading palettes)");
         Tcl_AddErrorInfo(interp, info);
         Tcl_BackgroundError(interp);
         return TCL_ERROR;
@@ -1823,7 +1824,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* If no name was given for the palette, generate one. */
     if (name == NULL) {
         do {
-            Blt_FormatString(ident, 200, "palette%d", dataPtr->nextId++);
+            Blt_FmtString(ident, 200, "palette%d", dataPtr->nextId++);
         } while (Blt_FindHashEntry(&dataPtr->paletteTable, ident));
         name = ident;
     }
@@ -1873,7 +1874,9 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
             goto error;
         }
     }
-    NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    if (Blt_Chain_GetLength(palPtr->notifiers) > 0) {
+        NotifyClients(palPtr, PALETTE_CHANGE_NOTIFY);
+    }
     Tcl_SetStringObj(Tcl_GetObjResult(interp), palPtr->name, -1);
     return TCL_OK;
  error:
@@ -1886,13 +1889,13 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
- *      Deletes one or more palettees from the graph.
+ *      Deletes zero or more palettes.
  *
  * Results:
  *      The return value is a standard TCL result. The interpreter result will
  *      contain a TCL list of the element names.
  *
- *      blt::palette delete $name...
+ *      blt::palette delete ?paletteName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -1909,7 +1912,14 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (GetPaletteFromObj(interp, dataPtr, objv[i], &palPtr) != TCL_OK) {
             return TCL_ERROR;
         }
-        DestroyPalette(palPtr);
+        if (palPtr->hashPtr != NULL) {
+            /* Remove the palette from the hash table so that we can't find
+             * it by its name. */
+            Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable,palPtr->hashPtr);
+            palPtr->hashPtr = NULL;
+        }
+        /* Palette won't be freed until its reference count goes to 0. */
+        Blt_Palette_Delete(palPtr);
     }
     return TCL_OK;
 }    
@@ -1920,13 +1930,13 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DrawOp --
  *
- *      Draws the palette onto a picture.
+ *      Draws the named palette onto the named picture. Use for creating
+ *      swatches for displaying the palette.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter
- *      result will contain a TCL list of the element names.
+ *      A standard TCL result.
  *
- *      blt::palette draw $name $picture
+ *      blt::palette draw paletteName pictureName
  *
  *---------------------------------------------------------------------------
  */
@@ -2001,13 +2011,12 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ExistsOp --
  *
- *      Indicates if a palette by the given name exists in the element.
+ *      Indicates if a palette by the given name exists.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result will
- *      contain a TCL list of the element names.
+ *      Returns 1 is the named palette exists, 0 otherwise. 
  *
- *      blt::palette exists $name
+ *      blt::palette exists paletteName
  *
  *---------------------------------------------------------------------------
  */
@@ -2029,11 +2038,13 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InterpolateOp --
  *
- *      Computes the interpolated color value from the value given.
+ *      Computes the interpolated color from the value given.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result
- *      will contain a TCL list of the element names.
+ *      Returns a list representing the interpolated color components.
+ *      If opacity is set then a list of 4 components "Alpha Red Green Blue"
+ *      will be returned, otherwise 3 components "Red Green Blue".  If the
+ *      -color 
  *
  *      blt::palette interpolate paletteName value
  *
@@ -2106,15 +2117,15 @@ InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *      Returns the names of the palette in the graph matching one of more
- *      patterns provided.  If no pattern arguments are given, then all
- *      palette names will be returned.
+ *      Returns the names of the palette matching one of more patterns
+ *      provided.  If no pattern arguments are given, then all palette
+ *      names will be returned.
  *
  * Results:
- *      The return value is a standard TCL result. The interpreter result will
- *      contain a TCL list of the element names.
+ *      The return value is a standard TCL result. The interpreter result
+ *      will contain a TCL list of the element names.
  *
- *      blt::palette names $pattern
+ *      blt::palette names ?pattern ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -2263,7 +2274,7 @@ PaletteObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PaletteInterpDeleteProc --
  *
- *      This is called when the interpreter registering the "palette"
+ *      This is called when the interpreter registering the "blt::palette"
  *      command is deleted.
  *
  * Results:
@@ -2449,16 +2460,17 @@ Blt_Palette_DeleteNotifier(Blt_Palette palette,
                            ClientData clientData)
 {
     Palette *palPtr = (Palette *)palette;
-    Blt_ChainLink link;
+    Blt_ChainLink link, next;
     
-     for (link = Blt_Chain_FirstLink(palPtr->notifiers); link != NULL;
-        link = Blt_Chain_NextLink(link)) {
-         PaletteNotifier *notifyPtr;
+      for (link = Blt_Chain_FirstLink(palPtr->notifiers); link != NULL;
+           link = next) {
+          PaletteNotifier *notifyPtr;
 
-         notifyPtr = Blt_Chain_GetValue(link);
-         if ((notifyPtr->proc == notifyProc) &&
-             (notifyPtr->clientData == clientData)) {
-             Blt_Chain_DeleteLink(palPtr->notifiers, link);
+          next = Blt_Chain_NextLink(link);
+          notifyPtr = Blt_Chain_GetValue(link);
+          if ((notifyPtr->proc == notifyProc) &&
+              (notifyPtr->clientData == clientData)) {
+              Blt_Chain_DeleteLink(palPtr->notifiers, link);
              return;
          }
      }
@@ -2488,14 +2500,10 @@ Blt_Palette_TwoColorPalette(int low, int high)
 }
 
 void
-Blt_Palette_Free(Blt_Palette palette)
+Blt_Palette_Delete(Blt_Palette palette)
 {
     Palette *palPtr = (Palette *)palette;
 
-    if (palPtr->hashPtr != NULL) {
-        Blt_DeleteHashEntry(&palPtr->dataPtr->paletteTable, palPtr->hashPtr);
-        palPtr->hashPtr = NULL;
-    }
     palPtr->refCount--;
     if (palPtr->refCount <= 0) {
         DestroyPalette(palPtr);

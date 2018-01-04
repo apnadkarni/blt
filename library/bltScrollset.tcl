@@ -45,21 +45,21 @@ namespace eval blt {
 proc blt::Scrollset::ConfigureScrollbars { scrollset } {
     set xscrollbar [$scrollset cget -xscrollbar]
     set yscrollbar [$scrollset cget -yscrollbar]
-    set slave [$scrollset cget -window]
-    if { $slave != "" } {
+    set ward [$scrollset cget -window]
+    if { $ward != "" } {
 	set yscrollcmd [$scrollset cget -yscrollcommand]
 	if { $yscrollcmd == "" } {
-	    set yscrollcmd [list $slave yview]
+	    set yscrollcmd [list $ward yview]
 	}
 	if { [catch $yscrollcmd] == 0 } {
-	    $slave configure -yscrollcommand [list $scrollset yset] 
+	    $ward configure -yscrollcommand [list $scrollset yset] 
 	}
 	set xscrollcmd [$scrollset cget -xscrollcommand]
 	if { $xscrollcmd == "" } {
-	    set xscrollcmd [list $slave xview]
+	    set xscrollcmd [list $ward xview]
 	}
 	if { [catch $xscrollcmd] == 0 } {
-	    $slave configure -xscrollcommand [list $scrollset xset]
+	    $ward configure -xscrollcommand [list $scrollset xset]
 	}
     }
     if { $xscrollbar != "" } {

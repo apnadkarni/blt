@@ -102,14 +102,14 @@ static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_CompositeRegionProc CompositeRegion;
+static Blt_CompositeAreaProc CompositeArea;
 static Blt_CompositePicturesProc CompositePictures;
 static Blt_CrossFadePicturesProc CrossFadePictures;
 static Blt_SelectPixelsProc SelectPixels;
 static Blt_PremultiplyColorsProc PremultiplyColors;
 static Blt_UnmultiplyColorsProc UnassociateColors;
-static Blt_CopyRegionProc CopyRegion;
-static Blt_CopyPicturesProc CopyPictures;
+static Blt_CopyAreaProc CopyArea;
+static Blt_CopyPictureBitsProc CopyPictureBits;
 static Blt_BlankPictureProc BlankPicture;
 
 static Blt_PictureProcs stdPictureProcs = {
@@ -121,13 +121,13 @@ static Blt_PictureProcs stdPictureProcs = {
     TentVertically,
     ZoomHorizontally,
     ZoomVertically,
-    CompositeRegion,
+    CompositeArea,
     CompositePictures,
     SelectPixels,
     PremultiplyColors,
     UnassociateColors,
-    CopyRegion,
-    CopyPictures,
+    CopyArea,
+    CopyPictureBits,
     CrossFadePictures,
     BlankPicture
 };
@@ -195,23 +195,10 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 }
 
 void 
-Blt_ZoomVertically2(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
-{
-    (*bltPictProcsPtr->zoomVerticallyProc2)(dest, src, filter);
-}
-
-void 
-Blt_ZoomHorizontally2(Blt_Picture dest, Blt_Picture src, 
-                     Blt_ResampleFilter filter)
-{
-    (*bltPictProcsPtr->zoomHorizontallyProc2)(dest, src, filter);
-}
-
-void 
-Blt_CompositeRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
+Blt_CompositeArea(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
                     int h, int dx, int dy)
 {
-    (*bltPictProcsPtr->compositeRegionProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->compositeAreaProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
@@ -253,16 +240,16 @@ Blt_UnmultiplyColors(Blt_Picture picture)
 }
 
 void 
-Blt_CopyRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
+Blt_CopyArea(Blt_Picture dest, Blt_Picture src, int x, int y, int w, 
                     int h, int dx, int dy)
 {
-    (*bltPictProcsPtr->copyRegionProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->copyAreaProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
-Blt_CopyPictures(Blt_Picture dest, Blt_Picture src)
+Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src)
 {
-    (*bltPictProcsPtr->copyPicturesProc)(dest, src);
+    (*bltPictProcsPtr->copyPictureBitsProc)(dest, src);
 }
 
 /* 
@@ -274,6 +261,7 @@ Blt_CopyPictures(Blt_Picture dest, Blt_Picture src)
 #define JITTER_A        1099087573U
 #define RANDOM_SCALE    2.3283064370807974e-10
 
+#ifdef notdef
 static INLINE void 
 RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
     randomPtr->value = seed;
@@ -284,6 +272,7 @@ RandomInit(Blt_Random *randomPtr)
 {
     RandomSeed(randomPtr, JITTER_SEED);
 }
+#endif
 
 static INLINE double
 RandomNumber(Blt_Random *randomPtr)
@@ -298,6 +287,7 @@ RandomNumber(Blt_Random *randomPtr)
     return (double)randomPtr->value * RANDOM_SCALE;
 }
 
+#ifdef notdef
 static INLINE void
 JitterInit(Blt_Jitter *jitterPtr) 
 {
@@ -305,6 +295,7 @@ JitterInit(Blt_Jitter *jitterPtr)
     jitterPtr->range = 0.1;
     jitterPtr->offset = -0.05;          /* Jitter +/-  */
 }
+#endif
 
 static INLINE double 
 Jitter(Blt_Jitter *jitterPtr) {
@@ -333,34 +324,39 @@ Blt_Picture
 Blt_CreatePicture(int w, int h)
 {
     Pict *destPtr;
-    int pixelsPerRow;
-    size_t size;
+    int pixelsPerRow, numRows;
+    size_t numBytes;
     unsigned char *buffer;
     ptrdiff_t ptr;
+
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
 
-    /* 
-     * Be careful. There's a bunch of picture routines that assume an even
-     * number of pixels per row. 
-     */
-    pixelsPerRow = (w + 3) & ~3;        /* Align each row on a 16-byte
-                                         * boundary. */
     destPtr = Blt_AssertMalloc(sizeof(Pict));
-    destPtr->pixelsPerRow = pixelsPerRow;
     destPtr->width  = w;
     destPtr->height = h;
     destPtr->flags  = BLT_PIC_UNINITIALIZED;
     destPtr->delay = 0;
-    destPtr->reserved = 0;
+    destPtr->refCount = 1;
+    /* 
+     * Be careful. There's a bunch of picture routines that assume an even
+     * number of pixels per row. 
+     */
+    pixelsPerRow = (w + 3) & ~3;        /* Pad the row so that the row size
+                                         * is a 4-pixel multiple.  This is
+                                         * for SIMD routines: ensures data
+                                         * is quad aligned and lets us
+                                         * process 4 pixels at a time. */
+    numRows = ((h + 3) / 4) * 4;        /* Make # of rows multiple of 4. */
+
     /* Over-allocate a buffer so that we can align it (if needed) to a
      * 16-byte boundary. */
-    h = ((h + 1) / 2) * 2;              /* Make even number of rows. */
-    size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-    buffer = Blt_AssertCalloc(1, size); /* All zeros. */
+    numBytes = (pixelsPerRow * numRows * sizeof(Blt_Pixel)) + ALIGNMENT;
+    buffer = Blt_AssertCalloc(1, numBytes); /* All zeros. */
     ptr = (ptrdiff_t)buffer;
     destPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
     destPtr->buffer = buffer;
+    destPtr->pixelsPerRow = pixelsPerRow;
     return destPtr;
 }
 
@@ -379,8 +375,11 @@ Blt_CreatePicture(int w, int h)
 void
 Blt_FreePicture(Pict *pictPtr)
 {
-    Blt_Free(pictPtr->buffer);
-    Blt_Free(pictPtr);
+    pictPtr->refCount--;
+    if (pictPtr->refCount <= 0) {
+        Blt_Free(pictPtr->buffer);
+        Blt_Free(pictPtr);
+    }
 }
 
 /* 
@@ -401,7 +400,7 @@ Blt_ClonePicture(Pict *srcPtr)
     Pict *destPtr;
 
     destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-    Blt_CopyPictures(destPtr, srcPtr);
+    Blt_CopyPictureBits(destPtr, srcPtr);
     destPtr->delay = srcPtr->delay;
     return destPtr;
 }
@@ -418,24 +417,26 @@ Blt_ResizePicture(Pict *srcPtr, int w, int h)
 {
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
+
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-        int pixelsPerRow;
-        size_t size;
+        int pixelsPerRow, numRows;
+        size_t numBytes;
         ptrdiff_t ptr;
         void *buffer;
 
         pixelsPerRow = (w + 3) & ~3;    /* Align each row on a 16-byte
                                          * boundary. */
-        size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-        buffer = Blt_Realloc(srcPtr->buffer, size);
+        numRows = ((h + 3) / 4) * 4;    /* Make # of rows multiple of 4. */
+        numBytes = (pixelsPerRow * numRows * sizeof(Blt_Pixel)) + ALIGNMENT;
+        buffer = Blt_Realloc(srcPtr->buffer, numBytes);
         assert(buffer != NULL);
-        srcPtr->pixelsPerRow = pixelsPerRow;
-        srcPtr->width = w;
-        srcPtr->height = h;
+        srcPtr->buffer = buffer;
         ptr = (ptrdiff_t)buffer;
         srcPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
+        srcPtr->width = w;
+        srcPtr->height = h;
+        srcPtr->pixelsPerRow = pixelsPerRow;
         srcPtr->flags = BLT_PIC_DIRTY;
-        srcPtr->buffer = buffer;
     }
 }
 
@@ -444,33 +445,33 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
 {
     assert((w > 0) && (w <= SHRT_MAX));
     assert((h > 0) && (h <= SHRT_MAX));
+
     if ((w != srcPtr->width) || (h != srcPtr->height)) {
-        int pixelsPerRow;
-        int bytesPerRow;
-        size_t size;
+        int pixelsPerRow, numRows;
+        size_t numBytes;
         void *buffer;
         ptrdiff_t ptr;
         Blt_Pixel *bits;
 
-        /* 
-         * Be careful. There's a bunch of picture routines that assume an
-         * even number of pixels per row.
-         */
+        /* Reallocate the buffer to the new size. */
         pixelsPerRow = (w + 3) & ~3;    /* Align each row on a 16-byte
                                          * boundary. */
+        numRows = ((h + 3) / 4) * 4;    /* Make # of rows multiple of 4. */
         
-        size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-        buffer = Blt_AssertMalloc(size);
+        numBytes = (pixelsPerRow * numRows * sizeof(Blt_Pixel)) + ALIGNMENT;
+        buffer = Blt_AssertMalloc(numBytes);
+
         ptr = (ptrdiff_t)buffer;
         bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
+
         if (srcPtr->bits != NULL && (srcPtr->pixelsPerRow > 0)) {
             Blt_Pixel *srcRowPtr, *destRowPtr;
             int y, numRows;
+            int bytesPerRow;
 
             bytesPerRow = sizeof(Blt_Pixel) * 
                 MIN(pixelsPerRow, srcPtr->pixelsPerRow);
             numRows = MIN(srcPtr->height, h);
-            
             srcRowPtr = srcPtr->bits, destRowPtr = bits;
             for (y = 0; y < numRows; y++) {
                 memcpy(destRowPtr, srcRowPtr, bytesPerRow);
@@ -512,7 +513,7 @@ BlankPicture(Pict *destPtr, unsigned int value)
 }
 
 void
-Blt_BlankRegion(Pict *destPtr, int x, int y, int w, int h, 
+Blt_BlankArea(Pict *destPtr, int x, int y, int w, int h, 
                 unsigned int colorValue) 
 {
     Blt_Pixel *destRowPtr;
@@ -830,11 +831,11 @@ UnassociateColors(Pict *srcPtr)
 }
 
 /*
- * CompositeRegion --
+ * CompositeArea --
  *
  */  
 static void
-CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
+CompositeArea(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
                 int dx, int dy)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
@@ -908,7 +909,7 @@ CompositeRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 static void
 CompositePictures(Pict *destPtr, Pict *srcPtr)
 {
-    CompositeRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
+    CompositeArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
 
 
@@ -1818,12 +1819,12 @@ BellFilter(double x)
 static double
 BSplineFilter(double x)
 {
-    double x2;
-
     if (x < 0.0) {
         x = -x;
     }
     if (x < 1) {
+        double x2;
+
         x2 = x * x;
         return ((.5 * x2 * x) - x2 + (2.0 / 3.0));
     } else if (x < 2) {
@@ -2374,7 +2375,7 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_ResamplePicture --
+ * Blt_ResamplePicture2 --
  *
  *      Resamples a given picture using 1-D filters and returns a new
  *      picture of the designated size.
@@ -2404,8 +2405,8 @@ Blt_ResamplePicture2(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
      * It's usually faster to zoom vertically last.  This has to do with
      * the fact that pictures are stored in contiguous rows.
      */
-    Blt_ZoomHorizontally2(tmpPtr, srcPtr, hFilter);
-    Blt_ZoomVertically2(destPtr, tmpPtr, vFilter);
+    ZoomHorizontally(tmpPtr, srcPtr, hFilter);
+    ZoomVertically(destPtr, tmpPtr, vFilter);
     Blt_FreePicture(tmpPtr);
     destPtr->flags = srcPtr->flags;
     destPtr->flags |= BLT_PIC_DIRTY;
@@ -3262,25 +3263,19 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
      */
     angleInt = (int)angle;
     if ((angle - angleInt) < 0.05) {
-        switch (angleInt) {
-        case 270:                       /* 270 degrees */
+        switch (angleInt / 90) {
+        case ROTATE_270:                /* 270 degrees */
             return Rotate270(srcPtr);
-            break;
             
-        case 90:                        /* 90 degrees */
+        case ROTATE_90:                 /* 90 degrees */
             return Rotate90(srcPtr);
-            break;
             
-        case 180:                       /* 180 degrees */
+        case ROTATE_180:                /* 180 degrees */
             return Rotate180(srcPtr);
-            break;
             
         case ROTATE_0:                  /* 0 degrees */
-            if (angle == 0.0) {
-                /* Just make a copy of the source. */
-                return Blt_ClonePicture(srcPtr);
-            } 
-            break;
+            /* Just make a copy of the source. */
+            return Blt_ClonePicture(srcPtr);
         }
     }
     destPtr = RotateByAreaMapping(srcPtr, -angle, &bg);
@@ -3393,7 +3388,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_TOP:
-        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+        Blt_CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
                        0, h2);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (h2 - 1) * destPtr->pixelsPerRow;
@@ -3415,7 +3410,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_LEFT:
-        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+        Blt_CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
                        w2, 0);
         srcRowPtr = srcPtr->bits;
         destRowPtr = destPtr->bits + (w2 - 1);
@@ -3439,7 +3434,7 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
         }
         break;
     case SIDE_RIGHT:
-        Blt_CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+        Blt_CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
                        0, 0);
         srcRowPtr = srcPtr->bits + (srcPtr->width - 1);
         destRowPtr = destPtr->bits + srcPtr->width;
@@ -3494,7 +3489,6 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
         for (y = 0; y < srcPtr->height; y++) {
             Blt_Pixel *sp, *send;
             double t;
-            int alpha;
             
             /* 1..0 */
             t = 1.0 - ((double)y / (srcPtr->height - 1));
@@ -3504,6 +3498,7 @@ Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
             for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
                 int a, t1;
                 double m;
+                int alpha;
                 
                 m = t;
                 if (jitterPtr->range > 0.0) {
@@ -3956,7 +3951,6 @@ Maximize(
     long rWhole, long gWhole, long bWhole, long wWhole,
     PictStats *s)
 {
-    long int rHalf, gHalf, bHalf, wHalf;
     long int rBase, gBase, bBase, wBase;
     int i;
     float temp, max;
@@ -3968,6 +3962,8 @@ Maximize(
     max = 0.0;
     *cut = -1;
     for (i = first; i < last; i++) {
+        long int rHalf, gHalf, bHalf, wHalf;
+
         rHalf = rBase + Top(cubePtr, dir, i, s->mR);
         gHalf = gBase + Top(cubePtr, dir, i, s->mG);
         bHalf = bBase + Top(cubePtr, dir, i, s->mB);
@@ -4074,10 +4070,9 @@ Cut(Cube *set1, Cube *set2, PictStats *s)
 static int
 SplitCS(PictStats *s, Cube *cubes, int numReqColors)
 {
-    float *vv, temp;
+    float *vv;
     int i;
-    int next, k;
-    int nc;
+    int next, nc;
 
     vv = Blt_AssertMalloc(sizeof(float) * numReqColors);
     nc = numReqColors;
@@ -4085,6 +4080,9 @@ SplitCS(PictStats *s, Cube *cubes, int numReqColors)
     cubes[0].r1 = cubes[0].g1 = cubes[0].b1 = 32;
     next = 0;
     for (i = 1; i < numReqColors; i++) {
+        float temp;
+        int k;
+        
         if (Cut(cubes + next, cubes + i, s)) {
             /* Volume test ensures we won't try to cut one-cell box */
             vv[next] = (cubes[next].vol > 1) ? Var(cubes + next, s) : 0.0f;
@@ -4314,7 +4312,7 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyRegion --
+ * CopyArea --
  *
  *      Creates a copy of the given picture.  
  *
@@ -4324,7 +4322,7 @@ Blt_GetColorLookupTable(Blt_Chain chain, int numReqColors)
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
+CopyArea(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
            int dy)
 {
     int *srcRowPtr, *destRowPtr;
@@ -4392,7 +4390,7 @@ CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
 /* 
  *---------------------------------------------------------------------------
  *
- * CopyPictures --
+ * CopyPictureBits --
  *
  *      Creates a copy of the given picture.  
  *
@@ -4402,9 +4400,9 @@ CopyRegion(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h, int dx,
  * -------------------------------------------------------------------------- 
  */
 static void
-CopyPictures(Pict *destPtr, Pict *srcPtr)
+CopyPictureBits(Pict *destPtr, Pict *srcPtr)
 {
-    CopyRegion(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
+    CopyArea(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height, 0, 0);
 }
 
 /*
@@ -6219,7 +6217,7 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
     Blt_SubtractPictures(tmp, blur);
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);
-    Blt_CopyPictures(destPtr, tmp);
+    Blt_CopyPictureBits(destPtr, tmp);
     Blt_FreePicture(tmp);
 }
 
@@ -6274,7 +6272,7 @@ Blt_TilePicture(
         if (delta > 0) {
             startY -= (srcPtr->height - delta);
         }
-    } else if (y >= yOrigin) {
+    } else if (y > yOrigin) {
         delta = (y - yOrigin) % srcPtr->height;
         if (delta > 0) {
             startY -= delta;
@@ -6330,7 +6328,7 @@ Blt_TilePicture(
                 fprintf(stderr, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
                         sx, sy, tw, th, dx, dy);
 #endif
-                Blt_CompositeRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
+                Blt_CompositeArea(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
             }
         }
     }
@@ -6350,17 +6348,18 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
         tablePtr = &colorTable;
     }
     /* Check that the colors are not premultiplied. */
-    assert((srcPtr->flags & BLT_PIC_PREMULT_COLORS) == 0);
+    if ((srcPtr->flags & BLT_PIC_PREMULT_COLORS) == 0) {
+        fprintf(stderr, "Unmultiplying colors\n");
+        Blt_UnmultiplyColors(srcPtr);
+    }
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
         Blt_Pixel *sp, *send;
         
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             int isNew;
-            unsigned long key;
 
-            key = (unsigned long)sp->u32;
-            Blt_CreateHashEntry(tablePtr, (char *)key, &isNew);
+            Blt_CreateHashEntry(tablePtr, (char *)(size_t)sp->u32, &isNew);
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
@@ -6852,23 +6851,12 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
             int r, g, b, t, beta;
 
             beta = sp->Alpha ^ 0xFF;    /* beta = 1 - alpha */
-            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-                fprintf(stderr, "alpha=%d, beta=%d\n", sp->Alpha, beta);
-                fprintf(stderr, "before: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-                        sp->Blue);
-                
-            }
             r = sp->Red   - imul8x8(beta, colorPtr->Red, t);
             g = sp->Green - imul8x8(beta, colorPtr->Green, t);
             b = sp->Blue  - imul8x8(beta, colorPtr->Blue, t);
             sp->Red   = UCLAMP(r);
             sp->Green = UCLAMP(g);
             sp->Blue  = UCLAMP(b);
-            if (sp->Alpha != 0xFF && sp->Alpha != 0x00) {
-                fprintf(stderr, "after: r=%d, g=%d, b=%d\n", sp->Red, sp->Green, 
-                        sp->Blue);
-                
-            }
         }
         srcRowPtr += srcPtr->pixelsPerRow;
     }
@@ -7230,8 +7218,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (x < 0) {
                 x = 0;
             }
-            Blt_CopyRegion(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
-            Blt_CopyRegion(destPtr, fromPtr, x, 0, fromPtr->width - x,
+            Blt_CopyArea(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
+            Blt_CopyArea(destPtr, fromPtr, x, 0, fromPtr->width - x,
                            fromPtr->height, x, 0);
         }
         break;
@@ -7246,8 +7234,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (x < 0) {
                 x = 0;
             }
-            Blt_CopyRegion(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
-            Blt_CopyRegion(destPtr, toPtr, x, 0, fromPtr->width - x,
+            Blt_CopyArea(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
+            Blt_CopyArea(destPtr, toPtr, x, 0, fromPtr->width - x,
                            fromPtr->height, x, 0);
         }
         break;
@@ -7262,8 +7250,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (y < 0) {
                 y = 0;
             }
-            Blt_CopyRegion(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
-            Blt_CopyRegion(destPtr, toPtr, 0, y, fromPtr->width,
+            Blt_CopyArea(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyArea(destPtr, toPtr, 0, y, fromPtr->width,
                            fromPtr->height - y, 0, y);
         }
         break;
@@ -7278,8 +7266,8 @@ Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
             } else if (y < 0) {
                 y = 0;
             }
-            Blt_CopyRegion(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
-            Blt_CopyRegion(destPtr, toPtr, 0, y, fromPtr->width,
+            Blt_CopyArea(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyArea(destPtr, toPtr, 0, y, fromPtr->width,
                            fromPtr->height - y, 0, y);
         }
         break;

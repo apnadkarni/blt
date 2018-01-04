@@ -70,6 +70,7 @@
 #define RGB_LIGHTBLUE00         "#D9F5FF"
 #define RGB_LIGHTBLUE1          "#bfefff"
 #define RGB_LIGHTBLUE2          "#b2dfee"
+#define RGB_LIGHTBLUE3          "#a0dfee"
 #define RGB_LIGHTSKYBLUE1       "#b0e2ff"
 #define RGB_MAROON              "#b03060"
 #define RGB_NAVYBLUE            "#000080"
@@ -79,6 +80,10 @@
 #define RGB_RED3                "#cd0000"
 #define RGB_WHITE               "#ffffff"
 #define RGB_YELLOW              "#ffff00"
+#define RGB_SKYBLUE0            "#87ceeb"
+#define RGB_SKYBLUE1            "#87ceff"
+#define RGB_SKYBLUE2            "#7ec0ee"
+#define RGB_SKYBLUE3            "#6ca6cd"
 #define RGB_SKYBLUE4            "#4a708b"
 
 #ifdef OLD_TK_COLORS
@@ -102,6 +107,7 @@
 #define STD_FONT_MEDIUM         "{Sans Serif} 11"
 #define STD_FONT_NORMAL         "{Sans Serif} 10"
 #define STD_FONT_SMALL          "{Sans Serif} 9"
+#define STD_FONT_TINY           "{Sans Serif} 6"
 #define STD_FONT_NUMBERS        "Math 8"
 #define STD_FONT                STD_FONT_NORMAL
 #define STD_INDICATOR_COLOR     RGB_RED3
@@ -117,6 +123,7 @@
 #define STD_SELECT_FONT_MEDIUM  "{Sans Serif} 11 Bold"
 #define STD_SELECT_FONT_NORMAL  "{Sans Serif} 10 Bold"
 #define STD_SELECT_FONT_SMALL   "{Sans Serif} 9 Bold"
+#define STD_SELECT_FONT_TINY    "{Sans Serif} 6 Bold"
 #define STD_SELECT_FONT         STD_SELECT_FONT_NORMAL
 #define STD_DISABLED_FOREGROUND RGB_GREY70
 #define STD_DISABLED_BACKGROUND RGB_GREY90
@@ -169,10 +176,10 @@ typedef struct {
 
 BLT_EXTERN void Blt_FreeColorPair (ColorPair *pairPtr);
 
-#define ARROW_LEFT              (0)
-#define ARROW_UP                (1)
-#define ARROW_RIGHT             (2)
-#define ARROW_DOWN              (3)
+#define ARROW_LEFT              (90)
+#define ARROW_UP                (0)
+#define ARROW_RIGHT             (270)
+#define ARROW_DOWN              (180)
 #define ARROW_OFFSET            4
 #define STD_ARROW_HEIGHT        3
 #define STD_ARROW_WIDTH         ((2 * (ARROW_OFFSET - 1)) + 1)
@@ -236,10 +243,6 @@ BLT_EXTERN const char *Blt_NameOfResize(int resize);
 BLT_EXTERN int Blt_GetXY (Tcl_Interp *interp, Tk_Window tkwin, 
         const char *string, int *xPtr, int *yPtr);
 
-BLT_EXTERN Point2d Blt_GetProjection(int x, int y, Point2d *p, Point2d *q);
-BLT_EXTERN Point2d Blt_GetProjection2(int x, int y, double x1, double y1,
-                                      double x2, double y2);
-
 BLT_EXTERN void Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, 
         int x, int y, int w, int h, int borderWidth, int orientation);
 
@@ -285,7 +288,7 @@ BLT_EXTERN void Blt_MoveToplevelWindow(Tk_Window tkwin, int x, int y);
 BLT_EXTERN void Blt_MoveResizeToplevelWindow(Tk_Window tkwin, int x, int y, 
         int w, int h);
 
-BLT_EXTERN int Blt_GetWindowRegion(Display *display, Window window, int *xPtr,
+BLT_EXTERN int Blt_GetWindowExtents(Display *display, Window window, int *xPtr,
         int *yPtr, int *widthPtr, int *heightPtr);
 
 BLT_EXTERN ClientData Blt_GetWindowInstanceData (Tk_Window tkwin);
@@ -299,7 +302,9 @@ BLT_EXTERN int Blt_ReparentWindow (Display *display, Window window,
         Window newParent, int x, int y);
 
 extern void Blt_RegisterPictureImageType(Tcl_Interp *interp);
-extern void Blt_RegisterEpsCanvasItem(void);
+extern void Blt_RegisterCanvasEpsItem(void);
+extern void Blt_RegisterCanvasLabelItem(void);
+extern void Blt_InitFeaturesArray(Tcl_Interp *interp);
 
 typedef struct {
     Drawable id;
@@ -394,7 +399,7 @@ BLT_EXTERN int Blt_OldConfigModified(Tk_ConfigSpec *specs, ...);
 BLT_EXTERN void Blt_GetLineExtents(size_t numPoints, Point2d *points, 
         Region2d *r);
 
-BLT_EXTERN void Blt_GetBoundingBox (int width, int height, float angle, 
+BLT_EXTERN void Blt_GetBoundingBox (double width, double height, double angle, 
         double *widthPtr, double *heightPtr, Point2d *points);
 
 BLT_EXTERN int Blt_ParseTifTags(Tcl_Interp *interp, const char *varName,

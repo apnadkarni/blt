@@ -1,4 +1,4 @@
-# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
+# -*- mode: tcl; tcl-indent-level: 4; indent-tabs-mode: nil -*- 
 #
 # bltTimeStamp.tcl
 #

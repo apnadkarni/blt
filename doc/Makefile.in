@@ -29,6 +29,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/combobutton.rst \
 		$(srcdir)/comboeditor.rst \
 		$(srcdir)/comboentry.rst \
+		$(srcdir)/comboframe.rst \
 		$(srcdir)/combomenu.rst \
 		$(srcdir)/combotree.rst \
 		$(srcdir)/compare.rst \
@@ -41,6 +42,7 @@ SRC = 		$(srcdir)/BLT.rst \
 		$(srcdir)/grab.rst \
 		$(srcdir)/graph.rst \
 		$(srcdir)/htext.rst \
+		$(srcdir)/label.rst \
 		$(srcdir)/listview.rst \
 		$(srcdir)/mesh.rst \
 		$(srcdir)/paintbrush.rst \

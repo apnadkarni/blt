@@ -250,8 +250,8 @@ PbmComment(Pbm *pbmPtr, char *bp)
     }
     p = bp;
     if (*p == '#') {
-        /* Comment: file end of line */
-        while((*p != '\n') && (p != '\0')) {
+        /* Find end of comment line. */
+        while((*p != '\n') && (*p != '\0')) {
             p++;
         }
         if (*p == '\n') {
@@ -784,7 +784,7 @@ WritePlainGreyscale(Picture *srcPtr, Blt_DBuffer dbuffer)
         for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
             char *bp;
             
-            bp = (char *)Blt_DBuffer_Extend(dbuffer, 2);
+            bp = (char *)Blt_DBuffer_Extend(dbuffer, 4);
             sprintf(bp, "%3d ", (sp->Red) ? 1 : 0);
             count++;
             if ((count % 15) == 0) {

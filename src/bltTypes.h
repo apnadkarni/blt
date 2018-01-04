@@ -186,8 +186,6 @@ typedef int Blt_Xlib_Status;
 typedef Status Blt_Xlib_Status;
 #endif
 
-#endif /*_BLT_TYPES_H*/
-
 /*
  * BinaryEncoder --
  */
@@ -223,3 +221,9 @@ typedef struct _BinaryDecoder {
                                          * encodings for 63 and 64
                                          * values. */
 } BinaryDecoder;
+
+enum RightAngleRotations {
+    ROTATE_0, ROTATE_90, ROTATE_180, ROTATE_270
+};
+
+#endif /*_BLT_TYPES_H*/

@@ -81,7 +81,6 @@ BLT_EXTERN double hypot(double x, double y);
 #endif /* __BORLANDC__ || _MSC_VER */
 
 #ifdef _MSC_VER
-typedef SSIZE_T ssize_t;
 
 #define S_IS(mode_, s_flags_) (((mode_) & S_IFMT) == (s_flags_))
 #define S_ISDIR(mode_) S_IS(mode_, S_IFDIR)
@@ -94,12 +93,11 @@ typedef SSIZE_T ssize_t;
 
 #endif
 
-BLT_EXTERN ssize_t Blt_AsyncRead(int fd, char *buffer, size_t size);
-BLT_EXTERN ssize_t Blt_AsyncWrite(int fd, const char *buffer, 
-        size_t size);
-BLT_EXTERN void Blt_CreateFileHandler(int fd, int flags, Tcl_FileProc *proc, 
-        ClientData clientData);
-BLT_EXTERN void Blt_DeleteFileHandler(int fd);
+BLT_EXTERN int Blt_AsyncRead(HANDLE hFile, char *buffer, size_t count);
+BLT_EXTERN int Blt_AsyncWrite(HANDLE hFile, const char *buffer, size_t count);
+BLT_EXTERN void Blt_CreateFileHandler(HANDLE hFile, int flags,
+        Tcl_FileProc *proc, ClientData clientData);
+BLT_EXTERN void Blt_DeleteFileHandler(HANDLE hFile);
 
 BLT_EXTERN char *strcasestr(const char *s, const char *find);
 

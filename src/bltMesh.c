@@ -35,15 +35,6 @@
  *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Convex hull routines.
- *
- * Copyright 2001, softSurfer (www.softsurfer.com) 
- *
- *   This code may be freely used and modified for any purpose providing
- *   that this copyright notice is included with it.  SoftSurfer makes no
- *   warranty for this code, and cannot be held liable for any real or
- *   imagined damage resulting from its use.  Users of this code must
- *   verify correctness for their application.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -60,6 +51,7 @@
 #include "bltAlloc.h"
 #include "bltMath.h"
 #include "bltChain.h"
+#include "bltGeomUtil.h"
 #include "bltHash.h"
 #include "bltVector.h"
 #include "bltNsUtil.h"
@@ -88,11 +80,6 @@ struct _MeshCmdInterpData {
     Tcl_Interp *interp;
     int nextMeshId;
 };
-
-typedef struct {
-    double x, y;
-    int index;
-} HullVertex;
 
 typedef struct _DataSource DataSource;
 typedef struct _MeshClass MeshClass;
@@ -125,7 +112,7 @@ typedef struct {
 struct _DataSourceResult {
     double min, max;
     double *values;
-    double numValues;
+    int numValues;
 };
 
 struct _DataSource {
@@ -267,23 +254,20 @@ static DataSourceClass tableDataSourceClass = {
 };
 
 static Blt_SwitchFreeProc FreeTrianglesProc;
-static Blt_SwitchParseProc ObjToTrianglesProc;
-static Blt_SwitchPrintProc TrianglesToObjProc;
-static Blt_SwitchCustom trianglesSwitch =
-{
-    ObjToTrianglesProc, TrianglesToObjProc, FreeTrianglesProc, (ClientData)0
+static Blt_SwitchParseProc ObjToTriangles;
+static Blt_SwitchPrintProc TrianglesToObj;
+static Blt_SwitchCustom trianglesSwitch = {
+    ObjToTriangles, TrianglesToObj, FreeTrianglesProc, (ClientData)0
 };
 
 static Blt_SwitchFreeProc FreeDataSourceProc;
-static Blt_SwitchParseProc ObjToDataSourceProc;
-static Blt_SwitchPrintProc DataSourceToObjProc;
-Blt_SwitchCustom bltDataSourceSwitch =
-{
-    ObjToDataSourceProc, DataSourceToObjProc, FreeDataSourceProc, (ClientData)0
+static Blt_SwitchParseProc ObjToDataSource;
+static Blt_SwitchPrintProc DataSourceToObj;
+Blt_SwitchCustom bltDataSourceSwitch = {
+    ObjToDataSource, DataSourceToObj, FreeDataSourceProc, (ClientData)0
 };
 
-static Blt_SwitchSpec cloudMeshSpecs[] =
-{
+static Blt_SwitchSpec cloudMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x", (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -291,8 +275,7 @@ static Blt_SwitchSpec cloudMeshSpecs[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec regularMeshSpecs[] =
-{
+static Blt_SwitchSpec regularMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x", (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -300,8 +283,7 @@ static Blt_SwitchSpec regularMeshSpecs[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec irregularMeshSpecs[] =
-{
+static Blt_SwitchSpec irregularMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x", (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -309,8 +291,7 @@ static Blt_SwitchSpec irregularMeshSpecs[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec triangleMeshSpecs[] =
-{
+static Blt_SwitchSpec triangleMeshSpecs[] = {
     {BLT_SWITCH_CUSTOM, "-x",  (char *)NULL, (char *)NULL, 
         Blt_Offset(Mesh, x), 0, 0, &bltDataSourceSwitch},
     {BLT_SWITCH_CUSTOM, "-y", (char *)NULL, (char *)NULL, 
@@ -356,7 +337,7 @@ static int ComputeMesh(Mesh *meshPtr);
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTrianglesProc --
+ * ObjToTriangles --
  *
  *      Given a string representation of a data source, this routine
  *      converts it into its equivalent data source.  A data source may be
@@ -371,15 +352,9 @@ static int ComputeMesh(Mesh *meshPtr);
  */
 /*ARGSUSED*/
 static int
-ObjToTrianglesProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* TCL list of indices */
-    char *record,                       /* Record */
-    int offset,                         /* Offset to field in record */
-    int flags)                          /* Not used. */
+ObjToTriangles(ClientData clientData, Tcl_Interp *interp,
+               const char *switchName, Tcl_Obj *objPtr, char *record,
+               int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
     Tcl_Obj **objv;
@@ -413,20 +388,20 @@ ObjToTrianglesProc(
     }
     t = reqTriangles;
     for (i = 0; i < objc; i += 3) {
-        int a, b, c;
+        long a, b, c;
 
         /* We assume that user-defined triangle indices start from 1. */
-        if ((Tcl_GetIntFromObj(interp, objv[i], &a) != TCL_OK) || (a <= 0)) {
+        if ((Blt_GetLongFromObj(interp, objv[i], &a) != TCL_OK) || (a <= 0)) {
             Tcl_AppendResult(interp, "bad triangle index \"", 
                 Tcl_GetString(objv[i]), "\"", (char *)NULL);
             goto error;
         }
-        if ((Tcl_GetIntFromObj(interp, objv[i+1], &b) != TCL_OK) || (b <= 0)) {
+        if ((Blt_GetLongFromObj(interp, objv[i+1], &b) != TCL_OK) || (b <= 0)) {
             Tcl_AppendResult(interp, "bad triangle index \"", 
                 Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
             goto error;
         }
-        if ((Tcl_GetIntFromObj(interp, objv[i+2], &c) != TCL_OK) || (c <= 0)) {
+        if ((Blt_GetLongFromObj(interp, objv[i+2], &c) != TCL_OK) || (c <= 0)) {
             Tcl_AppendResult(interp, "bad triangle index \"", 
                 Tcl_GetString(objv[i+2]), "\"", (char *)NULL);
             goto error;
@@ -452,7 +427,7 @@ ObjToTrianglesProc(
 }
 
 static Tcl_Obj *
-TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
+ObjOfTriangle(Tcl_Interp *interp, Blt_MeshTriangle *t)
 {
     Tcl_Obj *listObjPtr;
     
@@ -466,7 +441,7 @@ TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
 /*
  *---------------------------------------------------------------------------
  *
- * TrianglesToObjProc --
+ * TrianglesToObj --
  *
  *      Converts the data source to its equivalent string representation.
  *      The data source may be a table, vector, or list.
@@ -478,12 +453,8 @@ TriangleToObj(Tcl_Interp *interp, Blt_MeshTriangle *t)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TrianglesToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+TrianglesToObj(ClientData clientData, Tcl_Interp *interp, char *record, 
+               int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
     Tcl_Obj *listObjPtr;
@@ -493,7 +464,7 @@ TrianglesToObjProc(
     for (i = 0; i < meshPtr->numReqTriangles; i++) {
         Tcl_Obj *objPtr;
         
-        objPtr = TriangleToObj(interp, meshPtr->reqTriangles + i);
+        objPtr = ObjOfTriangle(interp, meshPtr->reqTriangles + i);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
@@ -755,7 +726,7 @@ static int
 ListDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr, 
                       DataSourceResult *resultPtr)
 {
-    size_t i;
+    int i;
     double *values;
     double min, max;
     ListDataSource *srcPtr = (ListDataSource *)basePtr;
@@ -914,7 +885,7 @@ TableDataSourcePrintProc(DataSource *basePtr)
     TableDataSource *srcPtr = (TableDataSource *)basePtr;
     Tcl_Obj *listObjPtr;
     const char *name;
-    long index;
+    long index;                         /* Column index. */
     Tcl_Interp *interp;
     Mesh *meshPtr;
 
@@ -925,8 +896,8 @@ TableDataSourcePrintProc(DataSource *basePtr)
     name = blt_table_name(srcPtr->table);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj(name, -1));
     
-    index = blt_table_column_index(srcPtr->column);
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(index));
+    index = blt_table_column_index(srcPtr->table, srcPtr->column);
+    Tcl_ListObjAppendElement(interp, listObjPtr, Blt_NewLongObj(index));
     return listObjPtr;
 }
 
@@ -934,11 +905,12 @@ static int
 TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr, 
                        DataSourceResult *resultPtr)
 {
-    TableDataSource *srcPtr = (TableDataSource *)basePtr;
     BLT_TABLE table;
+    BLT_TABLE_ROW row;
+    TableDataSource *srcPtr = (TableDataSource *)basePtr;
     double *values;
     double minValue, maxValue;
-    long i;
+    int i;
 
     table = srcPtr->table;
     values = Blt_Malloc(sizeof(double) * blt_table_num_rows(table));
@@ -946,10 +918,8 @@ TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr,
         return TCL_ERROR;
     }
     minValue = FLT_MAX, maxValue = -FLT_MAX;
-    for (i = 0; i < blt_table_num_rows(table); i++) {
-        BLT_TABLE_ROW row;
-
-        row = blt_table_row(table, i);
+    for (i = 0, row = blt_table_first_row(table); row != NULL; 
+         row = blt_table_next_row(row), i++) {
         values[i] = blt_table_get_double(interp, table, row, srcPtr->column);
         if (values[i] < minValue) {
             minValue = values[i];
@@ -984,7 +954,7 @@ FreeDataSourceProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToDataSourceProc --
+ * ObjToDataSource --
  *
  *      Given a string representation of a data source, converts it into
  *      its equivalent data source.  A data source may be a list of
@@ -999,15 +969,9 @@ FreeDataSourceProc(
  */
 /*ARGSUSED*/
 static int
-ObjToDataSourceProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* TCL list of expressions */
-    char *record,                       /* Record */
-    int offset,                         /* Offset to field in record */
-    int flags)                          /* Not used. */
+ObjToDataSource(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
     DataSource *srcPtr;
@@ -1042,7 +1006,7 @@ ObjToDataSourceProc(
 /*
  *---------------------------------------------------------------------------
  *
- * DataSourceToObjProc --
+ * DataSourceToObj --
  *
  *      Converts the data source to its equivalent string representation.
  *      The data source may be a table, vector, or list.
@@ -1054,12 +1018,8 @@ ObjToDataSourceProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-DataSourceToObjProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+DataSourceToObj(ClientData clientData, Tcl_Interp *interp, char *record, 
+                int offset, int flags)
 {
     DataSource *srcPtr = *(DataSource **)(record + offset);
 
@@ -1140,237 +1100,33 @@ GetMeshFromObj(Tcl_Interp *interp, MeshCmdInterpData *dataPtr, Tcl_Obj *objPtr,
     return GetMesh(interp, dataPtr, Tcl_GetString(objPtr),  meshPtrPtr);
 }
 
-static INLINE double 
-IsLeft(HullVertex *p0, HullVertex *p1, HullVertex *p2) 
-{
-    return (((p1->x - p0->x) * (p2->y - p0->y)) - 
-            ((p2->x - p0->x) * (p1->y - p0->y)));
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ChainHull2d --
- *
- *      Computes the convex hull from the vertices of the mesh.  
- *
- *      Notes: 1. The array of vertices is assumed to be sorted.  
- *             2. An array to contain the vertices is assumed.  This is 
- *                allocated by the caller.
- *      
- * Results:
- *      The number of vertices in the convex hull is returned. The
- *      coordinates of the hull will be written in the given point array.
- *
- * Copyright 2001, softSurfer (www.softsurfer.com) 
- *
- *   This code may be freely used and modified for any purpose providing
- *   that this copyright notice is included with it.  SoftSurfer makes no
- *   warranty for this code, and cannot be held liable for any real or
- *   imagined damage resulting from its use.  Users of this code must
- *   verify correctness for their application.
- *
- *---------------------------------------------------------------------------
- */
-#define PUSH(i)     (top++, hull[top] = (i))
-#define POP()       (top--)
-
-static int 
-ChainHull2d(int numPoints, HullVertex *points, int *hull) 
-{
-    int bot, top, i; 
-    int minMin, minMax;
-    int maxMin, maxMax;
-    double xMin, xMax;
-
-    bot = 0;                            /* Index to bottom of stack. */
-    top = -1;                           /* Index to top of stack. */
-    minMin = 0;
-
-    /* 
-     * Step 1. Get the indices of points with max x-coord and min|max
-     *         y-coord .
-     */
-    xMin = points[0].x;
-    for (i = 1; i < numPoints; i++) {
-        if (points[i].x != xMin) {
-            break;
-        }
-    }
-    minMax = i - 1;
-    
-    if (minMax == (numPoints - 1)) {    /* Degenerate case: all x-coords ==
-                                         * xMin */
-        PUSH(minMin);
-        if (points[minMax].y != points[minMin].y) {
-            PUSH(minMax);               /* A nontrivial segment. */
-        }
-        PUSH(minMin);
-        return top + 1;
-    }
-
-    maxMax = numPoints - 1;
-    xMax = points[maxMax].x;
-    for (i = numPoints - 2; i >= 0; i--) {
-        if (points[i].x != xMax) {
-            break;
-        }
-    }
-    maxMin = i + 1;
-
-    /* Step 2. Compute the lower hull on the stack. */
-
-    PUSH(minMin);                       /* Push minMin point onto stack. */
-    i = minMax;
-
-    while (++i <= maxMin) {
-        /* The lower line joins v[minMin] with v[maxMin]. */
-        if ((IsLeft(points + minMin, points + maxMin, points + i) >= 0.0) && 
-            (i < maxMin)) {
-            continue;                   /* Ignore points[i] above or on the
-                                         * lower line */
-        }
-        while (top > 0) {               /* There are at least 2 vertices on
-                                         * the stack. */
-
-            /* Test if points[i] is left of the line at the stack top. */
-            if (IsLeft(points+hull[top-1], points+hull[top], points+i) > 0.0) {
-                break;                  /* points[i] is a new hull vertex. */
-            } else {
-                POP();                  /* Pop top point off stack */
-            }
-        }
-        PUSH(i);                        /* Push point[i] onto stack. */
-    }
-
-    /* Step 3. Compute the upper hull on the stack above the bottom hull. */
-    if (maxMax != maxMin)  {            /* if distinct xMax points */
-        PUSH(maxMax);                   /* Push maxMax point onto stack. */
-    }
-
-    bot = top;                          /* The bottom point of the upper hull
-                                           stack. */
-    i = maxMin;
-
-    while (--i >= minMax) {
-        /* The upper line joins points[maxMax] with points[minMax]. */
-        if ((IsLeft(points + maxMax, points + minMax, points + i) >= 0.0) && 
-            (i > minMax)) {
-            continue;                   /* Ignore points[i] below or on the
-                                         * upper line. */
-        }
-        while (top > bot) {             /* At least 2 points on the upper
-                                         * stack. */
-
-            /*  Test if points[i] is left of the line at the stack top. */
-            if (IsLeft(points+hull[top-1], points+hull[top], points+i) > 0.0) {
-                break;                  /* v[i] is a new hull vertex. */
-            } else {
-                POP();                  /* Pop top point off stack. */
-            }
-        }
-        PUSH(i);                        /* Push points[i] onto stack. */
-    }
-    if (minMax != minMin) {
-        PUSH(minMin);                  /* Push joining endpoint onto stack. */
-    }
-    return top + 1;
-}
-
-
-static int
-CompareVertices(const void *a, const void *b)
-{
-    const HullVertex *v1 = a;
-    const HullVertex *v2 = b;
-
-    if (v1->y < v2->y) {
-        return -1;
-    }
-    if (v1->y > v2->y) {
-        return 1;
-    }
-    if (v1->x < v2->x) {
-        return -1;
-    }
-    if (v1->x > v2->x) {
-        return 1;
-    }
-    return 0;
-}
-
-static int
-ConvexHull(Tcl_Interp *interp, int numPoints, Point2d *points, Mesh *meshPtr) 
-{
-    int *hull;
-    HullVertex *vertices;
-    int i, numVertices;
-    
-    vertices = Blt_Malloc(numPoints * sizeof(HullVertex));
-    for (i = 0; i < numPoints; i++) {
-        vertices[i].x = points[i].x;
-        vertices[i].y = points[i].y;
-        vertices[i].index = i;
-    }
-    if (vertices == NULL) {
-        Tcl_AppendResult(interp, "can't allocate vertices for convex hull ", 
-                (char *)NULL);
-        return TCL_ERROR;
-    }
-    qsort(vertices, numPoints, sizeof(HullVertex), CompareVertices);
-
-    /* Allocate worst-case storage initially for the hull. */
-    hull = Blt_Malloc(numPoints * sizeof(int));
-    if (hull == NULL) {
-        Tcl_AppendResult(interp, "can't allocate memory for convex hull ", 
-                (char *)NULL);
-        Blt_Free(vertices);
-        return TCL_ERROR;
-    }
-
-    /* Compute the convex hull. */
-    numVertices = ChainHull2d(numPoints, vertices, hull);
-    /* Resize the hull array to the actual # of boundary points. */
-    if (numVertices < numPoints) {
-        hull = Blt_Realloc(hull, numVertices * sizeof(int));
-        if (hull == NULL) {
-            Tcl_AppendResult(interp, "can't reallocate memory for convex hull ",
-                (char *)NULL);
-            Blt_Free(vertices);
-            return TCL_ERROR;
-        }
-    }
-    if (meshPtr->hull != NULL) {
-        Blt_Free(meshPtr->hull);
-    }
-    /* Remap the indices back to the unsorted point array. */
-    for (i = 0; i < numVertices; i++) {
-        hull[i] = vertices[hull[i]].index;
-    }
-    Blt_Free(vertices);
-    meshPtr->hull = hull;
-    meshPtr->numHullPts = numVertices;
-    return TCL_OK;
-}
-
 static int 
 ComputeMesh(Mesh *meshPtr)
 {
     Blt_MeshTriangle *triangles;
-    long numTriangles;
-    long i, count;
+    int numTriangles;
+    int i, count;
+
     triangles = NULL;
     numTriangles = 0;
-    
     if (meshPtr->numVertices > 0) {
+        int *hull;
+        int numPoints;
+        
         /* Compute the convex hull first, this will provide an estimate for
          * the boundary vertices and therefore the number of triangles. */
-        if (ConvexHull(meshPtr->interp, meshPtr->numVertices, meshPtr->vertices,
-                       meshPtr) != TCL_OK) {
-            Tcl_AppendResult(meshPtr->interp, "can't compute convex hull", 
+        hull = Blt_ConvexHull(meshPtr->numVertices, meshPtr->vertices,
+                              &numPoints);
+        if (hull == NULL) {
+            Tcl_AppendResult(meshPtr->interp, "can't allocate convex hull", 
                              (char *)NULL);
             goto error;
         }
+        if (meshPtr->hull != NULL) {
+            Blt_Free(meshPtr->hull);
+        }
+        meshPtr->hull = hull;
+        meshPtr->numHullPts = numPoints;
         /* Determine the number of triangles. */
         numTriangles = 2 * meshPtr->numVertices;
         triangles = Blt_Malloc(numTriangles * sizeof(Blt_MeshTriangle));
@@ -1392,7 +1148,7 @@ ComputeMesh(Mesh *meshPtr)
      * triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1417,9 +1173,10 @@ ComputeMesh(Mesh *meshPtr)
 }
 
 static int 
-ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
+ComputeRegularMesh(Mesh *meshPtr, int xNum, int yNum)
 {
-    long i, x, y, numTriangles, numVertices, count;
+    int x, y;
+    int i, numTriangles, numVertices, count;
     Blt_MeshTriangle *t, *triangles;
     int *hull;
 
@@ -1434,7 +1191,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
     }
     t = triangles;
     for (y = 0; y < ((yNum - 1) * xNum); y += xNum) {
-        long upper, lower;
+        int upper, lower;
 
         upper = y;
         lower = y + xNum;
@@ -1461,7 +1218,7 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
      * designated or we over-allocated the initial array of triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1483,7 +1240,6 @@ ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
 static int
 RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 {
-    int i;
     double xStep, yStep;
     DataSourceResult x, y;
     double xMin, xMax, xNum, yNum, yMin, yMax;
@@ -1547,11 +1303,10 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     xStep = (xMax - xMin) / (double)(xNum - 1);
     yStep = (yMax - yMin) / (double)(yNum - 1);
     {
-        int count;
         Point2d *p;
+        int i;
 
         p = vertices;
-        count = 0;
         for (i = 0; i < yNum; i++) {
             double y0;
             int j;
@@ -1560,7 +1315,6 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
             for (j = 0; j < xNum; j++) {
                 p->x = xMin + (xStep * j);
                 p->y = y0;
-                count++;
                 p++;
             }
         }
@@ -1592,7 +1346,7 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         return TCL_ERROR;
     }
     if (x.numValues < 2) {
-        Tcl_AppendResult(interp, "wrong # of x-values (", Blt_Itoa(x.numValues),
+        Tcl_AppendResult(interp, "wrong # of x-values (", Blt_Ltoa(x.numValues),
                  ") for irregular mesh description.", (char *)NULL);
         return TCL_ERROR;
     }
@@ -1603,7 +1357,7 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         return TCL_ERROR;
     }
     if (y.numValues < 2) {
-        Tcl_AppendResult(interp, "wrong # of y-values (", Blt_Itoa(y.numValues),
+        Tcl_AppendResult(interp, "wrong # of y-values (", Blt_Ltoa(y.numValues),
                  ") for irregular mesh description.", (char *)NULL);
         return TCL_ERROR;
     }
@@ -1612,7 +1366,7 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     numVertices = x.numValues * y.numValues;
     vertices = Blt_Malloc(numVertices * sizeof(Point2d));
     if (vertices == NULL) {
-        Tcl_AppendResult(interp, "can't allocate ", Blt_Itoa(numVertices), 
+        Tcl_AppendResult(interp, "can't allocate ", Blt_Ltoa(numVertices), 
                 " vertices", (char *)NULL);
         return TCL_ERROR;
     }
@@ -1692,21 +1446,22 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         Blt_HashEntry *hPtr;
         int isNew;
         MeshKey key;
-        long index;
 
         key.x = x.values[i];
         key.y = y.values[i];
-        hPtr = Blt_CreateHashEntry(&table, (char *)&key, &isNew);
+        hPtr = Blt_CreateHashEntry(&table, &key, &isNew);
         assert(hPtr != NULL);
         if (!isNew) {
-            index = (long)Blt_GetHashValue(hPtr);
-            fprintf(stderr, "duplicate point %d x=%g y=%g, old=%ld x=%g y=%g\n",
+            int index;
+
+            index = (int)(intptr_t)Blt_GetHashValue(hPtr);
+            fprintf(stderr,
+                    "duplicate point %d x=%g y=%g, old=%d x=%g y=%g\n",
                     i, x.values[i], y.values[i], index, x.values[index], 
                     y.values[index]);
             continue;
         }
-        index = (long)i;
-        Blt_SetHashValue(hPtr, (ClientData)index);
+        Blt_SetHashValue(hPtr, (intptr_t)i);
         vertices[count].x = x.values[i];
         vertices[count].y = y.values[i];
         count++;
@@ -1731,7 +1486,9 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     Point2d *vertices;
     int i, numVertices, numTriangles, count;
     Blt_MeshTriangle *triangles;
-
+    int *hull;
+    int numPoints;
+    
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
         return TCL_OK;
     }
@@ -1778,11 +1535,17 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     Blt_Free(x.values);
     Blt_Free(y.values);
     triangles = NULL;
-    if (ConvexHull(meshPtr->interp, numVertices, vertices, meshPtr) != TCL_OK) {
-        Tcl_AppendResult(meshPtr->interp, "can't compute convex hull", 
+    hull = Blt_ConvexHull(numVertices, vertices, &numPoints);
+    if (hull == NULL) {
+        Tcl_AppendResult(meshPtr->interp, "can't allocate convex hull", 
                          (char *)NULL);
         goto error;
     }
+    if (meshPtr->hull != NULL) {
+        Blt_Free(meshPtr->hull);
+    }
+    meshPtr->hull = hull;
+    meshPtr->numHullPts = numPoints;
     numTriangles = meshPtr->numReqTriangles;
     /* Fill the triangles array with the sorted indices of the vertices. */
     triangles = Blt_AssertCalloc(numTriangles, sizeof(Blt_MeshTriangle));
@@ -1792,14 +1555,14 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
         t = meshPtr->reqTriangles + i;
         if ((t->a < 0) || (t->a >= numVertices)) {
             Tcl_AppendResult(meshPtr->interp, "first index on triangle ",
-                             Blt_Itoa(i), " is out of range.",
+                             Blt_Ltoa(i), " is out of range.",
                              (char *)NULL);
             goto error;
         }
 
         if ((t->b < 0) || (t->b >= numVertices)) {
             Tcl_AppendResult(meshPtr->interp, "second index on triangle ",
-                             Blt_Itoa(i), " is out of range.",
+                             Blt_Ltoa(i), " is out of range.",
                              (char *)NULL);
             goto error;
         }
@@ -1816,10 +1579,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     /* Compress the triangle array. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
-        long index;
-
-        index = (long)i;
-        if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)index)) {
+        if (Blt_FindHashEntry(&meshPtr->hideTable, (intptr_t)i)) {
             continue;
         }
         if (i > count) {
@@ -1961,7 +1721,6 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     MeshCmdInterpData *dataPtr = clientData;
     Tcl_DString ds;
     char c;
-    char ident[200];
     const char *name, *string;
     int isNew, length, type;
 
@@ -2013,8 +1772,9 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* If no name was given for the marker, make up one. */
     if (name == NULL) {
         Blt_ObjectName objName;
+        char ident[256];
 
-        Blt_FormatString(ident, 200, "mesh%d", dataPtr->nextMeshId++);
+        Blt_FmtString(ident, 255, "mesh%d", dataPtr->nextMeshId++);
         if (!Blt_ParseObjectName(interp, ident, &objName, 0)) {
             return TCL_ERROR;
         }
@@ -2194,7 +1954,7 @@ VerticesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     MeshCmdInterpData *dataPtr = clientData;
     Mesh *meshPtr;
-    size_t i;
+    int i;
     Tcl_Obj *listObjPtr;
 
     if (GetMeshFromObj(interp, dataPtr, objv[2], &meshPtr) != TCL_OK) {
@@ -2238,7 +1998,7 @@ TrianglesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 0; i < meshPtr->numTriangles; i++) {
         Tcl_Obj *objPtr;
         
-        objPtr = TriangleToObj(interp, meshPtr->triangles + i);
+        objPtr = ObjOfTriangle(interp, meshPtr->triangles + i);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     }
@@ -2289,11 +2049,11 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Blt_HashEntry *hPtr;
         int isNew;
 
-        if (Blt_GetLongFromObj(interp, objv[i], &index) != TCL_OK) {
+        if (Blt_GetCountFromObj(interp, objv[i], COUNT_NNEG, &index)!=TCL_OK) {
             return TCL_ERROR;
         }
-        hPtr = Blt_CreateHashEntry(&meshPtr->hideTable, (char *)index, &isNew);
-        Blt_SetHashValue(hPtr, index);
+        hPtr = Blt_CreateHashEntry(&meshPtr->hideTable,(intptr_t)index, &isNew);
+        Blt_SetHashValue(hPtr, (intptr_t)index);
     }
     if (meshPtr->classPtr->type != MESH_TRIANGLE) {
         ComputeMesh(meshPtr);
@@ -2702,7 +2462,7 @@ static Blt_MeshTriangle *
 RegularMeshFindProc(Mesh *meshPtr, double x, double y)
 {
     double xStep, yStep;
-    long xLoc, yLoc;
+    int xLoc, yLoc;
 
     if ((x < meshPtr->xMin) || (x > meshPtr->xMax) ||
         (y < meshPtr->yMin) || (y > meshPtr->yMax)) {

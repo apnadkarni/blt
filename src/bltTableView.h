@@ -118,11 +118,12 @@
                                          * redrawn. */
 
 /* Row and column only flags */
-#define DELETED         (1<<10)         /* The row or column has been
+#define DELETED         (1<<10)         /* The row, column, cell has been
                                          * deleted. */
 
-#define POSTED          (1<<11)
+#define POSTED          (1<<11)         /* Cells can be posted. */
 #define STICKY          (1<<12)
+#define HAS_SELECTION   (1<<13)
 
 /* These are tableview only flags. */
 #define LAYOUT_PENDING  (1<<13)
@@ -132,10 +133,8 @@
 #define SCROLL_PENDING  (SCROLLX|SCROLLY)
 #define SELECT_PENDING  (1<<17)         /* A "selection" command idle task is
                                          * pending.  */
-#define ROWS_PENDING    (1<<18)
-#define COLUMNS_PENDING (1<<19)
-#define ROWS_DELETED    (1<<20)
-#define COLUMNS_DELETED (1<<21)
+#define REINDEX_ROWS    (1<<18)
+#define REINDEX_COLUMNS (1<<19)
 
 #define SELECT_SORTED   (1<<22)         /* Indicates if the entries in the
                                          * selection should be sorted or
@@ -164,7 +163,6 @@
 #define FILTERHIGHLIGHT (1<<30)         /* Display the filter with
                                          * highlighted
                                          * foreground/background colors */
-
 /* Sort-related flags */
 #define SORT_PENDING    (1<<0)          
 #define SORT_ALWAYS     (1<<1)
@@ -173,22 +171,30 @@
                                          * the view when the sort
                                          * -decreasing flag is changed. */
 
-
 /* Item types used picking objects in widget. */
-#define ITEM_CELL            (1<<0)
-#define ITEM_COLUMN_FILTER   (1<<1)
-#define ITEM_COLUMN_TITLE    (1<<2)
-#define ITEM_COLUMN_RESIZE   (1<<3)
-#define ITEM_ROW_TITLE       (1<<4)
-#define ITEM_ROW_RESIZE      (1<<5)
-#define ITEM_ROW_MASK        (ITEM_ROW_RESIZE|ITEM_ROW_TITLE)
-#define ITEM_COLUMN_MASK \
-    (ITEM_COLUMN_FILTER|ITEM_COLUMN_RESIZE|ITEM_COLUMN_TITLE)
-#define ITEM_STYLE          (0x10004)
+typedef enum {
+    ITEM_NONE,
+    ITEM_COLUMN_FILTER,
+    ITEM_COLUMN_TITLE,
+    ITEM_COLUMN_RESIZE,
+    ITEM_ROW_FILTER,
+    ITEM_ROW_TITLE,
+    ITEM_ROW_RESIZE,
+    ITEM_CELL,
+} ItemType;
 
+#define ITEM_MASK            (0x7)
+
+#define ITEM_STYLE          (0x10004)
+    
 #define SHOW_VALUES       (1<<20)
 
 #define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
+
+typedef struct _BindTag {
+    ClientData clientData;
+    int type;
+} *BindTag;
 
 /*
  * Limits --
@@ -265,7 +271,7 @@ typedef const char *(CellStyleIdentifyProc)(Cell *cellPtr, CellStyle *stylePtr,
         int x, int y);
 
 typedef struct _TableObj {
-    unsigned int flags;                 /* Flags of the object. DELETE
+    unsigned int flags;                /* Flags of the object. DELETE
                                          * indicates the object has been
                                          * deleted and should not be
                                          * picked. */
@@ -351,6 +357,7 @@ struct _CellStyle {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -374,6 +381,8 @@ struct _CellStyle {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
@@ -401,9 +410,10 @@ struct _CellStyle {
  */
 struct _Row {
     unsigned int flags;
+    Blt_HashEntry *hashPtr;
     TableView *viewPtr;                 /* The parent tableview widget that
                                          * manages this row. */
-    Blt_HashEntry *hashPtr;
+    struct _Row *nextPtr, *prevPtr;
     CellStyle *stylePtr;                /* Style for cells in the row.  If
                                          * NULL, uses global and row
                                          * defaults. Changing the style
@@ -429,8 +439,8 @@ struct _Row {
     int min, max, nom;                  /* Min/Max/Nominal space allowed for
                                          * column. */
     int ruleHeight;
-    long index;
-    long visibleIndex;
+    size_t index;
+    size_t visibleIndex;
     double weight;                      /* Growth factor for row.  If zero
                                          * the row can not be resized. */
     Tcl_Obj *bindTagsObjPtr;            /* List of binding tags for this
@@ -440,7 +450,7 @@ struct _Row {
     long worldY;                        /* Offset of row in world
                                          * coordinates. from the top of the
                                          * table. */
-    Blt_ChainLink link;
+    Blt_ChainLink link;                 /* Selection link. */
 };
 
 /*
@@ -457,9 +467,10 @@ struct _Row {
  */
 struct _Column {
     unsigned int flags;
+    Blt_HashEntry *hashPtr;
     TableView *viewPtr;                 /* The parent tableview widget that
                                          * manages this column. */
-    Blt_HashEntry *hashPtr;
+    struct _Column *nextPtr, *prevPtr;
     CellStyle *stylePtr;                /* Style for cells in the column.
                                          * If NULL, uses the global default
                                          * style. Changing the style means
@@ -486,8 +497,8 @@ struct _Column {
     int min, max, nom;                  /* Min/Max/Nominal space allowed for
                                          * column. */
     int ruleWidth;
-    long index;
-    long visibleIndex;
+    size_t index;
+    size_t visibleIndex;
     double weight;                      /* Growth factor for the column.
                                          * If zero the column can not be
                                          * resized. */
@@ -502,12 +513,12 @@ struct _Column {
     Tcl_Obj *sortCmdObjPtr;             /* TCL script used to compare two
                                          * cells in the column. */
     short int textWidth, textHeight;
-    Blt_ChainLink link;
+    Blt_ChainLink link;                 /* Selection link. */
     Tcl_Obj *fmtCmdObjPtr;              /* If non-NULL, TCL procedure
                                          * called to format the data
                                          * whenever data has changed and
                                          * needs to be redisplayed. */
-    short int arrowWidth;
+    short int arrowWidth, arrowHeight;
     short int filterHeight;
     const char *filterText;             /* Text of last filter selected. */
     short int filterTextWidth, filterTextHeight;
@@ -536,10 +547,10 @@ struct _CellKey {
  */
 struct _Cell {
     unsigned int flags;
-    TableView *viewPtr;                 /* The parent tableview widget that
-                                         * manages this cell. */
     Blt_HashEntry *hashPtr;             /* Row,column of table entry this
                                          * cell represents. */
+    TableView *viewPtr;                 /* The parent tableview widget that
+                                         * manages this cell. */
     
     const char *text;                   /* If non-NULL, represents the
                                          * formatted string of the cell
@@ -610,10 +621,13 @@ typedef struct {
  */
 typedef struct {
     unsigned int flags;
-    CellKey *anchorPtr;                 /* Fixed end of selection (i.e. row
-                                         * at which selection was
-                                         * started.) */
-    CellKey *markPtr;
+    Blt_HashTable cellTable;            /* Currently selected cells. */
+    CellKey *anchorPtr;                 /* Start of current selection
+                                         * (i.e. cell at which selection
+                                         * was started.) */
+    CellKey *markPtr;                   /* End of current selection.
+                                         * (i.e. cell at which selection
+                                         * last stopped.) */
 } CellSelection;
 
 #define SELECT_SINGLE_ROW    (1<<0)     /* Only one row at a time can be
@@ -652,6 +666,7 @@ typedef struct {
     int flags;
     Icon up;
     Icon down;
+    Blt_Picture upArrow, downArrow;     /*  Cached/generated pictures. */
 } SortInfo;
 
 typedef struct {
@@ -706,6 +721,7 @@ typedef struct {
     GC normalGC;                        /* GC for normal column filters. */
     GC selectGC;                        /* GC for selected filters. */
     GC highlightGC;                     /* GC for highlighted filters. */
+    Blt_Picture downArrow;
 } FilterInfo;
 
 /*
@@ -752,13 +768,14 @@ struct _TableView {
     Blt_HashTable cachedObjTable;       /* Table of strings. */
     Blt_HashTable iconTable;            /* Table of icons. */
     Blt_HashTable styleTable;           /* Table of cell styles. */
-    Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */
-    Blt_HashTable colBindTagTable;      /* Table of column bindtags. */
-    Blt_HashTable cellBindTagTable;     /* Table of cell bindtags. */
-    Row **rows;                         /* Array of pointers to rows. This
+    Blt_HashTable bindTagTable;         /* Table of row bindtags. */
+    Blt_HashTable uidTable;             /* Table of strings. */
+    Row *rowHeadPtr, *rowTailPtr;
+    Column *colHeadPtr, *colTailPtr;
+    Row **rowMap;                       /* Array of pointers to rows. This
                                          * represents the sorted view of
                                          * the table. */
-    Column **columns;                   /* Array of pointers to
+    Column **columnMap;                 /* Array of pointers to
                                          * columns. This represents the
                                          * sorted view of the table. */
     Row **visibleRows;                  /* Array of pointers to visible
@@ -773,9 +790,10 @@ struct _TableView {
                                          * contains only pointers to
                                          * columns that are currently
                                          * visible on the screen. */
-    long numRows, numColumns;           /* Number or rows and columns in
+    size_t numRows, numColumns;         /* Number or rows and columns in
                                          * the above arrays. */
-    long numVisibleRows, numVisibleColumns;
+    size_t numVisibleRows, numVisibleColumns;
+    size_t numMappedRows, numMappedColumns;
 
     BLT_TABLE_NOTIFIER rowNotifier, colNotifier; 
                                         /* Notifier used to tell the viewer
@@ -914,7 +932,7 @@ struct _TableView {
                                          * coordinates. */
     int scanX, scanY;                   /* X-Y world coordinate where the
                                          * scan started. */
-
+    Blt_Painter painter;
     Tk_Cursor cursor;                   /* X Cursor */
     CellStyle *stylePtr;                /* Default cell style. */
     int reqWidth, reqHeight;            /* Requested dimensions of the
@@ -934,6 +952,7 @@ struct _TableView {
                                          * the column widths beforehand
                                          * (such as when loading a table
                                          * with -table). */
+                                         
 };
 
 BLT_EXTERN CellStyle *Blt_TableView_CreateCellStyle(Tcl_Interp *interp,

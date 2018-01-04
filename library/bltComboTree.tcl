@@ -1,4 +1,4 @@
-# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
+# -*- mode: tcl; tcl-indent-level: 4; indent-tabs-mode: nil -*- 
 #
 # bltComboTree.tcl
 #
@@ -47,7 +47,7 @@ namespace eval blt {
 	    lastEntry	-1
 	    scroll	0
 	    space	off
-	    trace	1
+	    trace	0
 	    x		0
 	    y		0
 	    popOnRelease    0
@@ -61,16 +61,17 @@ namespace eval blt {
     }
 }
 
-image create picture ::blt::ComboTree::openIcon -data {
-    R0lGODlhEAANAMIAAAAAAH9/f///////AL+/vwAA/wAAAAAAACH5BAEAAAUALAAAAAAQAA0A
-    AAM8WBrM+rAEQWmIb5KxiWjNInCkV32AJHRlGQBgDA7vdN4vUa8tC78qlrCWmvRKsJTquHkp
-    ZTKAsiCtWq0JADs=
-}
-image create picture ::blt::ComboTree::closeIcon -data {
-    R0lGODlhEAANAMIAAAAAAH9/f///////AL+/vwAA/wAAAAAAACH5BAEAAAUALAAAAAAQAA0A
-    AAM1WBrM+rAEMigJ8c3Kb3OSII6kGABhp1JnaK1VGwjwKwtvHqNzzd263M3H4n2OH1QBwGw6
-    nQkAOw==
-}
+if { [blt::winop xdpi] > 150 } {
+    image create picture ::blt::ComboTree::closeIcon \
+        -file $blt_library/icons/32x32/folder.tga 
+    image create picture ::blt::ComboTree::openIcon \
+        -file $blt_library/icons/32x32/folder-open.tga
+} else {
+    image create picture ::blt::ComboTree::closeIcon \
+        -file $blt_library/icons/16x16/folder.tga 
+    image create picture ::blt::ComboTree::openIcon \
+        -file $blt_library/icons/16x16/folder-open.tga
+}    
 
 # Left
 #   Close the current node.

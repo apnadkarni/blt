@@ -5,16 +5,30 @@ if { [info exists env(BLT_LIBRARY)] } {
 }
 package require BLT
 
-source scripts/demo.tcl
+option add *BltComboButton.relief flat
+option add *BltComboButton.foreground grey33
+option add *BltComboButton.arrowOn true
 
 set normalBg [blt::background create linear \
-		  -lowcolor grey60 -highcolor grey90 -jitter 10]
+		  -highcolor grey80 -lowcolor grey98 -jitter 3]
 
-set graph .g
-blt::graph .g \
-    -bg $normalBg \
+option add *BltComboButton.background $normalBg
+option add *BltComboButton.font "Arial 10 italic"
+option add *BltTkFrame.background $normalBg
+option add *BltTkLabel.background $normalBg
+option add *BltHtext.background $normalBg
+option add *BltTabset.selectBackground $normalBg
+set xbg [blt::background create linear -relativeto self\
+		  -highcolor grey80 -lowcolor grey98 -jitter 3]
+option add *BltComboMenu.background $xbg
+
+blt::tk::frame .f 
+
+set g .f.g
+blt::graph $g \
+    -bg white \
     -borderwidth 1 \
-    -height 300 \
+    -height 600 \
     -plotborderwidth 1 \
     -plotrelief solid \
     -plotpadx 0 \
@@ -23,7 +37,7 @@ blt::graph .g \
     -title "A Simple X-Y Graph" \
     -width 700 
 
-.g legend configure \
+$g legend configure \
     -activeborderwidth 1  \
     -activerelief sunken \
     -anchor ne \
@@ -34,25 +48,24 @@ blt::graph .g \
     -position plotarea \
     -relief flat 
 
-.g axis configure x \
+$g axis configure x \
     -activeforeground red3 \
     -tickdirection in \
-    -scale log \
-    -scrollcommand { .xbar set }  \
-    -scrollmax 1e+6 \
-    -scrollmin -1e+6 \
+    -scale linear \
+    -scrollcommand { .f.xbar set }  \
     -title "X" 
 
-.g axis configure y \
+$g axis configure y \
     -activeforeground red3 \
     -tickdirection in \
     -rotate 0 \
-    -scrollcommand { .ybar set } \
+    -scale linear \
+    -scrollcommand { .f.ybar set } \
     -scrollmax 1000 \
     -scrollmin -100  \
     -title "Y" 
 
-.g axis configure y2 \
+$g axis configure y2 \
     -tickdirection in \
     -hide no \
     -rotate 0 \
@@ -60,7 +73,7 @@ blt::graph .g \
     -scrollmin 0.0 \
     -title "Y2"
 
-.g axis configure x2 \
+$g axis configure x2 \
     -tickdirection in \
     -hide no \
     -rotate 0 \
@@ -68,23 +81,23 @@ blt::graph .g \
     -scrollmin 0.0 \
     -title "X2"
 
-blt::htext .header \
-    -text {\
-This is an example of the graph widget.  It displays two-variable data 
-with assorted line attributes and symbols.  To create a postscript file 
-"xy.ps", press the %%
+blt::htext .f.header \
+    -text \
+    {This is a graph widget. It plots 2D data with assorted
+line attributes and symbols. Press the %%
     blt::tk::button $htext(widget).print -text print -command {
         puts stderr [time {
 	    blt::busy hold .
 	    update
-	    .g postscript output demo1.eps  -width 5i -height 5i
+	    $g postscript output demo1.eps  -width 5i -height 5i
 	    update
 	    blt::busy release .
 	    update
         }]
     } 
     $htext(widget) append $htext(widget).print
-%% button.}
+%% button
+to create a PostScript file "xy.ps".}
 
 
 set X { 
@@ -92,7 +105,7 @@ set X {
     1.20000e+00 1.40000e+00 1.60000e+00 1.80000e+00 2.00000e+00 
     2.20000e+00 2.40000e+00 2.60000e+00 2.80000e+00 3.00000e+00 
     3.20000e+00 3.40000e+00 3.60000e+00 3.80000e+00 4.00000e+00 
-    4.20000e+00 4.40000e+00 4.60000e+00 4.80000e+00 5.00000e+04 
+    4.20000e+00 4.40000e+00 4.60000e+00 4.80000e+00 5.00000e+00 
 } 
 
 set Y1 { 
@@ -141,90 +154,96 @@ set configOptions {
     y.Title			"Y Axis Label" 
 }
 
-set resource [string trimleft $graph .]
+set resource [string trimleft $g .]
 foreach { option value } $configOptions {
     option add *$resource.$option $value
 }
-$graph element create -x $X -y $Y2 
-$graph element create -x $X -y $Y3 
-$graph element create -x $X -y $Y1 
+$g element create -x $X -y $Y2 
+$g element create -x $X -y $Y3 
+$g element create -x $X -y $Y1 
 
-Blt_ZoomStack $graph
-Blt_Crosshairs $graph
-#Blt_ActiveLegend $graph
-Blt_ClosestPoint $graph
+Blt_ZoomStack $g
+Blt_Crosshairs $g
+#Blt_ActiveLegend $g
+Blt_ClosestPoint $g
 
-blt::htext .footer \
+blt::htext .f.footer \
     -text {Hit the %%
 blt::tk::button $htext(widget).quit -text quit -command { exit } 
 $htext(widget) append $htext(widget).quit 
 %% button when you've seen enough.%%
-label $htext(widget).logo -bitmap BLT
+blt::tk::label $htext(widget).logo -bitmap BLT
 $htext(widget) append $htext(widget).logo 
 %%}
 
 proc MultiplexView { args } { 
-    eval .g axis view y $args
-    eval .g axis view y2 $args
+    global g
+    eval $g axis view y $args
+    eval $g axis view y2 $args
 }
 
-blt::tk::scrollbar .xbar \
-    -command { .g axis view x } \
+blt::tk::scrollbar .f.xbar \
+    -command { $g axis view x } \
     -orient horizontal \
     -highlightthickness 0
 
-blt::tk::scrollbar .ybar \
+blt::tk::scrollbar .f.ybar \
     -command MultiplexView \
     -orient vertical -highlightthickness 0
 
+blt::table .f \
+    0,0 .f.header -cspan 3 -fill x \
+    1,0 $g -fill both \
+    1,1 .f.ybar -fill y  -padx 0 -pady 0 \
+    2,0 .f.xbar -fill x \
+    3,0 .f.footer -cspan 3 -fill x
+
+blt::table configure .f c1 -resize none
+blt::table configure .f c2 -resize both
+#blt::table configure .f c3 r0 r4 r5 -resize none
+
 blt::table . \
-    0,0 .header -cspan 3 -fill x \
-    1,0 .g  -fill both -cspan 3 -rspan 3 \
-    2,3 .ybar -fill y  -padx 0 -pady 0 \
-    4,1 .xbar -fill x \
-    5,0 .footer -cspan 3 -fill x
+    0,0 .f -fill both
 
-blt::table configure . c3 r0 r4 r5 -resize none
-
-
-.g pen configure "activeLine" \
+$g pen configure "activeLine" \
     -showvalues y
-.g element bind all <Enter> {
+$g element bind all <Enter> {
     %W legend activate current
 }
-.g element bind all <Leave> {
+$g element bind all <Leave> {
     %W legend deactivate
 }
-.g axis bind all <Enter> {
+$g axis bind all <Enter> {
     set axis [%W axis get current]
     %W axis activate $axis
     %W axis focus $axis
 }
-.g axis bind all <Leave> {
+$g axis bind all <Leave> {
     set axis [%W axis get current]
     %W axis deactivate $axis
     %W axis focus ""
 }
-.g configure -leftvariable left 
-trace variable left w "UpdateTable .g"
-proc UpdateTable { graph p1 p2 how } {
-    blt::table configure . c0 -width [$graph extents leftmargin]
-    blt::table configure . c2 -width [$graph extents rightmargin]
-    blt::table configure . r1 -height [$graph extents topmargin]
-    blt::table configure . r3 -height [$graph extents bottommargin]
+$g configure -leftvariable left 
+#trace variable left w [list UpdateTable $g]
+proc UpdateTable { g p1 p2 how } {
+    blt::table configure .f c0 -width  [$g extents leftmargin]
+    blt::table configure .f c2 -width  [$g extents rightmargin]
+    blt::table configure .f r1 -height [$g extents topmargin]
+    blt::table configure .f r3 -height [$g extents bottommargin]
 }
 
 set image1 [image create picture -file bitmaps/sharky.xbm]
 set image2 [image create picture -file images/buckskin.gif]
-set bg1 [blt::paintbrush create color -color blue -opacity 30]
-set bg2 [blt::paintbrush create color -color green -opacity 40]
-set bg3 [blt::paintbrush create color -color red -opacity 40]
 
-.g element configure line1 -areabackground $bg1 -areaforeground blue 
-.g element configure line2 -areabackground $bg2 -areaforeground blue 
-.g element configure line3 -areabackground $bg3 -areaforeground blue 
+set bg1 [blt::paintbrush create color -color blue -opacity 20]
+set bg2 [blt::paintbrush create color -color green -opacity 20]
+set bg3 [blt::paintbrush create color -color red -opacity 20]
 
-.g marker create line -name "y100" -coords { -Inf 100 Inf 100 } -dashes 1 \
+#$g element configure line3 -areabackground $bg3 -areaforeground blue 
+$g element configure line2 -areabackground $bg2 -areaforeground blue 
+$g element configure line1 -areabackground $bg1 -areaforeground blue 
+
+$g marker create line -name "y100" -coords { -Inf 100 Inf 100 } -dashes 1 \
 	-outline green3 -linewidth 1
 
 if { $tcl_platform(platform) == "windows" } {
@@ -240,54 +259,54 @@ if { $tcl_platform(platform) == "windows" } {
 	blt::printer getattrs $printer attrs
 	puts $attrs(Orientation)
 	after 5000 {
-	    $graph print2 $printer
+	    $g print2 $printer
 	    blt::printer close $printer
 	}
     } else {
 	after 5000 {
-	    $graph print2 
+	    $g print2 
 	}
     }	
     if 1 {
 	after 2000 {
 		
-	    $graph snap CLIPBOARD -format emf
+	    $g snap CLIPBOARD -format emf
 	}
     }
 }
 
-focus .g
-.g xaxis bind <Left>  { 
-    .g xaxis view scroll -1 units 
+focus $g
+$g xaxis bind <Left>  { 
+    $g xaxis view scroll -1 units 
 } 
 
-.g xaxis bind <Right> { 
-    .g xaxis view scroll 1 units 
+$g xaxis bind <Right> { 
+    $g xaxis view scroll 1 units 
 }
 
-.g yaxis bind <Up>  { 
-    .g yaxis view scroll -1 units 
+$g yaxis bind <Up>  { 
+    $g yaxis view scroll -1 units 
 } 
 
-.g yaxis bind <Down> { 
-    .g yaxis view scroll 1 units 
+$g yaxis bind <Down> { 
+    $g yaxis view scroll 1 units 
 }
 
-.g y2axis bind <Up>  { 
-    .g y2axis view scroll -1 units 
+$g y2axis bind <Up>  { 
+    $g y2axis view scroll -1 units 
 } 
 
-.g y2axis bind <Down> { 
-    .g y2axis view scroll 1 units 
+$g y2axis bind <Down> { 
+    $g y2axis view scroll 1 units 
 }
 
-.g axis bind all <ButtonPress-1> { 
+$g axis bind all <ButtonPress-1> { 
     set b1(x) %x
     set b1(y) %y
     set axis [%W axis get current]
     %W axis activate $axis
 }
-.g axis bind all <ButtonRelease-1> { 
+$g axis bind all <ButtonRelease-1> { 
     set b1(x) %x
     set b1(y) %y
     set axis [%W axis get current]
@@ -295,40 +314,41 @@ focus .g
 #    %W axis focus ""
 }
 
-.g xaxis bind <B1-Motion> { 
+$g xaxis bind <B1-Motion> { 
     set dist [expr %x - $b1(x)]
-    .g xaxis view scroll $dist pixels
+    $g xaxis view scroll $dist pixels
     set b1(x) %x
 }
 
-.g yaxis bind <B1-Motion> { 
+$g yaxis bind <B1-Motion> { 
     set dist [expr %y - $b1(y)]
-    .g yaxis view scroll $dist pixels
+    $g yaxis view scroll $dist pixels
     set b1(y) %y
 }
 
-blt::Graph::InitLegend .g
-.g legend configure -selectmode multiple
+blt::Graph::InitLegend $g
+$g legend configure -selectmode multiple
 
 
 proc FixAxes { g option value } {
     global axisd
+    parray axisd
     foreach a [$g axis names $axisd(axis)] {
 	$g axis configure $a $option $value
     }
 }
 
 proc AxisOptions { w } {
-    global axisd
+    global axisd g
     $w insert end "Axis" 
-    set t [frame $w.axis]
+    set t [blt::tk::frame $w.axis]
     $w tab configure "Axis" -window $w.axis
 
     blt::tk::label $t.axis_l -text  "Select Axis:" 
     blt::combobutton $t.axis -textvariable axisd(-axis) \
 	-menu $t.axis.m -command "puts hi" 
     set m [blt::combomenu $t.axis.m -textvariable axisd(-axis)]
-    foreach axis [.g axis names] {
+    foreach axis [$g axis names] {
 	$m add -type radiobutton -text $axis -value $axis 
     }
     $m add -type radiobutton -text "all" -value "*" 
@@ -341,7 +361,7 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "in" 
     $m add -type radiobutton -text "out"
     $m item configure all -variable axisd(-tickdirection) \
-	-command { FixAxes .g -tickdirection $axisd(-tickdirection) }
+	-command { FixAxes $g -tickdirection $axisd(-tickdirection) }
 
     blt::tk::label $t.color_l -text  "-color" 
     blt::combobutton $t.color -textvariable axisd(-color) \
@@ -354,7 +374,7 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow" 
     $m item configure all -variable axisd(-color) \
-	-command { FixAxes .g -color $axisd(-color) }
+	-command { FixAxes $g -color $axisd(-color) }
 
     blt::tk::label $t.linewidth_l -text  "-linewidth" 
     blt::combobutton $t.linewidth -textvariable axisd(-linewidth) \
@@ -367,7 +387,7 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable axisd(-linewidth) \
-	-command { FixAxes .g -linewidth $axisd(-linewidth) }
+	-command { FixAxes $g -linewidth $axisd(-linewidth) }
 
     blt::tk::label $t.showticks_l -text  "-showticks" 
     blt::combobutton $t.showticks -textvariable axisd(-showticks) \
@@ -376,7 +396,7 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "yes" 
     $m add -type radiobutton -text "no" 
     $m item configure all -variable axisd(-showticks) \
-	-command { FixAxes .g -showticks $axisd(-showticks) }
+	-command { FixAxes $g -showticks $axisd(-showticks) }
 
     blt::tk::label $t.hide_l -text  "-hide" 
     blt::combobutton $t.hide -textvariable axisd(-hide) \
@@ -385,7 +405,7 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "yes" 
     $m add -type radiobutton -text "no" 
     $m item configure all -variable axisd(-hide) \
-	-command { FixAxes .g -hide $axisd(-hide) }
+	-command { FixAxes $g -hide $axisd(-hide) }
 
 
     blt::tk::label $t.loose_l -text  "-loose" 
@@ -396,7 +416,7 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "no" 
     $m add -type radiobutton -text "always" 
     $m item configure all -variable axisd(-loose) \
-	-command { FixAxes .g -loose $axisd(-loose) }
+	-command { FixAxes $g -loose $axisd(-loose) }
     
     blt::tk::label $t.title_l -text  "-title" 
     blt::combobutton $t.title -textvariable axisd(-title) \
@@ -406,11 +426,11 @@ proc AxisOptions { w } {
     $m add -type radiobutton -text "Title2" 
     $m add -type radiobutton -text "none" -value ""
     $m item configure all -variable axisd(-title) \
-	-command { FixAxes .g -title $axisd(-title) }
-
+	-command { FixAxes $g -title $axisd(-title) }
+    $m select 0
     $t.axis.m select 0
     foreach option { color tickdirection showticks linewidth loose title hide } {
-	set value [.g axis cget $axisd(axis) -$option]
+	set value [$g axis cget $axisd(axis) -$option]
 	set axisd(-$option) $value
     }
     blt::table $t \
@@ -430,19 +450,22 @@ proc AxisOptions { w } {
 	7,1 $t.showticks -fill x  \
 	8,0 $t.title_l -anchor e \
 	8,1 $t.title -fill x 
+    blt::table configure $t c0 -padx { 0 1i }
     blt::table configure $t r0 -pady 8
+    blt::table configure $t r* -resize none
+    blt::table configure $t r9 -resize both
 }
 
 proc GraphOptions { w } {
-    global graphd
+    global graphd g
     $w insert end "Graph" 
-    set t [frame $w.graph]
+    set t [blt::tk::frame $w.graph]
     $w tab configure "Graph" -window $w.graph
     blt::tk::label $t.plotborderwidth_l -text  "-plotborderwidth" 
     blt::combobutton $t.plotborderwidth -textvariable graphd(-plotborderwidth) \
 	-menu $t.plotborderwidth.m
     set m [blt::combomenu $t.plotborderwidth.m]
-    $m add -type radiobutton -text [.g cget -plotborderwidth]
+    $m add -type radiobutton -text [$g cget -plotborderwidth]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -451,13 +474,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable graphd(-plotborderwidth) \
-	-command { .g configure -plotborderwidth $graphd(-plotborderwidth) }
+	-command { $g configure -plotborderwidth $graphd(-plotborderwidth) }
 
     blt::tk::label $t.borderwidth_l -text  "-borderwidth" 
     blt::combobutton $t.borderwidth -textvariable graphd(-borderwidth) \
 	-menu $t.borderwidth.m
     set m [blt::combomenu $t.borderwidth.m]
-    $m add -type radiobutton -text [.g cget -borderwidth]
+    $m add -type radiobutton -text [$g cget -borderwidth]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -466,13 +489,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable graphd(-borderwidth) \
-	-command { .g configure -borderwidth $graphd(-borderwidth) }
+	-command { $g configure -borderwidth $graphd(-borderwidth) }
 
     blt::tk::label $t.plotpady_l -text  "-plotpady" 
     blt::combobutton $t.plotpady -textvariable graphd(-plotpady) \
 	-menu $t.plotpady.m
     set m [blt::combomenu $t.plotpady.m]
-    $m add -type radiobutton -text [.g cget -plotpady]
+    $m add -type radiobutton -text [$g cget -plotpady]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -481,13 +504,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10"
     $m item configure all -variable graphd(-plotpady) \
-	-command { .g configure -plotpady $graphd(-plotpady) }
+	-command { $g configure -plotpady $graphd(-plotpady) }
 
     blt::tk::label $t.plotpadx_l -text  "-plotpadx" 
     blt::combobutton $t.plotpadx -textvariable graphd(-plotpadx) \
 	-menu $t.plotpadx.m
     set m [blt::combomenu $t.plotpadx.m]
-    $m add -type radiobutton -text [.g cget -plotpadx]
+    $m add -type radiobutton -text [$g cget -plotpadx]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -496,13 +519,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable graphd(-plotpadx) \
-	-command { .g configure -plotpadx $graphd(-plotpadx) }
+	-command { $g configure -plotpadx $graphd(-plotpadx) }
 
     blt::tk::label $t.plotrelief_l -text  "-plotrelief" 
     blt::combobutton $t.plotrelief -textvariable graphd(-plotrelief) \
 	-menu $t.plotrelief.m
     set m [blt::combomenu $t.plotrelief.m]
-    $m add -type radiobutton -text [.g cget -plotrelief]
+    $m add -type radiobutton -text [$g cget -plotrelief]
     $m add -type separator
     $m add -type radiobutton -text "flat" 
     $m add -type radiobutton -text "groove" 
@@ -511,13 +534,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "solid" 
     $m add -type radiobutton -text "sunken"
     $m item configure all -variable graphd(-plotrelief) \
-	-command { .g configure -plotrelief $graphd(-plotrelief) }
+	-command { $g configure -plotrelief $graphd(-plotrelief) }
 
     blt::tk::label $t.relief_l -text  "-relief" 
     blt::combobutton $t.relief -textvariable graphd(-relief) \
 	-menu $t.relief.m
     set m [blt::combomenu $t.relief.m]
-    $m add -type radiobutton -text [.g cget -relief]
+    $m add -type radiobutton -text [$g cget -relief]
     $m add -type separator
     $m add -type radiobutton -text "flat" 
     $m add -type radiobutton -text "groove"
@@ -526,13 +549,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "solid" 
     $m add -type radiobutton -text "sunken"
     $m item configure all -variable graphd(-relief) \
-	-command { .g configure -relief $graphd(-relief) }
+	-command { $g configure -relief $graphd(-relief) }
 
     blt::tk::label $t.plotwidth_l -text  "-plotwidth" 
     blt::combobutton $t.plotwidth -textvariable graphd(-plotwidth) \
 	-menu $t.plotwidth.m
     set m [blt::combomenu $t.plotwidth.m]
-    $m add -type radiobutton -text [.g cget -plotwidth]
+    $m add -type radiobutton -text [$g cget -plotwidth]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "100"
@@ -541,13 +564,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "4i" 
     $m add -type radiobutton -text "8i" 
     $m item configure all -variable graphd(-plotwidth) \
-	-command { .g configure -plotwidth $graphd(-plotwidth) }
+	-command { $g configure -plotwidth $graphd(-plotwidth) }
 
     blt::tk::label $t.plotheight_l -text  "-plotheight" 
     blt::combobutton $t.plotheight -textvariable graphd(-plotheight) \
 	-menu $t.plotheight.m
     set m [blt::combomenu $t.plotheight.m]
-    $m add -type radiobutton -text [.g cget -plotheight]
+    $m add -type radiobutton -text [$g cget -plotheight]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "100"
@@ -556,13 +579,14 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "4i" 
     $m add -type radiobutton -text "8i" 
     $m item configure all -variable graphd(-plotheight) \
-	-command { .g configure -plotheight $graphd(-plotheight) }
+	-command { $g configure -plotheight $graphd(-plotheight) }
+
 
     blt::tk::label $t.width_l -text  "-width" 
     blt::combobutton $t.width -textvariable graphd(-width) \
 	-menu $t.width.m
     set m [blt::combomenu $t.width.m]
-    $m add -type radiobutton -text [.g cget -width]
+    $m add -type radiobutton -text [$g cget -width]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "100" 
@@ -571,13 +595,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "6i"
     $m add -type radiobutton -text "8.5i" 
     $m item configure all -variable graphd(-width) \
-	-command { .g configure -width $graphd(-width) }
+	-command { $g configure -width $graphd(-width) }
 
     blt::tk::label $t.height_l -text  "-height" 
     blt::combobutton $t.height -textvariable graphd(-height) \
 	-menu $t.height.m
     set m [blt::combomenu $t.height.m]
-    $m add -type radiobutton -text [.g cget -height]
+    $m add -type radiobutton -text [$g cget -height]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "200" 
@@ -586,13 +610,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "6i"
     $m add -type radiobutton -text "8.5i"
     $m item configure all -variable graphd(-height) \
-	-command { .g configure -height $graphd(-height) }
+	-command { $g configure -height $graphd(-height) }
 
     blt::tk::label $t.plotbackground_l -text  "-plotbackground" 
     blt::combobutton $t.plotbackground -textvariable graphd(-plotbackground) \
 	-menu $t.plotbackground.m
     set m [blt::combomenu $t.plotbackground.m]
-    $m add -type radiobutton -text [.g cget -plotbackground]
+    $m add -type radiobutton -text [$g cget -plotbackground]
     $m add -type separator
     $m add -type radiobutton -text "black"
     $m add -type radiobutton -text "blue" 
@@ -602,13 +626,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable graphd(-plotbackground) \
-	-command { .g configure -plotbackground $graphd(-plotbackground) }
+	-command { $g configure -plotbackground $graphd(-plotbackground) }
 
     blt::tk::label $t.background_l -text  "-background" 
     blt::combobutton $t.background -textvariable graphd(-background) \
 	-menu $t.background.m
     set m [blt::combomenu $t.background.m]
-    $m add -type radiobutton -text [.g cget -background]
+    $m add -type radiobutton -text [$g cget -background]
     $m add -type separator
     $m add -type radiobutton -text "black" 
     $m add -type radiobutton -text "blue" 
@@ -618,25 +642,25 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable graphd(-background) \
-	-command { .g configure -background $graphd(-background) }
+	-command { $g configure -background $graphd(-background) }
 
     blt::tk::label $t.title_l -text  "-title" 
     blt::combobutton $t.title -textvariable graphd(-title) \
 	-menu $t.title.m
     set m [blt::combomenu $t.title.m]
-    $m add -type radiobutton -text [.g cget -title]
+    $m add -type radiobutton -text [$g cget -title]
     $m add -type separator
     $m add -type radiobutton -text "title1" 
     $m add -type radiobutton -text "Title2" 
     $m add -type radiobutton -text "none" -value ""
     $m item configure all -variable graphd(-title) \
-	-command { .g configure -title $graphd(-title) }
+	-command { $g configure -title $graphd(-title) }
 
     blt::tk::label $t.leftmargin_l -text  "-leftmargin" 
     blt::combobutton $t.leftmargin -textvariable graphd(-leftmargin) \
 	-menu $t.leftmargin.m
     set m [blt::combomenu $t.leftmargin.m]
-    $m add -type radiobutton -text [.g cget -leftmargin]
+    $m add -type radiobutton -text [$g cget -leftmargin]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "10" 
@@ -645,13 +669,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "1.0i"
     $m add -type radiobutton -text "2.0i" 
     $m item configure all -variable graphd(-leftmargin) \
-	-command { .g configure -leftmargin $graphd(-leftmargin) }
+	-command { $g configure -leftmargin $graphd(-leftmargin) }
 
     blt::tk::label $t.rightmargin_l -text  "-rightmargin" 
     blt::combobutton $t.rightmargin -textvariable graphd(-rightmargin) \
 	-menu $t.rightmargin.m
     set m [blt::combomenu $t.rightmargin.m]
-    $m add -type radiobutton -text [.g cget -rightmargin]
+    $m add -type radiobutton -text [$g cget -rightmargin]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "10" 
@@ -660,13 +684,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "1.0i"
     $m add -type radiobutton -text "2.0i" 
     $m item configure all -variable graphd(-rightmargin) \
-	-command { .g configure -rightmargin $graphd(-rightmargin) }
+	-command { $g configure -rightmargin $graphd(-rightmargin) }
 
     blt::tk::label $t.topmargin_l -text  "-topmargin" 
     blt::combobutton $t.topmargin -textvariable graphd(-topmargin) \
 	-menu $t.topmargin.m
     set m [blt::combomenu $t.topmargin.m]
-    $m add -type radiobutton -text [.g cget -topmargin]
+    $m add -type radiobutton -text [$g cget -topmargin]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "10" 
@@ -675,13 +699,13 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "1.0i"
     $m add -type radiobutton -text "2.0i" 
     $m item configure all -variable graphd(-topmargin) \
-	-command { .g configure -topmargin $graphd(-topmargin) }
+	-command { $g configure -topmargin $graphd(-topmargin) }
 
     blt::tk::label $t.bottommargin_l -text  "-bottommargin" 
     blt::combobutton $t.bottommargin -textvariable graphd(-bottommargin) \
 	-menu $t.bottommargin.m
     set m [blt::combomenu $t.bottommargin.m]
-    $m add -type radiobutton -text [.g cget -bottommargin]
+    $m add -type radiobutton -text [$g cget -bottommargin]
     $m add -type separator
     $m add -type radiobutton -text "0"
     $m add -type radiobutton -text "10" 
@@ -690,7 +714,7 @@ proc GraphOptions { w } {
     $m add -type radiobutton -text "1.0i"
     $m add -type radiobutton -text "2.0i" 
     $m item configure all -variable graphd(-bottommargin) \
-	-command { .g configure -bottommargin $graphd(-bottommargin) }
+	-command { $g configure -bottommargin $graphd(-bottommargin) }
 
     foreach option { borderwidth plotrelief relief background
 	plotbackground background plotborderwidth plotpadx plotpady 
@@ -734,18 +758,24 @@ proc GraphOptions { w } {
 	16,1 $t.topmargin -fill x  \
 	17,0 $t.width_l -anchor e \
 	17,1 $t.width -fill x 
+    blt::table configure $t c0 -padx { 0 1i }
+    blt::table configure $t r* -resize none
+    blt::table configure $t r18 -resize both
+    puts stderr [blt::table save $t]
 }
 
 proc LegendOptions { w } {
+    global g
     global legend
     $w insert end "Legend" 
-    set t [frame $w.legend]
+    set t [blt::tk::frame $w.legend]
     $w tab configure "Legend" -window $w.legend
     blt::tk::label $t.selectborderwidth_l -text  "-selectborderwidth" 
-    blt::combobutton $t.selectborderwidth -textvariable legend(-selectborderwidth) \
+    blt::combobutton $t.selectborderwidth \
+	-textvariable legend(-selectborderwidth) \
 	-menu $t.selectborderwidth.m
     set m [blt::combomenu $t.selectborderwidth.m]
-    $m add -type radiobutton -text [.g legend cget -selectborderwidth]
+    $m add -type radiobutton -text [$g legend cget -selectborderwidth]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -754,13 +784,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable legend(-selectborderwidth) \
-	-command { .g legend configure -selectborderwidth $legend(-selectborderwidth) }
+	-command { $g legend configure -selectborderwidth $legend(-selectborderwidth) }
 
     blt::tk::label $t.borderwidth_l -text  "-borderwidth" 
     blt::combobutton $t.borderwidth -textvariable legend(-borderwidth) \
 	-menu $t.borderwidth.m
     set m [blt::combomenu $t.borderwidth.m]
-    $m add -type radiobutton -text [.g legend cget -borderwidth]
+    $m add -type radiobutton -text [$g legend cget -borderwidth]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -769,13 +799,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable legend(-borderwidth) \
-	-command { .g legend configure -borderwidth $legend(-borderwidth) }
+	-command { $g legend configure -borderwidth $legend(-borderwidth) }
 
     blt::tk::label $t.pady_l -text  "-pady" 
     blt::combobutton $t.pady -textvariable legend(-pady) \
 	-menu $t.pady.m
     set m [blt::combomenu $t.pady.m]
-    $m add -type radiobutton -text [.g legend cget -pady]
+    $m add -type radiobutton -text [$g legend cget -pady]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -784,13 +814,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10"
     $m item configure all -variable legend(-pady) \
-	-command { .g legend configure -pady $legend(-pady) }
+	-command { $g legend configure -pady $legend(-pady) }
 
     blt::tk::label $t.padx_l -text  "-padx" 
     blt::combobutton $t.padx -textvariable legend(-padx) \
 	-menu $t.padx.m
     set m [blt::combomenu $t.padx.m]
-    $m add -type radiobutton -text [.g legend cget -padx]
+    $m add -type radiobutton -text [$g legend cget -padx]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -799,13 +829,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable legend(-padx) \
-	-command { .g legend configure -padx $legend(-padx) }
+	-command { $g legend configure -padx $legend(-padx) }
 
     blt::tk::label $t.selectrelief_l -text  "-selectrelief" 
     blt::combobutton $t.selectrelief -textvariable legend(-selectrelief) \
 	-menu $t.selectrelief.m
     set m [blt::combomenu $t.selectrelief.m]
-    $m add -type radiobutton -text [.g legend cget -selectrelief]
+    $m add -type radiobutton -text [$g legend cget -selectrelief]
     $m add -type separator
     $m add -type radiobutton -text "flat" 
     $m add -type radiobutton -text "groove" 
@@ -814,13 +844,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "solid" 
     $m add -type radiobutton -text "sunken"
     $m item configure all -variable legend(-selectrelief) \
-	-command { .g legend configure -selectrelief $legend(-selectrelief) }
+	-command { $g legend configure -selectrelief $legend(-selectrelief) }
 
     blt::tk::label $t.relief_l -text  "-relief" 
     blt::combobutton $t.relief -textvariable legend(-relief) \
 	-menu $t.relief.m
     set m [blt::combomenu $t.relief.m]
-    $m add -type radiobutton -text [.g legend cget -relief]
+    $m add -type radiobutton -text [$g legend cget -relief]
     $m add -type separator
     $m add -type radiobutton -text "flat" 
     $m add -type radiobutton -text "groove"
@@ -829,13 +859,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "solid" 
     $m add -type radiobutton -text "sunken"
     $m item configure all -variable legend(-relief) \
-	-command { .g legend configure -relief $legend(-relief) }
+	-command { $g legend configure -relief $legend(-relief) }
 
     blt::tk::label $t.position_l -text  "-position" 
     blt::combobutton $t.position -textvariable legend(-position) \
 	-menu $t.position.m
     set m [blt::combomenu $t.position.m]
-    $m add -type radiobutton -text [.g legend cget -position]
+    $m add -type radiobutton -text [$g legend cget -position]
     $m add -type separator
     $m add -type radiobutton -text "left" 
     $m add -type radiobutton -text "right"
@@ -844,24 +874,24 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "plotarea" 
     $m add -type radiobutton -text "@200,200" 
     $m item configure all -variable legend(-position) \
-	-command { .g legend configure -position $legend(-position) }
+	-command { $g legend configure -position $legend(-position) }
 
     blt::tk::label $t.hide_l -text  "-hide" 
     blt::combobutton $t.hide -textvariable legend(-hide) \
 	-menu $t.hide.m
     set m [blt::combomenu $t.hide.m]
-    $m add -type radiobutton -text [.g legend cget -hide]
+    $m add -type radiobutton -text [$g legend cget -hide]
     $m add -type separator
     $m add -type radiobutton -text "yes" 
     $m add -type radiobutton -text "no" 
     $m item configure all -variable legend(-hide) \
-	-command { .g legend configure -hide $legend(-hide) }
+	-command { $g legend configure -hide $legend(-hide) }
 
     blt::tk::label $t.activebackground_l -text  "-activebackground" 
     blt::combobutton $t.activebackground -textvariable legend(-activebackground) \
 	-menu $t.activebackground.m
     set m [blt::combomenu $t.activebackground.m]
-    $m add -type radiobutton -text [.g legend cget -activebackground]
+    $m add -type radiobutton -text [$g legend cget -activebackground]
     $m add -type separator
     $m add -type radiobutton -text "black"
     $m add -type radiobutton -text "blue" 
@@ -871,13 +901,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable legend(-activebackground) \
-	-command { .g legend configure -activebackground $legend(-activebackground) }
+	-command { $g legend configure -activebackground $legend(-activebackground) }
 
     blt::tk::label $t.activeborderwidth_l -text  "-activeborderwidth" 
     blt::combobutton $t.activeborderwidth -textvariable legend(-activeborderwidth) \
 	-menu $t.activeborderwidth.m
     set m [blt::combomenu $t.activeborderwidth.m]
-    $m add -type radiobutton -text [.g legend cget -activeborderwidth]
+    $m add -type radiobutton -text [$g legend cget -activeborderwidth]
     $m add -type separator
     $m add -type radiobutton -text "0" 
     $m add -type radiobutton -text "1" 
@@ -886,13 +916,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "4" 
     $m add -type radiobutton -text "10" 
     $m item configure all -variable legend(-activeborderwidth) \
-	-command { .g legend configure -activeborderwidth $legend(-activeborderwidth) }
+	-command { $g legend configure -activeborderwidth $legend(-activeborderwidth) }
 
     blt::tk::label $t.selectbackground_l -text  "-selectbackground" 
     blt::combobutton $t.selectbackground -textvariable legend(-selectbackground) \
 	-menu $t.selectbackground.m
     set m [blt::combomenu $t.selectbackground.m]
-    $m add -type radiobutton -text [.g legend cget -selectbackground]
+    $m add -type radiobutton -text [$g legend cget -selectbackground]
     $m add -type separator
     $m add -type radiobutton -text "black"
     $m add -type radiobutton -text "blue" 
@@ -902,13 +932,13 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable legend(-selectbackground) \
-	-command { .g legend configure -selectbackground $legend(-selectbackground) }
+	-command { $g legend configure -selectbackground $legend(-selectbackground) }
 
     blt::tk::label $t.selectforeground_l -text  "-selectforeground" 
     blt::combobutton $t.selectforeground -textvariable legend(-selectforeground) \
 	-menu $t.selectforeground.m
     set m [blt::combomenu $t.selectforeground.m]
-    $m add -type radiobutton -text [.g legend cget -selectforeground]
+    $m add -type radiobutton -text [$g legend cget -selectforeground]
     $m add -type separator
     $m add -type radiobutton -text "black"
     $m add -type radiobutton -text "blue" 
@@ -918,14 +948,14 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable legend(-selectforeground) \
-	-command { .g legend configure -selectforeground $legend(-selectforeground) }
+	-command { $g legend configure -selectforeground $legend(-selectforeground) }
 
 
     blt::tk::label $t.background_l -text  "-background" 
     blt::combobutton $t.background -textvariable legend(-background) \
 	-menu $t.background.m
     set m [blt::combomenu $t.background.m]
-    $m add -type radiobutton -text [.g legend cget -background]
+    $m add -type radiobutton -text [$g legend cget -background]
     $m add -type separator
     $m add -type radiobutton -text "black" 
     $m add -type radiobutton -text "blue" 
@@ -935,7 +965,7 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "white" 
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable legend(-background) \
-	-command { .g legend configure -background $legend(-background) }
+	-command { $g legend configure -background $legend(-background) }
     foreach option { borderwidth selectrelief relief 
 	selectbackground background selectborderwidth padx pady 
 	selectforeground activebackground
@@ -970,13 +1000,16 @@ proc LegendOptions { w } {
 	12,1 $t.selectforeground -fill x  \
 	13,0 $t.selectrelief_l -anchor e \
 	13,1 $t.selectrelief -fill x 
+    blt::table configure $t c0 -padx { 0 1i }
+    blt::table configure $t r* -resize none
+    blt::table configure $t r14 -resize both
 }
 
 set t [toplevel .cntrl]
-blt::tabnotebook $t.tb
+blt::tabset $t.tb
 blt::table $t \
     0,0 $t.tb -fill both
 GraphOptions $t.tb
 AxisOptions $t.tb
 LegendOptions $t.tb
-Blt_ClosestPoint .g
+Blt_ClosestPoint $g

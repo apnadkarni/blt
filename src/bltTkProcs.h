@@ -50,10 +50,10 @@ BLT_EXTERN void		Blt_MaskPicture(Blt_Picture dest, Blt_Picture mask,
 BLT_EXTERN void		Blt_BlankPicture(Blt_Picture picture,
 				unsigned int colorValue);
 #endif
-#ifndef Blt_BlankRegion_DECLARED
-#define Blt_BlankRegion_DECLARED
+#ifndef Blt_BlankArea_DECLARED
+#define Blt_BlankArea_DECLARED
 /* 7 */
-BLT_EXTERN void		Blt_BlankRegion(Blt_Picture picture, int x, int y,
+BLT_EXTERN void		Blt_BlankArea(Blt_Picture picture, int x, int y,
 				int w, int h, unsigned int colorValue);
 #endif
 #ifndef Blt_BlurPicture_DECLARED
@@ -124,314 +124,321 @@ BLT_EXTERN void		Blt_ResamplePicture(Blt_Picture dest,
 				Blt_Picture src, Blt_ResampleFilter hFilter,
 				Blt_ResampleFilter vFilter);
 #endif
+#ifndef Blt_ResamplePicture2_DECLARED
+#define Blt_ResamplePicture2_DECLARED
+/* 20 */
+BLT_EXTERN void		Blt_ResamplePicture2(Blt_Picture dest,
+				Blt_Picture src, Blt_ResampleFilter hFilter,
+				Blt_ResampleFilter vFilter);
+#endif
 #ifndef Blt_ScalePicture_DECLARED
 #define Blt_ScalePicture_DECLARED
-/* 20 */
+/* 21 */
 BLT_EXTERN Blt_Picture	Blt_ScalePicture(Blt_Picture picture, int x, int y,
 				int w, int h, int dw, int dh);
 #endif
 #ifndef Blt_ScalePictureArea_DECLARED
 #define Blt_ScalePictureArea_DECLARED
-/* 21 */
+/* 22 */
 BLT_EXTERN Blt_Picture	Blt_ScalePictureArea(Blt_Picture picture, int x,
 				int y, int w, int h, int dw, int dh);
 #endif
 #ifndef Blt_ReflectPicture_DECLARED
 #define Blt_ReflectPicture_DECLARED
-/* 22 */
+/* 23 */
 BLT_EXTERN Blt_Picture	Blt_ReflectPicture(Blt_Picture picture, int side);
 #endif
 #ifndef Blt_RotatePictureByShear_DECLARED
 #define Blt_RotatePictureByShear_DECLARED
-/* 23 */
+/* 24 */
 BLT_EXTERN Blt_Picture	Blt_RotatePictureByShear(Blt_Picture picture,
 				float angle);
 #endif
 #ifndef Blt_RotatePicture_DECLARED
 #define Blt_RotatePicture_DECLARED
-/* 24 */
+/* 25 */
 BLT_EXTERN Blt_Picture	Blt_RotatePicture(Blt_Picture picture, float angle);
 #endif
 #ifndef Blt_ProjectPicture_DECLARED
 #define Blt_ProjectPicture_DECLARED
-/* 25 */
+/* 26 */
 BLT_EXTERN Blt_Picture	Blt_ProjectPicture(Blt_Picture picture,
 				float *srcPts, float *destPts, Blt_Pixel *bg);
 #endif
 #ifndef Blt_TilePicture_DECLARED
 #define Blt_TilePicture_DECLARED
-/* 26 */
+/* 27 */
 BLT_EXTERN void		Blt_TilePicture(Blt_Picture dest, Blt_Picture src,
 				int xOrigin, int yOrigin, int x, int y,
 				int w, int h);
 #endif
 #ifndef Blt_PictureToPsData_DECLARED
 #define Blt_PictureToPsData_DECLARED
-/* 27 */
+/* 28 */
 BLT_EXTERN int		Blt_PictureToPsData(Blt_Picture picture,
 				int numComponents, Tcl_DString *resultPtr,
 				const char *prefix);
 #endif
 #ifndef Blt_SelectPixels_DECLARED
 #define Blt_SelectPixels_DECLARED
-/* 28 */
+/* 29 */
 BLT_EXTERN void		Blt_SelectPixels(Blt_Picture dest, Blt_Picture src,
 				Blt_Pixel *lowerPtr, Blt_Pixel *upperPtr);
 #endif
 #ifndef Blt_GetPicture_DECLARED
 #define Blt_GetPicture_DECLARED
-/* 29 */
+/* 30 */
 BLT_EXTERN int		Blt_GetPicture(Tcl_Interp *interp,
 				const char *string, Blt_Picture *picturePtr);
 #endif
 #ifndef Blt_GetPictureFromObj_DECLARED
 #define Blt_GetPictureFromObj_DECLARED
-/* 30 */
+/* 31 */
 BLT_EXTERN int		Blt_GetPictureFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Blt_Picture *picturePtr);
 #endif
 #ifndef Blt_GetResampleFilterFromObj_DECLARED
 #define Blt_GetResampleFilterFromObj_DECLARED
-/* 31 */
+/* 32 */
 BLT_EXTERN int		Blt_GetResampleFilterFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr,
 				Blt_ResampleFilter *filterPtr);
 #endif
 #ifndef Blt_NameOfResampleFilter_DECLARED
 #define Blt_NameOfResampleFilter_DECLARED
-/* 32 */
+/* 33 */
 BLT_EXTERN const char *	 Blt_NameOfResampleFilter(Blt_ResampleFilter filter);
 #endif
 #ifndef Blt_PremultiplyColor_DECLARED
 #define Blt_PremultiplyColor_DECLARED
-/* 33 */
+/* 34 */
 BLT_EXTERN void		Blt_PremultiplyColor(Blt_Pixel *colorPtr);
 #endif
 #ifndef Blt_UnmultiplyColor_DECLARED
 #define Blt_UnmultiplyColor_DECLARED
-/* 34 */
+/* 35 */
 BLT_EXTERN void		Blt_UnmultiplyColor(Blt_Pixel *colorPtr);
 #endif
 #ifndef Blt_PremultiplyColors_DECLARED
 #define Blt_PremultiplyColors_DECLARED
-/* 35 */
+/* 36 */
 BLT_EXTERN void		Blt_PremultiplyColors(Blt_Picture picture);
 #endif
 #ifndef Blt_UnmultiplyColors_DECLARED
 #define Blt_UnmultiplyColors_DECLARED
-/* 36 */
+/* 37 */
 BLT_EXTERN void		Blt_UnmultiplyColors(Blt_Picture picture);
 #endif
 #ifndef Blt_MultiplyPixels_DECLARED
 #define Blt_MultiplyPixels_DECLARED
-/* 37 */
+/* 38 */
 BLT_EXTERN void		Blt_MultiplyPixels(Blt_Picture dst, Blt_Picture src,
 				float value);
 #endif
-#ifndef Blt_GetBBoxFromObjv_DECLARED
-#define Blt_GetBBoxFromObjv_DECLARED
-/* 38 */
-BLT_EXTERN int		Blt_GetBBoxFromObjv(Tcl_Interp *interp, int objc,
-				Tcl_Obj *const *objv, PictRegion *regionPtr);
-#endif
-#ifndef Blt_AdjustRegionToPicture_DECLARED
-#define Blt_AdjustRegionToPicture_DECLARED
+#ifndef Blt_GetAreaFromObjv_DECLARED
+#define Blt_GetAreaFromObjv_DECLARED
 /* 39 */
-BLT_EXTERN int		Blt_AdjustRegionToPicture(Blt_Picture picture,
-				PictRegion *regionPtr);
+BLT_EXTERN int		Blt_GetAreaFromObjv(Tcl_Interp *interp, int objc,
+				Tcl_Obj *const *objv, PictArea *areaPtr);
+#endif
+#ifndef Blt_AdjustAreaToPicture_DECLARED
+#define Blt_AdjustAreaToPicture_DECLARED
+/* 40 */
+BLT_EXTERN int		Blt_AdjustAreaToPicture(Blt_Picture picture,
+				PictArea *areaPtr);
 #endif
 #ifndef Blt_GetPixelFromObj_DECLARED
 #define Blt_GetPixelFromObj_DECLARED
-/* 40 */
+/* 41 */
 BLT_EXTERN int		Blt_GetPixelFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Blt_Pixel *pixelPtr);
 #endif
 #ifndef Blt_GetPixel_DECLARED
 #define Blt_GetPixel_DECLARED
-/* 41 */
+/* 42 */
 BLT_EXTERN int		Blt_GetPixel(Tcl_Interp *interp, const char *string,
 				Blt_Pixel *pixelPtr);
 #endif
 #ifndef Blt_NameOfPixel_DECLARED
 #define Blt_NameOfPixel_DECLARED
-/* 42 */
+/* 43 */
 BLT_EXTERN const char *	 Blt_NameOfPixel(Blt_Pixel *pixelPtr);
 #endif
 #ifndef Blt_NotifyImageChanged_DECLARED
 #define Blt_NotifyImageChanged_DECLARED
-/* 43 */
+/* 44 */
 BLT_EXTERN void		Blt_NotifyImageChanged(Blt_PictureImage image);
 #endif
 #ifndef Blt_QueryColors_DECLARED
 #define Blt_QueryColors_DECLARED
-/* 44 */
+/* 45 */
 BLT_EXTERN int		Blt_QueryColors(Blt_Picture picture,
 				Blt_HashTable *tablePtr);
 #endif
 #ifndef Blt_ClassifyPicture_DECLARED
 #define Blt_ClassifyPicture_DECLARED
-/* 45 */
+/* 46 */
 BLT_EXTERN void		Blt_ClassifyPicture(Blt_Picture picture);
 #endif
 #ifndef Blt_TentHorizontally_DECLARED
 #define Blt_TentHorizontally_DECLARED
-/* 46 */
+/* 47 */
 BLT_EXTERN void		Blt_TentHorizontally(Blt_Picture dest,
 				Blt_Picture src);
 #endif
 #ifndef Blt_TentVertically_DECLARED
 #define Blt_TentVertically_DECLARED
-/* 47 */
+/* 48 */
 BLT_EXTERN void		Blt_TentVertically(Blt_Picture dest, Blt_Picture src);
 #endif
 #ifndef Blt_ZoomHorizontally_DECLARED
 #define Blt_ZoomHorizontally_DECLARED
-/* 48 */
+/* 49 */
 BLT_EXTERN void		Blt_ZoomHorizontally(Blt_Picture dest,
 				Blt_Picture src, Blt_ResampleFilter filter);
 #endif
 #ifndef Blt_ZoomVertically_DECLARED
 #define Blt_ZoomVertically_DECLARED
-/* 49 */
+/* 50 */
 BLT_EXTERN void		Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src,
 				Blt_ResampleFilter filter);
 #endif
-#ifndef Blt_CompositeRegion_DECLARED
-#define Blt_CompositeRegion_DECLARED
-/* 50 */
-BLT_EXTERN void		Blt_CompositeRegion(Blt_Picture dest,
-				Blt_Picture src, int sx, int sy, int w,
-				int h, int dx, int dy);
+#ifndef Blt_CompositeArea_DECLARED
+#define Blt_CompositeArea_DECLARED
+/* 51 */
+BLT_EXTERN void		Blt_CompositeArea(Blt_Picture dest, Blt_Picture src,
+				int sx, int sy, int w, int h, int dx, int dy);
 #endif
 #ifndef Blt_CompositePictures_DECLARED
 #define Blt_CompositePictures_DECLARED
-/* 51 */
+/* 52 */
 BLT_EXTERN void		Blt_CompositePictures(Blt_Picture dest,
 				Blt_Picture src);
 #endif
 #ifndef Blt_ColorBlendPictures_DECLARED
 #define Blt_ColorBlendPictures_DECLARED
-/* 52 */
+/* 53 */
 BLT_EXTERN void		Blt_ColorBlendPictures(Blt_Picture dest,
 				Blt_Picture src, Blt_BlendingMode mode);
 #endif
 #ifndef Blt_FadePicture_DECLARED
 #define Blt_FadePicture_DECLARED
-/* 53 */
+/* 54 */
 BLT_EXTERN void		Blt_FadePicture(Blt_Picture picture, int x, int y,
 				int w, int h, double factor);
 #endif
-#ifndef Blt_CopyRegion_DECLARED
-#define Blt_CopyRegion_DECLARED
-/* 54 */
-BLT_EXTERN void		Blt_CopyRegion(Blt_Picture dest, Blt_Picture src,
+#ifndef Blt_CopyArea_DECLARED
+#define Blt_CopyArea_DECLARED
+/* 55 */
+BLT_EXTERN void		Blt_CopyArea(Blt_Picture dest, Blt_Picture src,
 				int sx, int sy, int w, int h, int dx, int dy);
 #endif
-#ifndef Blt_CopyPictures_DECLARED
-#define Blt_CopyPictures_DECLARED
-/* 55 */
-BLT_EXTERN void		Blt_CopyPictures(Blt_Picture dest, Blt_Picture src);
+#ifndef Blt_CopyPictureBits_DECLARED
+#define Blt_CopyPictureBits_DECLARED
+/* 56 */
+BLT_EXTERN void		Blt_CopyPictureBits(Blt_Picture dest,
+				Blt_Picture src);
 #endif
 #ifndef Blt_GammaCorrectPicture_DECLARED
 #define Blt_GammaCorrectPicture_DECLARED
-/* 56 */
+/* 57 */
 BLT_EXTERN void		Blt_GammaCorrectPicture(Blt_Picture dest,
 				Blt_Picture src, float gamma);
 #endif
 #ifndef Blt_SharpenPicture_DECLARED
 #define Blt_SharpenPicture_DECLARED
-/* 57 */
+/* 58 */
 BLT_EXTERN void		Blt_SharpenPicture(Blt_Picture dest, Blt_Picture src);
 #endif
 #ifndef Blt_ApplyColorToPicture_DECLARED
 #define Blt_ApplyColorToPicture_DECLARED
-/* 58 */
+/* 59 */
 BLT_EXTERN void		Blt_ApplyColorToPicture(Blt_Picture pict,
 				Blt_Pixel *colorPtr);
 #endif
 #ifndef Blt_SizeOfPicture_DECLARED
 #define Blt_SizeOfPicture_DECLARED
-/* 59 */
+/* 60 */
 BLT_EXTERN void		Blt_SizeOfPicture(Blt_Picture pict, int *wPtr,
 				int *hPtr);
 #endif
 #ifndef Blt_PictureToDBuffer_DECLARED
 #define Blt_PictureToDBuffer_DECLARED
-/* 60 */
+/* 61 */
 BLT_EXTERN Blt_DBuffer	Blt_PictureToDBuffer(Blt_Picture picture,
 				int numComp);
 #endif
 #ifndef Blt_ResetPicture_DECLARED
 #define Blt_ResetPicture_DECLARED
-/* 61 */
+/* 62 */
 BLT_EXTERN int		Blt_ResetPicture(Tcl_Interp *interp,
 				const char *imageName, Blt_Picture picture);
 #endif
 #ifndef Blt_MapColors_DECLARED
 #define Blt_MapColors_DECLARED
-/* 62 */
+/* 63 */
 BLT_EXTERN void		Blt_MapColors(Blt_Picture dest, Blt_Picture src,
 				Blt_ColorLookupTable clut);
 #endif
 #ifndef Blt_GetColorLookupTable_DECLARED
 #define Blt_GetColorLookupTable_DECLARED
-/* 63 */
+/* 64 */
 BLT_EXTERN Blt_ColorLookupTable Blt_GetColorLookupTable(
 				struct _Blt_Chain *chainPtr,
 				int numReqColors);
 #endif
 #ifndef Blt_FadePictureWithGradient_DECLARED
 #define Blt_FadePictureWithGradient_DECLARED
-/* 64 */
+/* 65 */
 BLT_EXTERN void		Blt_FadePictureWithGradient(Blt_Picture picture,
 				int side, double low, double high, int scale,
 				Blt_Jitter *jitterPtr);
 #endif
 #ifndef Blt_ReflectPicture2_DECLARED
 #define Blt_ReflectPicture2_DECLARED
-/* 65 */
+/* 66 */
 BLT_EXTERN Blt_Picture	Blt_ReflectPicture2(Blt_Picture picture, int side);
 #endif
 #ifndef Blt_SubtractColor_DECLARED
 #define Blt_SubtractColor_DECLARED
-/* 66 */
+/* 67 */
 BLT_EXTERN void		Blt_SubtractColor(Blt_Picture picture,
 				Blt_Pixel *colorPtr);
 #endif
 #ifndef Blt_PhotoToPicture_DECLARED
 #define Blt_PhotoToPicture_DECLARED
-/* 67 */
+/* 68 */
 BLT_EXTERN Blt_Picture	Blt_PhotoToPicture(Tk_PhotoHandle photo);
 #endif
 #ifndef Blt_PhotoAreaToPicture_DECLARED
 #define Blt_PhotoAreaToPicture_DECLARED
-/* 68 */
+/* 69 */
 BLT_EXTERN Blt_Picture	Blt_PhotoAreaToPicture(Tk_PhotoHandle photo, int x,
 				int y, int w, int h);
 #endif
 #ifndef Blt_DrawableToPicture_DECLARED
 #define Blt_DrawableToPicture_DECLARED
-/* 69 */
+/* 70 */
 BLT_EXTERN Blt_Picture	Blt_DrawableToPicture(Tk_Window tkwin,
 				Drawable drawable, int x, int y, int w,
 				int h, float gamma);
 #endif
 #ifndef Blt_WindowToPicture_DECLARED
 #define Blt_WindowToPicture_DECLARED
-/* 70 */
+/* 71 */
 BLT_EXTERN Blt_Picture	Blt_WindowToPicture(Display *display,
 				Drawable drawable, int x, int y, int w,
 				int h, float gamma);
 #endif
 #ifndef Blt_PictureToPhoto_DECLARED
 #define Blt_PictureToPhoto_DECLARED
-/* 71 */
+/* 72 */
 BLT_EXTERN void		Blt_PictureToPhoto(Blt_Picture picture,
 				Tk_PhotoHandle photo);
 #endif
 #ifndef Blt_SnapPhoto_DECLARED
 #define Blt_SnapPhoto_DECLARED
-/* 72 */
+/* 73 */
 BLT_EXTERN int		Blt_SnapPhoto(Tcl_Interp *interp, Tk_Window tkwin,
 				Drawable drawable, int sx, int sy, int w,
 				int h, int dw, int dh, const char *photoName,
@@ -439,7 +446,7 @@ BLT_EXTERN int		Blt_SnapPhoto(Tcl_Interp *interp, Tk_Window tkwin,
 #endif
 #ifndef Blt_SnapPicture_DECLARED
 #define Blt_SnapPicture_DECLARED
-/* 73 */
+/* 74 */
 BLT_EXTERN int		Blt_SnapPicture(Tcl_Interp *interp, Tk_Window tkwin,
 				Drawable drawable, int sx, int sy, int w,
 				int h, int dw, int dh, const char *imageName,
@@ -447,113 +454,119 @@ BLT_EXTERN int		Blt_SnapPicture(Tcl_Interp *interp, Tk_Window tkwin,
 #endif
 #ifndef Blt_XColorToPixel_DECLARED
 #define Blt_XColorToPixel_DECLARED
-/* 74 */
+/* 75 */
 BLT_EXTERN unsigned int	 Blt_XColorToPixel(XColor *colorPtr);
+#endif
+#ifndef Blt_PixelToXColor_DECLARED
+#define Blt_PixelToXColor_DECLARED
+/* 76 */
+BLT_EXTERN void		Blt_PixelToXColor(Blt_Pixel *pixelPtr,
+				XColor *colorPtr);
 #endif
 #ifndef Blt_IsPicture_DECLARED
 #define Blt_IsPicture_DECLARED
-/* 75 */
+/* 77 */
 BLT_EXTERN int		Blt_IsPicture(Tk_Image tkImage);
 #endif
 #ifndef Blt_GetPicturesFromPictureImage_DECLARED
 #define Blt_GetPicturesFromPictureImage_DECLARED
-/* 76 */
+/* 78 */
 BLT_EXTERN struct _Blt_Chain * Blt_GetPicturesFromPictureImage(
 				Tcl_Interp *interp, Tk_Image tkImage);
 #endif
 #ifndef Blt_GetPictureFromImage_DECLARED
 #define Blt_GetPictureFromImage_DECLARED
-/* 77 */
+/* 79 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromImage(Tcl_Interp *interp,
-				Tk_Image tkImage, int *isPicturePtr);
+				Tk_Image tkImage);
 #endif
 #ifndef Blt_GetPictureFromPictureImage_DECLARED
 #define Blt_GetPictureFromPictureImage_DECLARED
-/* 78 */
+/* 80 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromPictureImage(Tk_Image tkImage);
 #endif
 #ifndef Blt_GetPictureFromPhotoImage_DECLARED
 #define Blt_GetPictureFromPhotoImage_DECLARED
-/* 79 */
+/* 81 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromPhotoImage(Tk_Image tkImage);
 #endif
 #ifndef Blt_GetPictureFromBitmapImage_DECLARED
 #define Blt_GetPictureFromBitmapImage_DECLARED
-/* 80 */
+/* 82 */
 BLT_EXTERN Blt_Picture	Blt_GetPictureFromBitmapImage(Tk_Image tkImage);
 #endif
 #ifndef Blt_CanvasToPicture_DECLARED
 #define Blt_CanvasToPicture_DECLARED
-/* 81 */
+/* 83 */
 BLT_EXTERN Blt_Picture	Blt_CanvasToPicture(Tcl_Interp *interp,
 				Tk_Window tkwin, float gamma);
 #endif
 #ifndef Blt_GraphToPicture_DECLARED
 #define Blt_GraphToPicture_DECLARED
-/* 82 */
+/* 84 */
 BLT_EXTERN Blt_Picture	Blt_GraphToPicture(Tcl_Interp *interp,
 				Tk_Window tkwin, float gamma);
 #endif
 #ifndef Blt_PictureRegisterProc_DECLARED
 #define Blt_PictureRegisterProc_DECLARED
-/* 83 */
+/* 85 */
 BLT_EXTERN int		Blt_PictureRegisterProc(Tcl_Interp *interp,
 				const char *name, Tcl_ObjCmdProc *proc);
 #endif
 #ifndef Blt_Shadow_Set_DECLARED
 #define Blt_Shadow_Set_DECLARED
-/* 84 */
+/* 86 */
 BLT_EXTERN void		Blt_Shadow_Set(Blt_Shadow *sPtr, int width,
 				int offset, int color, int alpha);
 #endif
 #ifndef Blt_EmbossPicture_DECLARED
 #define Blt_EmbossPicture_DECLARED
-/* 85 */
+/* 87 */
 BLT_EXTERN Blt_Picture	Blt_EmbossPicture(Blt_Picture picture,
 				double azimuth, double elevation,
 				unsigned short width45);
 #endif
 #ifndef Blt_FadeColor_DECLARED
 #define Blt_FadeColor_DECLARED
-/* 86 */
+/* 88 */
 BLT_EXTERN void		Blt_FadeColor(Blt_Pixel *colorPtr,
 				unsigned int alpha);
 #endif
 #ifndef Blt_Dissolve2_DECLARED
 #define Blt_Dissolve2_DECLARED
-/* 87 */
+/* 89 */
 BLT_EXTERN long		Blt_Dissolve2(Blt_Picture dest, Blt_Picture src,
 				long start, long finish);
 #endif
 #ifndef Blt_CrossFadePictures_DECLARED
 #define Blt_CrossFadePictures_DECLARED
-/* 88 */
+/* 90 */
 BLT_EXTERN void		Blt_CrossFadePictures(Blt_Picture dest,
 				Blt_Picture from, Blt_Picture to,
 				double opacity);
 #endif
 #ifndef Blt_FadeFromColor_DECLARED
 #define Blt_FadeFromColor_DECLARED
-/* 89 */
+/* 91 */
 BLT_EXTERN void		Blt_FadeFromColor(Blt_Picture dest, Blt_Picture to,
 				Blt_Pixel *colorPtr, double opacity);
 #endif
 #ifndef Blt_FadeToColor_DECLARED
 #define Blt_FadeToColor_DECLARED
-/* 90 */
+/* 92 */
 BLT_EXTERN void		Blt_FadeToColor(Blt_Picture dest, Blt_Picture from,
 				Blt_Pixel *colorPtr, double opacity);
 #endif
 #ifndef Blt_WipePictures_DECLARED
 #define Blt_WipePictures_DECLARED
-/* 91 */
+/* 93 */
 BLT_EXTERN void		Blt_WipePictures(Blt_Picture dest, Blt_Picture from,
 				Blt_Picture to, int orientation,
 				double position);
 #endif
 #ifndef Blt_PictureRegisterFormat_DECLARED
 #define Blt_PictureRegisterFormat_DECLARED
-/* 92 */
+/* 94 */
 BLT_EXTERN int		Blt_PictureRegisterFormat(Tcl_Interp *interp,
 				const char *name,
 				Blt_PictureIsFmtProc *isFmtProc,
@@ -564,12 +577,12 @@ BLT_EXTERN int		Blt_PictureRegisterFormat(Tcl_Interp *interp,
 #endif
 #ifndef Blt_GetNthPicture_DECLARED
 #define Blt_GetNthPicture_DECLARED
-/* 93 */
+/* 95 */
 BLT_EXTERN Blt_Picture	Blt_GetNthPicture(Blt_Chain chain, size_t index);
 #endif
 #ifndef Blt_FindPictureFormat_DECLARED
 #define Blt_FindPictureFormat_DECLARED
-/* 94 */
+/* 96 */
 BLT_EXTERN Blt_PictFormat * Blt_FindPictureFormat(Tcl_Interp *interp,
 				const char *ext);
 #endif
@@ -589,7 +602,7 @@ typedef struct BltTkProcs {
     void (*blt_ApplyScalarToPictureWithMask) (Blt_Picture dest, Blt_Pixel *colorPtr, Blt_Picture mask, int invert, Blt_PictureArithOps op); /* 4 */
     void (*blt_MaskPicture) (Blt_Picture dest, Blt_Picture mask, int x, int y, int w, int h, int dx, int dy, Blt_Pixel *colorPtr); /* 5 */
     void (*blt_BlankPicture) (Blt_Picture picture, unsigned int colorValue); /* 6 */
-    void (*blt_BlankRegion) (Blt_Picture picture, int x, int y, int w, int h, unsigned int colorValue); /* 7 */
+    void (*blt_BlankArea) (Blt_Picture picture, int x, int y, int w, int h, unsigned int colorValue); /* 7 */
     void (*blt_BlurPicture) (Blt_Picture dest, Blt_Picture src, int radius, int numPasses); /* 8 */
     void (*blt_ResizePicture) (Blt_Picture picture, int w, int h); /* 9 */
     void (*blt_AdjustPictureSize) (Blt_Picture picture, int w, int h); /* 10 */
@@ -602,81 +615,83 @@ typedef struct BltTkProcs {
     Blt_Picture (*blt_GreyscalePicture) (Blt_Picture picture); /* 17 */
     Blt_Picture (*blt_QuantizePicture) (Blt_Picture picture, int numColors); /* 18 */
     void (*blt_ResamplePicture) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter hFilter, Blt_ResampleFilter vFilter); /* 19 */
-    Blt_Picture (*blt_ScalePicture) (Blt_Picture picture, int x, int y, int w, int h, int dw, int dh); /* 20 */
-    Blt_Picture (*blt_ScalePictureArea) (Blt_Picture picture, int x, int y, int w, int h, int dw, int dh); /* 21 */
-    Blt_Picture (*blt_ReflectPicture) (Blt_Picture picture, int side); /* 22 */
-    Blt_Picture (*blt_RotatePictureByShear) (Blt_Picture picture, float angle); /* 23 */
-    Blt_Picture (*blt_RotatePicture) (Blt_Picture picture, float angle); /* 24 */
-    Blt_Picture (*blt_ProjectPicture) (Blt_Picture picture, float *srcPts, float *destPts, Blt_Pixel *bg); /* 25 */
-    void (*blt_TilePicture) (Blt_Picture dest, Blt_Picture src, int xOrigin, int yOrigin, int x, int y, int w, int h); /* 26 */
-    int (*blt_PictureToPsData) (Blt_Picture picture, int numComponents, Tcl_DString *resultPtr, const char *prefix); /* 27 */
-    void (*blt_SelectPixels) (Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowerPtr, Blt_Pixel *upperPtr); /* 28 */
-    int (*blt_GetPicture) (Tcl_Interp *interp, const char *string, Blt_Picture *picturePtr); /* 29 */
-    int (*blt_GetPictureFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Picture *picturePtr); /* 30 */
-    int (*blt_GetResampleFilterFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_ResampleFilter *filterPtr); /* 31 */
-    const char * (*blt_NameOfResampleFilter) (Blt_ResampleFilter filter); /* 32 */
-    void (*blt_PremultiplyColor) (Blt_Pixel *colorPtr); /* 33 */
-    void (*blt_UnmultiplyColor) (Blt_Pixel *colorPtr); /* 34 */
-    void (*blt_PremultiplyColors) (Blt_Picture picture); /* 35 */
-    void (*blt_UnmultiplyColors) (Blt_Picture picture); /* 36 */
-    void (*blt_MultiplyPixels) (Blt_Picture dst, Blt_Picture src, float value); /* 37 */
-    int (*blt_GetBBoxFromObjv) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, PictRegion *regionPtr); /* 38 */
-    int (*blt_AdjustRegionToPicture) (Blt_Picture picture, PictRegion *regionPtr); /* 39 */
-    int (*blt_GetPixelFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr); /* 40 */
-    int (*blt_GetPixel) (Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr); /* 41 */
-    const char * (*blt_NameOfPixel) (Blt_Pixel *pixelPtr); /* 42 */
-    void (*blt_NotifyImageChanged) (Blt_PictureImage image); /* 43 */
-    int (*blt_QueryColors) (Blt_Picture picture, Blt_HashTable *tablePtr); /* 44 */
-    void (*blt_ClassifyPicture) (Blt_Picture picture); /* 45 */
-    void (*blt_TentHorizontally) (Blt_Picture dest, Blt_Picture src); /* 46 */
-    void (*blt_TentVertically) (Blt_Picture dest, Blt_Picture src); /* 47 */
-    void (*blt_ZoomHorizontally) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 48 */
-    void (*blt_ZoomVertically) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 49 */
-    void (*blt_CompositeRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 50 */
-    void (*blt_CompositePictures) (Blt_Picture dest, Blt_Picture src); /* 51 */
-    void (*blt_ColorBlendPictures) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 52 */
-    void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, double factor); /* 53 */
-    void (*blt_CopyRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 54 */
-    void (*blt_CopyPictures) (Blt_Picture dest, Blt_Picture src); /* 55 */
-    void (*blt_GammaCorrectPicture) (Blt_Picture dest, Blt_Picture src, float gamma); /* 56 */
-    void (*blt_SharpenPicture) (Blt_Picture dest, Blt_Picture src); /* 57 */
-    void (*blt_ApplyColorToPicture) (Blt_Picture pict, Blt_Pixel *colorPtr); /* 58 */
-    void (*blt_SizeOfPicture) (Blt_Picture pict, int *wPtr, int *hPtr); /* 59 */
-    Blt_DBuffer (*blt_PictureToDBuffer) (Blt_Picture picture, int numComp); /* 60 */
-    int (*blt_ResetPicture) (Tcl_Interp *interp, const char *imageName, Blt_Picture picture); /* 61 */
-    void (*blt_MapColors) (Blt_Picture dest, Blt_Picture src, Blt_ColorLookupTable clut); /* 62 */
-    Blt_ColorLookupTable (*blt_GetColorLookupTable) (struct _Blt_Chain *chainPtr, int numReqColors); /* 63 */
-    void (*blt_FadePictureWithGradient) (Blt_Picture picture, int side, double low, double high, int scale, Blt_Jitter *jitterPtr); /* 64 */
-    Blt_Picture (*blt_ReflectPicture2) (Blt_Picture picture, int side); /* 65 */
-    void (*blt_SubtractColor) (Blt_Picture picture, Blt_Pixel *colorPtr); /* 66 */
-    Blt_Picture (*blt_PhotoToPicture) (Tk_PhotoHandle photo); /* 67 */
-    Blt_Picture (*blt_PhotoAreaToPicture) (Tk_PhotoHandle photo, int x, int y, int w, int h); /* 68 */
-    Blt_Picture (*blt_DrawableToPicture) (Tk_Window tkwin, Drawable drawable, int x, int y, int w, int h, float gamma); /* 69 */
-    Blt_Picture (*blt_WindowToPicture) (Display *display, Drawable drawable, int x, int y, int w, int h, float gamma); /* 70 */
-    void (*blt_PictureToPhoto) (Blt_Picture picture, Tk_PhotoHandle photo); /* 71 */
-    int (*blt_SnapPhoto) (Tcl_Interp *interp, Tk_Window tkwin, Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, const char *photoName, float gamma); /* 72 */
-    int (*blt_SnapPicture) (Tcl_Interp *interp, Tk_Window tkwin, Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, const char *imageName, float gamma); /* 73 */
-    unsigned int (*blt_XColorToPixel) (XColor *colorPtr); /* 74 */
-    int (*blt_IsPicture) (Tk_Image tkImage); /* 75 */
-    struct _Blt_Chain * (*blt_GetPicturesFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 76 */
-    Blt_Picture (*blt_GetPictureFromImage) (Tcl_Interp *interp, Tk_Image tkImage, int *isPicturePtr); /* 77 */
-    Blt_Picture (*blt_GetPictureFromPictureImage) (Tk_Image tkImage); /* 78 */
-    Blt_Picture (*blt_GetPictureFromPhotoImage) (Tk_Image tkImage); /* 79 */
-    Blt_Picture (*blt_GetPictureFromBitmapImage) (Tk_Image tkImage); /* 80 */
-    Blt_Picture (*blt_CanvasToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 81 */
-    Blt_Picture (*blt_GraphToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 82 */
-    int (*blt_PictureRegisterProc) (Tcl_Interp *interp, const char *name, Tcl_ObjCmdProc *proc); /* 83 */
-    void (*blt_Shadow_Set) (Blt_Shadow *sPtr, int width, int offset, int color, int alpha); /* 84 */
-    Blt_Picture (*blt_EmbossPicture) (Blt_Picture picture, double azimuth, double elevation, unsigned short width45); /* 85 */
-    void (*blt_FadeColor) (Blt_Pixel *colorPtr, unsigned int alpha); /* 86 */
-    long (*blt_Dissolve2) (Blt_Picture dest, Blt_Picture src, long start, long finish); /* 87 */
-    void (*blt_CrossFadePictures) (Blt_Picture dest, Blt_Picture from, Blt_Picture to, double opacity); /* 88 */
-    void (*blt_FadeFromColor) (Blt_Picture dest, Blt_Picture to, Blt_Pixel *colorPtr, double opacity); /* 89 */
-    void (*blt_FadeToColor) (Blt_Picture dest, Blt_Picture from, Blt_Pixel *colorPtr, double opacity); /* 90 */
-    void (*blt_WipePictures) (Blt_Picture dest, Blt_Picture from, Blt_Picture to, int orientation, double position); /* 91 */
-    int (*blt_PictureRegisterFormat) (Tcl_Interp *interp, const char *name, Blt_PictureIsFmtProc *isFmtProc, Blt_PictureReadProc *readProc, Blt_PictureWriteProc *writeProc, Blt_PictureImportProc *importProc, Blt_PictureExportProc *exportProc); /* 92 */
-    Blt_Picture (*blt_GetNthPicture) (Blt_Chain chain, size_t index); /* 93 */
-    Blt_PictFormat * (*blt_FindPictureFormat) (Tcl_Interp *interp, const char *ext); /* 94 */
+    void (*blt_ResamplePicture2) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter hFilter, Blt_ResampleFilter vFilter); /* 20 */
+    Blt_Picture (*blt_ScalePicture) (Blt_Picture picture, int x, int y, int w, int h, int dw, int dh); /* 21 */
+    Blt_Picture (*blt_ScalePictureArea) (Blt_Picture picture, int x, int y, int w, int h, int dw, int dh); /* 22 */
+    Blt_Picture (*blt_ReflectPicture) (Blt_Picture picture, int side); /* 23 */
+    Blt_Picture (*blt_RotatePictureByShear) (Blt_Picture picture, float angle); /* 24 */
+    Blt_Picture (*blt_RotatePicture) (Blt_Picture picture, float angle); /* 25 */
+    Blt_Picture (*blt_ProjectPicture) (Blt_Picture picture, float *srcPts, float *destPts, Blt_Pixel *bg); /* 26 */
+    void (*blt_TilePicture) (Blt_Picture dest, Blt_Picture src, int xOrigin, int yOrigin, int x, int y, int w, int h); /* 27 */
+    int (*blt_PictureToPsData) (Blt_Picture picture, int numComponents, Tcl_DString *resultPtr, const char *prefix); /* 28 */
+    void (*blt_SelectPixels) (Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowerPtr, Blt_Pixel *upperPtr); /* 29 */
+    int (*blt_GetPicture) (Tcl_Interp *interp, const char *string, Blt_Picture *picturePtr); /* 30 */
+    int (*blt_GetPictureFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Picture *picturePtr); /* 31 */
+    int (*blt_GetResampleFilterFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_ResampleFilter *filterPtr); /* 32 */
+    const char * (*blt_NameOfResampleFilter) (Blt_ResampleFilter filter); /* 33 */
+    void (*blt_PremultiplyColor) (Blt_Pixel *colorPtr); /* 34 */
+    void (*blt_UnmultiplyColor) (Blt_Pixel *colorPtr); /* 35 */
+    void (*blt_PremultiplyColors) (Blt_Picture picture); /* 36 */
+    void (*blt_UnmultiplyColors) (Blt_Picture picture); /* 37 */
+    void (*blt_MultiplyPixels) (Blt_Picture dst, Blt_Picture src, float value); /* 38 */
+    int (*blt_GetAreaFromObjv) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, PictArea *areaPtr); /* 39 */
+    int (*blt_AdjustAreaToPicture) (Blt_Picture picture, PictArea *areaPtr); /* 40 */
+    int (*blt_GetPixelFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr); /* 41 */
+    int (*blt_GetPixel) (Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr); /* 42 */
+    const char * (*blt_NameOfPixel) (Blt_Pixel *pixelPtr); /* 43 */
+    void (*blt_NotifyImageChanged) (Blt_PictureImage image); /* 44 */
+    int (*blt_QueryColors) (Blt_Picture picture, Blt_HashTable *tablePtr); /* 45 */
+    void (*blt_ClassifyPicture) (Blt_Picture picture); /* 46 */
+    void (*blt_TentHorizontally) (Blt_Picture dest, Blt_Picture src); /* 47 */
+    void (*blt_TentVertically) (Blt_Picture dest, Blt_Picture src); /* 48 */
+    void (*blt_ZoomHorizontally) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 49 */
+    void (*blt_ZoomVertically) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 50 */
+    void (*blt_CompositeArea) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 51 */
+    void (*blt_CompositePictures) (Blt_Picture dest, Blt_Picture src); /* 52 */
+    void (*blt_ColorBlendPictures) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 53 */
+    void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, double factor); /* 54 */
+    void (*blt_CopyArea) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 55 */
+    void (*blt_CopyPictureBits) (Blt_Picture dest, Blt_Picture src); /* 56 */
+    void (*blt_GammaCorrectPicture) (Blt_Picture dest, Blt_Picture src, float gamma); /* 57 */
+    void (*blt_SharpenPicture) (Blt_Picture dest, Blt_Picture src); /* 58 */
+    void (*blt_ApplyColorToPicture) (Blt_Picture pict, Blt_Pixel *colorPtr); /* 59 */
+    void (*blt_SizeOfPicture) (Blt_Picture pict, int *wPtr, int *hPtr); /* 60 */
+    Blt_DBuffer (*blt_PictureToDBuffer) (Blt_Picture picture, int numComp); /* 61 */
+    int (*blt_ResetPicture) (Tcl_Interp *interp, const char *imageName, Blt_Picture picture); /* 62 */
+    void (*blt_MapColors) (Blt_Picture dest, Blt_Picture src, Blt_ColorLookupTable clut); /* 63 */
+    Blt_ColorLookupTable (*blt_GetColorLookupTable) (struct _Blt_Chain *chainPtr, int numReqColors); /* 64 */
+    void (*blt_FadePictureWithGradient) (Blt_Picture picture, int side, double low, double high, int scale, Blt_Jitter *jitterPtr); /* 65 */
+    Blt_Picture (*blt_ReflectPicture2) (Blt_Picture picture, int side); /* 66 */
+    void (*blt_SubtractColor) (Blt_Picture picture, Blt_Pixel *colorPtr); /* 67 */
+    Blt_Picture (*blt_PhotoToPicture) (Tk_PhotoHandle photo); /* 68 */
+    Blt_Picture (*blt_PhotoAreaToPicture) (Tk_PhotoHandle photo, int x, int y, int w, int h); /* 69 */
+    Blt_Picture (*blt_DrawableToPicture) (Tk_Window tkwin, Drawable drawable, int x, int y, int w, int h, float gamma); /* 70 */
+    Blt_Picture (*blt_WindowToPicture) (Display *display, Drawable drawable, int x, int y, int w, int h, float gamma); /* 71 */
+    void (*blt_PictureToPhoto) (Blt_Picture picture, Tk_PhotoHandle photo); /* 72 */
+    int (*blt_SnapPhoto) (Tcl_Interp *interp, Tk_Window tkwin, Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, const char *photoName, float gamma); /* 73 */
+    int (*blt_SnapPicture) (Tcl_Interp *interp, Tk_Window tkwin, Drawable drawable, int sx, int sy, int w, int h, int dw, int dh, const char *imageName, float gamma); /* 74 */
+    unsigned int (*blt_XColorToPixel) (XColor *colorPtr); /* 75 */
+    void (*blt_PixelToXColor) (Blt_Pixel *pixelPtr, XColor *colorPtr); /* 76 */
+    int (*blt_IsPicture) (Tk_Image tkImage); /* 77 */
+    struct _Blt_Chain * (*blt_GetPicturesFromPictureImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 78 */
+    Blt_Picture (*blt_GetPictureFromImage) (Tcl_Interp *interp, Tk_Image tkImage); /* 79 */
+    Blt_Picture (*blt_GetPictureFromPictureImage) (Tk_Image tkImage); /* 80 */
+    Blt_Picture (*blt_GetPictureFromPhotoImage) (Tk_Image tkImage); /* 81 */
+    Blt_Picture (*blt_GetPictureFromBitmapImage) (Tk_Image tkImage); /* 82 */
+    Blt_Picture (*blt_CanvasToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 83 */
+    Blt_Picture (*blt_GraphToPicture) (Tcl_Interp *interp, Tk_Window tkwin, float gamma); /* 84 */
+    int (*blt_PictureRegisterProc) (Tcl_Interp *interp, const char *name, Tcl_ObjCmdProc *proc); /* 85 */
+    void (*blt_Shadow_Set) (Blt_Shadow *sPtr, int width, int offset, int color, int alpha); /* 86 */
+    Blt_Picture (*blt_EmbossPicture) (Blt_Picture picture, double azimuth, double elevation, unsigned short width45); /* 87 */
+    void (*blt_FadeColor) (Blt_Pixel *colorPtr, unsigned int alpha); /* 88 */
+    long (*blt_Dissolve2) (Blt_Picture dest, Blt_Picture src, long start, long finish); /* 89 */
+    void (*blt_CrossFadePictures) (Blt_Picture dest, Blt_Picture from, Blt_Picture to, double opacity); /* 90 */
+    void (*blt_FadeFromColor) (Blt_Picture dest, Blt_Picture to, Blt_Pixel *colorPtr, double opacity); /* 91 */
+    void (*blt_FadeToColor) (Blt_Picture dest, Blt_Picture from, Blt_Pixel *colorPtr, double opacity); /* 92 */
+    void (*blt_WipePictures) (Blt_Picture dest, Blt_Picture from, Blt_Picture to, int orientation, double position); /* 93 */
+    int (*blt_PictureRegisterFormat) (Tcl_Interp *interp, const char *name, Blt_PictureIsFmtProc *isFmtProc, Blt_PictureReadProc *readProc, Blt_PictureWriteProc *writeProc, Blt_PictureImportProc *importProc, Blt_PictureExportProc *exportProc); /* 94 */
+    Blt_Picture (*blt_GetNthPicture) (Blt_Chain chain, size_t index); /* 95 */
+    Blt_PictFormat * (*blt_FindPictureFormat) (Tcl_Interp *interp, const char *ext); /* 96 */
 } BltTkProcs;
 
 #ifdef __cplusplus
@@ -718,9 +733,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_BlankPicture \
 	(bltTkProcsPtr->blt_BlankPicture) /* 6 */
 #endif
-#ifndef Blt_BlankRegion
-#define Blt_BlankRegion \
-	(bltTkProcsPtr->blt_BlankRegion) /* 7 */
+#ifndef Blt_BlankArea
+#define Blt_BlankArea \
+	(bltTkProcsPtr->blt_BlankArea) /* 7 */
 #endif
 #ifndef Blt_BlurPicture
 #define Blt_BlurPicture \
@@ -770,305 +785,313 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_ResamplePicture \
 	(bltTkProcsPtr->blt_ResamplePicture) /* 19 */
 #endif
+#ifndef Blt_ResamplePicture2
+#define Blt_ResamplePicture2 \
+	(bltTkProcsPtr->blt_ResamplePicture2) /* 20 */
+#endif
 #ifndef Blt_ScalePicture
 #define Blt_ScalePicture \
-	(bltTkProcsPtr->blt_ScalePicture) /* 20 */
+	(bltTkProcsPtr->blt_ScalePicture) /* 21 */
 #endif
 #ifndef Blt_ScalePictureArea
 #define Blt_ScalePictureArea \
-	(bltTkProcsPtr->blt_ScalePictureArea) /* 21 */
+	(bltTkProcsPtr->blt_ScalePictureArea) /* 22 */
 #endif
 #ifndef Blt_ReflectPicture
 #define Blt_ReflectPicture \
-	(bltTkProcsPtr->blt_ReflectPicture) /* 22 */
+	(bltTkProcsPtr->blt_ReflectPicture) /* 23 */
 #endif
 #ifndef Blt_RotatePictureByShear
 #define Blt_RotatePictureByShear \
-	(bltTkProcsPtr->blt_RotatePictureByShear) /* 23 */
+	(bltTkProcsPtr->blt_RotatePictureByShear) /* 24 */
 #endif
 #ifndef Blt_RotatePicture
 #define Blt_RotatePicture \
-	(bltTkProcsPtr->blt_RotatePicture) /* 24 */
+	(bltTkProcsPtr->blt_RotatePicture) /* 25 */
 #endif
 #ifndef Blt_ProjectPicture
 #define Blt_ProjectPicture \
-	(bltTkProcsPtr->blt_ProjectPicture) /* 25 */
+	(bltTkProcsPtr->blt_ProjectPicture) /* 26 */
 #endif
 #ifndef Blt_TilePicture
 #define Blt_TilePicture \
-	(bltTkProcsPtr->blt_TilePicture) /* 26 */
+	(bltTkProcsPtr->blt_TilePicture) /* 27 */
 #endif
 #ifndef Blt_PictureToPsData
 #define Blt_PictureToPsData \
-	(bltTkProcsPtr->blt_PictureToPsData) /* 27 */
+	(bltTkProcsPtr->blt_PictureToPsData) /* 28 */
 #endif
 #ifndef Blt_SelectPixels
 #define Blt_SelectPixels \
-	(bltTkProcsPtr->blt_SelectPixels) /* 28 */
+	(bltTkProcsPtr->blt_SelectPixels) /* 29 */
 #endif
 #ifndef Blt_GetPicture
 #define Blt_GetPicture \
-	(bltTkProcsPtr->blt_GetPicture) /* 29 */
+	(bltTkProcsPtr->blt_GetPicture) /* 30 */
 #endif
 #ifndef Blt_GetPictureFromObj
 #define Blt_GetPictureFromObj \
-	(bltTkProcsPtr->blt_GetPictureFromObj) /* 30 */
+	(bltTkProcsPtr->blt_GetPictureFromObj) /* 31 */
 #endif
 #ifndef Blt_GetResampleFilterFromObj
 #define Blt_GetResampleFilterFromObj \
-	(bltTkProcsPtr->blt_GetResampleFilterFromObj) /* 31 */
+	(bltTkProcsPtr->blt_GetResampleFilterFromObj) /* 32 */
 #endif
 #ifndef Blt_NameOfResampleFilter
 #define Blt_NameOfResampleFilter \
-	(bltTkProcsPtr->blt_NameOfResampleFilter) /* 32 */
+	(bltTkProcsPtr->blt_NameOfResampleFilter) /* 33 */
 #endif
 #ifndef Blt_PremultiplyColor
 #define Blt_PremultiplyColor \
-	(bltTkProcsPtr->blt_PremultiplyColor) /* 33 */
+	(bltTkProcsPtr->blt_PremultiplyColor) /* 34 */
 #endif
 #ifndef Blt_UnmultiplyColor
 #define Blt_UnmultiplyColor \
-	(bltTkProcsPtr->blt_UnmultiplyColor) /* 34 */
+	(bltTkProcsPtr->blt_UnmultiplyColor) /* 35 */
 #endif
 #ifndef Blt_PremultiplyColors
 #define Blt_PremultiplyColors \
-	(bltTkProcsPtr->blt_PremultiplyColors) /* 35 */
+	(bltTkProcsPtr->blt_PremultiplyColors) /* 36 */
 #endif
 #ifndef Blt_UnmultiplyColors
 #define Blt_UnmultiplyColors \
-	(bltTkProcsPtr->blt_UnmultiplyColors) /* 36 */
+	(bltTkProcsPtr->blt_UnmultiplyColors) /* 37 */
 #endif
 #ifndef Blt_MultiplyPixels
 #define Blt_MultiplyPixels \
-	(bltTkProcsPtr->blt_MultiplyPixels) /* 37 */
+	(bltTkProcsPtr->blt_MultiplyPixels) /* 38 */
 #endif
-#ifndef Blt_GetBBoxFromObjv
-#define Blt_GetBBoxFromObjv \
-	(bltTkProcsPtr->blt_GetBBoxFromObjv) /* 38 */
+#ifndef Blt_GetAreaFromObjv
+#define Blt_GetAreaFromObjv \
+	(bltTkProcsPtr->blt_GetAreaFromObjv) /* 39 */
 #endif
-#ifndef Blt_AdjustRegionToPicture
-#define Blt_AdjustRegionToPicture \
-	(bltTkProcsPtr->blt_AdjustRegionToPicture) /* 39 */
+#ifndef Blt_AdjustAreaToPicture
+#define Blt_AdjustAreaToPicture \
+	(bltTkProcsPtr->blt_AdjustAreaToPicture) /* 40 */
 #endif
 #ifndef Blt_GetPixelFromObj
 #define Blt_GetPixelFromObj \
-	(bltTkProcsPtr->blt_GetPixelFromObj) /* 40 */
+	(bltTkProcsPtr->blt_GetPixelFromObj) /* 41 */
 #endif
 #ifndef Blt_GetPixel
 #define Blt_GetPixel \
-	(bltTkProcsPtr->blt_GetPixel) /* 41 */
+	(bltTkProcsPtr->blt_GetPixel) /* 42 */
 #endif
 #ifndef Blt_NameOfPixel
 #define Blt_NameOfPixel \
-	(bltTkProcsPtr->blt_NameOfPixel) /* 42 */
+	(bltTkProcsPtr->blt_NameOfPixel) /* 43 */
 #endif
 #ifndef Blt_NotifyImageChanged
 #define Blt_NotifyImageChanged \
-	(bltTkProcsPtr->blt_NotifyImageChanged) /* 43 */
+	(bltTkProcsPtr->blt_NotifyImageChanged) /* 44 */
 #endif
 #ifndef Blt_QueryColors
 #define Blt_QueryColors \
-	(bltTkProcsPtr->blt_QueryColors) /* 44 */
+	(bltTkProcsPtr->blt_QueryColors) /* 45 */
 #endif
 #ifndef Blt_ClassifyPicture
 #define Blt_ClassifyPicture \
-	(bltTkProcsPtr->blt_ClassifyPicture) /* 45 */
+	(bltTkProcsPtr->blt_ClassifyPicture) /* 46 */
 #endif
 #ifndef Blt_TentHorizontally
 #define Blt_TentHorizontally \
-	(bltTkProcsPtr->blt_TentHorizontally) /* 46 */
+	(bltTkProcsPtr->blt_TentHorizontally) /* 47 */
 #endif
 #ifndef Blt_TentVertically
 #define Blt_TentVertically \
-	(bltTkProcsPtr->blt_TentVertically) /* 47 */
+	(bltTkProcsPtr->blt_TentVertically) /* 48 */
 #endif
 #ifndef Blt_ZoomHorizontally
 #define Blt_ZoomHorizontally \
-	(bltTkProcsPtr->blt_ZoomHorizontally) /* 48 */
+	(bltTkProcsPtr->blt_ZoomHorizontally) /* 49 */
 #endif
 #ifndef Blt_ZoomVertically
 #define Blt_ZoomVertically \
-	(bltTkProcsPtr->blt_ZoomVertically) /* 49 */
+	(bltTkProcsPtr->blt_ZoomVertically) /* 50 */
 #endif
-#ifndef Blt_CompositeRegion
-#define Blt_CompositeRegion \
-	(bltTkProcsPtr->blt_CompositeRegion) /* 50 */
+#ifndef Blt_CompositeArea
+#define Blt_CompositeArea \
+	(bltTkProcsPtr->blt_CompositeArea) /* 51 */
 #endif
 #ifndef Blt_CompositePictures
 #define Blt_CompositePictures \
-	(bltTkProcsPtr->blt_CompositePictures) /* 51 */
+	(bltTkProcsPtr->blt_CompositePictures) /* 52 */
 #endif
 #ifndef Blt_ColorBlendPictures
 #define Blt_ColorBlendPictures \
-	(bltTkProcsPtr->blt_ColorBlendPictures) /* 52 */
+	(bltTkProcsPtr->blt_ColorBlendPictures) /* 53 */
 #endif
 #ifndef Blt_FadePicture
 #define Blt_FadePicture \
-	(bltTkProcsPtr->blt_FadePicture) /* 53 */
+	(bltTkProcsPtr->blt_FadePicture) /* 54 */
 #endif
-#ifndef Blt_CopyRegion
-#define Blt_CopyRegion \
-	(bltTkProcsPtr->blt_CopyRegion) /* 54 */
+#ifndef Blt_CopyArea
+#define Blt_CopyArea \
+	(bltTkProcsPtr->blt_CopyArea) /* 55 */
 #endif
-#ifndef Blt_CopyPictures
-#define Blt_CopyPictures \
-	(bltTkProcsPtr->blt_CopyPictures) /* 55 */
+#ifndef Blt_CopyPictureBits
+#define Blt_CopyPictureBits \
+	(bltTkProcsPtr->blt_CopyPictureBits) /* 56 */
 #endif
 #ifndef Blt_GammaCorrectPicture
 #define Blt_GammaCorrectPicture \
-	(bltTkProcsPtr->blt_GammaCorrectPicture) /* 56 */
+	(bltTkProcsPtr->blt_GammaCorrectPicture) /* 57 */
 #endif
 #ifndef Blt_SharpenPicture
 #define Blt_SharpenPicture \
-	(bltTkProcsPtr->blt_SharpenPicture) /* 57 */
+	(bltTkProcsPtr->blt_SharpenPicture) /* 58 */
 #endif
 #ifndef Blt_ApplyColorToPicture
 #define Blt_ApplyColorToPicture \
-	(bltTkProcsPtr->blt_ApplyColorToPicture) /* 58 */
+	(bltTkProcsPtr->blt_ApplyColorToPicture) /* 59 */
 #endif
 #ifndef Blt_SizeOfPicture
 #define Blt_SizeOfPicture \
-	(bltTkProcsPtr->blt_SizeOfPicture) /* 59 */
+	(bltTkProcsPtr->blt_SizeOfPicture) /* 60 */
 #endif
 #ifndef Blt_PictureToDBuffer
 #define Blt_PictureToDBuffer \
-	(bltTkProcsPtr->blt_PictureToDBuffer) /* 60 */
+	(bltTkProcsPtr->blt_PictureToDBuffer) /* 61 */
 #endif
 #ifndef Blt_ResetPicture
 #define Blt_ResetPicture \
-	(bltTkProcsPtr->blt_ResetPicture) /* 61 */
+	(bltTkProcsPtr->blt_ResetPicture) /* 62 */
 #endif
 #ifndef Blt_MapColors
 #define Blt_MapColors \
-	(bltTkProcsPtr->blt_MapColors) /* 62 */
+	(bltTkProcsPtr->blt_MapColors) /* 63 */
 #endif
 #ifndef Blt_GetColorLookupTable
 #define Blt_GetColorLookupTable \
-	(bltTkProcsPtr->blt_GetColorLookupTable) /* 63 */
+	(bltTkProcsPtr->blt_GetColorLookupTable) /* 64 */
 #endif
 #ifndef Blt_FadePictureWithGradient
 #define Blt_FadePictureWithGradient \
-	(bltTkProcsPtr->blt_FadePictureWithGradient) /* 64 */
+	(bltTkProcsPtr->blt_FadePictureWithGradient) /* 65 */
 #endif
 #ifndef Blt_ReflectPicture2
 #define Blt_ReflectPicture2 \
-	(bltTkProcsPtr->blt_ReflectPicture2) /* 65 */
+	(bltTkProcsPtr->blt_ReflectPicture2) /* 66 */
 #endif
 #ifndef Blt_SubtractColor
 #define Blt_SubtractColor \
-	(bltTkProcsPtr->blt_SubtractColor) /* 66 */
+	(bltTkProcsPtr->blt_SubtractColor) /* 67 */
 #endif
 #ifndef Blt_PhotoToPicture
 #define Blt_PhotoToPicture \
-	(bltTkProcsPtr->blt_PhotoToPicture) /* 67 */
+	(bltTkProcsPtr->blt_PhotoToPicture) /* 68 */
 #endif
 #ifndef Blt_PhotoAreaToPicture
 #define Blt_PhotoAreaToPicture \
-	(bltTkProcsPtr->blt_PhotoAreaToPicture) /* 68 */
+	(bltTkProcsPtr->blt_PhotoAreaToPicture) /* 69 */
 #endif
 #ifndef Blt_DrawableToPicture
 #define Blt_DrawableToPicture \
-	(bltTkProcsPtr->blt_DrawableToPicture) /* 69 */
+	(bltTkProcsPtr->blt_DrawableToPicture) /* 70 */
 #endif
 #ifndef Blt_WindowToPicture
 #define Blt_WindowToPicture \
-	(bltTkProcsPtr->blt_WindowToPicture) /* 70 */
+	(bltTkProcsPtr->blt_WindowToPicture) /* 71 */
 #endif
 #ifndef Blt_PictureToPhoto
 #define Blt_PictureToPhoto \
-	(bltTkProcsPtr->blt_PictureToPhoto) /* 71 */
+	(bltTkProcsPtr->blt_PictureToPhoto) /* 72 */
 #endif
 #ifndef Blt_SnapPhoto
 #define Blt_SnapPhoto \
-	(bltTkProcsPtr->blt_SnapPhoto) /* 72 */
+	(bltTkProcsPtr->blt_SnapPhoto) /* 73 */
 #endif
 #ifndef Blt_SnapPicture
 #define Blt_SnapPicture \
-	(bltTkProcsPtr->blt_SnapPicture) /* 73 */
+	(bltTkProcsPtr->blt_SnapPicture) /* 74 */
 #endif
 #ifndef Blt_XColorToPixel
 #define Blt_XColorToPixel \
-	(bltTkProcsPtr->blt_XColorToPixel) /* 74 */
+	(bltTkProcsPtr->blt_XColorToPixel) /* 75 */
+#endif
+#ifndef Blt_PixelToXColor
+#define Blt_PixelToXColor \
+	(bltTkProcsPtr->blt_PixelToXColor) /* 76 */
 #endif
 #ifndef Blt_IsPicture
 #define Blt_IsPicture \
-	(bltTkProcsPtr->blt_IsPicture) /* 75 */
+	(bltTkProcsPtr->blt_IsPicture) /* 77 */
 #endif
 #ifndef Blt_GetPicturesFromPictureImage
 #define Blt_GetPicturesFromPictureImage \
-	(bltTkProcsPtr->blt_GetPicturesFromPictureImage) /* 76 */
+	(bltTkProcsPtr->blt_GetPicturesFromPictureImage) /* 78 */
 #endif
 #ifndef Blt_GetPictureFromImage
 #define Blt_GetPictureFromImage \
-	(bltTkProcsPtr->blt_GetPictureFromImage) /* 77 */
+	(bltTkProcsPtr->blt_GetPictureFromImage) /* 79 */
 #endif
 #ifndef Blt_GetPictureFromPictureImage
 #define Blt_GetPictureFromPictureImage \
-	(bltTkProcsPtr->blt_GetPictureFromPictureImage) /* 78 */
+	(bltTkProcsPtr->blt_GetPictureFromPictureImage) /* 80 */
 #endif
 #ifndef Blt_GetPictureFromPhotoImage
 #define Blt_GetPictureFromPhotoImage \
-	(bltTkProcsPtr->blt_GetPictureFromPhotoImage) /* 79 */
+	(bltTkProcsPtr->blt_GetPictureFromPhotoImage) /* 81 */
 #endif
 #ifndef Blt_GetPictureFromBitmapImage
 #define Blt_GetPictureFromBitmapImage \
-	(bltTkProcsPtr->blt_GetPictureFromBitmapImage) /* 80 */
+	(bltTkProcsPtr->blt_GetPictureFromBitmapImage) /* 82 */
 #endif
 #ifndef Blt_CanvasToPicture
 #define Blt_CanvasToPicture \
-	(bltTkProcsPtr->blt_CanvasToPicture) /* 81 */
+	(bltTkProcsPtr->blt_CanvasToPicture) /* 83 */
 #endif
 #ifndef Blt_GraphToPicture
 #define Blt_GraphToPicture \
-	(bltTkProcsPtr->blt_GraphToPicture) /* 82 */
+	(bltTkProcsPtr->blt_GraphToPicture) /* 84 */
 #endif
 #ifndef Blt_PictureRegisterProc
 #define Blt_PictureRegisterProc \
-	(bltTkProcsPtr->blt_PictureRegisterProc) /* 83 */
+	(bltTkProcsPtr->blt_PictureRegisterProc) /* 85 */
 #endif
 #ifndef Blt_Shadow_Set
 #define Blt_Shadow_Set \
-	(bltTkProcsPtr->blt_Shadow_Set) /* 84 */
+	(bltTkProcsPtr->blt_Shadow_Set) /* 86 */
 #endif
 #ifndef Blt_EmbossPicture
 #define Blt_EmbossPicture \
-	(bltTkProcsPtr->blt_EmbossPicture) /* 85 */
+	(bltTkProcsPtr->blt_EmbossPicture) /* 87 */
 #endif
 #ifndef Blt_FadeColor
 #define Blt_FadeColor \
-	(bltTkProcsPtr->blt_FadeColor) /* 86 */
+	(bltTkProcsPtr->blt_FadeColor) /* 88 */
 #endif
 #ifndef Blt_Dissolve2
 #define Blt_Dissolve2 \
-	(bltTkProcsPtr->blt_Dissolve2) /* 87 */
+	(bltTkProcsPtr->blt_Dissolve2) /* 89 */
 #endif
 #ifndef Blt_CrossFadePictures
 #define Blt_CrossFadePictures \
-	(bltTkProcsPtr->blt_CrossFadePictures) /* 88 */
+	(bltTkProcsPtr->blt_CrossFadePictures) /* 90 */
 #endif
 #ifndef Blt_FadeFromColor
 #define Blt_FadeFromColor \
-	(bltTkProcsPtr->blt_FadeFromColor) /* 89 */
+	(bltTkProcsPtr->blt_FadeFromColor) /* 91 */
 #endif
 #ifndef Blt_FadeToColor
 #define Blt_FadeToColor \
-	(bltTkProcsPtr->blt_FadeToColor) /* 90 */
+	(bltTkProcsPtr->blt_FadeToColor) /* 92 */
 #endif
 #ifndef Blt_WipePictures
 #define Blt_WipePictures \
-	(bltTkProcsPtr->blt_WipePictures) /* 91 */
+	(bltTkProcsPtr->blt_WipePictures) /* 93 */
 #endif
 #ifndef Blt_PictureRegisterFormat
 #define Blt_PictureRegisterFormat \
-	(bltTkProcsPtr->blt_PictureRegisterFormat) /* 92 */
+	(bltTkProcsPtr->blt_PictureRegisterFormat) /* 94 */
 #endif
 #ifndef Blt_GetNthPicture
 #define Blt_GetNthPicture \
-	(bltTkProcsPtr->blt_GetNthPicture) /* 93 */
+	(bltTkProcsPtr->blt_GetNthPicture) /* 95 */
 #endif
 #ifndef Blt_FindPictureFormat
 #define Blt_FindPictureFormat \
-	(bltTkProcsPtr->blt_FindPictureFormat) /* 94 */
+	(bltTkProcsPtr->blt_FindPictureFormat) /* 96 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TK_PROCS) */

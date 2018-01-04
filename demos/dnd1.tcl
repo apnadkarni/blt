@@ -12,7 +12,7 @@ if { ([info exists tcl_platform]) && ($tcl_platform(platform) == "windows") } {
 
 proc OnEnter { widget args } {
     array set info $args
-    $widget configure -highlightbackground red
+    $widget configure -highlightbackground red -bg blue
     return 1
 }
 
@@ -62,7 +62,7 @@ proc PackageSample { widget args } {
 proc ShowResult { widget args } {
     puts stderr args=$args
     array set info $args
-    puts "drop transaction($info(timestamp)) completed: result was $info(action)" 
+    puts stderr "drop transaction($info(timestamp)) completed: result was $info(action)" 
 } 
 
 

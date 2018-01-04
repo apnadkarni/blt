@@ -60,49 +60,8 @@ namespace eval blt {
     }
 }
 
-# Sorting direction icons
-# Down arrow
-image create picture blt::TableView::sortdown -data {
-    AAEBAAAjACAAAAAACQANAAgIAAA/QQAAyOUAAAAAAABAhAAAgDIAAAAOAAAAAwAA
-    zVwAALzpAACo4AAAzf8AAAAnAAAAHAAAnDYAAIiaAAAABgAAzZkAAAARAAB4EQAA
-    AAIAAIKhAAC22gAAzJoAAAABAACvYAAAxcAAAMzXAACnSwAAxj8AAAA3AAAADwAA
-    jcEAAL6aAAAABAAAFWICAgICExcCAgICAgIPAAsTAgICAhMYCAMMAgICAg0BCgki
-    BQICEhkKCgofHQYCHBYaChUgBBMCAgIWChQRAgICAgIWChQRAgICAgIWChQRAgIC
-    AgIWChQRAgICAgIWCg4eAgICAgIHEBshAgICAgICAgICAgLvAQAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAABQASANwHAAA1ADoAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAATAQAAAAAAAFRSVUVWSVNJT04tWEZJTEUuAA==
-}
-# Up arrow 
-image create picture blt::TableView::sortup -data {
-    AAEBAAAnACAAAAAACQANAAgIewAAOgAAAABdAACaOwAASgAAAA4AAAADhQAA4YkA
-    AJp7AADZTAAAOQAAABFXAAClgwAAQAAAAA00AABsfQAAwAAAAAKKAAD2cAAAS4MA
-    AKFXAACkAAAABVkAAKFiAACRiwAA/wAAAAxrAADUAAAAATUAAB2ZAAAKAAAAD4oA
-    APUAAAAhjAAAegAAAASLAADWjAAAH2cAAGGMAABHAQEBIh4NEAEBAQEBEgIODQEB
-    AQEBBxgWCgEBAQEBBxgWCgEBAQEBBxgWCgEBAQEBBxgWCgEBAQUEExgLIBkbAQAX
-    CBgaFAMiASQjGBgYDxwBAQEmHxgGCRsBAQEBIRElIgEBAQEBHQwVAQEBAQEBAQEB
-    AQEB7wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAEgDcBwAANQA6AAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAA
-    AAAAAAAAAAAAAAAAAAAAAAAAIwEAAAAAAABUUlVFVklTSU9OLVhGSUxFLgA=
-}
-
 # Filter 
+if 0 {
 image create picture blt::TableView::filter -data {
     AAEBAABbACAAAAAAEAAQAAgIao1I+Iq6YP8AAAAASI4KRY+wcf9mnTX/yeC2/7nW
     n/9roDz/xd2w/1Z2OP9XjyX/TJENQ3SZUf9ulUz/P1sk+UqQDEOkyoP/krRy/2Kd
@@ -130,6 +89,15 @@ image create picture blt::TableView::filter -data {
     AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+AgAAAAAAAFRSVUVWSVNJT04t
     WEZJTEUuAA==
 }
+}
+
+if { [blt::winop xdpi] > 150 } {
+  image create picture blt::TableView::filter \
+      -file $blt_library/icons/32x32/filter.tga
+} else {
+  image create picture blt::TableView::filter \
+      -file $blt_library/icons/16x16/filter.tga
+}
 
 image create picture blt::TableView::xbutton -data {
     AAEBAAAEACAAAAAACgAKAAgIAAAAAOXn5/+GiYn/ZGdn/wECAQAAAAABAgECAwIB
@@ -148,25 +116,28 @@ image create picture blt::TableView::xbutton -data {
     AAAAAACGAAAAAAAAAFRSVUVWSVNJT04tWEZJTEUuAA==
 }
 
-option add *BltTableView.IncreasingIcon blt::TableView::sortup
-option add *BltTableView.DecreasingIcon blt::TableView::sortdown
-#option add *BltTableView.Column.FilterIcon blt::TableView::filter
 option add *BltTableView.ColumnCommand blt::TableView::SortColumn
 
 if { $tcl_platform(platform) == "windows" } {
     if { $tk_version >= 8.3 } {
-        set cursor "@[file join $blt_library tableview.cur]"
+        set columnCursor "@[file join $blt_library cursors tableview.cur]"
+        set rowCursor "@[file join $blt_library cursors tableview.cur]"
     } else {
-        set cursor "size_we"
+        set columnCursor "size_we"
+        set rowCursor "size_ns"
     }
-    option add *BltTableView.ResizeCursor [list $cursor] widgetDefault
-
 } else {
-    option add *BltTableView.ResizeCursor \
-        [list @$blt_library/tableview.xbm \
-             $blt_library/tableview_m.xbm \
-             black white] 
+    set columnCursor [list \
+                          @$blt_library/cursors/columnResize.xbm \
+                          $blt_library/cursors/columnResizeMask.xbm \
+                          black white]
+    set rowCursor [list \
+                       @$blt_library/cursors/rowResize.xbm \
+                       $blt_library/cursors/rowResizeMask.xbm \
+                       black white]
 }
+option add *BltTableView.columnResizeCursor $columnCursor widgetDefault
+option add *BltTableView.rowResizeCursor $rowCursor widgetDefault
 
 # Left (arrow key)
 #   Move left to the previous column. 
@@ -229,15 +200,15 @@ bind BltTableView <Control-KeyPress-d> {
 }
 
 bind BltTableView <KeyPress-space> {
-    if { [%W cget -selectmode] == "single" } {
+    if { [%W cget -selectmode] == "singlerow" } {
         if { [%W selection includes focus] } {
             %W selection clearall
         } else {
             %W selection clearall
-            %W selection set focus
+            %W selection set focus focus
         }
     } else {
-        %W selection toggle focus
+        %W selection toggle focus focus
     }
     set blt::TableView::_private(space) on
 }
@@ -329,12 +300,12 @@ proc blt::TableView::Initialize { w } {
     #   For "multiple" mode only.
     #
     $w bind all <Shift-ButtonPress-1> { 
-        if { [%W cget -selectmode] == "multiple" } {
+        if { [%W cget -selectmode] == "multiplerows" } {
             if { [%W row index anchor] == -1 } {
                 %W selection anchor current
             }
             %W selection clearall
-            %W selection set current
+            %W selection set current current
         } else {
             blt::TableView::SetSelectionAnchor %W current
         }
@@ -358,11 +329,11 @@ proc blt::TableView::Initialize { w } {
     #
     $w bind all <Control-ButtonPress-1> { 
         switch -- [%W cget -selectmode] {
-            "multiple" {
-                %W selection toggle current
+            "multiplerows" {
+                %W selection toggle current current
                 %W selection anchor current
             } 
-            "single" {
+            "singlerow" {
                 blt::TableView::SetSelectionAnchor %W current
             }
         }
@@ -381,16 +352,16 @@ proc blt::TableView::Initialize { w } {
 
     $w bind all <Control-Shift-ButtonPress-1> { 
         switch [%W cget -selectmode] {
-            "multiple" {
+            "multiplerows" {
                 if { [%W selection present] } {
                     if { [%W index anchor] == "" } {
                         %W selection anchor current
                     }
                     if { [%W selection includes anchor] } {
-                        %W selection set anchor current
+                        %W selection anchor current
                     } else {
                         %W selection clear anchor current
-                        %W selection set current
+                        %W selection set current current
                     }
                 }
             }
@@ -406,51 +377,51 @@ proc blt::TableView::Initialize { w } {
         # do nothing
     }
     # Column title 
-    $w column bind all <Enter> {
+    $w column bind all title <Enter> {
         %W column activate current
     }
-    $w column bind all <Leave> {
+    $w column bind all title <Leave> {
         %W column deactivate
     }
-    $w column bind all <ButtonPress-1> {
+    $w column bind all title <ButtonPress-1> {
         set blt::TableView::_private(column) [%W column index current]
         %W column configure $blt::TableView::_private(column) \
             -activetitlerelief sunken
     }
-    $w column bind all <ButtonRelease-1> {
+    $w column bind all title <ButtonRelease-1> {
         %W column invoke current
         %W column configure $blt::TableView::_private(column) \
             -activetitlerelief raised
     }
     # Row title
-    $w row bind all <Enter> {
+    $w row bind all title <Enter> {
         %W row activate current
     }
-    $w row bind all <Leave> {
+    $w row bind all title <Leave> {
         %W row deactivate
     }
-    $w row bind all <ButtonPress-1> {
+    $w row bind all title <ButtonPress-1> {
         set blt::TableView::_private(row) [%W row index current]
         %W row configure $blt::TableView::_private(row) \
             -activetitlerelief sunken
     }
-    $w row bind all <ButtonRelease-1> {
+    $w row bind all title <ButtonRelease-1> {
         %W row invoke current
         %W row configure $blt::TableView::_private(row) \
             -activetitlerelief raised
     }
     # Column filter 
-    $w column bind ColumnFilter <Enter> {
+    $w column bind all filter <Enter> {
         %W filter activate current
     }
-    $w column bind ColumnFilter <Leave> {
+    $w column bind all filter <Leave> {
         %W filter deactivate
     }
-    $w column bind ColumnFilter <ButtonPress-1> { 
+    $w column bind all filter <ButtonPress-1> { 
         set blt::TableView::_private(column) [%W column index current]
         blt::TableView::PostFilterMenu %W current
     }
-    $w column bind ColumnFilter <B1-Motion> { 
+    $w column bind all filter <B1-Motion> { 
         break
     }
     # We only get <ButtonRelease> events that are generated by the
@@ -463,50 +434,49 @@ proc blt::TableView::Initialize { w } {
     #
     # Otherwise unpost the menu.  The user clicked either on the menu
     # (selected an item) or outside the menu (canceling the operation).
-    $w column bind ColumnFilter <ButtonRelease-1> { 
+    $w column bind all filter <ButtonRelease-1> { 
         #empty
     }
 
-
     # Column resize 
-    $w column bind Resize <Enter> {
+    $w column bind all resize <Enter> {
         %W column activate current
         %W column resize activate current
     }
-    $w column bind Resize <Leave> {
+    $w column bind all resize <Leave> {
         %W column deactivate
         %W column resize deactivate 
     }
-    $w column bind Resize <ButtonPress-1> {
+    $w column bind all resize <ButtonPress-1> {
         %W column resize anchor %x
     }
-    $w column bind Resize <B1-Motion> {
+    $w column bind all resize <B1-Motion> {
         %W column resize mark %x
         %W column resize set 
     }
-    $w column bind Resize <ButtonRelease-1> {
+    $w column bind all resize <ButtonRelease-1> {
         %W column resize mark %x
         %W column resize set 
     }
     # Row resize 
-    $w row bind Resize <Enter> {
+    $w row bind all resize <Enter> {
         %W row activate current
         %W row resize activate current
     }
-    $w row bind Resize <Leave> {
+    $w row bind all resize <Leave> {
         %W row deactivate
         %W row resize deactivate 
     }
-    $w row bind Resize <ButtonPress-1> {
+    $w row bind all resize <ButtonPress-1> {
         %W row resize anchor %y
     }
-    $w row bind Resize <B1-Motion> {
+    $w row bind all resize <B1-Motion> {
         %W row resize mark %y
-        %W row configure active -height [%W row resize current]
-        %W row resize anchor %y
+        %W row resize set
     }
-    $w row bind Resize <ButtonRelease-1> {
-        %W row configure active -height [%W row resize current]
+    $w row bind all resize <ButtonRelease-1> {
+        %W row resize mark %y
+        %W row resize set
     }
     # TextBoxStyle
     $w bind TextBoxStyle <Enter> { 
@@ -536,7 +506,8 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(afterId) -1
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
-            %W selection mark @%x,%y
+            %W selection mark @%x,%y 
+            %W selection set anchor mark
         } else {
             %W invoke active
         }
@@ -564,6 +535,7 @@ proc blt::TableView::Initialize { w } {
     }
     $w bind CheckBoxStyle <ButtonPress-1> { 
         if { [%W writable active] } {
+            set blt::TableView::_private(activeSelection) 0
             blt::TableView::ToggleValue %W active
         } else {
             blt::TableView::SetSelectionAnchor %W current
@@ -587,8 +559,8 @@ proc blt::TableView::Initialize { w } {
         }
     }
     $w bind ComboBoxStyle <ButtonPress-1> { 
-        set blt::TableView::_private(activeSelection) 0
         if { [%W cell identify current %X %Y] == "button" } {
+            set blt::TableView::_private(activeSelection) 0
             blt::TableView::PostComboBoxMenu %W current
         } else {
             blt::TableView::SetSelectionAnchor %W current
@@ -626,6 +598,7 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(scroll) 0
         if { $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
+            %W selection set anchor mark
         }
     }
     # ImageBoxStyle
@@ -655,8 +628,10 @@ proc blt::TableView::Initialize { w } {
         after cancel $blt::TableView::_private(afterId)
         set blt::TableView::_private(afterId) -1
         set blt::TableView::_private(scroll) 0
+        # Is this button release for a selection or clicking on the image?
         if { $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
+            %W selection set anchor mark
         } else {
             %W invoke active
         }
@@ -691,12 +666,44 @@ proc blt::TableView::Initialize { w } {
         set blt::TableView::_private(scroll) 0
         if { 0 && $blt::TableView::_private(activeSelection) } {
             %W selection mark @%x,%y
+            %W selection set anchor mark
         } else {
             set style [%W style get active]
             set var [%W style cget $style -variable]
             set $var [%W index active]
             %W invoke active
         }
+    }
+}
+
+#
+# InitColumnFilters --
+#
+#   If is doesn't aleady exist, creates the column filter menu used by 
+#   all columns including the scrollbars.  
+#
+proc blt::TableView::InitColumnFilters { w } {
+    if { ![winfo exists $w._filter] } {
+        # We'll migrate to the comboframe menu in the future.
+        blt::combomenu $w._filter  \
+            -restrictwidth min \
+            -height { 0 2i }  \
+            -yscrollbar $w._filter.ybar \
+            -xscrollbar $w._filter.xbar \
+            -activebackground [$w filter cget -activebackground] \
+            -activeforeground [$w filter cget -activeforeground] \
+            -activerelief [$w filter cget -activerelief] \
+            -background [$w filter cget -background] \
+            -borderwidth [$w filter cget -borderwidth] \
+            -disabledbackground [$w filter cget -disabledbackground] \
+            -disabledforeground [$w filter cget -disabledforeground] \
+            -font [$w filter cget -font] \
+            -foreground [$w filter cget -foreground] \
+            -relief [$w filter cget -relief] 
+        blt::tk::scrollbar $w._filter.xbar 
+        blt::tk::scrollbar $w._filter.ybar
+        # FIXME: don't let user override this
+        $w filter configure -menu $w._filter
     }
 }
 
@@ -725,6 +732,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     set table [$w cget -table]
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
+    # FIXME: May be a comboframe someday.
     set item [$menu index -value $value]
     if { $item >= 0 } {
         $menu select $item
@@ -734,7 +742,8 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     # the selected value when we get one.
     set _private(posting) [$w index $cell]
     bind $menu <<MenuSelect>> \
-        [list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) $menu]
+        [list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) \
+             $menu]
 
     # Post the combo menu at the bottom of the cell.
     foreach { x1 y1 x2 y2 } [$w bbox $cell] break
@@ -755,6 +764,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
 #   from the combo menu and sets the corresponding table cell to it.
 #
 proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
+    # FIXME: May be a comboframe someday.
     set value [$menu value active]
     set table [$w cget -table]
     if { $table != "" } {
@@ -960,7 +970,7 @@ proc blt::TableView::AutoScroll { w } {
     } else {
         set neighbor $cell
     }
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         SetSelectionAnchor $w $neighbor
     } else {
         if { $cell != "" && [$w selection present] } {
@@ -983,24 +993,23 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
     if { $index == "" } {
         return
     }
-    foreach { row col } $index break
     set _private(activeSelection) 0
+    $w focus $cell
+    $w selection clearall
     switch -- [$w cget -selectmode] {
         "cells" {
             $w see $cell
-            $w focus $cell
-            $w selection clearall
             $w selection anchor $cell
-        } "single" {
+            set _private(activeSelection) 1
+        } "singlerow" {
+            set row [lindex $index 0]
             $w row see $row
-            $w focus $cell
             $w selection clearall
-            $w selection set $cell 
-        } "multiple" {
+            $w selection set $cell $cell
+        } "multiplerows" {
+            set row [lindex $index 0]
             $w row see $row
-            $w focus $cell
-            $w selection clearall
-            $w selection set $cell 
+            $w selection anchor $cell
             set _private(activeSelection) 1
         }
     }
@@ -1014,10 +1023,9 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
 #
 proc blt::TableView::MoveFocus { w cell } {
     catch {$w focus $cell}
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
-        $w selection set focus
-        $w selection anchor focus
+        $w selection set focus focus
     }
     $w see focus
 }
@@ -1049,9 +1057,9 @@ proc blt::TableView::MovePage { w where } {
     $w entry highlight view.$where
     $w focus view.$where
     $w row see view.$where
-    if { [$w cget -selectmode] == "single" } {
+    if { [$w cget -selectmode] == "singlerow" } {
         $w selection clearall
-        $w selection set focus
+        $w selection set focus focus
     }
 }
 
@@ -1145,9 +1153,9 @@ proc blt::TableView::SortColumn { w col } {
 proc blt::TableView::BuildFiltersMenu { w col } {
     variable _private
 
-    set menu [$w filter cget -menu]
+    set menu $w._filter
     set table [$w cget -table]
-    if { $menu == "" || $table == "" } {
+    if { $table == "" } {
         return
     }
     set col [$w column index $col]
@@ -1155,6 +1163,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     set _private(lastFilterIcon) [$w column cget $col -filtericon]
     set _private(lastFilterHighlight) [$w column cget $col -filterhighlight]
     
+    # FIXME: Migrate to comboframe.
     $menu configure -command [list blt::TableView::UpdateFilter $w]
     $menu configure -font "Arial 9"
     if { ![$menu style exists mystyle] } {
@@ -1201,6 +1210,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             BuildTextSearchFilterMenu $w $search
         }
     }
+    # FIXME:  May be a comboframe someday.
     $menu delete all
     $menu add -text "All" \
         -command [list blt::TableView::AllFilter $w] \
@@ -1237,7 +1247,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             $menu add -type separator
         }
         $menu listadd $values \
-            -command  [list blt::TableView::SingleValueFilter $w]
+            -command [list blt::TableView::SingleValueFilter $w]
     } else {
         set rows [$table sort -columns $col -unique -rows $rows]
         if { [llength $rows] > 0 } {
@@ -1249,7 +1259,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             $menu add \
                 -text $fmtvalue \
                 -value $value \
-                -command  [list blt::TableView::SingleValueFilter $w]
+                -command [list blt::TableView::SingleValueFilter $w]
         }
     }
     set text [$w column cget $col -filtertext]
@@ -1267,7 +1277,10 @@ proc blt::TableView::UpdateFilter { w } {
     variable _private
 
     set col $_private(column)
-    set menu [$w filter cget -menu]
+    set menu $w._filter
+    if { ![winfo exists $menu] } {
+        return
+    }
     set item [$menu index selected]
     set text $_private(textvariable)
     set icon $_private(iconvariable)
@@ -1310,7 +1323,7 @@ proc blt::TableView::Top10ByFrequencyFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
-    set rows [$table sort -frequency -columns $col -row $rows]
+    set rows [$table sort -byfrequency -columns $col -row $rows]
     set numRows [llength $rows]
     if { $numRows > 10 } {
         set rows [lrange $rows [expr $numRows - 10] end]
@@ -1342,7 +1355,7 @@ proc blt::TableView::Bottom10ByFrequencyFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
-    set rows [$table sort -frequency -columns $col -row $rows -decreasing]
+    set rows [$table sort -byfrequency -columns $col -row $rows -decreasing]
     set numRows [llength $rows]
     if { $numRows > 10 } {
         set rows [lrange $rows [expr $numRows - 10] end]
@@ -1358,7 +1371,7 @@ proc blt::TableView::Bottom10ByValueFilter { w } {
     set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
-    set rows [$table sort -columns $col -row $rows -decreasing]
+    set rows [$table sort -columns $col -rows $rows -decreasing]
     set numRows [llength $rows]
     if { $numRows > 10 } {
         set rows [lrange $rows [expr $numRows - 10] end]
@@ -1393,7 +1406,10 @@ proc blt::TableView::SingleValueFilter { w } {
 
     set col $_private(column)
     set index [$w column index $col]
-    set menu [$w filter cget -menu]
+    set menu $w._filter
+    if { ![winfo exists $menu] } {
+        return
+    }
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
@@ -1450,8 +1466,8 @@ proc blt::TableView::ApplyFilters { w } {
 proc blt::TableView::PostFilterMenu { w col } {
     variable _private
 
-    set menu [$w filter cget -menu]
-    if { $menu == "" } {
+    set menu $w._filter
+    if { ![winfo exists $menu] } {
         puts stderr "no menu specified"
         return;                         # No menu specified.
     }
@@ -1465,9 +1481,11 @@ proc blt::TableView::PostFilterMenu { w col } {
     # selected value when we get one. 
     set _private(posting) [$w column index $col]
     # Post the combo menu at the bottom of the filter button.
-    $w see [list view.top $col]
-    $w filter post $col
+    $w column see $col
     update
+    $w filter post $col
+
+  update
     bind $menu <Unmap> [list blt::TableView::UnpostFilterMenu $w]
     blt::grab push $menu -global
 }
@@ -1490,7 +1508,7 @@ proc ::blt::TableView::UnpostFilterMenu { w } {
     catch { focus $_private(focus) }
     set _private(posting) none
     $w filter unpost
-    set menu [$w filter cget -menu]
+    set menu $w._filter
     bind $menu <Unmap> {}
     blt::grab pop $menu
 }
@@ -1504,6 +1522,7 @@ proc ::blt::TableView::BuildNumberSearchFilterMenu { w menu } {
         -iconvariable blt::TableView::_private(iconvariable) \
         -command [list blt::TableView::UpdateFilter $w]
 
+    # FIXME: May be a comboframe someday.
     if { ![$menu style exists mystyle] } {
         $menu style create mystyle -font "Arial 9 italic"
     }
@@ -1547,6 +1566,7 @@ proc ::blt::TableView::BuildTextSearchFilterMenu { w menu } {
         -iconvariable blt::TableView::_private(iconvariable) \
         -command [list blt::TableView::UpdateFilter $w]
 
+    # FIXME: May be a comboframe someday.
     if { ![$menu style exists mystyle] } {
         $menu style create mystyle -font "Arial 9 italic"
     }
@@ -1596,7 +1616,7 @@ proc blt::TableView::EqualsNumberSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that equal:" 
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic"
     blt::tk::button $f.ok \
         -text "Apply" \
@@ -1622,7 +1642,7 @@ proc blt::TableView::EqualsNumberSearch { w } {
 
     DestroySearchDialog $top
 
-    regsub -all , $list " " list
+    set list [split $list]
     foreach value $list {
         if { ![string is double -strict $value] } {
             set result 0
@@ -1660,7 +1680,7 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that do not equal:" 
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic"
     blt::tk::button $f.ok \
         -text "Apply" -command { set blt::TableView::_private(search) 1 }
@@ -1684,7 +1704,7 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
     set list [$f.entry get]
     DestroySearchDialog $top
 
-    regsub -all , $list " " list
+    set list [split $list]
     foreach value $list {
         if { ![string is double -strict $value] } {
             set result 0
@@ -1984,7 +2004,7 @@ proc blt::TableView::EqualsTextSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that equal:"  
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic" 
     blt::tk::checkbutton $f.ignore \
         -text "Ignore case" \
@@ -2028,8 +2048,8 @@ proc blt::TableView::EqualsTextSearch { w } {
     if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
-        regsub -all , $list " " list
-        set list [list $list]
+#        set list [split $list]
+#        set list [list $list]
         set expr "\[info exists ${index}\] &&
             (\[blt::utils::string inlist \$${index} $list $flags])"
         #puts stderr expr=$expr
@@ -2059,7 +2079,7 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     blt::tk::label $f.label \
         -text "Search for values that do not equal:" 
     blt::tk::label $f.hint \
-        -text "(one or more values separated by commas)" \
+        -text "(one or more values separated by spaces)" \
         -font "Arial 9 italic"
     blt::tk::checkbutton $f.ignore \
         -text "Ignore case" \
@@ -2103,8 +2123,8 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
-        regsub -all , $list " " list
-        set list [list $list]
+#        set list [split $list]
+#        set list [list $list]
         set expr "(!\[info exists ${index}\]) ||
             (!\[blt::utils::string inlist \$${index} $list $flags])"
         #puts stderr expr=$expr
@@ -2164,6 +2184,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
     set value [$f.entry get]
     DestroySearchDialog $top
 
+    set flags {}
     if { $_private(trim) } {
         append flags " -trim both"
     }
@@ -2174,7 +2195,7 @@ proc blt::TableView::BeginsWithTextSearch { w } {
         set col $_private(column)
         set index [$w column index $col]
         set value [list $value]
-        set expr "(\[info exists ${index}\]) ||
+        set expr "(\[info exists ${index}\]) &&
             (\[blt::utils::string begins \$${index} $value $flags])"
         #puts stderr expr=$expr
         $w column configure $col -filterdata $expr

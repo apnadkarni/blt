@@ -7,7 +7,7 @@ source scripts/demo.tcl
 set bg [blt::background create radial -lowcolor  grey70 -highcolor grey90 \
 	-jitter 10 -relativeto .]
 
-image create picture label1 -file afm.png
+image create picture label1 -file ./images/folder.gif
 image create picture label2 -file ./images/mini-book2.gif
 image create picture testImage -file ./images/txtrflag.gif
 
@@ -132,7 +132,7 @@ set extra {
 }
 
 foreach label $tabLabels {
-    .ts insert end $label -image label1 -bg $bg
+    .ts insert end $label -icon label1 -bg $bg
 }
 
 blt::tk::scrollbar .s -command { .ts view } -orient horizontal -borderwidth 1
@@ -154,19 +154,6 @@ array set side2rotate {
 .side.m item configure all -variable config(-side) \
     -command { .ts configure -side $config(-side) -rotate $side2rotate($config(-side)) }
 .side.m select 0
-
-blt::tk::label .iconpos_l -text "-iconposition" 
-blt::combobutton .iconpos -textvariable text(-iconposition) -menu .iconpos.m 
-blt::combomenu .iconpos.m -textvariable text(-iconposition)
-.iconpos.m add -type radiobutton -text [.ts cget -iconposition]
-.iconpos.m add -type separator
-.iconpos.m add -type radiobutton -text "right" 
-.iconpos.m add -type radiobutton -text "left"  
-.iconpos.m add -type radiobutton -text "bottom"
-.iconpos.m add -type radiobutton -text "top"   
-.iconpos.m item configure all -variable config(-iconposition) \
-    -command { .ts configure -iconposition $config(-iconposition) } 
-.iconpos.m select 0
 
 blt::tk::label .slant_l -text "-slant" 
 blt::combobutton .slant -textvariable text(-slant) -menu .slant.m 
@@ -207,17 +194,17 @@ blt::combomenu .scrolltabs.m -textvariable text(-scrolltabs)
     -command { .ts configure -scrolltabs $config(-scrolltabs) }
 .scrolltabs.m select 1
 
-blt::tk::label .clearbutton_l -text "-clearbutton" 
-blt::combobutton .clearbutton -textvariable text(-clearbutton) \
-    -menu .clearbutton.m 
-blt::combomenu .clearbutton.m -textvariable text(-clearbutton)
-.clearbutton.m add -type radiobutton -text [.ts cget -clearbutton]
-.clearbutton.m add -type separator
-.clearbutton.m add -type radiobutton -text "No" -value "0" 
-.clearbutton.m add -type radiobutton -text "Yes" -value "1" 
-.clearbutton.m item configure all -variable config(-clearbutton) \
-    -command { .ts configure -clearbutton $config(-clearbutton) }
-.clearbutton.m select 0
+blt::tk::label .xbutton_l -text "-xbutton" 
+blt::combobutton .xbutton -textvariable text(-xbutton) \
+    -menu .xbutton.m 
+blt::combomenu .xbutton.m -textvariable text(-xbutton)
+.xbutton.m add -type radiobutton -text [.ts cget -xbutton]
+.xbutton.m add -type separator
+.xbutton.m add -type radiobutton -text "No" -value "0" 
+.xbutton.m add -type radiobutton -text "Yes" -value "1" 
+.xbutton.m item configure all -variable config(-xbutton) \
+    -command { .ts configure -xbutton $config(-xbutton) }
+.xbutton.m select 0
 
 if 0 {
 blt::tk::label .showsingletab_l -text "-showsingletab" 
@@ -534,8 +521,6 @@ blt::table . \
     .foreground           6,2 -fill x \
     .highlightthickness_l 7,1 -anchor e \
     .highlightthickness   7,2 -fill x \
-    .iconpos_l            8,1 -anchor e \
-    .iconpos              8,2 -fill x \
     .justify_l            9,1 -anchor e \
     .justify              9,2 -fill x \
     .outerborderwidth_l  10,1 -anchor e \
@@ -560,8 +545,8 @@ blt::table . \
     .selectpady          19,2 -fill x \
     .side_l              20,1 -anchor e \
     .side                20,2 -fill x \
-    .clearbutton_l       21,1 -anchor e \
-    .clearbutton         21,2 -fill x \
+    .xbutton_l           21,1 -anchor e \
+    .xbutton             21,2 -fill x \
     .slant_l             23,1 -anchor e \
     .slant               23,2 -fill x \
     .tabwidth_l          24,1 -anchor e \
@@ -576,7 +561,7 @@ blt::table . \
 
 foreach option { 
     borderwidth gap highlightthickness justify outerpad relief rotate 
-    side slant tabwidth tearoff tiers iconposition
+    side slant tabwidth tearoff tiers 
 } {
     set $option [.ts cget -$option]
 }

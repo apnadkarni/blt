@@ -260,6 +260,7 @@ static Blt_SwitchSpec formatSwitches[] =
     {BLT_SWITCH_END}
 };
 
+static int initialized = FALSE;
 static Tcl_ObjCmdProc TimeStampCmd;
 
 /*
@@ -404,7 +405,7 @@ GetTimeZoneOffsets(Tcl_Interp *interp, Tcl_Obj *objPtr, TimeZone *zonePtr)
     if (result == TCL_OK) {
         result = GetTimeZoneOffset(interp, objv[1], &zonePtr->dst);
     }
-    return TCL_OK;
+    return result;
 }
 
 static Tcl_Obj *
@@ -424,6 +425,22 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
     } else {
         copy = Blt_Strndup(string, length);
     }
+    if (!initialized) {
+        /*
+         * Source in the file contains the blt::timezones array. This array
+         * contains the names of timezones and their offset.  We do it now
+         * so that the user can change entries if he/she wants.
+         */
+        if (Tcl_GlobalEval(interp,
+                "source [file join $blt_library bltTimeStamp.tcl]") != TCL_OK) {
+            const char *errmsg =
+                "\n\t(while loading timezones for timestamp command)";
+            Tcl_AddErrorInfo(interp, errmsg);
+            return NULL;
+        }
+        initialized = TRUE;
+    }
+
     /* Don't leave an error message if you don't find the timezone. */
     objPtr = Tcl_GetVar2Ex(interp, "blt::timezones", copy, 0);
     if (objPtr == NULL) {
@@ -437,6 +454,7 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
     return objPtr;
 }
 
+#ifdef notdef
 static int
 GetTwoDigitCentury(Tcl_Interp *interp)
 {
@@ -459,6 +477,7 @@ GetTwoDigitCentury(Tcl_Interp *interp)
     }
     return century;
 }
+#endif
 
 /* 
  *-----------------------------------------------------------------------------
@@ -605,7 +624,7 @@ static int
 ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
 {
     const char *p;
-    long lvalue;
+    int64_t lvalue;
     int length, result;
     Tcl_Obj *objPtr;
 
@@ -616,7 +635,7 @@ ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
     length = p - string;
     objPtr = Tcl_NewStringObj(string, length);
     Tcl_IncrRefCount(objPtr);
-    result = Blt_GetLongFromObj(interp, objPtr, &lvalue);
+    result = Blt_GetInt64FromObj(interp, objPtr, &lvalue);
     Tcl_DecrRefCount(objPtr);
     if (result != TCL_OK) {
         if (interp != NULL) {
@@ -652,13 +671,14 @@ ParseString(Tcl_Interp *interp, TimeStampParser *parserPtr, int length,
 {
     ParserToken *tokenPtr;
     char c;
-    int i;
     Tcl_Obj *objPtr;
     
     c = tolower(string[0]);
     tokenPtr = parserPtr->curTokenPtr;
     /* Step 1. Test of month and weekday names (may be abbreviated). */
     if (length >= 3) {
+        int i;
+    
         /* Test for months. Allow abbreviations greater than 2 characters. */
         for (i = 0; i < numMonths; i++) {
             const char *p;
@@ -1685,7 +1705,7 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
             if ((tokenPtr->id == _COLON) || (tokenPtr->id == _DOT) ||
                 (tokenPtr->id == _COMMA)) {
                 tokenPtr = tokenPtr->nextPtr;
-                if ((tokenPtr->id == _NUMBER)) {
+                if (tokenPtr->id == _NUMBER) {
                     double d;
                     
                     d = pow(10.0, tokenPtr->length);
@@ -2235,7 +2255,7 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
     Blt_DateTime *datePtr;
 
     datePtr = &parserPtr->date;
-#ifdef notdef
+#if DEBUG 
     fprintf(stderr, "ComputeDate: (%s) year=%d mon=%d mday=%d week=%d, %dh%dm%ds.%g, tz=%d\n", 
             parserPtr->buffer, 
             datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
@@ -2328,7 +2348,7 @@ ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
     if ((parserPtr->flags & PARSE_YDAY) && (datePtr->yday > 0)) {
         datePtr->mday = GetDateFromOrdinalDay(datePtr->year, datePtr->yday,
                 &datePtr->mon);
-#ifdef notdef
+#if DEBUG
         fprintf(stderr, "parse yday: yday=%d year=%d mon=%d mday=%d\n",
                 datePtr->yday, datePtr->year, datePtr->mon, datePtr->mday);
 #endif
@@ -2812,7 +2832,7 @@ Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr)
     double t;
     int64_t numDays;
 
-#ifdef notdef
+#if DEBUG 
     fprintf(stderr, "Entering Blt_DateToSeconds: year=%d mon=%d mday=%d week=%d hour=%d min=%d sec=%d, frac=%.15g\n", 
             datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
             datePtr->hour, datePtr->min, datePtr->sec, datePtr->frac);
@@ -2853,7 +2873,7 @@ Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr)
     t += datePtr->frac; 
 
     *secondsPtr = t;
-#ifdef notdef
+#if DEBUG
     fprintf(stderr, "Leaving Blt_DateToSeconds: seconds=%.15g\n", t);
 #endif
 }
@@ -2881,11 +2901,16 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     long mon, year;
     int64_t rem;
     int64_t numDays;
+    double floorSecs, frac;
 
-#ifdef notdef
+#if DEBUG
     fprintf(stderr, "Entering Blt_SecondsToDate: seconds=%.15g\n", seconds);
 #endif
-    memset(datePtr, 0, sizeof(Blt_DateTime));
+    floorSecs = floor(seconds);
+    frac = seconds - floorSecs;
+fprintf(stderr, "seconds=%.17g floorSecs=%.17g fs=%.17g frac=%.5g %5g\n", seconds, floorSecs, 
+	seconds - ((long)seconds - 1), frac, frac);
+    seconds = floorSecs;
     numDays = ((int64_t)seconds) / SECONDS_DAY;
     rem  = ((int64_t)seconds) % SECONDS_DAY;
     if (rem < 0) {
@@ -2897,13 +2922,13 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
         numDays++;
     }
     memset(datePtr, 0, sizeof(Blt_DateTime));
+    datePtr->frac = frac;
 
     /* Step 1: Extract the time: hours, minutes, and seconds. */
     datePtr->hour = (int) (rem / SECONDS_HOUR);
     rem %= SECONDS_HOUR;
     datePtr->min = (int) (rem / SECONDS_MINUTE);
     datePtr->sec = (int) (rem % SECONDS_MINUTE);
-    datePtr->frac = seconds - floor(seconds);
 
     /* Step 2: Compute the day of week: 0=Sunday 6=Saturday. */
     datePtr->wday = (EPOCH_WDAY + numDays) % 7;
@@ -2943,7 +2968,7 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     /* Step 5: Lastly, compute the ISO week and week year. */
     datePtr->week = GetIsoWeek(year, mon + 1, numDays, &datePtr->wyear);
 
-#ifdef notdef
+#if DEBUG
     fprintf(stderr, "Leaving Blt_SecondsToDate: y=%d m=%d mday=%d wday=%d yday=%d week=%d wyear=%d hour=%d min=%d sec=%d usaweek=%d\n",
             datePtr->year, datePtr->mon, datePtr->mday, datePtr->wday,
             datePtr->yday, datePtr->week, datePtr->wyear, datePtr->hour,
@@ -3015,7 +3040,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
     const char *p;
     double seconds;
 
-#ifdef notdef
+#if DEBUG
     fprintf(stderr, "Entering Blt_FormatDate: year=%d mon=%d mday=%d week=%d hour=%d min=%d sec=%d, frac=%.15g\n", 
             datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
             datePtr->hour, datePtr->min, datePtr->sec, datePtr->frac);
@@ -3147,7 +3172,6 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
     if (count == 0) {
         return;
     }
-    count++;                            /* NUL byte */
 
     /* Make sure the result dynamic string has enough space to hold the
      * formatted date.  */
@@ -3216,12 +3240,20 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 2;
             break;
         case 'f':                       /* Fractional seconds. (nonstd) */
-            if (datePtr->sec < 10) {
-                numBytes = sprintf(bp, "0%01.6g", datePtr->sec + datePtr->frac);
-            } else {
-                numBytes = sprintf(bp, "%02.6g", datePtr->sec + datePtr->frac);
+            {
+	       char buf[20];
+
+fprintf(stderr, "datePtr->frac = %.17g %.9g\n", datePtr->frac, datePtr->frac);
+    	       numBytes = sprintf(buf, "%.9g", datePtr->frac);
+               if (numBytes == 1) {
+	           strcpy(bp, ".0");
+		   numBytes = 2;
+               } else {
+	           strcpy(bp, buf+1);     /* Skip leading zero. */
+	           numBytes--;
+               }
+ 	       bp += numBytes;
             }
-            bp += numBytes;
             break;
         case 'F':                       /* Full date yyyy-mm-dd */
             sprintf(bp, "%04d-%02d-%02d", datePtr->year, datePtr->mon + 1, 
@@ -3269,7 +3301,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
         case 'N':                       /* nanoseconds (000000000..999999999) */
             Blt_DateToSeconds(datePtr, &seconds);
 #if SIZEOF_LONG == 4
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__CYGWIN__)
             numBytes = sprintf(bp, "%I64d", (int64_t)(seconds * 1e9));
 #else 
             numBytes = sprintf(bp, "%lld", (int64_t)(seconds * 1e9));
@@ -3378,7 +3410,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
         assert((bp - buffer) < count);
 #endif
     }
-    *bp = '\0';    
+    Tcl_DStringSetLength(resultPtr, bp - buffer);
 }
 
 /*
@@ -3402,18 +3434,6 @@ Blt_TimeStampCmdInitProc(Tcl_Interp *interp)
     static Blt_CmdSpec cmdSpec = { 
         "timestamp", TimeStampCmd
     };
-    /*
-     * Source in the file contains the blt::timezones array. This array
-     * contains the names of timezones and their offset.  We do it now so
-     * that the user can change entries if he/she wants.
-     */
-    if (Tcl_GlobalEval(interp,
-                "source [file join $blt_library bltTimeStamp.tcl]") != TCL_OK) {
-        const char *errmsg =
-            "\n    (while loading timezones for timestamp command)";
-        Tcl_AddErrorInfo(interp, errmsg);
-        return TCL_ERROR;
-    }
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
 

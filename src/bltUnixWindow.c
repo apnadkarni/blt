@@ -45,12 +45,30 @@
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
+#ifdef HAVE_STDLIB_H
+  #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 
 #include <X11/Xlib.h>
 
-#ifndef WIN32
-  #include <X11/Xproto.h>
-#endif  /* WIN32 */
+#include <X11/Xproto.h>
+#include <X11/Xlibint.h>
+#ifdef HAVE_X11_EXTENSIONS_XRENDER_H
+  #include <X11/extensions/Xrender.h>
+#endif  /* HAVE_X11_EXTENSIONS_XRENDER_H */
+  #ifdef HAVE_X11_EXTENSIONS_XCOMPOSITE_H
+  #include <X11/extensions/Xcomposite.h>
+#endif  /* HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
+#ifdef HAVE_X11_EXTENSIONS_XSHM_H
+  #include <X11/extensions/XShm.h>
+#endif  /* HAVE_X11_EXTENSIONS_XSHM_H */
+#ifdef HAVE_X11_EXTENSIONS_SHMPROTO_H
+  #include <X11/extensions/shmproto.h>
+#endif  /* HAVE_X11_EXTENSIONS_SHMPROTO_H */
+#ifdef HAVE_RANDR
+  #include <X11/extensions/randr.h>
+  #include <X11/extensions/Xrandr.h>
+#endif
 
 #include "tkDisplay.h"
 
@@ -221,6 +239,160 @@ XQueryTreeErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
     return 0;
 }
 
+#define TRACE_FLAGS (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_GLOBAL_ONLY)
+
+static void
+SetFeature(const char *featureName, int value)
+{
+    char c;
+    
+    c = featureName[0];
+    if ((c == 'e') && (strcmp(featureName, "enable_xshm") == 0)) {
+        extern int bltEnableXShm;
+        bltEnableXShm = value;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FeatureVariableProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static char *
+FeatureVariableProc(ClientData clientData, Tcl_Interp *interp, 
+                    const char *part1, const char *part2, int flags)
+{
+    int varFlags;
+#define MAX_ERR_MSG     1023
+    static char message[MAX_ERR_MSG + 1];
+
+    varFlags = TCL_LEAVE_ERR_MSG | (TCL_GLOBAL_ONLY & flags);
+    if (flags & TCL_TRACE_WRITES) {
+        int value;
+        Tcl_Obj *objPtr;
+
+        objPtr = Tcl_GetVar2Ex(interp, part1, part2, varFlags);
+        if (objPtr == NULL) {
+            goto error;
+        }
+        if (Tcl_GetBooleanFromObj(interp, objPtr, &value) != TCL_OK) {
+            goto error;
+        }
+        fprintf(stderr, "setting %s to %d\n", part2, value);
+        SetFeature(part2, value);
+    } else if (flags & TCL_TRACE_UNSETS) {
+        SetFeature(part2, FALSE);
+    } else {
+        return (char *)"unknown variable trace flag";
+    }
+    return NULL;
+
+ error: 
+    strncpy(message, Tcl_GetStringResult(interp), MAX_ERR_MSG);
+    message[MAX_ERR_MSG] = '\0';
+    return message;
+}
+
+void
+Blt_InitFeaturesArray(Tcl_Interp *interp) 
+{
+    Tk_Window tkwin;
+    Display *display;
+    Tcl_Obj *objPtr;
+    int state;
+
+    tkwin = Tk_MainWindow(interp);
+    display = Tk_Display(tkwin);
+#ifdef HAVE_XRRQUERYEXTENSION
+    {
+        int majorNum, minorNum;
+
+        if (XRRQueryExtension(display, &majorNum, &minorNum)) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XRandrQueryExtension", 
+                objPtr, TCL_GLOBAL_ONLY);
+        }
+    }
+#endif /* HAVE_XRRQUERYEXTENSION */
+#ifdef HAVE_XSHMQUERYEXTENSION
+    {
+        int majorNum, minorNum;
+
+        if (XShmQueryVersion(display, &majorNum, &minorNum, &state)) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XShmQueryExtension", 
+                objPtr, TCL_GLOBAL_ONLY);
+            objPtr = Tcl_NewIntObj(state);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XShmPixmap", objPtr, 
+                  TCL_GLOBAL_ONLY);
+        }
+    }
+#ifdef HAVE_XSHMCREATEPIXMAP
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XSHMCREATEPIXMAP */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XShmCreatePixmap", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#ifdef HAVE_XSHMPUTIMAGE
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XSHMPUTIMAGE */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XShmPutImage", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#ifdef HAVE_XSHMGETIMAGE
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XSHMPUTIMAGE */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XShmGetImage", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#endif /* HAVE_XSHMQUERYEXTENSION */
+#ifdef HAVE_XRENDERQUERYEXTENSION
+    {
+        int majorNum, minorNum;
+
+        if (XRenderQueryExtension(display, &majorNum, &minorNum)) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_ObjPrintf("%d.%d", majorNum, minorNum);
+            Tcl_SetVar2Ex(interp, "::blt::features", "XRenderQueryExtention", 
+                objPtr, TCL_GLOBAL_ONLY);
+        }
+    }
+#ifdef HAVE_XRENDERCOMPOSITE
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* HAVE_XRENDERCOMPOSITE */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "XRenderComposite", objPtr, 
+                  TCL_GLOBAL_ONLY);
+#endif /* HAVE_XRENDERQUERYEXTENSION */
+#ifdef USE_XSHM
+    state = TRUE;
+#else 
+    state = FALSE;
+#endif  /* USE_XSHM */
+    objPtr = Tcl_NewBooleanObj(state);
+    Tcl_SetVar2Ex(interp, "::blt::features", "enable_xshm", objPtr, 
+                  TCL_GLOBAL_ONLY);
+    SetFeature("enable_xshm", state);
+    Tcl_TraceVar2(interp, "::blt::features", "enable_xshm", TRACE_FLAGS,
+        FeatureVariableProc, NULL);
+}
+
 Window
 Blt_GetParentWindow(Display *display, Window window)
 {
@@ -337,7 +509,7 @@ XTranslateCoordsErrorProc(ClientData clientData, XErrorEvent *errEventPtr)
 
 
 int
-Blt_GetWindowRegion(Display *display, Window window, int *xPtr, int *yPtr, 
+Blt_GetWindowExtents(Display *display, Window window, int *xPtr, int *yPtr, 
                     int *widthPtr, int *heightPtr)
 {
     Tk_ErrorHandler handler;
@@ -614,3 +786,74 @@ Blt_GetChildrenFromWindow(Display *display, Window window)
     }
     return NULL;
 }
+
+void
+Blt_ScreenDPI(Tk_Window tkwin, int *xPtr, int *yPtr) 
+{
+    Screen *screen;
+
+#define MM_INCH         25.4
+    screen = Tk_Screen(tkwin);
+    *xPtr = (int)((WidthOfScreen(screen) * MM_INCH)/WidthMMOfScreen(screen));
+    *yPtr = (int)((HeightOfScreen(screen) * MM_INCH)/HeightMMOfScreen(screen));
+}
+
+
+#ifdef notdef
+Pixmap
+Blt_GetShmPixmap(Display *display, Drawable drawable, int w, int h, int depth,
+                 int lineNum, const char *fileName)
+{
+    XShmSegmentInfo segInfo;
+    XImage *imgPtr;
+    
+    if (w <= 0) {
+        Blt_Warn("line %d of %s: width is %d\n", lineNum, fileName, w);
+        abort();
+    }
+    if (h <= 0) {
+        Blt_Warn("line %d of %s: height is %d\n", lineNum, fileName, h);
+        abort();
+    }
+    /* for the XShmPixmap */
+    segInfo.shmid = -1;
+    segInfo.shmaddr = (char *)-1;
+    segInfo.readOnly = False;
+
+    imgPtr = XShmCreateImage(display, visual, depth, ZPixmap, NULL, &segInfo,
+                               w, h);
+    if (imgPtr == NULL) {
+        fprintf(stderr, "Can't create XImage for SHM Pixmap\n");
+        return 1;
+    }
+
+    segInfo.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
+            IPC_CREAT | 0600);
+
+    if (segInfo.shmid == -1) {
+        perror("shmget()");
+        return 1;
+    }
+
+    segInfo.shmaddr = imgPtr->data = shmat(segInfo.shmid, NULL, 0);
+
+    shmctl(segInfo.shmid, IPC_RMID, 0);
+
+    if (segInfo.shmaddr == (void *)-1 ||  segInfo.shmaddr == NULL) {
+        perror("shmat()");
+        return 1;
+    }
+
+    XShmAttach(display, &segInfo);
+    pixmap = XShmCreatePixmap(display, drawable, segInfo.shmaddr,
+            &segInfo, w, h, depth);
+    return pixmap;
+}
+
+Pixmap
+Blt_FreeShmPixmap(Display *display, Pixmap pixmap)
+{
+    Tk_FreeXId(display, (XID) pixmap);
+}
+#endif
+

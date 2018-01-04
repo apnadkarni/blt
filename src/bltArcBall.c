@@ -485,7 +485,7 @@ GetArcBallFromObj(ArcBallCmdInterpData *dataPtr, Tcl_Interp *interp,
         return NULL;
     }
     hPtr = Blt_FindHashEntry(&dataPtr->arcballTable, 
-        (char *)(cmdInfo.objClientData));
+        (const char *)(cmdInfo.objClientData));
     if (hPtr == NULL) {
         return NULL;
     }
@@ -1132,7 +1132,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 
         Tcl_DStringInit(&ds);
         Tcl_DStringAppend(&ds, prefix, -1);
-        Blt_FormatString(string, 200, "arcball%d", i);
+        Blt_FmtString(string, 200, "arcball%d", i);
         Tcl_DStringAppend(&ds, string, -1);
         Tcl_DStringAppend(&ds, suffix, -1);
         if (!Blt_ParseObjectName(interp, Tcl_DStringValue(&ds), &objName, 0)) {

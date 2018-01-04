@@ -292,13 +292,13 @@ StartRecord(ExportSwitches *exportPtr)
 static int
 EndRecord(ExportSwitches *exportPtr)
 {
-    int numWritten;
-    char *line;
-
     Tcl_DStringAppend(exportPtr->dsPtr, "\n", 1);
     exportPtr->length++;
-    line = Tcl_DStringValue(exportPtr->dsPtr);
     if (exportPtr->channel != NULL) {
+        int numWritten;
+        char *line;
+
+        line = Tcl_DStringValue(exportPtr->dsPtr);
         numWritten = Tcl_Write(exportPtr->channel, line, exportPtr->length);
         if (numWritten != exportPtr->length) {
             Tcl_AppendResult(exportPtr->interp, "can't write txt record: ",

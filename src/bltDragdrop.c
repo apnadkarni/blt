@@ -640,7 +640,7 @@ GetProperty(Display *display, HWND hWnd)
         char buffer[MAX_PROP_SIZE + 1];
         UINT numBytes;
 
-        atom = (ATOM)((int)handle);
+        atom = (ATOM)((uintptr_t)handle);
         numBytes = GlobalGetAtomName(atom, buffer, MAX_PROP_SIZE);
         if (numBytes > 0) {
             buffer[numBytes] = '\0';
@@ -662,13 +662,13 @@ SetProperty(Tk_Window tkwin, const char *data)
         return;
     }
     handle = GetProp(hWnd, propName);
-    atom = (ATOM)((int)handle);
+    atom = (ATOM)((uintptr_t)handle);
     if (atom != (ATOM)0) {
         GlobalDeleteAtom(atom);
     }
     atom = GlobalAddAtom((char *)data);
     if (atom != (ATOM)0) {
-        handle = (HANDLE)((int)atom);
+        handle = (HANDLE)((uintptr_t)atom);
         SetProp(hWnd, propName, handle);
     }
 }
@@ -687,7 +687,7 @@ RemoveProperty(Tk_Window tkwin)
     if (handle != NULL) {
         ATOM atom;
 
-        atom = (ATOM)((int)handle);
+        atom = (ATOM)((uintptr_t)handle);
         GlobalDeleteAtom(atom);
     }
     RemoveProp(hWnd, propName);
@@ -696,13 +696,13 @@ RemoveProperty(Tk_Window tkwin)
 /*
  *---------------------------------------------------------------------------
  *
- * GetWindowRegion --
+ * GetWindowExtents --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-GetWindowRegion(
+GetWindowExtents(
     Display *display,           /* Not used. */
     HWND hWnd,
     int *x1Ptr,
@@ -803,7 +803,7 @@ SetProperty(Tk_Window tkwin, char *data)
 }
 
 static int
-GetWindowRegion(
+GetWindowExtents(
     Display *display,
     Window window,
     int *x1Ptr, int *y1Ptr, 
@@ -1026,7 +1026,7 @@ UpdateToken(ClientData clientData)      /* widget data */
         int result;
         SubstDescriptors subs[2];
         
-        Blt_FormatString(buffer, 200, "%d", tokenPtr->active);
+        Blt_FmtString(buffer, 200, "%d", tokenPtr->active);
         subs[0].letter = 's';
         subs[0].value = buffer;
         subs[1].letter = 't';
@@ -1145,7 +1145,7 @@ CreateToken(
     unsigned int mask;
     Token *tokenPtr = &srcPtr->token;
 
-    Blt_FormatString(string, 200, "dd-token%d", ++nextTokenId);
+    Blt_FmtString(string, 200, "dd-token%d", ++nextTokenId);
 
     /* Create toplevel on parent's screen. */
     tkwin = Tk_CreateWindow(interp, srcPtr->tkwin, string, "");
@@ -1314,7 +1314,7 @@ GetSourceFromObj(
     if (tkwin == NULL) {
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&dataPtr->sourceTable, (char *)tkwin);
+    hPtr = Blt_FindHashEntry(&dataPtr->sourceTable, (const char *)tkwin);
     if (hPtr == NULL) {
         Tcl_AppendResult(interp, "window \"", pathName,
              "\" has not been initialized as a drag&drop source", (char *)NULL);
@@ -1432,7 +1432,7 @@ ConfigureSource(
 
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             Tcl_AddErrorInfo(interp,
-                    "\n    (while loading bindings for blt::drag&drop)");
+                    "\n\t(while loading bindings for blt::drag&drop)");
             return TCL_ERROR;
         }
     }
@@ -1485,7 +1485,7 @@ FindTarget(
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&dataPtr->targetTable, (char *)tkwin);
+    hPtr = Blt_FindHashEntry(&dataPtr->targetTable, (const char *)tkwin);
     if (hPtr == NULL) {
         return NULL;
     }
@@ -1915,12 +1915,13 @@ OverTarget(
 static void
 RemoveWindow(AnyWindow *windowPtr) /* window rep to be freed */
 {
-    AnyWindow *childPtr;
     Blt_ChainLink link;
 
     /* Throw away leftover slots. */
     for (link = Blt_Chain_FirstLink(windowPtr->chain); link != NULL;
         link = Blt_Chain_NextLink(link)) {
+        AnyWindow *childPtr;
+
         childPtr = Blt_Chain_GetValue(link);
         RemoveWindow(childPtr);
     }
@@ -1960,12 +1961,11 @@ QueryWindow(
     /*
      *  Query for the window coordinates.
      */
-    visible = GetWindowRegion(display, winPtr->nativeWindow, 
+    visible = GetWindowExtents(display, winPtr->nativeWindow, 
         &winPtr->x1, &winPtr->y1, &winPtr->x2, &winPtr->y2);
     if (visible) {
         Blt_ChainLink link;
         Blt_Chain chain;
-        AnyWindow *childPtr;
 
         /*
          * Collect a list of child windows, sorted in z-order.  The
@@ -1976,6 +1976,8 @@ QueryWindow(
         /* Add and initialize extra slots if needed. */
         for (link = Blt_Chain_FirstLink(chain); link != NULL;
             link = Blt_Chain_NextLink(link)) {
+            AnyWindow *childPtr;
+
             childPtr = Blt_AssertCalloc(1, sizeof(AnyWindow));
             childPtr->initialized = FALSE;
             childPtr->nativeWindow = (WINDOW)Blt_Chain_GetValue(link);
@@ -2059,7 +2061,6 @@ ExpandPercents(
     Tcl_DString *resultPtr)
 {
     const char *chunk, *p;
-    char letter;
     int i;
 
     /*
@@ -2069,6 +2070,7 @@ ExpandPercents(
      */
     chunk = p = string;
     while ((p = strchr(p, '%')) != NULL) {
+        char letter;
 
         /* Copy up to the percent sign.  Repair the string afterwards */
         Tcl_DStringAppend(resultPtr, chunk, p - chunk);
@@ -2117,11 +2119,9 @@ DragOp(
     DragdropCmdInterpData *dataPtr = clientData;
     int x, y;
     Token *tokenPtr;
-    int status;
     Source *srcPtr;
     SubstDescriptors subst[2];
     int active;
-    const char *result;
 
     /*
      *  HANDLE:  drag&drop drag <path> <x> <y>
@@ -2149,6 +2149,8 @@ DragOp(
      */
     if ((!Tk_IsMapped(tokenPtr->tkwin)) && (!srcPtr->pkgCmdInProgress)) {
         Tcl_DString ds;
+        int status;
+        const char *result;
 
         /*
          *  No list of send handlers?  Then source is disabled.
@@ -2473,8 +2475,7 @@ SourceOp(
     if (objc > 3) {
         char c;
         int length;
-        int status;
-        char *string;
+        const char *string;
 
         /*
          *  HANDLE:  drag&drop source <pathName> ?options...?
@@ -2483,6 +2484,8 @@ SourceOp(
         c = string[0];
 
         if (c == '-') {
+            int status;
+
             if (objc == 3) {
                 status = Blt_ConfigureInfoFromObj(interp, tokenPtr->tkwin, 
                         configSpecs, (char *)srcPtr, (Tcl_Obj *)NULL, 0);
@@ -2528,15 +2531,14 @@ TargetOp(
     Tcl_Obj *const *objv)
 {
     DragdropCmdInterpData *dataPtr = clientData;
-    SubstDescriptors subst[2];
     Tk_Window tkwin;
-    Blt_HashEntry *hPtr;
     Target *targetPtr;
     int isNew;
     char *string;
 
     if (objc == 2) {
         Blt_HashSearch cursor;
+        Blt_HashEntry *hPtr;
 
         for (hPtr = Blt_FirstHashEntry(&dataPtr->targetTable, &cursor);
             hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -2568,6 +2570,7 @@ TargetOp(
             
             if (objc == 4) {
                 Blt_HashSearch cursor;
+                Blt_HashEntry *hPtr;
                 
                 for (hPtr =Blt_FirstHashEntry(&targetPtr->handlerTable,&cursor);
                      hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -2577,6 +2580,7 @@ TargetOp(
                 return TCL_OK;
             } else if (objc >= 6) {
                 const char *cmd;
+                Blt_HashEntry *hPtr;
                 
                 /*
                  *  Process handler definition
@@ -2611,8 +2615,8 @@ TargetOp(
              *  HANDLE:  drag&drop target <pathName> handle <data> ?<value>?
              */
             Tcl_DString ds;
-            int result;
             char *cmd;
+            Blt_HashEntry *hPtr;
             
             if (objc < 5 || objc > 6) {
                 Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -2631,6 +2635,9 @@ TargetOp(
             }
             cmd = Blt_GetHashValue(hPtr);
             if (cmd != NULL) {
+                int result;
+                SubstDescriptors subst[2];
+
                 subst[0].letter = 'W';
                 subst[0].value = Tk_PathName(targetPtr->tkwin);
                 subst[1].letter = 'v';

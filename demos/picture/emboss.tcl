@@ -5,7 +5,7 @@ set src [image create picture -height 30 -width 100]
 $src blank 0x00FFFFFF
 $src draw text "Emboss" 50 15 \
     -anchor c \
-    -font "Serif 14 bold" 
+    -font "Times 14 bold" 
 set dst [image create picture]
 $dst emboss $src 45 55
 

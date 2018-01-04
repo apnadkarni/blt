@@ -395,7 +395,6 @@ InitializeForTclTk(Tcl_Interp *interp)  /* Interpreter for application. */
     }
 #else
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-        return TCL_ERROR;
         goto error;
     }
     if (Tcl_PkgRequire(interp, "Tk", TCL_VERSION_COMPILED, PKG_ANY) == NULL) {

@@ -185,7 +185,7 @@ static Blt_SwitchSpec textSwitches[] =
     {BLT_SWITCH_END}
 };
 
-DLLEXPORT extern Tcl_AppInitProc Blt_PictureTextInit;
+DLLEXPORT extern Tcl_AppInitProc Blt_PictureTextInit, Blt_PictureTextSafeInit;
 static Tcl_AppInitProc InitTextOp;
 
 /*ARGSUSED*/
@@ -467,9 +467,9 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
             } else {
                 w = 0;
             }
-            fp->width = w;
-            fp->count = count;
-            fp->sy = fp->y = maxHeight + fontPtr->ascent;
+            fp->w = w;
+            fp->numBytes = count;
+            fp->ry = fp->y = maxHeight + fontPtr->ascent;
             fp->text = start;
             maxHeight += lineHeight;
             fp++;
@@ -488,9 +488,9 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
         if (w > maxWidth) {
             maxWidth = w;
         }
-        fp->width = w;
-        fp->count = count;
-        fp->sy = fp->y = maxHeight + fontPtr->ascent;
+        fp->w = w;
+        fp->numBytes = count;
+        fp->ry = fp->y = maxHeight + fontPtr->ascent;
         fp->text = start;
         maxHeight += lineHeight;
         numFrags++;
@@ -503,13 +503,13 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
         default:
         case TK_JUSTIFY_LEFT:
             /* No offset for left justified text strings */
-            fp->x = fp->sx = tsPtr->padLeft;
+            fp->rx = fp->x = tsPtr->padLeft;
             break;
         case TK_JUSTIFY_RIGHT:
-            fp->x = fp->sx = (maxWidth - fp->width) - tsPtr->padRight;
+            fp->rx = fp->x = (maxWidth - fp->w) - tsPtr->padRight;
             break;
         case TK_JUSTIFY_CENTER:
-            fp->x = fp->sx = (maxWidth - fp->width) / 2;
+            fp->rx = fp->x = (maxWidth - fp->w) / 2;
             break;
         }
     }
@@ -519,7 +519,7 @@ CreateSimpleTextLayout(FtFont *fontPtr, const char *text, int textLen,
             int first, last;
 
             first = fp->text - text;
-            last = first + fp->count;
+            last = first + fp->numBytes;
             if ((tsPtr->underline >= first) && (tsPtr->underline < last)) {
                 layoutPtr->underlinePtr = fp;
                 layoutPtr->underline = tsPtr->underline - first;
@@ -728,8 +728,8 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     fprintf(stderr, "dx=%d, dy=%d\n", dx, dy);
     DebugGlyph(slot);
 #endif
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+    if ((xx >= destPtr->width) || ((xx + (int)slot->bitmap.width) <= 0) ||
+        (yy >= destPtr->height) || ((yy + (int)slot->bitmap.rows) <= 0)) {
         return;                 /* No portion of the glyph is visible in the
                                  * picture. */
     }
@@ -798,8 +798,8 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     fprintf(stderr, "dx=%d, dy=%d\n", dx, dy);
     DebugGlyph(slot);
 #endif
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+    if ((xx >= destPtr->width) || ((xx + (int)slot->bitmap.width) <= 0) ||
+        (yy >= destPtr->height) || ((yy + (int)slot->bitmap.rows) <= 0)) {
         return;                         /* No portion of the glyph is visible
                                          * in the picture. */
     }
@@ -868,8 +868,8 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
     DebugGlyph(slot);
 #endif
     
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-        (yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
+    if ((xx >= destPtr->width) || ((xx + (int)slot->bitmap.width) <= 0) ||
+        (yy >= destPtr->height) || ((yy + (int)slot->bitmap.rows) <= 0)) {
         return;                         /* No portion of the glyph is visible
                                          * in the picture. */
     }
@@ -1098,8 +1098,8 @@ PaintText(Pict *destPtr, FtFont *fontPtr, const char *string, size_t length,
 
                 xx = slot->bitmap_left;
                 yy = h - slot->bitmap_top;
-                if ((xx < destPtr->width) && ((xx + slot->bitmap.width) >= 0) &&
-                    (yy < destPtr->height) && ((yy + slot->bitmap.rows) >= 0)) {
+                if ((xx < destPtr->width) && ((xx + (int)slot->bitmap.width) >= 0) &&
+                    (yy < destPtr->height) && ((yy + (int)slot->bitmap.rows) >= 0)) {
                     PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
                                    h - slot->bitmap_top, brush);
                 }
@@ -1184,15 +1184,16 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
             TextFragment *fp, *fend;
 
             Blt_RotateStartingTextPositions(layoutPtr, switches.angle);
-            Blt_GetBoundingBox(layoutPtr->width, layoutPtr->height, 
+            Blt_GetBoundingBox((double)layoutPtr->width, 
+                (double)layoutPtr->height, 
                 switches.angle, &rw, &rh, (Point2d *)NULL);
             Blt_TranslateAnchor(x, y, (int)(rw), (int)(rh), switches.anchor, 
                 &x, &y);
             RotateFont(fontPtr, switches.angle);
             for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
                 fp < fend; fp++) {
-                PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-                        y + fp->sy, switches.kerning, switches.brush);
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, x + fp->rx, 
+                        y + fp->ry, switches.kerning, switches.brush);
             }
         } else {
             Blt_Picture tmp;
@@ -1205,14 +1206,14 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(tmp, fontPtr, fp->text, fp->count, fp->sx, 
-                        fp->sy, switches.kerning, switches.brush);
+                PaintText(tmp, fontPtr, fp->text, fp->numBytes, fp->rx, fp->ry, 
+                        switches.kerning, switches.brush);
             }
             rotPtr = Blt_RotatePicture(tmp, switches.angle);
             Blt_FreePicture(tmp);
             Blt_TranslateAnchor(x, y, rotPtr->width, rotPtr->height, 
                 switches.anchor, &x, &y);
-            Blt_CompositeRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
+            Blt_CompositeArea(destPtr, rotPtr, 0, 0, rotPtr->width, 
                             rotPtr->height, x, y);
             Blt_FreePicture(rotPtr);
         }
@@ -1246,20 +1247,20 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
+                PaintText(tmpPtr, fontPtr, fp->text, fp->numBytes, 
                           fp->x + shadowPtr->width, 
                           fp->y + shadowPtr->width, 
                           switches.kerning, brush);
             }
             Blt_FreeBrush(brush);
             Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-            Blt_CompositeRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
+            Blt_CompositeArea(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
                             tmpPtr->height, x, y);
             for (i = 0; i < layoutPtr->numFragments; i++) {
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(destPtr, fontPtr, fp->text, fp->count, 
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, 
                     x + fp->x + shadowPtr->width - shadowPtr->offset,
                     y + fp->y + shadowPtr->width - shadowPtr->offset, 
                     switches.kerning, switches.brush);
@@ -1272,7 +1273,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                 TextFragment *fp;
 
                 fp = layoutPtr->fragments + i;
-                PaintText(destPtr, fontPtr, fp->text, fp->count, 
+                PaintText(destPtr, fontPtr, fp->text, fp->numBytes, 
                         x + fp->x, y + fp->y, switches.kerning, 
                         switches.brush);
             }
@@ -1355,3 +1356,8 @@ Blt_PictureTextInit(Tcl_Interp *interp)
     return TCL_OK;
 }
 
+int 
+Blt_PictureTextSafeInit(Tcl_Interp *interp) 
+{
+    return Blt_PictureTextInit(interp);
+}

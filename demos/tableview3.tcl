@@ -159,8 +159,8 @@ set top [file normalize ./images]
 set trim "$top"
 
 set table [blt::datatable create]    
-puts stderr [time { $table dir $top -pattern "*"}]
-$table column copy name button
+puts stderr [time { $table dir $top -pattern "*" -fields all}]
+$table column copy button name
 
 blt::scrollset .ss \
     -window $view \
@@ -172,7 +172,8 @@ blt::tk::scrollbar .ss.ys
 blt::tableview $view \
     -width 6i \
     -height 4i \
-    -selectmode multiple \
+    -exportselection 1 \
+    -selectmode cells \
     -table $table \
     -columnfilters yes
 
@@ -185,7 +186,8 @@ set img [image create picture -data {
     nQkAOw==
 }]
 
-$view style create pushbutton button -variable button -justify center
+#$view style create pushbutton button -variable button -justify center
+$view style create imagebox button -justify center
 $view column configure button \
     -style button \
     -title "Picture" \
@@ -259,14 +261,4 @@ $view.menu add -text directory -value directory
 $view.menu add -text file -value file
 
 $view column configure type -style combo 
-
-$view filter configure -menu $view.filter 
-
-blt::combomenu $view.filter  \
-    -restrictwidth min \
-    -height { 0 2i }  \
-    -yscrollbar $view.filter.ybar \
-    -xscrollbar $view.filter.xbar
-blt::tk::scrollbar $view.filter.xbar 
-blt::tk::scrollbar $view.filter.ybar
 

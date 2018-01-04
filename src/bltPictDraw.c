@@ -108,7 +108,7 @@ typedef struct {
                                          * circle. */
     Blt_Shadow shadow;
     int antialiased;
-    float lineWidth;                    /* Width of outline.  If zero,
+    double lineWidth;                   /* Width of outline.  If zero,
                                          * indicates to draw a solid
                                          * circle. */
     int blend;
@@ -122,7 +122,7 @@ static Blt_SwitchSpec circleSwitches[] =
         Blt_Offset(CircleSwitches, antialiased), 0},
     {BLT_SWITCH_BOOLEAN, "-blend", "bool", (char *)NULL,
         Blt_Offset(CircleSwitches, blend), 0},
-    {BLT_SWITCH_FLOAT, "-linewidth", "value", (char *)NULL,
+    {BLT_SWITCH_DOUBLE, "-linewidth", "value", (char *)NULL,
         Blt_Offset(CircleSwitches, lineWidth), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
         Blt_Offset(CircleSwitches, shadow), 0, 0, &shadowSwitch},
@@ -136,7 +136,7 @@ typedef struct {
     Blt_Pixel outline;                  /* Outline color of circle. */
     Blt_Shadow shadow;
     int antialiased;
-    float lineWidth;                    /* Line width of outline.  If zero,
+    double lineWidth;                   /* Line width of outline.  If zero,
                                          * indicates to draw a solid
                                          * circle. */
     int blend;
@@ -232,6 +232,7 @@ typedef struct {
     int radius;                         /* Radius of rounded corner. */
     int antialiased;
     int width, height;
+    Array coords;
 } RectangleSwitches;
 
 static Blt_SwitchSpec rectangleSwitches[] = 
@@ -240,15 +241,17 @@ static Blt_SwitchSpec rectangleSwitches[] =
         Blt_Offset(RectangleSwitches, antialiased), 0},
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
         Blt_Offset(RectangleSwitches, brush),    0, 0, &paintbrushSwitch},
-    {BLT_SWITCH_INT_NNEG, "-height", "number", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-coords", "{x0 y0 x1 y1}", (char *)NULL,
+        Blt_Offset(RectangleSwitches, coords), 0, 0, &arraySwitch},
+    {BLT_SWITCH_INT_NNEG, "-height", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, height), 0},
     {BLT_SWITCH_INT_NNEG, "-linewidth", "number", (char *)NULL,
         Blt_Offset(RectangleSwitches, lineWidth), 0}, 
-    {BLT_SWITCH_INT_NNEG, "-radius", "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-radius", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, radius), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
         Blt_Offset(RectangleSwitches, shadow), 0, 0, &shadowSwitch},
-    {BLT_SWITCH_INT_NNEG, "-width", "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-width", "numPixels", (char *)NULL,
         Blt_Offset(RectangleSwitches, width), 0},
     {BLT_SWITCH_END}
 };
@@ -380,7 +383,7 @@ ArrayFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ArraySwitchProc --
  *
- *      Convert a Tcl_Obj list of numbers into an array of floats.
+ *      Convert a Tcl_Obj list of numbers into an array of doubles.
  *
  * Results:
  *      The return value is a standard TCL result.
@@ -400,27 +403,24 @@ ArraySwitchProc(
 {
     Tcl_Obj **objv;
     Array *arrayPtr = (Array *)(record + offset);
-    float *values;
+    double *values;
     int i;
     int objc;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
     }
-    values = Blt_Malloc(sizeof(float) * objc);
+    values = Blt_Malloc(sizeof(double) * objc);
     if (values == NULL) {
         Tcl_AppendResult(interp, "can't allocated coordinate array of ",
                 Blt_Itoa(objc), " elements", (char *)NULL);
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        double x;
-
-        if (Tcl_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
+        if (Tcl_GetDoubleFromObj(interp, objv[i], values + i) != TCL_OK) {
             Blt_Free(values);
             return TCL_ERROR;
         }
-        values[i] = (float)x;
     }
     arrayPtr->values = values;
     arrayPtr->numValues = objc;
@@ -815,6 +815,16 @@ PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y,
         x2 = MIN(x2, destPtr->width);
         dp   = destPtr->bits + (y * destPtr->pixelsPerRow) + x1;
         dend = destPtr->bits + (y * destPtr->pixelsPerRow) + x2;
+        if (Blt_IsVerticalLinearBrush(brush)) {
+            int x;
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+            for (x = x1; x <= x2; x++, dp++) {
+                BlendPixels(dp, &color);
+            }
+            return;
+        }
         if (blend) {
             int x;
 
@@ -891,20 +901,51 @@ FillVerticalLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr,
     }
 }
 
-static INLINE float 
-sqr(float x) 
+static void
+BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
+{
+    Blt_Pixel *dp;
+    int x;
+
+    if (x1 > x2) {
+        int tmp;
+
+        tmp = x1, x1 = x2, x2 = tmp;
+    }
+    dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
+    /* Cheat for vertical linear brushes. */
+    /* If linear and vertical get color once and set across */
+    if (Blt_IsVerticalLinearBrush(brush)) {
+        Blt_Pixel color;
+
+        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
+        for (x = x1; x <= x2; x++, dp++) {
+            BlendPixels(dp, &color);
+        }
+    } else {
+        for (x = x1; x <= x2; x++, dp++) {
+            Blt_Pixel color;
+            
+            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
+            BlendPixels(dp, &color);
+        }
+    }
+}
+
+static INLINE double 
+sqr(double x) 
 {
     return x * x;
 }
     
 static void
-PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth, 
+PaintCircle4(Pict *destPtr, double cx, double cy, double r, double lineWidth, 
              Blt_PaintBrush brush, int blend)
 {
     int x, y, i;
     int x1, x2, y1, y2;
-    float outer, inner, outer2, inner2;
-    float *squares;
+    double outer, inner, outer2, inner2;
+    double *squares;
     Blt_Pixel *destRowPtr;
 
     /* Determine some helpful values (singles) */
@@ -934,8 +975,12 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
     if (y2 >= destPtr->height) {
         y2 = destPtr->height;
     }
+    if ((x1 >= destPtr->width) || (y1 >= destPtr->height) ||
+        (x2 < 0) || (y2 < 0)) {
+        return;
+    }
     /* Optimization run: find squares of X first */
-    squares = Blt_AssertMalloc(sizeof(float) * (x2 - x1));
+    squares = Blt_AssertMalloc(sizeof(double) * ABS(x2 - x1));
     for (i = 0, x = x1; x < x2; x++, i++) {
         squares[i] = (x - cx) * (x - cx);
     }
@@ -943,13 +988,13 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
     destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow) + x1;
     for (y = y1; y < y2; y++) {
         Blt_Pixel *dp;
-        float dy2;
+        double dy2;
         
         dy2 = (y - cy) * (y - cy);
         for (dp = destRowPtr, x = x1; x < x2; x++, dp++) {
-            float dx2, d2, d;
+            double dx2, d2, d;
             unsigned int a;
-            float outerf, innerf;
+            double outerf, innerf;
 
             dx2 = squares[x - x1];
             /* Compute distance from circle center to this pixel. */
@@ -1063,7 +1108,7 @@ PaintFilledEllipse(
 {
     ScanLine *coords;
     Blt_Pixel fill;
-    int dx, dy;
+    int dy;
 
     coords = ComputeEllipseQuadrant(a, b);
     if (blend) {
@@ -1076,6 +1121,8 @@ PaintFilledEllipse(
     }
     FillHorizontalLine(picture, x - a, x + a, y, &fill, blend);
     for (dy = 1; dy <= b; dy++) {
+        int dx;
+
         dx = coords[dy].right;
         FillHorizontalLine(picture, x - dx, x + dx, y + dy, &fill, blend);
         FillHorizontalLine(picture, x - dx, x + dx, y - dy, &fill, blend);
@@ -1114,32 +1161,33 @@ PaintEllipseAA(
                                  * then draw a solid filled ellipse. */
     Blt_Pixel *colorPtr)
 {
-    PictRegion region;
+    PictArea area;
     Blt_Picture big;
     int numSamples = 3; 
     int ellipseWidth, ellipseHeight;
-    int blend = 1;
 
     if ((lineWidth >= a) || (lineWidth >= b)) {
         lineWidth = 0;
     }
     ellipseWidth = a + a + 3;
     ellipseHeight = b + b + 3;
-    region.x = x - (a + 1);
-    region.y = y - (b + 1);
-    region.w = ellipseWidth;
-    region.h = ellipseHeight;
+    area.x1 = x - (a + 1);
+    area.y1 = y - (b + 1);
+    area.x2 = area.x1 + ellipseWidth;
+    area.y2 = area.y1 + ellipseHeight;
     
-    if (!Blt_AdjustRegionToPicture(picture, &region)) {
+    if (!Blt_AdjustAreaToPicture(picture, &area)) {
         return;                 /* Ellipse is totally clipped. */
     }
-    /* Scale the region forming the bounding box of the ellipse into a new
+    /* Scale the area forming the bounding box of the ellipse into a new
      * picture. The bounding box is scaled by *nSamples* times. */
-    big = Blt_CreatePicture(ellipseWidth * numSamples, ellipseHeight * numSamples);
+    big = Blt_CreatePicture(ellipseWidth * numSamples,
+                            ellipseHeight * numSamples);
     if (big != NULL) {
         Blt_Picture tmp;
         int cx, cy;
         Blt_Pixel color;
+        int blend = 1;
 
         cx = a + 1;
         cy = b + 1;
@@ -1164,8 +1212,8 @@ PaintEllipseAA(
         Blt_FreePicture(big);
         Blt_ApplyColorToPicture(tmp, colorPtr);
         /* Replace the bounding box in the original with the new. */
-        Blt_CompositeRegion(picture, tmp, 0, 0, region.w, region.h, 
-                region.x, region.y);
+        Blt_CompositeArea(picture, tmp, 0, 0, AREA_WIDTH(area),
+                          AREA_HEIGHT(area),  area.x1, area.y1);
         Blt_FreePicture(tmp);
     }
 }
@@ -1187,7 +1235,7 @@ PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r,
                        lineWidth, brush, TRUE);
     Blt_FreeBrush(brush);
     Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
-    Blt_CompositeRegion(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_CompositeArea(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
 }
 
@@ -1241,16 +1289,16 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
         break;
     }   
     for (dy = y1; dy < y2; dy++) {
-        float dy2;
+        double dy2;
 
         if (((y + dy) < 0) || ((y + dy) >= destPtr->height)) {
             continue;
         }
         dy2 = (dy - r) * (dy - r);
         for (dx = x1; dx < x2; dx++) {
-            float dx2, d2, d;
+            double dx2, d2, d;
             unsigned int a;
-            float outerf, innerf;
+            double outerf, innerf;
             Blt_Pixel *dp;
 
             if (((x + dx) < 0) || ((x + dx) >= destPtr->width)) {
@@ -1305,7 +1353,7 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
  *      
  */
 void
-Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
+Blt_PaintRectangle(Pict *destPtr, int x, int y, int w, int h, int r, 
                    int lineWidth, Blt_PaintBrush brush, int composite)
 {
     /* If the linewidth exceeds half the height or width of the rectangle,
@@ -1321,7 +1369,6 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
     if (r > (h / 2)) {
         r = h / 2;
     }
-
     if (r > 0) {
         if (lineWidth > 0) {
             int x1, x2, x3, x4, y1, y2, dy;
@@ -1332,16 +1379,16 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < lineWidth; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
-                PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x3, x4, y+dy, brush, composite);
             }
         } else {
             int x1, x2, y1, y2, dy;
@@ -1352,13 +1399,13 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             y1 = y;
             y2 = y + h - 1;
             for (dy = 0; dy < r; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + w;
             for (dy = r; dy < (h - r); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y+dy, brush, composite);
             }
         }
         { 
@@ -1369,49 +1416,108 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
             /* Draw the rounded corners. */
             x1 = x - 1;
             y1 = y - 1;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 0, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 0, brush);
             x1 = x + w - d - 2;
             y1 = y - 1;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 1, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 1, brush);
             x1 = x - 1;
             y1 = y + h - d - 2;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 2, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 2, brush);
             x1 = x + w - d - 2;
             y1 = y + h - d - 2;
-            PaintCorner(picture, x1, y1, r + 1, lineWidth, 3, brush);
+            PaintCorner(destPtr, x1, y1, r + 1, lineWidth+1, 3, brush);
         }
     } else {
         if (lineWidth > 0) {
             int x1, x2, x3, x4, y1, y2, dy;
             
-            /* Thick, non-rounded, rectangle.  */
+            /* Thick (non-filled), non-rounded, rectangle.  */
             x1 = x;
             x2 = x + w;
             y1 = y;
             y2 = y + h - lineWidth;
             for (dy = 0; dy < lineWidth; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y1+dy, brush, composite);
-                PaintHorizontalLine(picture, x1, x2, y2-dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y1+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y2-dy, brush, composite);
             }
             x1 = x;
             x2 = x + lineWidth;
             x3 = x + w - lineWidth;
             x4 = x + w;
             for (dy = r; dy < (h - lineWidth); dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
-                PaintHorizontalLine(picture, x3, x4, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x1, x2, y+dy, brush, composite);
+                PaintHorizontalLine(destPtr, x3, x4, y+dy, brush, composite);
             }
         } else {
-            int x1, x2, dy;
+            int x1, x2, y1, y2;
 
             /* Filled, non-rounded, rectangle. */
             x1 = x;
             x2 = x + w;
-            for (dy = 0; dy < h; dy++) {
-                PaintHorizontalLine(picture, x1, x2, y+dy, brush, composite);
+            y1 = y;
+            y2 = y + h;
+            if ((Blt_GetBrushAlpha(brush) != 0xFF) || (composite)) {
+                goto standard;
+            }
+            /* Handle special cases.  Linear, vertical/horizontal
+             * gradients, with opaque colors. */
+            if (Blt_IsVerticalLinearBrush(brush)) {
+                int y;
+                Blt_Pixel *destRowPtr;
+                
+                destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow);
+                for (y = y1; y < y2; y++) {
+                    Blt_Pixel color;
+                    Blt_Pixel *dp;
+                    int x;
+
+                    /* Get the color for the first column and replicate it
+                     * for the remaining columns. */
+                    dp = destRowPtr + x1;
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, 0, y);
+                    for (x = x1; x < x2; x++, dp++) {
+                        dp->u32 = color.u32;
+                    }
+                    destRowPtr += destPtr->pixelsPerRow;
+                }
+            } else if (Blt_IsHorizontalLinearBrush(brush)) {
+                int x, y;
+                Blt_Pixel *srcRowPtr, *destRowPtr, *dp;
+
+                /* Draw the first row, then copy it for the remaining rows. */
+                destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow);
+                srcRowPtr = destRowPtr;
+                dp = destRowPtr + x1;
+                for (x = x1; x < x2; x++) {
+                    Blt_Pixel color;
+
+                    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y1);
+                    dp->u32 = color.u32;
+                    dp++;
+                }
+                destRowPtr += destPtr->pixelsPerRow;
+                for (y = y1 + 1; y < y2; y++) {
+                    Blt_Pixel *dp, *sp;
+                    
+                    dp = destRowPtr + x1;
+                    sp = srcRowPtr + x1;
+                    for (x = x1; x < x2; x++) {
+                        dp->u32 = sp->u32;
+                        sp++, dp++;
+                    }
+                    destRowPtr += destPtr->pixelsPerRow;
+                }
+            } else {
+            standard:
+                for (y = y1; y < y2; y++) {
+                    PaintHorizontalLine(destPtr, x1, x2, y, brush, composite);
+                }
             }
         }
     } 
+    if ((Blt_GetBrushAlpha(brush) != 0xFF) && (!composite)) {
+        destPtr->flags |= BLT_PIC_COMPOSITE;
+    }
 }
 
 
@@ -1419,20 +1525,20 @@ static void
 PaintPolyline(
     Pict *destPtr,
     int numPoints, 
-    Point2f *points, 
+    Point2d *points, 
     int lineWidth,
     Blt_Pixel *colorPtr)
 {
     int i;
     Region2d r;
-    Point2f p;
+    Point2d p;
 
     r.left = r.top = 0;
     r.right = destPtr->width - 1;
     r.bottom = destPtr->height - 1;
     p.x = points[0].x, p.y = points[0].y;
     for (i = 1; i < numPoints; i++) {
-        Point2f q, next;
+        Point2d q, next;
 
         q.x = points[i].x, q.y = points[i].y;
         next = q;
@@ -1448,37 +1554,6 @@ PaintPolyline(
     }
 }
 
-static void
-BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
-{
-    Blt_Pixel *dp;
-    int x;
-
-    if (x1 > x2) {
-        int tmp;
-
-        tmp = x1, x1 = x2, x2 = tmp;
-    }
-    dp = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
-    /* Cheat for vertical linear brushes. */
-    /* If linear and vertical get color once and set across */
-    if (Blt_IsVerticalLinearBrush(brush)) {
-        Blt_Pixel color;
-
-        fprintf(stderr, "is vertical linear brush\n");
-        color.u32 = Blt_GetAssociatedColorFromBrush(brush, x1, y);
-        for (x = x1; x <= x2; x++, dp++) {
-            BlendPixels(dp, &color);
-        }
-    } else {
-        for (x = x1; x <= x2; x++, dp++) {
-            Blt_Pixel color;
-            
-            color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
-            BlendPixels(dp, &color);
-        }
-    }
-}
 
 /*
  * Concave Polygon Scan Conversion
@@ -1527,7 +1602,7 @@ typedef struct {
 
 /* Comparison routines for qsort */
 static int n;                           /* # of vertices */
-static Point2f *pt;                     /* vertices */
+static Point2d *pt;                     /* vertices */
 
 static int 
 CompareIndices(const void *a, const void *b)
@@ -1538,10 +1613,11 @@ CompareIndices(const void *a, const void *b)
 static int 
 CompareActive(const void *a, const void *b)
 {
-    const ActiveEdge *u, *v;
+    const ActiveEdge *e1, *e2;
 
-    u = a, v = b;
-    return (u->x <= v->x) ? -1 : 1;
+    e1 = a;
+    e2 = b;
+    return (e1->x <= e2->x) ? -1 : 1;
 }
 
 static void
@@ -1570,10 +1646,10 @@ cdelete(AET *tablePtr, int i)           /* Remove edge i from active
 
 /* append edge i to end of active list */
 static void
-cinsert(AET *tablePtr, size_t n, Point2f *points, int i, int y)
+cinsert(AET *tablePtr, size_t n, Point2d *points, int i, int y)
 {
     int j;
-    Point2f *p, *q;
+    Point2d *p, *q;
     ActiveEdge *edgePtr;
 
     j = (i < (n - 1)) ? i + 1 : 0;
@@ -1594,7 +1670,7 @@ cinsert(AET *tablePtr, size_t n, Point2f *points, int i, int y)
 }
 
 void
-Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices, 
+Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2d *vertices, 
                  Blt_PaintBrush brush)
 {
     int y, k;
@@ -1627,12 +1703,13 @@ Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices,
     bot = MIN(destPtr->height-1, floor(vertices[map[n-1]].y-.5)); /* ymax */
 
     for (y = top; y <= bot; y++) {      /* step through scanlines */
-        unsigned int i, j;
-
         /* Scanline y is at y+.5 in continuous coordinates */
+        unsigned int j;
 
         /* Check vertices between previous scanline and current one, if any */
         for (/*empty*/; (k < n) && (vertices[map[k]].y <= (y +.5)); k++) {
+            unsigned int i, j;
+
             /* to simplify, if pt.y=y+.5, pretend it's above */
             /* invariant: y-.5 < pt[i].y <= y+.5 */
             i = map[k]; 
@@ -1689,47 +1766,50 @@ Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices,
 }
 
 static void
-GetPolygonBoundingBox(size_t numVertices, Point2f *vertices, 
-                      Region2f *regionPtr)
+GetPolygonBoundingBox(size_t numVertices, Point2d *vertices, 
+                      Region2d *regionPtr)
 {
-    Point2f *pp, *pend;
-
+    int i;
+    
     regionPtr->left = regionPtr->top = FLT_MAX;
     regionPtr->right = regionPtr->bottom = -FLT_MAX;
-    for (pp = vertices, pend = pp + numVertices; pp < pend; pp++) {
-        if (pp->x < regionPtr->left) {
-            regionPtr->left = pp->x;
-        } else if (pp->x > regionPtr->right) {
-            regionPtr->right = pp->x;
+    for (i = 0; i < numVertices; i++) {
+        Point2d *p;
+
+        p = vertices + i;
+        if (p->x < regionPtr->left) {
+            regionPtr->left = p->x;
+        } else if (p->x > regionPtr->right) {
+            regionPtr->right = p->x;
         }
-        if (pp->y < regionPtr->top) {
-            regionPtr->top = pp->y;
-        } else if (pp->y > regionPtr->bottom) {
-            regionPtr->bottom = pp->y;
+        if (p->y < regionPtr->top) {
+            regionPtr->top = p->y;
+        } else if (p->y > regionPtr->bottom) {
+            regionPtr->bottom = p->y;
         }
     }
 }
 
 static void
-TranslatePolygon(size_t numVertices, Point2f *vertices, float x, float y, 
-                 float scale)
+TranslatePolygon(Point2d *src, Point2d *dst, size_t numVertices,
+                 double x, double y, double scale)
 {
-    Point2f *pp, *pend;
+    size_t i;
 
-    for (pp = vertices, pend = pp + numVertices; pp < pend; pp++) {
-        pp->x = (pp->x + x) * scale;
-        pp->y = (pp->y + y) * scale;
+    for (i = 0; i < numVertices; i++) {
+        dst[i].x = (src[i].x + x) * scale;
+        dst[i].y = (src[i].y + y) * scale;
     }
 }
 
 static void
-PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-                   Region2f *regionPtr, Blt_Shadow *shadowPtr)
+PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2d *vertices, 
+                   Region2d *regionPtr, Blt_Shadow *shadowPtr)
 {
     Blt_PaintBrush brush;
     Blt_Picture blur, tmp;
-    Point2f *v;
-    Region2f r2;
+    Point2d *v;
+    Region2d r2;
     int w, h;
     int x1, x2, y1, y2;
 
@@ -1748,9 +1828,8 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
         y2 = (int)ceil(regionPtr->bottom);
     }
     if ((x1 > 0) || (y1 > 0)) {
-        v = Blt_AssertMalloc(numVertices * sizeof(Point2f));
-        memcpy(v, vertices, sizeof(Point2f) * numVertices);
-        TranslatePolygon(numVertices, v, -x1, -y1, 1.0f);
+        v = Blt_AssertMalloc(numVertices * sizeof(Point2d));
+        TranslatePolygon(vertices, v, numVertices, -x1, -y1, 1.0);
     } else {
         v = vertices;
     }
@@ -1767,22 +1846,22 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
     }
     blur = Blt_CreatePicture(w, h);
     Blt_BlankPicture(blur, 0x0);
-    Blt_CopyRegion(blur, tmp, 0, 0, w, h, shadowPtr->offset*2,
+    Blt_CopyArea(blur, tmp, 0, 0, w, h, shadowPtr->offset*2,
                    shadowPtr->offset*2); 
     Blt_BlurPicture(blur, blur, shadowPtr->width, 3);
     Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &shadowPtr->color);
     Blt_FreePicture(tmp);
-    Blt_CompositeRegion(destPtr, blur, 0, 0, w, h, x1, y1);
+    Blt_CompositeArea(destPtr, blur, 0, 0, w, h, x1, y1);
     Blt_FreePicture(blur);
 }
 
 static void
-PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-                Region2f *regionPtr, Blt_PaintBrush brush, 
+PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2d *vertices, 
+                Region2d *regionPtr, Blt_PaintBrush brush, 
                 Blt_Shadow *shadowPtr)
 {
     Blt_Picture big, tmp;
-    Region2f r2;
+    Region2d r2;
     /* 
      * Get the minimum size region to draw both a supersized polygon and
      * shadow.
@@ -1794,9 +1873,11 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
      * destination picture.
      */
     big = Blt_CreatePicture(destPtr->width * 4, destPtr->height * 4);
-    TranslatePolygon(numVertices, vertices, 0.0f, 0.0f, 4.0f);
+    TranslatePolygon(vertices, vertices, numVertices, 0.0f, 0.0f, 4.0);
     Blt_BlankPicture(big, 0x0);
     GetPolygonBoundingBox(numVertices, vertices, &r2);
+    Blt_SetBrushArea(brush, r2.left, r2.top, 
+                     r2.right - r2.left, r2.bottom - r2.top);
     if ((shadowPtr != NULL) && (shadowPtr->width > 0)) {
         PaintPolygonShadow(big, numVertices, vertices, &r2, shadowPtr);
     }
@@ -1809,8 +1890,8 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
 }
 
 static void
-DrawCircleShadow(Blt_Picture picture, int x, int y, float r, 
-                 float lineWidth, int blend, Blt_Shadow *shadowPtr)
+DrawCircleShadow(Blt_Picture picture, int x, int y, double r, 
+                 double lineWidth, int blend, Blt_Shadow *shadowPtr)
 {
     Pict *tmpPtr;
     int w, h;
@@ -1834,15 +1915,15 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
     Blt_FreeBrush(brush);
     if (blend) {
         Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-        Blt_CompositeRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
+        Blt_CompositeArea(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     } else {
-        Blt_CopyRegion(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
+        Blt_CopyArea(picture, tmpPtr, 0, 0, w, h, x - r, y - r);
     }
     Blt_FreePicture(tmpPtr);
 }
 
 static void
-DrawCircle(Blt_Picture picture, int x, int y, int r, float lineWidth, 
+DrawCircle(Blt_Picture picture, double x, double y, double r, double lineWidth, 
            Blt_PaintBrush brush, int blend)
 {
     PaintCircle4(picture, x, y, r, lineWidth, brush, blend);
@@ -1904,7 +1985,7 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         DrawCircleShadow(picture, x, y, radius, switches.lineWidth, 
                 switches.blend, &switches.shadow);
     }
-    Blt_SetBrushRegion(switches.brush, x - radius, y - radius, 
+    Blt_SetBrushArea(switches.brush, x - radius, y - radius, 
         radius + radius, radius + radius);
     DrawCircle(picture, x, y, radius, switches.lineWidth, switches.brush, 
                switches.blend);
@@ -1986,7 +2067,7 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Picture picture = clientData;
     LineSwitches switches;
     size_t numPoints;
-    Point2f *points;
+    Point2d *points;
     
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF;
@@ -2002,17 +2083,17 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
     points = NULL;
     if (switches.x.numValues > 0) {
         size_t i;
-        float *x, *y;
+        double *x, *y;
 
         numPoints = switches.x.numValues;
-        points = Blt_Malloc(sizeof(Point2f) * numPoints);
+        points = Blt_Malloc(sizeof(Point2d) * numPoints);
         if (points == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numPoints + 1), " points", (char *)NULL);
             return TCL_ERROR;
         }
-        x = (float *)switches.x.values;
-        y = (float *)switches.y.values;
+        x = switches.x.values;
+        y = switches.y.values;
         for (i = 0; i < numPoints; i++) {
             points[i].x = x[i];
             points[i].y = y[i];
@@ -2022,7 +2103,7 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
         switches.x.values = switches.y.values = NULL;
     } else if (switches.coords.numValues > 0) {
         size_t i, j;
-        float *coords;
+        double *coords;
 
         if (switches.coords.numValues & 0x1) {
             Tcl_AppendResult(interp, "bad -coords list: ",
@@ -2030,13 +2111,13 @@ Blt_Picture_LineOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         numPoints = (switches.coords.numValues / 2);
-        points = Blt_Malloc(sizeof(Point2f)* numPoints);
+        points = Blt_Malloc(sizeof(Point2d)* numPoints);
         if (points == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numPoints + 1), " points", (char *)NULL);
             return TCL_ERROR;
         }
-        coords = (float *)switches.coords.values;
+        coords = switches.coords.values;
         for (i = 0, j = 0; i < switches.coords.numValues; i += 2, j++) {
             points[j].x = coords[i];
             points[j].y = coords[i+1];
@@ -2074,8 +2155,8 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Pict *destPtr = clientData;
     PolygonSwitches switches;
     size_t numVertices;
-    Point2f *vertices;
-    Region2f r;
+    Point2d *vertices;
+    Region2d r;
     Blt_PaintBrush brush;
 
     if (Blt_GetPaintBrush(interp, "black", &brush) != TCL_OK) {
@@ -2096,17 +2177,17 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     r.top = r.left = FLT_MAX, r.bottom = r.right = -FLT_MAX;
     if (switches.x.numValues > 0) {
         size_t i;
-        float *x, *y;
+        double *x, *y;
 
         numVertices = switches.x.numValues;
-        vertices = Blt_Malloc(sizeof(Point2f) * (switches.x.numValues + 1));
+        vertices = Blt_Malloc(sizeof(Point2d) * (switches.x.numValues + 1));
         if (vertices == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numVertices + 1), " vertices", (char *)NULL);
             return TCL_ERROR;
         }
-        x = (float *)switches.x.values;
-        y = (float *)switches.y.values;
+        x = switches.x.values;
+        y = switches.y.values;
         for (i = 0; i < switches.x.numValues; i++) {
             vertices[i].x = x[i];
             vertices[i].y = y[i];
@@ -2131,7 +2212,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
         switches.x.values = switches.y.values = NULL;
     } else if (switches.coords.numValues > 0) {
         size_t i, j;
-        float *coords;
+        double *coords;
 
         if (switches.coords.numValues & 0x1) {
             Tcl_AppendResult(interp, "bad -coords list: ",
@@ -2139,13 +2220,13 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
         numVertices = (switches.coords.numValues / 2);
-        vertices = Blt_Malloc(sizeof(Point2f)* (numVertices + 1));
+        vertices = Blt_Malloc(sizeof(Point2d)* (numVertices + 1));
         if (vertices == NULL) {
             Tcl_AppendResult(interp, "can't allocate memory for ", 
                 Blt_Itoa(numVertices + 1), " vertices", (char *)NULL);
             return TCL_ERROR;
         }
-        coords = (float *)switches.coords.values;
+        coords = switches.coords.values;
         for (i = 0, j = 0; i < switches.coords.numValues; i += 2, j++) {
             vertices[j].x = coords[i];
             vertices[j].y = coords[i+1];
@@ -2179,7 +2260,7 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     PaintPolygonShadow(destPtr, numVertices, vertices, &r, 
                                        &switches.shadow);
                 }
-                Blt_SetBrushRegion(switches.brush, r.left, r.top, 
+                Blt_SetBrushArea(switches.brush, r.left, r.top, 
                                  r.right - r.left, r.bottom - r.top);
                 Blt_PaintPolygon(destPtr, numVertices, vertices, 
                         switches.brush);
@@ -2202,7 +2283,11 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *      None.
  *
- *      imageName draw rectangle x y ?switches ...?
+ *      imageName draw rectangle x y w h ?switches ...?
+ *      imageName draw rectangle x1 y1 x2 y2 ?switches ...?
+ *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
+ *      imageName draw rectangle -coords {x1 y1 x2 y2} ?switches ...?
+ *
  *---------------------------------------------------------------------------
  */
 int
@@ -2231,7 +2316,7 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         &switches, BLT_SWITCH_DEFAULTS) < 0) {
         return TCL_ERROR;
     }
-    Blt_SetBrushRegion(switches.brush, x, y, switches.width, switches.height);
+    Blt_SetBrushArea(switches.brush, x, y, switches.width, switches.height);
     if (switches.shadow.width > 0) {
         PaintRectangleShadow(picture, x, y, switches.width, switches.height,
                 switches.radius, switches.lineWidth, &switches.shadow);
@@ -2268,21 +2353,34 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
         Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
         Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush, TRUE);
     }
-    x += 2, y += 2;
-    w -= 5, h -= 5;
+    x += 1, y += 1;
+    w -= 4, h -= 4;
     if (on) {
-        Point2f points[7];
-        Region2f r;
+        Point2d points[7];
+        Region2d r;
+        double t, dt, dx, dy;
+        double m1, m2;
 
-        points[0].x = points[1].x = points[6].x = x;
-        points[0].y = points[6].y = y + (0.4 * h);
-        points[1].y = y + (0.6 * h);
-        points[2].x = points[5].x = x + (0.4 * w);
-        points[2].y = y + h;
-        points[3].x = points[4].x = x + w;
-        points[3].y = y + (0.2 * h);
-        points[4].y = y;
-        points[5].y = y + (0.7 * h);
+        t = MAX(w,h) * 0.15;
+        points[0].x = x;
+        points[0].y = y + 0.6 * h;
+        points[4].x = x + w;
+        points[4].y = y + 0.2 * h;
+        points[5].x = x + 0.4 * w;
+        points[5].y = y + h;
+        m1 = (points[4].y - points[5].y) / (points[4].x - points[5].x);
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        points[3].x = points[4].x - dx;
+        points[3].y = points[4].y - dy;
+        points[2].x = points[5].x;
+        points[2].y = points[5].y - dt;
+        m2 = (points[0].y - points[5].y) / (points[0].x - points[5].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        points[1].x = points[0].x + dx;
+        points[1].y = points[0].y - dy;
         points[6].x = points[0].x;
         points[6].y = points[0].y;
         shadow.width = 2, shadow.offset = 2;
@@ -2298,13 +2396,9 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 }
 
 Blt_Picture
-Blt_PaintRadioButtonOld(
-     int w, int h, 
-     XColor *bgColorPtr, 
-     XColor *fillColorPtr, 
-     XColor *outlineColorPtr, 
-     XColor *indicatorColorPtr, 
-     int on)
+Blt_PaintRadioButtonOld(int w, int h, XColor *bgColorPtr, XColor *fillColorPtr, 
+                        XColor *outlineColorPtr, XColor *indicatorColorPtr,
+                        int on)
 {
     Pict *destPtr;
     int x, y, r;
@@ -2314,7 +2408,9 @@ Blt_PaintRadioButtonOld(
 
     /* Process switches  */
     brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
-    bg.u32 = Blt_XColorToPixel(bgColorPtr);
+    bg.u32 = Blt_XColorToPixel(bgColorPtr); 
+    fill.u32 = Blt_XColorToPixel(fillColorPtr);
+    outline.u32 = Blt_XColorToPixel(outlineColorPtr);
     Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xFF);
     w &= ~1;
     destPtr = Blt_CreatePicture(w, h);
@@ -2410,8 +2506,9 @@ GetShadowColors(Blt_Bg bg, unsigned int *normalColorPtr,
 }
 
 
+#ifdef notdef
 Blt_Picture
-Blt_PaintRadioButton(
+Blt_PaintRadioButton0(
      int w, int h, 
      Blt_Bg bg, 
      XColor *fillColorPtr, 
@@ -2429,7 +2526,7 @@ Blt_PaintRadioButton(
 
     /* Process switches  */
     newBrush = Blt_Bg_PaintBrush(bg);
-    Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
+    /* Blt_SetBrushArea(newBrush, 0, 0, w, h);  */
     Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush, TRUE);
 
     GetShadowColors(bg, &normal, &light, &dark);
@@ -2458,61 +2555,468 @@ Blt_PaintRadioButton(
     Blt_FreeBrush(brush);
     return destPtr;
 }
+#endif
 
 Blt_Picture
-Blt_PaintDelete(
-    int w, int h, 
-    XColor *bgColorPtr, 
-    XColor *fillColorPtr, 
-    XColor *symbolColorPtr, 
-    int isActive)
+Blt_PaintRadioButton(
+     int w, int h, 
+     Blt_Bg bg, 
+     XColor *fillColorPtr, 
+     XColor *indicatorColorPtr, 
+     int on)
+{
+    Pict *destPtr;
+    double cx, cy, r;
+    Blt_PaintBrush brush;
+    unsigned int normal, light, dark;
+
+    destPtr = Blt_CreatePicture(w, h);
+    GetShadowColors(bg, &normal, &light, &dark);
+    w -= 2, h -= 2;
+    cx = w * 0.5;
+    cy = h * 0.5;
+    r = w * 0.5;
+    brush = Blt_NewColorBrush(dark);
+    DrawCircle(destPtr, cx, cy, r, 0.0, brush, TRUE);
+
+    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
+    DrawCircle(destPtr, cx, cy, r * 0.833333, 0.0, brush, TRUE);
+    if (on) {
+        Blt_SetColorBrushColor(brush, Blt_XColorToPixel(indicatorColorPtr));
+        DrawCircle(destPtr, cx, cy, r * 0.6, 0.0, brush, TRUE);
+    }
+    Blt_FreeBrush(brush);
+    destPtr->flags |= BLT_PIC_COMPOSITE;
+    return destPtr;
+}
+
+Blt_Picture
+Blt_PaintDelete(int w, int h, unsigned int fill, unsigned int symbol,
+                int isActive)
 {
     Blt_Picture picture;
-    Point2f points[4];
-    Region2f reg;
-    Blt_Shadow shadow;
-    int x, y, r;
+    Point2d points[13];
+    Region2d reg;
+    double cx, cy, r, d, s;
+
     Blt_PaintBrush brush;
 
-    brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
-    Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xA0);
-    x = y = 0;
-    reg.left = x, reg.right = x + w;
-    reg.top = y, reg.bottom = y + h;
-
+    brush = Blt_NewColorBrush(fill);
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
     picture = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(picture, 0x0);
-    x = y = w / 2 - 1;
-    r = x - 1;
-#ifdef notdef
-    if ((isActive) && (shadow.width > 0)) {
-        DrawCircleShadow(picture, x, y, r, 0.0, TRUE, &shadow);
+    Blt_BlankPicture(picture, 0x00);
+    cx = cy = w * 0.5;
+    r = cx - 0.5;
+    if (fill != 0x0) {
+        DrawCircle(picture, cx, cy, r, 0.0, brush, FALSE);
     }
-#endif
-    DrawCircle(picture, x, y, r, 0.0, brush, FALSE);
+    r -= 2;
+    d = r * 0.28;
+    d = d / M_SQRT2;
+    s = r * M_SQRT2 * 0.5;
+    points[0].x = cx - s;
+    points[0].y = cy - s + d; 
+    points[1].x = cx - s + d;
+    points[1].y = cy - s;
+    points[2].x = cx;
+    points[2].y = cy - d;
+    points[3].x = cx + s - d;
+    points[3].y = cy - s;
+    points[4].x = cx + s;
+    points[4].y = cy - s + d;
+    points[5].x = cx + d;
+    points[5].y = cy;
+    points[6].x = cx + s;
+    points[6].y = cy + s - d;
+    points[7].x = cx + s - d;
+    points[7].y = cy + s;
+    points[8].x = cx;
+    points[8].y = cy + d;
+    points[9].x = cx - s + d;
+    points[9].y = cy + s;
+    points[10].x = cx - s;
+    points[10].y = cy + s - d;
+    points[11].x = cx - d;
+    points[11].y = cy;
+    points[12].x = points[0].x;
+    points[12].y = points[0].y;
 
-    points[0].x = x - 2;
-    points[0].y = y - 3;
-    points[1].x = x - 3;
-    points[1].y = y - 2;
-    points[2].x = x + 2;
-    points[2].y = y + 3;
-    points[3].x = x + 3;
-    points[3].y = y + 2;
-
-    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(symbolColorPtr));
-    PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
-
-    points[0].x = x + 3;
-    points[0].y = y - 2;
-    points[1].x = x + 2;
-    points[1].y = y - 3;
-    points[2].x = x - 3;
-    points[2].y = y + 2;
-    points[3].x = x - 2;
-    points[3].y = y + 3;
-
-    PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
+    Blt_SetColorBrushColor(brush, symbol);
+    PaintPolygonAA2(picture, 13, points, &reg, brush, NULL);
     Blt_FreeBrush(brush);
     return picture;
+}
+
+void
+Blt_PaintArrowHead(Blt_Picture picture, int x, int y, int w, int h,
+                   unsigned int color, int direction)
+{
+    Point2d points[4];
+    Region2d reg;
+    Blt_PaintBrush brush;
+
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    switch (direction) {
+    case ARROW_UP:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.9 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.5 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.5 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = points[0].x;
+        points[3].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+    PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
+}
+
+void
+Blt_PaintArrowHead2(Blt_Picture picture, int x, int y, int w, int h,
+                   unsigned int color, int direction)
+{
+    Point2d points[7];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    double dx, dy, m1, m2, dt, t;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    switch (direction) {
+    case ARROW_UP:
+        t = w * 0.20;
+        y--;
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.8 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.8 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        points[3].x = points[2].x - dx;
+        points[3].y = points[2].y + dy;
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        points[4].x = points[1].x;
+        points[4].y = points[1].y + dt;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        t = w * 0.20;
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.2 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.2 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = fabs(sin(m1) * t);
+        dy = fabs(cos(m1) * t);
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = fabs(t / sin(M_PI - m1)) + 1;
+        points[4].x = points[1].x;
+        points[4].y = points[1].y - dt;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = fabs(sin(m2) * t);
+        dy = fabs(cos(m2) * t);
+        points[5].x = points[0].x - dx;
+        points[5].y = points[0].y - dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        t = h * 0.20;
+        x--;
+        points[0].x = x + 0.8 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.8 * w;
+        points[2].y = y + 0.9 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = sin(m1) * t;
+        dy = cos(m1) * t;
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = t / sin(-m1);
+        points[4].x = points[1].x - dt + 1;
+        points[4].y = points[1].y;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = sin(-m2) * t;
+        dy = cos(-m2) * t;
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        t = h * 0.20;
+        x++;
+        points[2].x = x + 0.2 * w;
+        points[2].y = y + 0.9 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[0].x = x + 0.2 * w;
+        points[0].y = y + 0.1 * h;
+        m1 = (points[1].y - points[2].y) / (points[1].x - points[2].x);
+        dx = sin(m1) * t;
+        dy = cos(m1) * t;
+        points[3].x = points[2].x + dx;
+        points[3].y = points[2].y - dy;
+        dt = t / sin(-m1);
+        points[4].x = points[1].x - dt - 1;
+        points[4].y = points[1].y;
+        m2 = (points[0].y - points[1].y) / (points[0].x - points[1].x);
+        dx = sin(-m2) * t;
+        dy = cos(-m2) * t;
+        points[5].x = points[0].x + dx;
+        points[5].y = points[0].y + dy;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+    {
+        int i;
+        
+        for (i = 0; i < 7; i++) {
+            fprintf(stderr, "points[%d] = %g,%g\n", i, points[i].x, points[i].y);
+        }
+    }
+    PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
+}
+
+void
+Blt_PaintChevron(Blt_Picture picture, int x, int y, int w, int h,
+                 unsigned int color, int direction)
+{
+    Point2d points[7];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    double t;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    t = w * 0.25;
+    switch (direction) {
+    case ARROW_UP:
+        t = w * 0.25;
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.9 * h - t;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.9 * h - t;
+        points[3].x = x + 0.9 * w;
+        points[3].y = y + 0.9 * h;
+        points[4].x = x + 0.5 * w;
+        points[4].y = y + 0.1 * h + t;
+        points[5].x = x + 0.1 * w;
+        points[5].y = y + 0.9 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.1 * h + t;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.1 * h + t;
+        points[3].x = x + 0.1 * w;
+        points[3].y = y + 0.1 * h;
+        points[4].x = x + 0.5 * w;
+        points[4].y = y + 0.9 * h - t;
+        points[5].x = x + 0.9 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        t = h * 0.25;
+        /*x -= 2; */
+        points[0].x = x + 0.9 * w - t;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.9 * w - t;
+        points[2].y = y + 0.9 * h;
+        points[3].x = x + 0.9 * w;
+        points[3].y = y + 0.9 * h;
+        points[4].x = x + 0.1 * w + t;
+        points[4].y = y + 0.5 * h;
+        points[5].x = x + 0.9 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        /* x++; */
+        t = h * 0.25;
+        points[0].x = x + 0.1 * w + t;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.1 * w + t;
+        points[2].y = y + 0.9 * h;
+        points[3].x = x + 0.1 * w;
+        points[3].y = y + 0.9 * h;
+        points[4].x = x + 0.9 * w - t;
+        points[4].y = y + 0.5 * h;
+        points[5].x = x + 0.1 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = points[0].x;
+        points[6].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+    PaintPolygonAA2(picture, 7, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
+}
+
+void
+Blt_PaintArrow(Blt_Picture picture, int x, int y, int w, int h,
+               unsigned int color, int direction)
+{
+    Point2d points[8];
+    Region2d reg;
+    Blt_PaintBrush brush;
+    Blt_Shadow shadow;
+    
+    reg.left = reg.top = 0;
+    reg.right = w;
+    reg.bottom = h;
+    switch (direction) {
+    case ARROW_UP:
+        points[0].x = x + 0.1 * w;
+        points[0].y = y + 0.4 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.1 * h;
+        points[2].x = x + 0.9 * w;
+        points[2].y = y + 0.4 * h;
+        points[3].x = x + 0.633333333 * w;
+        points[3].y = y + 0.4 * h;
+        points[4].x = x + 0.633333333 * w;
+        points[4].y = y + 0.9 * h;
+        points[5].x = x + 0.366666666 * w;
+        points[5].y = y + 0.9 * h;
+        points[6].x = x + 0.366666666 * w;
+        points[6].y = y + 0.4 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    case ARROW_DOWN:
+        points[0].x = x + 0.9 * w;
+        points[0].y = y + 0.6 * h;
+        points[1].x = x + 0.5 * w;
+        points[1].y = y + 0.9 * h;
+        points[2].x = x + 0.1 * w;
+        points[2].y = y + 0.6 * h;
+        points[3].x = x + 0.366666666 * w;
+        points[3].y = y + 0.6 * h;
+        points[4].x = x + 0.366666666 * w;
+        points[4].y = y + 0.1 * h;
+        points[5].x = x + 0.633333333 * w;
+        points[5].y = y + 0.1 * h;
+        points[6].x = x + 0.633333333 * w;
+        points[6].y = y + 0.6 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    case ARROW_LEFT:
+        points[0].x = x + 0.4 * w;
+        points[0].y = y + 0.9 * h;
+        points[1].x = x + 0.1 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.4 * w;
+        points[2].y = y + 0.1 * h;
+        points[3].x = x + 0.4 * w;
+        points[3].y = y + 0.366666666 * h;
+        points[4].x = x + 0.9 * w;
+        points[4].y = y + 0.366666666 * h;
+        points[5].x = x + 0.9 * w;
+        points[5].y = y + 0.633333333 * h;
+        points[6].x = x + 0.4 * w;
+        points[6].y = y + 0.633333333 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    case ARROW_RIGHT:
+        points[0].x = x + 0.6 * w;
+        points[0].y = y + 0.1 * h;
+        points[1].x = x + 0.9 * w;
+        points[1].y = y + 0.5 * h;
+        points[2].x = x + 0.6 * w;
+        points[2].y = y + 0.9 * h;
+        points[3].x = x + 0.6 * w;
+        points[3].y = y + 0.633333333 * h;
+        points[4].x = x + 0.1 * w;
+        points[4].y = y + 0.633333333 * h;
+        points[5].x = x + 0.1 * w;
+        points[5].y = y + 0.366666666 * h;
+        points[6].x = x + 0.6 * w;
+        points[6].y = y + 0.366666666 * h;
+        points[7].x = points[0].x;
+        points[7].y = points[0].y;
+        break;
+    }
+    brush = Blt_NewColorBrush(color);
+#ifndef notdef
+    shadow.width = 2, shadow.offset = 2;
+    shadow.color.u32 = 0x5F000000;
+    PaintPolygonAA2(picture, 8, points, &reg, brush, &shadow);
+#else
+    PaintPolygonAA2(picture, 8, points, &reg, brush, NULL);
+#endif
+    Blt_FreeBrush(brush);
+    Blt_Picture_SetCompositeFlag(picture);
 }

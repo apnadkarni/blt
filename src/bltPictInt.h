@@ -67,11 +67,6 @@
 
 #define RGBIndex(r,g,b) (((r)<<10) + ((r)<<6) + (r) + ((g) << 5) + (g) + (b))
 
-#define ROTATE_0        0
-#define ROTATE_90       1
-#define ROTATE_180      2
-#define ROTATE_270      3
-
 #define UCLAMP(s) (unsigned char)(((s) < 0) ? 0 : ((s) > 255) ? 255 : (s))
 
 /*
@@ -195,15 +190,15 @@ typedef void (Blt_ZoomHorizontallyProc)(Blt_Picture dest, Blt_Picture src,
         Blt_ResampleFilter filter);
 typedef void (Blt_ZoomVerticallyProc)(Blt_Picture dest, Blt_Picture src, 
         Blt_ResampleFilter filter);
-typedef void (Blt_CompositeRegionProc)(Blt_Picture dest, Blt_Picture src, 
+typedef void (Blt_CompositeAreaProc)(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
 typedef void (Blt_CompositePicturesProc)(Blt_Picture dest, Blt_Picture src);
-typedef void (Blt_CopyPicturesProc)(Blt_Picture dest, Blt_Picture src);
+typedef void (Blt_CopyPictureBitsProc)(Blt_Picture dest, Blt_Picture src);
 typedef void (Blt_SelectPixelsProc)(Blt_Picture dest, Blt_Picture src, 
         Blt_Pixel *lowPtr , Blt_Pixel *highPtr);
 typedef void (Blt_PremultiplyColorsProc)(Blt_Picture picture);
 typedef void (Blt_UnmultiplyColorsProc)(Blt_Picture picture);
-typedef void (Blt_CopyRegionProc)(Blt_Picture dest, Blt_Picture src, 
+typedef void (Blt_CopyAreaProc)(Blt_Picture dest, Blt_Picture src, 
         int sx, int sy, int w, int h, int dx, int dy);
 typedef void (Blt_CrossFadePicturesProc)(Blt_Picture dest, Blt_Picture from,
         Blt_Picture to, double opacity);
@@ -218,13 +213,13 @@ typedef struct {
     Blt_TentVerticallyProc *tentVerticallyProc;
     Blt_ZoomHorizontallyProc *zoomHorizontallyProc;
     Blt_ZoomVerticallyProc *zoomVerticallyProc;
-    Blt_CompositeRegionProc *compositeRegionProc;
+    Blt_CompositeAreaProc *compositeAreaProc;
     Blt_CompositePicturesProc *compositePicturesProc;
     Blt_SelectPixelsProc *selectPixelsProc;
     Blt_PremultiplyColorsProc *premultiplyColorsProc;
     Blt_UnmultiplyColorsProc *unassociateColorsProc;
-    Blt_CopyRegionProc *copyRegionProc;
-    Blt_CopyPicturesProc *copyPicturesProc;
+    Blt_CopyAreaProc *copyAreaProc;
+    Blt_CopyPictureBitsProc *copyPictureBitsProc;
     Blt_CrossFadePicturesProc *crossFadePicturesProc;
     Blt_BlankPictureProc *blankPictureProc;
     Blt_ZoomHorizontallyProc *zoomHorizontallyProc2;

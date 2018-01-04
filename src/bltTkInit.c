@@ -67,6 +67,7 @@ static Tcl_AppInitProc *cmdProcs[] =
     Blt_ComboButtonInitProc,
     Blt_ComboEditorInitProc,
     Blt_ComboEntryInitProc,
+    Blt_ComboFrameInitProc,
     Blt_ComboMenuInitProc,
     Blt_ComboTreeInitProc,
 #ifndef NO_CONTAINER
@@ -201,8 +202,12 @@ Blt_TkInit(Tcl_Interp *interp)         /* Interpreter to add extra commands */
         return TCL_ERROR;
     }
     Blt_RegisterPictureImageType(interp);
-    Blt_RegisterEpsCanvasItem();
+    Blt_RegisterCanvasEpsItem();
+    Blt_RegisterCanvasLabelItem();
     Blt_InitXRandrConfig(interp);
+#ifndef WIN32
+    Blt_InitFeaturesArray(interp);
+#endif
 
     /* Initialize the BLT commands that only use Tk. */
     for (p = cmdProcs; *p != NULL; p++) {

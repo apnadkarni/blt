@@ -45,6 +45,13 @@ namespace eval blt {
 	variable _private
 	array set _private {
 	    activate yes
+            afterId -1
+            lastx -1
+            lasty -1
+            drag 0
+            scroll 0
+            x -1
+            y -1
 	}
     }
 }
@@ -93,6 +100,32 @@ bind BltTabset <ButtonRelease-3> {
     %W configure -cursor $blt::Tabset::_private(cursor)
     set blt::Tabset::_private(activate) yes
     %W activate @%x,%y
+}
+
+# B1 Enter
+#   Stop auto-scrolling
+bind BltTabset <ButtonRelease-1> {
+    after cancel $blt::Tabset::_private(afterId)
+    set  blt::Tabset::_private(afterId) -1
+}
+bind BltTabset <B1-Enter> {
+    after cancel $blt::Tabset::_private(afterId)
+    set blt::Tabset::_private(afterId) -1
+}
+
+bind BltTabset <B1-Motion> {
+    set blt::Tabset::_private(x) %x
+    set blt::Tabset::_private(y) %y
+    set blt::Tabset::_private(scroll) 1
+}
+
+
+# B1 Leave
+#   Start auto-scrolling
+bind BltTabset <B1-Leave> {
+    if { $blt::Tabset::_private(scroll) } {
+        blt::Tabset::AutoScroll %W 
+    }
 }
 
 # ----------------------------------------------------------------------
@@ -237,7 +270,8 @@ proc blt::Tabset::MoveFocus { w tab } {
 #
 # ----------------------------------------------------------------------
 proc blt::Tabset::DestroyTearoff { w tab } {
-    set id [$w id $tab]
+    set id [$w nameof $tab]
+    regsub -all {\.} $id {_} id
     set top "$w.toplevel-$id"
     if { [winfo exists $top] } {
 	wm withdraw $top
@@ -284,7 +318,8 @@ proc blt::Tabset::CreateTearoff { w tab rootX rootY } {
     if { ($focus == $w) || ([string match  ${win}.* $focus]) } {
 	focus -force $w
     }
-    set id [$w id $index]
+    set id [$w nameof $index]
+    regsub -all {\.} $id {_} id
     set top "$w.toplevel-$id"
     toplevel $top
     $w tearoff $tab $top.container
@@ -331,11 +366,25 @@ proc blt::Tabset::ToggleTearoff { w index } {
     $w invoke $tab
     set win [$w tearoff $index]
     if { $win == "$w" } {
-	foreach { x1 y1 x2 y2 } [$w extents $tab] break
+	foreach { x1 y1 x2 y2 } [$w bbox $tab] break
 	CreateTearoff $w $tab $x1 $y1
     } elseif { $win != "" } {
 	DestroyTearoff $w $tab
     }
+}
+
+proc blt::Tabset::PointerOverTab { w tab x y } {
+    foreach {x1 y1 x2 y2} [$w bbox $tab] break
+    if { ($x < $x1) || ($x >= $x2) || ($y < $y1) || ($y >= $y2) } {
+        return 0
+    } else {
+        return 1
+    }
+}
+
+proc blt::Tabset::HandleButtonRelease { w x y } {
+    variable _private
+    
 }
 
 # ----------------------------------------------------------------------
@@ -363,41 +412,89 @@ proc blt::Tabset::ToggleTearoff { w index } {
 # ----------------------------------------------------------------------
 
 proc blt::Tabset::Init { w } {
-    $w bind all <Enter> { 
+    $w bind all label <Enter> { 
 	if { $::blt::Tabset::_private(activate) } {
 	    %W activate current
         }
     }
-    $w bind all <Leave> { 
+    $w bind all label <Leave> { 
         %W activate "" 
     }
-    $w bind all <ButtonPress-1> { 
-	blt::Tabset::Select %W "current"
+    $w bind all label <ButtonPress-1> { 
+        %W slide anchor current %X %Y
     }
-    $w bind all <Control-ButtonPress-1> { 
+    $w bind all label <B1-Motion> { 
+        %W slide mark %X %Y
+    }
+    $w bind all label <ButtonRelease-1> { 
+        if { [%W slide isactive] } {
+            %W slide mark %X %Y
+            %W slide stop
+        } elseif { [blt::Tabset::PointerOverTab %W "current" %X %Y] } {
+            blt::Tabset::Select %W "current"
+        }
+    }
+    $w bind all label <Control-ButtonRelease-1> { 
 	blt::Tabset::ToggleTearoff %W active
     }
     $w configure -perforationcommand [list blt::Tabset::ToggleTearoff $w]
-    $w bind Perforation <Enter> { 
+    $w bind all perforation <Enter> { 
 	%W perforation activate on
     }
-    $w bind Perforation <Leave> { 
+    $w bind all perforation <Leave> { 
 	%W perforation activate off
     }
-    $w bind Perforation <ButtonRelease-1> { 
+    $w bind all perforation <ButtonRelease-1> { 
 	%W perforation invoke 
     }
-    $w bind Button <Enter> { 
-	%W button activate current 
+    $w bind all xbutton <Enter> { 
+	%W xbutton activate current 
     }
-    $w bind Button <Leave> { 
-	%W button activate ""
+    $w bind all xbutton <Leave> { 
+	%W xbutton deactivate
     }
-    $w bind Button <ButtonRelease-1> { 
-	if { [catch {%W close current}] == 0 } {
+    $w bind all xbutton <ButtonRelease-1> { 
+	if { [catch {%W xbutton invoke current}] == 0 } {
 	    %W delete current
 	}
     }
     set _private(cursor) [$w cget -cursor]
+}
+
+#
+# AutoScroll --
+#
+#   Invoked when the user is selecting a tab in a tabset widget and drags
+#   the mouse pointer outside of the widget.  Scrolls the view in the
+#   direction of the pointer.
+#
+proc blt::Tabset::AutoScroll { w } {
+    variable _private
+
+    if { ![winfo exists $w] } {
+        return
+    }
+    if { !$_private(scroll) } {
+        return 
+    }
+    set x $_private(x)
+    set y $_private(y)
+    if 0 {
+    if {$y >= [winfo height $w]} {
+        $w yview scroll 1 units
+        set neighbor down
+    } elseif {$y < 0} {
+        $w yview scroll -1 units
+        set neighbor up
+    }
+    }
+    if {$x >= [winfo width $w]} {
+        $w view scroll 2 units
+        set neighbor left
+    } elseif {$x < 0} {
+        $w view scroll -2 units
+        set neighbor right
+    }
+    set _private(afterId) [after 50 blt::Tabset::AutoScroll $w]
 }
 

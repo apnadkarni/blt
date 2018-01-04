@@ -107,7 +107,7 @@ typedef struct {
 
 typedef struct {
     Blt_TreeNode node;                  /* Node being searched. */
-    unsigned long nextIndex;            /* Index of next bucket to be
+    long nextIndex;                     /* Index of next bucket to be
                                          * enumerated after present one. */
     Blt_TreeValue nextValue;            /* Next entry to be enumerated in the
                                          * the current bucket. */
@@ -147,6 +147,7 @@ struct _Blt_TreeObject {
     Blt_HashTable nodeTable;            /* Table of node identifiers. Used to
                                          * search for a node pointer given an
                                          * inode.*/
+    Blt_HashTable keyTable;             /* Table of string keys. */
     Blt_TreeInterpData *dataPtr;
     long nextInode;
     long numNodes;                      /* Always counts root node. */
@@ -303,7 +304,7 @@ typedef struct {
  */
 struct _Blt_TreeKeyIterator {
     Blt_TreeNode node;                  /* Table being searched. */
-    unsigned long nextIndex;            /* Index of next bucket to be
+    long nextIndex;                     /* Index of next bucket to be
                                          * enumerated after present one. */
     Blt_TreeValue nextValue;            /* Next entry to be enumerated in the
                                          * the current bucket. */
@@ -311,8 +312,6 @@ struct _Blt_TreeKeyIterator {
 
 BLT_EXTERN Blt_TreeKey Blt_Tree_GetKey(Blt_Tree tree, const char *string);
 BLT_EXTERN Blt_TreeKey Blt_Tree_GetKeyFromNode(Blt_TreeNode node, 
-        const char *string);
-BLT_EXTERN Blt_TreeKey Blt_Tree_GetKeyFromInterp(Tcl_Interp *interp,
         const char *string);
 
 BLT_EXTERN Blt_TreeNode Blt_Tree_CreateNode(Blt_Tree tree, Blt_TreeNode parent, 
@@ -485,21 +484,6 @@ BLT_EXTERN void Blt_Tree_NewTagTable(Blt_Tree tree);
 
 BLT_EXTERN Blt_HashEntry *Blt_Tree_FirstTag(Blt_Tree tree, 
         Blt_HashSearch *searchPtr);
-
-BLT_EXTERN void Blt_Tree_DumpNode(Blt_Tree tree, Blt_TreeNode root, 
-        Blt_TreeNode node, Tcl_DString *resultPtr);
-
-BLT_EXTERN int Blt_Tree_Dump(Blt_Tree tree, Blt_TreeNode root, 
-        Tcl_DString *resultPtr);
-
-BLT_EXTERN int Blt_Tree_DumpToFile(Tcl_Interp *interp, Blt_Tree tree, 
-        Blt_TreeNode root, const char *fileName);
-
-BLT_EXTERN int Blt_Tree_Restore(Tcl_Interp *interp, Blt_Tree tree, 
-        Blt_TreeNode root, const char *string, unsigned int flags);
-
-BLT_EXTERN int Blt_Tree_RestoreFromFile(Tcl_Interp *interp, Blt_Tree tree, 
-        Blt_TreeNode root, const char *fileName, unsigned int flags);
 
 BLT_EXTERN long Blt_Tree_Depth(Blt_Tree tree);
 

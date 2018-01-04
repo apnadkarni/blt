@@ -178,7 +178,34 @@ ReadErrorMesgFromChild(Tcl_Interp *interp, int f)
     return (numBytes > 0) ? TCL_ERROR : TCL_OK;
 }
 
-#ifdef MACOSX
+void
+Blt_DetachPids(int numPids, Blt_Pid *pids)
+{
+    Tcl_Pid *tclPids;
+    Tcl_Pid staticStorage[64];
+    int i, count;
+
+    if (numPids > 64) {
+        tclPids = Blt_AssertMalloc(numPids * sizeof(Tcl_Pid));
+    } else {
+        tclPids = staticStorage;
+    }
+    for (i = count = 0; i < numPids; i++) {
+        if (pids[i].pid != -1) {
+            long lpid;
+
+            lpid = pids[i].pid;
+            tclPids[count] = (Tcl_Pid)lpid;
+            count++;
+        }
+    }
+    Tcl_DetachPids(count, tclPids);
+    if (tclPids != staticStorage) {
+        Blt_Free(tclPids);
+    }
+}
+
+#ifndef HAVE_EXECVPE
 
 /* The following routines are used to emulate the "execvpe" system call for
  * MacOSX. */
@@ -396,7 +423,7 @@ execvpe(const char *file, char *const *argv, char *const *env)
     return result;
 }
 
-#endif /* MACOSX */
+#endif /* !HAVE_EXECVPE */
 
 static int
 GetFdFromChannel(Tcl_Channel channel, int direction)
@@ -1063,21 +1090,21 @@ Blt_CreatePipeline(
                                          * pids for processes in pipeline
                                          * (first pid is first process in
                                          * pipeline). */
-    int *stdinPipePtr,                  /* (out) If non-NULL, input to the
+    void *inPipePtr,                    /* (out) If non-NULL, input to the
                                          * pipeline comes from a pipe (unless
                                          * overridden by redirection in the
                                          * command).  The file id with which
                                          * to write to this pipe is stored at
                                          * *stdinPipePtr.  NULL means command
                                          * specified its own input source. */
-    int *stdoutPipePtr,                 /* (out) If non-NULL, output to the
+    void *outPipePtr,                   /* (out) If non-NULL, output to the
                                          * pipeline goes to a pipe, unless
                                          * overriden by redirection in the
                                          * command.  The file id with which to
                                          * read frome this pipe is stored at
                                          * *stdoutPipePtr.  NULL means command
                                          * specified its own output sink. */
-    int *stderrPipePtr,                 /* (out) If non-NULL, all stderr
+    void *errPipePtr,                   /* (out) If non-NULL, all stderr
                                          * output from the pipeline will go to
                                          * a temporary file created here, and
                                          * a descriptor to read the file will
@@ -1098,7 +1125,7 @@ Blt_CreatePipeline(
                                          * exist at *pids right now. */
     int cmdCount;                       /* Count of number of distinct
                                          * commands found in objc/objv. */
-    char *inputLiteral = NULL;          /* If non-null, then this points to a
+    char *inputLiteral;                 /* If non-null, then this points to a
                                          * string containing input data
                                          * (specified via <<) to be piped to
                                          * the first process in the
@@ -1109,6 +1136,10 @@ Blt_CreatePipeline(
     FileInfo in, out, err;
     int pipeIn;
     char **argv;
+    int *stderrPipePtr = errPipePtr;
+    int *stdoutPipePtr = outPipePtr;
+    int *stdinPipePtr = inPipePtr;
+    
     inputLiteral = NULL;
     pipeIn = -1;
     numPids = 0;
@@ -1387,8 +1418,8 @@ Blt_CreatePipeline(
 	    err.file = out.file;
         } else if (stderrPipePtr != NULL) {
             /*
-             * Stderr from the last process in the pipeline is to go to a pipe
-             * that can be read by the caller.
+             * Stderr from the last process in the pipeline is to go to a
+             * pipe that can be read by the caller.
              */
             if (CreatePipe(interp, stderrPipePtr, &err.file) != TCL_OK) {
                 goto error;
@@ -1538,11 +1569,7 @@ Blt_CreatePipeline(
         *stderrPipePtr = -1;
     }
     if (pids != NULL) {
-        for (i = 0; i < numPids; i++) {
-            if (pids[i].pid != -1) {
-                Tcl_DetachPids(1, (Tcl_Pid *)(pids + i));
-            }
-        }
+        Blt_DetachPids(numPids, pids);
         Blt_Free(pids);
     }
     numPids = -1;

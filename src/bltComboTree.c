@@ -731,39 +731,39 @@ typedef int (ApplyProc) (ComboTree *comboPtr, Entry *entryPtr);
 
 static Blt_TreeApplyProc CreateApplyProc;
 
-static Blt_OptionParseProc ObjToIconsProc;
-static Blt_OptionPrintProc IconsToObjProc;
+static Blt_OptionParseProc ObjToIcons;
+static Blt_OptionPrintProc IconsToObj;
 static Blt_OptionFreeProc FreeIconsProc;
 static Blt_CustomOption iconsOption = {
-    ObjToIconsProc, IconsToObjProc, FreeIconsProc, NULL,
+    ObjToIcons, IconsToObj, FreeIconsProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToButtonProc;
-static Blt_OptionPrintProc ButtonToObjProc;
+static Blt_OptionParseProc ObjToButton;
+static Blt_OptionPrintProc ButtonToObj;
 static Blt_CustomOption buttonOption = {
-    ObjToButtonProc, ButtonToObjProc, NULL, NULL,
+    ObjToButton, ButtonToObj, NULL, NULL,
 };
 
-static Blt_OptionParseProc ObjToUidProc;
-static Blt_OptionPrintProc UidToObjProc;
+static Blt_OptionParseProc ObjToUid;
+static Blt_OptionPrintProc UidToObj;
 static Blt_OptionFreeProc FreeUidProc;
 static Blt_CustomOption uidOption = {
-    ObjToUidProc, UidToObjProc, FreeUidProc, NULL,
+    ObjToUid, UidToObj, FreeUidProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToLabelProc;
-static Blt_OptionPrintProc LabelToObjProc;
+static Blt_OptionParseProc ObjToLabel;
+static Blt_OptionPrintProc LabelToObj;
 static Blt_OptionFreeProc FreeLabelProc;
 static Blt_CustomOption labelOption =
 {
-    ObjToLabelProc, LabelToObjProc, FreeLabelProc, NULL,
+    ObjToLabel, LabelToObj, FreeLabelProc, NULL,
 };
 
-static Blt_OptionParseProc ObjToStyleProc;
-static Blt_OptionPrintProc StyleToObjProc;
+static Blt_OptionParseProc ObjToStyle;
+static Blt_OptionPrintProc StyleToObj;
 static Blt_OptionFreeProc FreeStyleProc;
 static Blt_CustomOption styleOption = {
-    ObjToStyleProc, StyleToObjProc, FreeStyleProc, NULL,
+    ObjToStyle, StyleToObj, FreeStyleProc, NULL,
 };
 
 static Blt_ConfigSpec buttonSpecs[] =
@@ -771,25 +771,22 @@ static Blt_ConfigSpec buttonSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "Background", DEF_BUTTON_ACTIVE_BG, 
         Blt_Offset(ComboTree, button.activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", "Foreground",
         DEF_BUTTON_ACTIVE_FG, 
         Blt_Offset(ComboTree, button.activeFgColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BUTTON_NORMAL_BG, Blt_Offset(ComboTree, button.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
-        0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BUTTON_BORDERWIDTH, Blt_Offset(ComboTree, button.borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-closerelief", "closeRelief", "Relief",
         DEF_BUTTON_CLOSE_RELIEF, Blt_Offset(ComboTree, button.closeRelief),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_BUTTON_NORMAL_FG, Blt_Offset(ComboTree, button.fgColor), 0},
     {BLT_CONFIG_CUSTOM, "-images", "images", "Icons", (char *)NULL, 
@@ -837,15 +834,12 @@ static Blt_ConfigSpec styleSpecs[] =
         "Background", DEF_STYLE_ALT_BG, Blt_Offset(Style, altBg), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_STYLE_BG, Blt_Offset(Style, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_STYLE_BORDERWIDTH, Blt_Offset(Style, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_STYLE_FONT, 
         Blt_Offset(Style, labelFont), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", DEF_STYLE_FG,
@@ -871,10 +865,8 @@ static Blt_ConfigSpec comboSpecs[] =
          0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_STYLE_BG, Blt_Offset(ComboTree, defStyle.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(ComboTree, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -888,8 +880,7 @@ static Blt_ConfigSpec comboSpecs[] =
         (char *)NULL, Blt_Offset(ComboTree, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes",  DEF_DASHES, 
         Blt_Offset(ComboTree, dashes), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_STYLE_FONT, 
         Blt_Offset(ComboTree, defStyle.labelFont), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -1056,6 +1047,7 @@ static Tk_GeomMgr comboMgrInfo = {
 
 static int ComputeVisibleEntries(ComboTree *comboPtr);
 
+#ifdef notdef
 static inline int
 GetWidth(ComboTree *comboPtr)
 {
@@ -1085,6 +1077,7 @@ GetHeight(ComboTree *comboPtr)
     }
     return h;
 }
+#endif
 
 static Tcl_Obj *
 GetEntryBBox(ComboTree *comboPtr, Entry *entryPtr)
@@ -1286,7 +1279,7 @@ NodeToEntry(ComboTree *comboPtr, Blt_TreeNode node)
     if (node == NULL) {
         return NULL;
     }
-    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (char *)node);
+    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (const char *)node);
     if (hPtr == NULL) {
         Blt_Warn("NodeToEntry: can't find node %s\n", 
                  Blt_Tree_NodeLabel(node));
@@ -1329,7 +1322,7 @@ GetEntryFromNode(ComboTree *comboPtr, Blt_TreeNode node)
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (char *)node);
+    hPtr = Blt_FindHashEntry(&comboPtr->entryTable, (const char *)node);
     if (hPtr == NULL) {
         return NULL;
     }
@@ -2424,10 +2417,11 @@ DestroyIcons(ComboTree *comboPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
-    struct _Icon *iconPtr;
 
     for (hPtr = Blt_FirstHashEntry(&comboPtr->iconTable, &cursor);
          hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
+        struct _Icon *iconPtr;
+
         iconPtr = Blt_GetHashValue(hPtr);
         Tk_FreeImage(iconPtr->tkImage);
         Blt_Free(iconPtr);
@@ -3211,7 +3205,7 @@ ComputeComboGeometry(ComboTree *comboPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToButtonProc --
+ * ObjToButton --
  *
  *      Convert a string to one of three values.
  *              0 - false, no, off
@@ -3226,8 +3220,8 @@ ComputeComboGeometry(ComboTree *comboPtr)
  */
 /*ARGSUSED*/
 static int
-ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToButton(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     const char *string;
     int *flagsPtr = (int *)(widgRec + offset);
@@ -3253,7 +3247,7 @@ ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ButtonToObjProc --
+ * ButtonToObj --
  *
  * Results:
  *      The string representation of the button boolean is returned.
@@ -3262,13 +3256,8 @@ ObjToButtonProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ButtonToObjProc(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,            /* Not used. */
-    char *widgRec,
-    int offset,                 /* Offset to field in structure */
-    int flags)  
+ButtonToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)     
 {
     int bool;
     unsigned int buttonFlags = *(int *)(widgRec + offset);
@@ -3284,7 +3273,7 @@ ButtonToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLabelProc --
+ * ObjToLabel --
  *
  *      Convert the string representing the label. 
  *
@@ -3297,8 +3286,8 @@ ButtonToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToLabel(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     UID *labelPtr = (UID *)(widgRec + offset);
     const char *string;
@@ -3315,7 +3304,7 @@ ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * LabelToObjProc --
+ * LabelToObj --
  *
  * Results:
  *      The string of the entry's label is returned.
@@ -3324,8 +3313,8 @@ ObjToLabelProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LabelToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+LabelToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     UID labelUid = *(UID *)(widgRec + offset);
     const char *string;
@@ -3370,7 +3359,7 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStyleProc --
+ * ObjToStyle --
  *
  *      Convert the string representation of a color into a XColor pointer.
  *
@@ -3382,18 +3371,18 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToStyle(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboTree *comboPtr;
     Entry *entryPtr = (Entry *)widgRec;
     Style **stylePtrPtr = (Style **)(widgRec + offset);
     Style *stylePtr;
-    const char *string;
-
-    string = Tcl_GetString(objPtr);
+    int length;
+    
+    Tcl_GetStringFromObj(objPtr, &length);
     comboPtr = entryPtr->comboPtr;
-    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+    if ((length == 0) && (flags & BLT_CONFIG_NULL_OK)) {
         stylePtr = NULL;
     } else if (GetStyleFromObj(interp, comboPtr, objPtr, &stylePtr) != TCL_OK) {
         return TCL_ERROR;
@@ -3402,7 +3391,9 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if ((*stylePtrPtr != NULL) && (*stylePtrPtr != &comboPtr->defStyle)) {
         DestroyStyle(*stylePtrPtr);
     }
-    stylePtr->refCount++;
+    if (stylePtr != NULL) {
+        stylePtr->refCount++;
+    }
     *stylePtrPtr = stylePtr;
     return TCL_OK;
 }
@@ -3410,7 +3401,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * StyleToObjProc --
+ * StyleToObj --
  *
  *      Return the name of the style.
  *
@@ -3421,8 +3412,8 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+StyleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3437,7 +3428,7 @@ StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToUidProc --
+ * ObjToUid --
  *
  *      Converts the string to a Uid. Uid's are hashed, reference counted
  *      strings.
@@ -3446,8 +3437,8 @@ StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static int
-ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToUid(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+         Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     ComboTree *comboPtr = clientData;
     UID *uidPtr = (UID *)(widgRec + offset);
@@ -3459,7 +3450,7 @@ ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * UidToObjProc --
+ * UidToObj --
  *
  *      Returns the uid as a string.
  *
@@ -3470,8 +3461,8 @@ ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-UidToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-             char *widgRec, int offset, int flags)  
+UidToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+         char *widgRec, int offset, int flags)  
 {
     UID uid = *(UID *)(widgRec + offset);
 
@@ -3533,7 +3524,7 @@ IconChangedProc(ClientData clientData, int x, int y, int width, int height,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconsProc --
+ * ObjToIcons --
  *
  *      Convert a list of image names into Tk images.
  *
@@ -3546,8 +3537,8 @@ IconChangedProc(ClientData clientData, int x, int y, int width, int height,
  */
 /*ARGSUSED*/
 static int
-ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToIcons(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Tcl_Obj **objv;
     ComboTree *comboPtr = clientData;
@@ -3581,7 +3572,7 @@ ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconsToObjProc --
+ * IconsToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -3592,8 +3583,8 @@ ObjToIconsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)  
+IconsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)  
 {
     Icon *icons = *(Icon **)(widgRec + offset);
     Tcl_Obj *listObjPtr;
@@ -3643,11 +3634,12 @@ Apply(ComboTree *comboPtr, Entry *entryPtr, ApplyProc *proc, unsigned int flags)
     }
     if (((flags & ENTRY_CLOSED) == 0) || 
         ((entryPtr->flags & ENTRY_CLOSED) == 0)) {
-        Entry *childPtr;
         Blt_TreeNode node, next;
 
         for (node = Blt_Tree_FirstChild(entryPtr->node); node != NULL; 
              node = next) {
+            Entry *childPtr;
+
             next = Blt_Tree_NextSibling(node);
             /* 
              * Get the next child before calling Apply
@@ -4462,6 +4454,108 @@ PrintFlags(ComboTree *comboPtr, char *string)
 #endif
 
 static void
+MapAncestors(ComboTree *comboPtr, Entry *entryPtr)
+{
+    while (entryPtr != comboPtr->rootPtr) {
+        entryPtr = ParentEntry(entryPtr);
+        if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
+            comboPtr->flags |= LAYOUT_PENDING;
+            entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDE);
+        } 
+    }
+}
+
+static int 
+SeeEntry(ComboTree *comboPtr, Entry *entryPtr, Tk_Anchor anchor)
+{
+    int width, height;
+    int x, y;
+    int left, right, top, bottom;
+
+    if (entryPtr->flags & ENTRY_HIDE) {
+        MapAncestors(comboPtr, entryPtr);
+        comboPtr->flags |= SCROLL_PENDING;
+        /*
+         * If the entry wasn't previously exposed, its world coordinates
+         * aren't likely to be valid.  So re-compute the layout before we
+         * try to see the viewport to the entry's location.
+         */
+        ComputeComboGeometry(comboPtr);
+    }
+    width = VPORTWIDTH(comboPtr);
+    height = VPORTHEIGHT(comboPtr);
+
+    /*
+     * XVIEW: If the entry is left or right of the current view, adjust the
+     *        offset.  If the entry is nearby, adjust the view just a bit.
+     *        Otherwise, center the entry.
+     */
+    left = comboPtr->xOffset;
+    right = comboPtr->xOffset + width;
+
+    switch (anchor) {
+    case TK_ANCHOR_W:
+    case TK_ANCHOR_NW:
+    case TK_ANCHOR_SW:
+        x = 0;
+        break;
+    case TK_ANCHOR_E:
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_SE:
+        x = entryPtr->worldX + entryPtr->width + 
+            ICONWIDTH(Blt_Tree_NodeDepth(entryPtr->node)) - width;
+        break;
+    default:
+        if (entryPtr->worldX < left) {
+            x = entryPtr->worldX;
+        } else if ((entryPtr->worldX + entryPtr->width) > right) {
+            x = entryPtr->worldX + entryPtr->width - width;
+        } else {
+            x = comboPtr->xOffset;
+        }
+        break;
+    }
+    /*
+     * YVIEW: If the entry is above or below the current view, adjust the
+     *        offset.  If the entry is nearby, adjust the view just a bit.
+     *        Otherwise, center the entry.
+     */
+    top = comboPtr->yOffset;
+    bottom = comboPtr->yOffset + height;
+
+    switch (anchor) {
+    case TK_ANCHOR_N:
+        y = comboPtr->yOffset;
+        break;
+    case TK_ANCHOR_NE:
+    case TK_ANCHOR_NW:
+        y = entryPtr->worldY - (height / 2);
+        break;
+    case TK_ANCHOR_S:
+    case TK_ANCHOR_SE:
+    case TK_ANCHOR_SW:
+        y = entryPtr->worldY + entryPtr->height - height;
+        break;
+    default:
+        if (entryPtr->worldY < top) {
+            y = entryPtr->worldY;
+        } else if ((entryPtr->worldY + entryPtr->height) > bottom) {
+            y = entryPtr->worldY + entryPtr->height - height;
+        } else {
+            y = comboPtr->yOffset;
+        }
+        break;
+    }
+    if ((y != comboPtr->yOffset) || (x != comboPtr->xOffset)) {
+        /* comboPtr->xOffset = x; */
+        comboPtr->yOffset = y;
+        comboPtr->flags |= SCROLL_PENDING;
+    }
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+static void
 FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
 {
     int x, y, w, h;
@@ -4885,8 +4979,8 @@ DrawLabel(ComboTree *comboPtr, Entry *entryPtr, Drawable drawable, int x, int y,
                 x, y);
 #ifdef notdef
         if (entryPtr == comboPtr->activePtr) {
-            Blt_Ts_UnderlineLayout(comboPtr->tkwin, drawable, entryPtr->textPtr,
-                &ts, x, y);
+            Blt_Ts_UnderlineChars(comboPtr->tkwin, drawable, 
+               entryPtr->textPtr, &ts, x, y);
         }
 #endif
     }
@@ -6106,18 +6200,6 @@ HideEntryApplyProc(ComboTree *comboPtr, Entry *entryPtr)
     return TCL_OK;
 }
 
-static void
-MapAncestors(ComboTree *comboPtr, Entry *entryPtr)
-{
-    while (entryPtr != comboPtr->rootPtr) {
-        entryPtr = ParentEntry(entryPtr);
-        if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
-            comboPtr->flags |= LAYOUT_PENDING;
-            entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDE);
-        } 
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -6515,14 +6597,14 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboTree *comboPtr = clientData;
     Entry *entryPtr;
-    long nodeId;
+    int64_t inode;
 
-    nodeId = -1;
+    inode = -1;
     if ((GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) == TCL_OK) && 
         (entryPtr != NULL)) {
-        nodeId = Blt_Tree_NodeId(entryPtr->node);
+        inode = Blt_Tree_NodeId(entryPtr->node);
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), nodeId);
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp), inode);
     return TCL_OK;
 }
 
@@ -6688,7 +6770,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         }
     }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(entryPtr->node));
+    Tcl_SetWideIntObj(Tcl_GetObjResult(interp),
+                      Blt_Tree_NodeId(entryPtr->node));
     return TCL_OK;
 }
 
@@ -6970,6 +7053,55 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ResetOp --
+ *
+ *      Invokes the reset command if one is configured.  This is typically
+ *      called by ComboButton or ComboEntry code to reset the menu before
+ *      it's being used.
+ *
+ * Results:
+ *      Always returns TCL_OK;
+ *
+ *      pathName reset string
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    Entry *entryPtr;
+    
+    if (GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) != TCL_OK) {
+        entryPtr = comboPtr->rootPtr;
+        if (comboPtr->flags & HIDE_ROOT) {
+            entryPtr = NextEntry(entryPtr, ENTRY_MASK);
+        }
+    }
+    if (entryPtr != NULL) {
+        SeeEntry(comboPtr, entryPtr, TK_ANCHOR_E);
+    }
+#ifdef notdef
+    comboPtr->selectPtr = itemPtr;
+    if (UpdateTextAndIconVars(interp, comboPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+#endif
+    /* Deactivate any active item. */
+    ActivateEntry(comboPtr, NULL);
+    comboPtr->activePtr = NULL;
+    if (entryPtr != NULL) {
+        ActivateEntry(comboPtr, entryPtr);
+        comboPtr->activePtr = entryPtr;
+    }
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ScanOp --
  *
  *      Implements the quick scan.
@@ -7052,10 +7184,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     ComboTree *comboPtr = clientData;
     Entry *entryPtr;
-    int width, height;
-    int x, y;
     Tk_Anchor anchor;
-    int left, right, top, bottom;
     const char *string;
 
     string = Tcl_GetString(objv[2]);
@@ -7082,86 +7211,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (entryPtr == NULL) {
         return TCL_OK;
     }
-    if (entryPtr->flags & ENTRY_HIDE) {
-        MapAncestors(comboPtr, entryPtr);
-        comboPtr->flags |= SCROLL_PENDING;
-        /*
-         * If the entry wasn't previously exposed, its world coordinates
-         * aren't likely to be valid.  So re-compute the layout before we
-         * try to see the viewport to the entry's location.
-         */
-        ComputeComboGeometry(comboPtr);
-    }
-    width = VPORTWIDTH(comboPtr);
-    height = VPORTHEIGHT(comboPtr);
-
-    /*
-     * XVIEW: If the entry is left or right of the current view, adjust the
-     *        offset.  If the entry is nearby, adjust the view just a bit.
-     *        Otherwise, center the entry.
-     */
-    left = comboPtr->xOffset;
-    right = comboPtr->xOffset + width;
-
-    switch (anchor) {
-    case TK_ANCHOR_W:
-    case TK_ANCHOR_NW:
-    case TK_ANCHOR_SW:
-        x = 0;
-        break;
-    case TK_ANCHOR_E:
-    case TK_ANCHOR_NE:
-    case TK_ANCHOR_SE:
-        x = entryPtr->worldX + entryPtr->width + 
-            ICONWIDTH(Blt_Tree_NodeDepth(entryPtr->node)) - width;
-        break;
-    default:
-        if (entryPtr->worldX < left) {
-            x = entryPtr->worldX;
-        } else if ((entryPtr->worldX + entryPtr->width) > right) {
-            x = entryPtr->worldX + entryPtr->width - width;
-        } else {
-            x = comboPtr->xOffset;
-        }
-        break;
-    }
-    /*
-     * YVIEW: If the entry is above or below the current view, adjust the
-     *        offset.  If the entry is nearby, adjust the view just a bit.
-     *        Otherwise, center the entry.
-     */
-    top = comboPtr->yOffset;
-    bottom = comboPtr->yOffset + height;
-
-    switch (anchor) {
-    case TK_ANCHOR_N:
-        y = comboPtr->yOffset;
-        break;
-    case TK_ANCHOR_NE:
-    case TK_ANCHOR_NW:
-        y = entryPtr->worldY - (height / 2);
-        break;
-    case TK_ANCHOR_S:
-    case TK_ANCHOR_SE:
-    case TK_ANCHOR_SW:
-        y = entryPtr->worldY + entryPtr->height - height;
-        break;
-    default:
-        if (entryPtr->worldY < top) {
-            y = entryPtr->worldY;
-        } else if ((entryPtr->worldY + entryPtr->height) > bottom) {
-            y = entryPtr->worldY + entryPtr->height - height;
-        } else {
-            y = comboPtr->yOffset;
-        }
-        break;
-    }
-    if ((y != comboPtr->yOffset) || (x != comboPtr->xOffset)) {
-        /* comboPtr->xOffset = x; */
-        comboPtr->yOffset = y;
-        comboPtr->flags |= SCROLL_PENDING;
-    }
-    EventuallyRedraw(comboPtr);
+    SeeEntry(comboPtr, entryPtr, anchor);
     return TCL_OK;
 }
 
@@ -7509,7 +7559,8 @@ static Blt_OpSpec comboOps[] =
     {"nearest",   1, NearestOp,   4, 5, "x y ?varName?",}, 
     {"open",      2, OpenOp,      2, 4, "?-recurse? entryName",}, 
     {"overbutton",2, OverButtonOp,4, 4, "x y",},
-    {"post",      1, PostOp,     2, 0, "switches",},
+    {"post",      1, PostOp,      2, 0, "switches",},
+    {"reset",     1, ResetOp,     3, 3, "entryName",},
     {"scan",      2, ScanOp,      5, 5, "dragto|mark x y",},
     {"see",       2, SeeOp,       3, 0, "?-anchor anchor? entry",},
     {"show",      2, ShowOp,      2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entryName ...?",},
@@ -7698,8 +7749,7 @@ ComboTreeObjCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             char info[200];
 
-            Blt_FormatString(info, 200,
-                             "\n    (while loading bindings for %.50s)", 
+            Blt_FmtString(info, 200, "\n\t(while loading bindings for %.50s)", 
                     Tcl_GetString(objv[0]));
             Tcl_AddErrorInfo(interp, info);
             goto error;

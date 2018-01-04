@@ -386,8 +386,8 @@ Blt_RotateBitmap(
 
     display = Tk_Display(tkwin);
     root = Tk_RootWindow(tkwin);
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rotWidth, &rotHeight,
-        (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rotWidth, &rotHeight, (Point2d *)NULL);
 
     destWidth = (int)ceil(rotWidth);
     destHeight = (int)ceil(rotHeight);
@@ -406,12 +406,10 @@ Blt_RotateBitmap(
 
     angle = FMOD(angle, 360.0);
     if (FMOD(angle, (double)90.0) == 0.0) {
-        int quadrant;
 
         /* Handle right-angle rotations specially. */
 
-        quadrant = (int)(angle / 90.0);
-        switch (quadrant) {
+        switch ((int)(angle / 90.0)) {
         case ROTATE_270:        /* 270 degrees */
             for (y = 0; y < destHeight; y++) {
                 sx = y;
@@ -669,19 +667,17 @@ Blt_ScaleRotateBitmapArea(
     destHeight = regionHeight;
 
     angle = FMOD(angle, 360.0);
-    Blt_GetBoundingBox(srcWidth, srcHeight, angle, &rWidth, &rHeight,
-               (Point2d *)NULL);
+    Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, angle, 
+        &rWidth, &rHeight, (Point2d *)NULL);
     xScale = rWidth / (double)virtWidth;
     yScale = rHeight / (double)virtHeight;
 
     if (FMOD(angle, (double)90.0) == 0.0) {
-        int quadrant;
         int y;
 
         /* Handle right-angle rotations specifically */
 
-        quadrant = (int)(angle / 90.0);
-        switch (quadrant) {
+        switch ((int)(angle / 90.0)) {
         case ROTATE_270:        /* 270 degrees */
             for (y = 0; y < (int)regionHeight; y++) {
                 int sx, x;

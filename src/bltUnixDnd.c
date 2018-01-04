@@ -1933,7 +1933,7 @@ DestroyDnd(DestroyData data)
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
         cmd = Blt_GetHashValue(hPtr);
         if (cmd != NULL) {
-            Blt_Free(cmd);
+            Tcl_Free((char *)cmd);
         }
     }
     Blt_DeleteHashTable(&dndPtr->getDataTable);
@@ -1942,7 +1942,7 @@ DestroyDnd(DestroyData data)
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
         cmd = Blt_GetHashValue(hPtr);
         if (cmd != NULL) {
-            Blt_Free(cmd);
+            Tcl_Free((char *)cmd);
         }
     }
     Blt_DeleteHashTable(&dndPtr->setDataTable);
@@ -2079,7 +2079,7 @@ ConfigureDnd(Tcl_Interp *interp, Dnd *dndPtr)
          */
         if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
             Tcl_AddErrorInfo(interp,
-                     "\n    (while loading bindings for blt::drag&drop)");
+                     "\n\t(while loading bindings for blt::drag&drop)");
             return TCL_ERROR;
         }
     }
@@ -3460,7 +3460,7 @@ AddTargetProperty(Dnd *dndPtr)  /* drag&drop target window data */
     if (dndPtr->motionCmd != NULL) {
         eventFlags |= WATCH_MOTION;
     }
-    Blt_FormatString(string, 200, "0x%x", eventFlags);
+    Blt_FmtString(string, 200, "0x%x", eventFlags);
     Tcl_DStringAppendElement(&ds, string);
     for (hPtr = Blt_FirstHashEntry(&dndPtr->setDataTable, &cursor);
         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -4393,7 +4393,7 @@ SetdataOp(
                 Tcl_GetString(objv[i]), &isNew);
         if (!isNew) {
             argv = Blt_GetHashValue(hPtr);
-            Blt_Free(argv);
+            Tcl_Free((char *)argv);
         }
         if (Tcl_SplitList(interp, Tcl_GetString(objv[i + 1]), &argc, &argv) 
             != TCL_OK) {

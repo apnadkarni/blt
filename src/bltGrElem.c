@@ -139,23 +139,23 @@ Blt_CustomOption bltBarStylesOption =
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 Blt_CustomOption bltElementTagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 
 static Blt_OptionFreeProc FreeElementProc;
-static Blt_OptionParseProc ObjToElementProc;
-static Blt_OptionPrintProc ElementToObjProc;
+static Blt_OptionParseProc ObjToElement;
+static Blt_OptionPrintProc ElementToObj;
 Blt_CustomOption bltElementOption =
 {
-    ObjToElementProc, ElementToObjProc, FreeElementProc, (ClientData)0
+    ObjToElement, ElementToObj, FreeElementProc, (ClientData)0
 };
 Blt_CustomOption bltContourElementOption =
 {
-    ObjToElementProc, ElementToObjProc, FreeElementProc,
+    ObjToElement, ElementToObj, FreeElementProc,
     (ClientData)CID_ELEM_CONTOUR
 };
 
@@ -262,15 +262,15 @@ static int
 FetchVectorValues(Tcl_Interp *interp, ElemValues *valuesPtr, Blt_Vector *vector)
 {
     double *array;
-    size_t size;
+    int size;
 
     size = Blt_VecLength(vector) * sizeof(double);
     if (size == 0) {
         if (valuesPtr->values != NULL) {
             Blt_Free(valuesPtr->values);
-         }
+        }
         valuesPtr->min = 0.0;
-        valuesPtr->min = 1.0;
+        valuesPtr->max = 1.0;
         valuesPtr->values = NULL;
         valuesPtr->numValues = 0;
         return TCL_OK;
@@ -739,14 +739,8 @@ FreeValues(
  */
 /*ARGSUSED*/
 static int
-ObjToValues(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* TCL list of expressions */
-    char *widgRec,              /* Element record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToValues(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ElemValues *valuesPtr = (ElemValues *)(widgRec + offset);
     Element *elemPtr = (Element *)widgRec;
@@ -834,7 +828,8 @@ ValuesToObj(
             Tcl_ListObjAppendElement(interp, listObjPtr, 
                 Tcl_NewStringObj(tableName, -1));
             
-            i = blt_table_column_index(valuesPtr->tableSource.column);
+            i = blt_table_column_index(valuesPtr->tableSource.table,
+                                       valuesPtr->tableSource.column);
             Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
             return listObjPtr;
         }
@@ -889,19 +884,13 @@ FreeValuePairs(
  */
 /*ARGSUSED*/
 static int
-ObjToValuePairs(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* TCL list of numeric expressions */
-    char *widgRec,              /* Element record */
-    int offset,                 /* Not used. */
-    int flags)                  /* Not used. */
+ObjToValuePairs(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Element *elemPtr = (Element *)widgRec;
     double *values;
     int numValues;
-    size_t newSize;
+    int newSize;
 
     if (ParseValues(interp, objPtr, &numValues, &values) != TCL_OK) {
         return TCL_ERROR;
@@ -992,14 +981,8 @@ ValuePairsToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToAlong(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* String representation of value. */
-    char *widgRec,              /* Widget record. */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToAlong(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *searchPtr = (int *)(widgRec + offset);
     char *string;
@@ -1110,14 +1093,8 @@ FreeStyles(
  */
 /*ARGSUSED*/
 static int
-ObjToStyles(
-    ClientData clientData,      /* Not used. */
-    Tcl_Interp *interp,         /* Interpreter to send results back to */
-    Tk_Window tkwin,            /* Not used. */
-    Tcl_Obj *objPtr,            /* String representing style list */
-    char *widgRec,              /* Element information record */
-    int offset,                 /* Offset to field in structure */
-    int flags)                  /* Not used. */
+ObjToStyles(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Chain styles = *(Blt_Chain *)(widgRec + offset);
     Blt_ChainLink link;
@@ -1228,7 +1205,7 @@ static int
 SetTag(Tcl_Interp *interp, Element *elemPtr, const char *tagName)
 {
     Graph *graphPtr;
-    long dummy;
+    int64_t dummy;
     
     if (strcmp(tagName, "all") == 0) {
         return TCL_OK;                  /* Don't need to create reserved
@@ -1248,7 +1225,7 @@ SetTag(Tcl_Interp *interp, Element *elemPtr, const char *tagName)
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if (Blt_GetInt64(NULL, (char *)tagName, &dummy) == TCL_OK) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
                              (char *)NULL);
@@ -1274,7 +1251,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -1286,8 +1263,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Element *elemPtr = (Element *)widgRec;
@@ -1314,7 +1291,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the element.
  *
@@ -1325,7 +1302,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
               char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
@@ -1351,7 +1328,7 @@ FreeElementProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToElementProc --
+ * ObjToElement --
  *
  *      This procedure is like ObjToValues except that it interprets
  *      the list of numeric expressions as X Y coordinate pairs.  The
@@ -1366,8 +1343,8 @@ FreeElementProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToElementProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToElement(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Element **elemPtrPtr = (Element **)(widgRec + offset);
     Element *elemPtr;
@@ -1405,8 +1382,8 @@ ObjToElementProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ElementToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                 char *widgRec, int offset, int flags)
+ElementToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)
 {
     Element *elemPtr = *(Element **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -1870,7 +1847,6 @@ CreateElement(Graph *graphPtr, Tcl_Interp *interp, int objc,
         prefix = "line";        break;
     case CID_ELEM_CONTOUR:
         prefix = "contour";     break;
-        break;
     default:
         Tcl_AppendResult(interp, "unknown element type (", Blt_Itoa(classId),
                          ")", (char *)NULL);
@@ -1885,7 +1861,7 @@ CreateElement(Graph *graphPtr, Tcl_Interp *interp, int objc,
             int isNew;
 
             /* Generate an element name. */
-            Blt_FormatString(ident, 200, "%s%d", prefix, i);
+            Blt_FmtString(ident, 200, "%s%d", prefix, i);
             hPtr = Blt_CreateHashEntry(&graphPtr->elements.nameTable, ident, 
                 &isNew);
             if (isNew) {
@@ -2212,10 +2188,10 @@ ActiveIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (hPtr = Blt_FirstHashEntry(&elemPtr->activeTable, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
-        long lindex;
+        size_t lindex;
 
-        lindex = (long)Blt_GetHashValue(hPtr);
-        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(lindex));
+        lindex = (size_t)Blt_GetHashValue(hPtr);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(lindex));
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -2249,22 +2225,20 @@ ActiveSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 5; i < objc; i++) {
         int index;
-        long lindex;
         Blt_HashEntry *hPtr;
         int isNew;
 
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        lindex = (long)index;
-        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)lindex, 
-                                   &isNew);
+        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
+                                   (char *)(intptr_t)index, &isNew);
         if (hPtr == NULL) {
             Tcl_AppendResult(interp, "can't set index \"", 
                 Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_SetHashValue(hPtr, lindex);
+        Blt_SetHashValue(hPtr, (intptr_t)index);
     }
     elemPtr->flags |= (ACTIVE | ACTIVE_PENDING);
     elemPtr->numActiveIndices = elemPtr->activeTable.numEntries;
@@ -2301,16 +2275,14 @@ ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 5; i < objc; i++) {
         int index;
-        long lindex;
         Blt_HashEntry *hPtr;
         int isNew;
 
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        lindex = (long)index;
-        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)lindex, 
-                                   &isNew);
+        hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
+                                   (char *)(intptr_t)index, &isNew);
         if (hPtr == NULL) {
             Tcl_AppendResult(interp, "can't set index \"", 
                 Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
@@ -2319,7 +2291,7 @@ ActiveToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (!isNew) {
             Blt_DeleteHashEntry(&elemPtr->activeTable, hPtr);
         } else {
-            Blt_SetHashValue(hPtr, lindex);
+            Blt_SetHashValue(hPtr, (intptr_t)index);
         }
     }
     elemPtr->flags |= (ACTIVE | ACTIVE_PENDING);
@@ -2356,14 +2328,13 @@ ActiveUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (i = 5; i < objc; i++) {
         int index;
-        long lindex;
         Blt_HashEntry *hPtr;
 
         if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
             return TCL_ERROR;
         }
-        lindex = (long)index;
-        hPtr = Blt_FindHashEntry(&elemPtr->activeTable, (char *)lindex);
+        hPtr = Blt_FindHashEntry(&elemPtr->activeTable,
+                                 (char *)(intptr_t)index);
         if (hPtr == NULL) {
             continue;
         }
@@ -2484,15 +2455,13 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (i = 4; i < objc; i++) {
             int index, isNew;
-            long lindex;
             Blt_HashEntry *hPtr;
 
             if (GetIndex(interp, elemPtr, objv[i], &index) != TCL_OK) {
                 return TCL_ERROR;
             }
-            lindex = (long)index;
-            hPtr = Blt_CreateHashEntry(&elemPtr->activeTable, (char *)lindex, 
-                &isNew);
+            hPtr = Blt_CreateHashEntry(&elemPtr->activeTable,
+                                       (char *)(intptr_t)index, &isNew);
             if (hPtr == NULL) {
                 Tcl_AppendResult(interp, "can't set index \"", 
                         Tcl_GetString(objv[i]), "\" to active.", (char *)NULL);
@@ -2649,7 +2618,6 @@ static int
 NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
-    Element *elemPtr;
     Graph *graphPtr = clientData;
     NearestElement nearest;
     const char *string;
@@ -2719,7 +2687,6 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
     } else {
         Blt_ChainLink link;
-
         /* 
          * Find the nearest point from the set of displayed elements,
          * searching the display list from back to front.  That way if the
@@ -2728,6 +2695,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
          */
         for (link = Blt_Chain_LastLink(graphPtr->elements.displayList); 
              link != NULL; link = Blt_Chain_PrevLink(link)) {
+            Element *elemPtr;
+
             elemPtr = Blt_Chain_GetValue(link);
             if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
                 continue;
@@ -3201,10 +3170,10 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
         chain = (*elemPtr->procsPtr->findProc)(graphPtr, elemPtr, x, y, r);
         for (link = Blt_Chain_FirstLink(chain); link != NULL; 
              link = Blt_Chain_NextLink(link)) {
-            long i;
+            size_t i;
 
-            i = (long)Blt_Chain_GetValue(link);
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
+            i = (size_t)Blt_Chain_GetValue(link);
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewWideIntObj(i));
         }
         Blt_Chain_Destroy(chain);
         Tcl_SetObjResult(interp, listObjPtr);

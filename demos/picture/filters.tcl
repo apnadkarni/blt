@@ -58,8 +58,6 @@ proc Doit { filter } {
     global dest src
     set time [time {$dest resample $src -filter $filter}]
     .footer configure -text $time
-    set test 2
-    $dest export pbm -file ${filter}${test}.pbm
 }
 
 set i 0

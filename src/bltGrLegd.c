@@ -266,13 +266,13 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_ANCHOR, 
         Blt_Offset(Legend, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Legend, normalBg),BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Legend, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
     {BLT_CONFIG_INT_NNEG, "-columns", "columns", "columns",
         DEF_COLUMNS, Blt_Offset(Legend, reqColumns),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -293,7 +293,7 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_MONO_ONLY},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
         Blt_Offset(Legend, style.font), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_FOREGROUND, Blt_Offset(Legend, fgColor), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
@@ -796,7 +796,7 @@ PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         {
             char string[200];
 
-            Blt_FormatString(string, 200, "@%d,%d", legendPtr->xReq, 
+            Blt_FmtString(string, 200, "@%d,%d", legendPtr->xReq, 
                              legendPtr->yReq);
             objPtr = Tcl_NewStringObj(string, -1);
         }
@@ -2649,6 +2649,7 @@ IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
     x = (w / 2);
     y = (h / 2);
     
+    /* Draw the symbol into a pixmap and snap a picture of it */
     pixmap = Blt_GetPixmap(graphPtr->display, Tk_RootWindow(graphPtr->tkwin),
         w, h, Tk_Depth(graphPtr->tkwin));
     Blt_Bg_FillRectangle(graphPtr->tkwin, pixmap, graphPtr->plotBg, 
@@ -2660,7 +2661,8 @@ IconOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_AppendResult(interp, "can't get picture of symbol.", (char *)NULL);
         return TCL_ERROR;
     }
-    /* Make the background transparent. */
+    /* Make the background transparent. Not quite as good as compositing
+     * it. */
     {
         int y;
         Blt_Pixel bg;

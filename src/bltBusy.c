@@ -142,8 +142,6 @@ typedef struct {
 #define SNAPSHOT        (1<<3)          /* Indicates whether the busy
                                          * window is a snapshot of the
                                          * parent. */
-#define IMAGE_PICTURE   (1<<4)          /* Indicates that the original
-                                         * image was a picture image. */
 #define IMAGE_SEQUENCE  (1<<5)          /* Indicates that the image is a
                                          * picture sequence. */
 
@@ -165,18 +163,18 @@ static Blt_CustomOption opacityOption =
 };
 
 static Blt_OptionFreeProc FreeImageProc;
-static Blt_OptionParseProc ObjToImageProc;
-static Blt_OptionPrintProc ImageToObjProc;
+static Blt_OptionParseProc ObjToImage;
+static Blt_OptionPrintProc ImageToObj;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
+    ObjToImage, ImageToObj, FreeImageProc, (ClientData)0
 };
 
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_BACKGROUND, Blt_Offset(Busy, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_CURSOR, "-cursor", "busyCursor", "BusyCursor",
         DEF_CURSOR, Blt_Offset(Busy, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIX32, "-color", "color", "Color",
@@ -265,24 +263,18 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
                  int imageWidth, int imageHeight)
 {
     Busy *busyPtr = clientData;
-    int isPicture;
 
-    if ((busyPtr->layer != NULL) && ((busyPtr->flags & IMAGE_PICTURE) == 0)) {
+    if (busyPtr->layer != NULL) {
         Blt_FreePicture(busyPtr->layer);
         busyPtr->layer = NULL;
     }
     EventuallyRedraw(busyPtr);
-    busyPtr->flags &= ~IMAGE_PICTURE;
     if (Blt_Image_IsDeleted(busyPtr->tkImage)) {
         Tk_FreeImage(busyPtr->tkImage);
         busyPtr->tkImage = NULL;
         return;
     }
-    busyPtr->layer = Blt_GetPictureFromImage(busyPtr->interp, 
-        busyPtr->tkImage, &isPicture);
-    if (isPicture) {
-        busyPtr->flags |= IMAGE_PICTURE;
-    }
+    busyPtr->layer = Blt_GetPictureFromImage(busyPtr->interp, busyPtr->tkImage);
 }
 
 /*ARGSUSED*/
@@ -292,7 +284,7 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
 {
     Busy *busyPtr = (Busy *)widgRec;
 
-    if ((busyPtr->layer != NULL) && ((busyPtr->flags & IMAGE_PICTURE) == 0)) {
+    if (busyPtr->layer != NULL) {
         Blt_FreePicture(busyPtr->layer);
         busyPtr->layer = NULL;
     }
@@ -301,7 +293,6 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
     }
     busyPtr->tkImage = NULL;
     busyPtr->layer = NULL;
-    busyPtr->flags &= ~IMAGE_PICTURE;
 }
 
 /*
@@ -318,13 +309,12 @@ FreeImageProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
+ObjToImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     Busy *busyPtr = (Busy *)widgRec;
     Tk_Image tkImage;
     const char *name;
-    int isPicture;
 
     name = Tcl_GetString(objPtr);
     tkImage = Tk_GetImage(interp, tkwin, name, ImageChangedProc, busyPtr);
@@ -334,22 +324,18 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (busyPtr->tkImage != NULL) {
         Tk_FreeImage(busyPtr->tkImage);
     }
-    if ((busyPtr->layer != NULL) && ((busyPtr->flags & IMAGE_PICTURE) == 0)) {
-        /* Only free the picture if this is not already a picture image. */
+    if (busyPtr->layer != NULL) {
         Blt_FreePicture(busyPtr->layer);
     }
     busyPtr->tkImage = tkImage;
-    busyPtr->layer = Blt_GetPictureFromImage(interp, tkImage, &isPicture);
-    if (isPicture) {
-        busyPtr->chain = Blt_GetPicturesFromPictureImage(interp, tkImage);
-        if (busyPtr->chain == NULL) {
-            return TCL_ERROR;
-        }
-        if (Blt_Chain_GetLength(busyPtr->chain) > 1) {
-            busyPtr->flags |= IMAGE_SEQUENCE;
-            busyPtr->link = NULL;
-        }
-        busyPtr->flags |= IMAGE_PICTURE;
+    busyPtr->layer = Blt_GetPictureFromImage(interp, tkImage);
+    busyPtr->chain = Blt_GetPicturesFromPictureImage(interp, tkImage);
+    if (busyPtr->chain == NULL) {
+        return TCL_ERROR;
+    }
+    if (Blt_Chain_GetLength(busyPtr->chain) > 1) {
+        busyPtr->flags |= IMAGE_SEQUENCE;
+        busyPtr->link = NULL;
     }
     EventuallyRedraw(busyPtr);
     return TCL_OK;
@@ -358,7 +344,7 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * ImageToObjProc --
+ * ImageToObj --
  *
  *      Convert the image name into a string Tcl_Obj.
  *
@@ -369,8 +355,8 @@ ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-               char *widgRec, int offset, int flags)    
+ImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)    
 {
     Busy *busyPtr = (Busy *)(widgRec);
     
@@ -465,7 +451,7 @@ GetBusyWindowCoordinates(Busy *busyPtr, int *xPtr, int *yPtr)
 
 
 static Blt_Picture
-SnapReferenceWindow(Tk_Window tkwin, int width, int height)
+SnapReferenceWindow(Tk_Window tkwin, int w, int h)
 {
     int rootX, rootY;
     int x, y;
@@ -484,29 +470,29 @@ SnapReferenceWindow(Tk_Window tkwin, int width, int height)
     Tk_GetRootCoords(tkwin, &rootX, &rootY);
     clipped = FALSE;
     if (rootX < 0) {
-        width += rootX;
+        w += rootX;
         x = -rootX;
         rootX = 0;
         clipped++;
     }
     if (rootY < 0) {
-        height += rootY;
+        h += rootY;
         y = -rootY;
         rootY = 0;
         clipped++;
     }
     Blt_SizeOfScreen(tkwin, &screenWidth, &screenHeight);
-    if ((rootX > width) > screenWidth) {
-        width = screenWidth - rootX;
+    if ((rootX > w) > screenWidth) {
+        w = screenWidth - rootX;
         clipped++;
     }
-    if ((rootY > height) > screenHeight) {
-        width = screenHeight - rootY;
+    if ((rootY > h) > screenHeight) {
+        h = screenHeight - rootY;
         clipped++;
     }
     /* Get a snapshot of the portion of the window that's on-screen. */
-    picture = Blt_DrawableToPicture(tkwin, Tk_WindowId(tkwin), x, y,
-                width, height, 1.0);
+    picture = Blt_DrawableToPicture(tkwin, Tk_RootWindow(tkwin), rootX, rootY,
+                w, h, 1.0);
     if (picture == NULL) {
         Blt_Warn("can't grab window (possibly obscured?)\n");
         return NULL;
@@ -518,7 +504,7 @@ SnapReferenceWindow(Tk_Window tkwin, int width, int height)
          * the reference window and copy the snapshot region into it.  */
         copy = Blt_CreatePicture(Tk_Width(tkwin), Tk_Height(tkwin));
         Blt_BlankPicture(copy, 0xFFFFFFFF);
-        Blt_CopyRegion(copy, picture, 0, 0, width, height, x, y);
+        Blt_CopyArea(copy, picture, 0, 0, w, h, x, y);
         Blt_FreePicture(picture);
         picture = copy;
     } 
@@ -1026,7 +1012,7 @@ NewBusy(Tcl_Interp *interp, Tk_Window tkRef)
     }
     length = strlen(Tk_Name(tkRef));
     name = Blt_AssertMalloc(length + 6);
-    Blt_FormatString(name, length + 6, fmt, Tk_Name(tkRef));
+    Blt_FmtString(name, length + 6, fmt, Tk_Name(tkRef));
     tkBusy = Tk_CreateWindow(interp, tkParent, name, (char *)NULL);
     Blt_Free(name);
 
@@ -1112,7 +1098,7 @@ InitializeBusy(Busy *busyPtr)
     } else {
         parent = Tk_WindowId(busyPtr->tkParent);
 #ifdef WIN32
-        parent = (Window) Tk_GetHWND(parent);
+        parent = (Window)Tk_GetHWND(parent);
 #endif
     }
     mask = StructureNotifyMask;
@@ -1248,7 +1234,7 @@ GetBusy(
     if (tkwin == NULL) {
         return TCL_ERROR;
     }
-    hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (char *)tkwin);
+    hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (const char *)tkwin);
     if (hPtr == NULL) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "can't find busy window \"", pathName, 
@@ -1451,7 +1437,6 @@ static int
 CheckOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
-    Blt_HashEntry *hPtr;
     BusyInterpData *dataPtr = clientData;
     Tk_Window tkwin;
     const char *pathName;
@@ -1459,7 +1444,9 @@ CheckOp(ClientData clientData, Tcl_Interp *interp, int objc,
     pathName = Tcl_GetString(objv[2]);
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkMain);
     do {
-        hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (char *)tkwin);
+        Blt_HashEntry *hPtr;
+
+        hPtr = Blt_FindHashEntry(&dataPtr->busyTable, (const char *)tkwin);
         if (hPtr != NULL) {
             Busy *busyPtr;
 
@@ -1974,7 +1961,7 @@ DisplayProc(ClientData clientData)
             y = (busyPtr->height - h) / 2;
             assert(x >= 0 && y >= 0);
             copy = Blt_ClonePicture(busyPtr->snapshot);
-            Blt_CompositeRegion(copy, busyPtr->layer, 0, 0, w, h, x, y);
+            Blt_CompositeArea(copy, busyPtr->layer, 0, 0, w, h, x, y);
         }
         Blt_PaintPicture(painter, drawable, copy, 0, 0, busyPtr->width, 
                 busyPtr->height, 0, 0, 0);

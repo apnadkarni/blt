@@ -213,8 +213,8 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BORDER, "-background", "background", "Background", 
         DEF_BACKGROUND, Blt_Offset(Container, border), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_BORDERWIDTH, Blt_Offset(Container, borderWidth), 
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -341,7 +341,7 @@ NameOfId(
         if ((tkwin != NULL) && (Tk_PathName(tkwin) != NULL)) {
             return Tk_PathName(tkwin); 
         } 
-        Blt_FormatString(string, 200, "0x%lx", (unsigned long)window);
+        Blt_FmtString(string, 200, "0x%lx", (unsigned long)window);
         return string;
     }
     return "";                          /* Return empty string if XID is
@@ -395,15 +395,17 @@ XGeometryErrorProc(
 static int
 GetAdoptedWindowGeometry(Tcl_Interp *interp, Container *conPtr)
 {
-    int x, y, w, h, borderWidth, depth;
-    int xOffset, yOffset;
-    Window root, dummy;
-    Tk_ErrorHandler handler;
-    int result;
-    int any = -1;
+    int x, y, w, h;
     
-    xOffset = yOffset = 0;
     if (conPtr->adopted != None) {
+        int any = -1;
+        Tk_ErrorHandler handler;
+        Window root, dummy;
+        int xOffset, yOffset;
+        int borderWidth, depth;
+        int result;
+
+        xOffset = yOffset = 0;
         handler = Tk_CreateErrorHandler(conPtr->display, any, X_GetGeometry, 
                 any, XGeometryErrorProc, &result);
         root = Tk_RootWindow(conPtr->tkwin);
@@ -923,7 +925,7 @@ ObjToXID(
     int offset,                         /* Offset to field in structure */
     int flags)  
 {
-    unsigned long searchFlags = (unsigned long)clientData;
+    size_t searchFlags = (size_t)clientData;
     Container *conPtr = (Container *)widgRec;
     Window *idPtr = (Window *) (widgRec + offset);
     Tk_Window tkAdopted;
@@ -1811,7 +1813,7 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
 {
     char *atomName;
     XErrorHandler handler;
-    static char name[200];
+    static char name[256];
     int result;
 
     handler = XSetErrorHandler(IgnoreErrors);
@@ -1825,8 +1827,8 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
     } else {
         size_t length = strlen(atomName);
 
-        if (length > 200) {
-            length = 200;
+        if (length > 255) {
+            length = 255;
         }
         memcpy(name, atomName, length);
         name[length] = '\0';
@@ -1840,7 +1842,6 @@ GetAtomName(Display *display, Atom atom, char **namePtr)
 static void
 FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
 {
-    char string[200];
     Atom *atoms;
     int i;
     int numProps;
@@ -1852,7 +1853,10 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
         char *name;
 
         if (GetAtomName(conPtr->display, atoms[i], &name)) {
-            char *data;
+            union {
+                unsigned char *data;
+                int window;
+            } prop;
             int result, format;
             Atom typeAtom;
             unsigned long numItems, bytesAfter;
@@ -1875,26 +1879,26 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
                                          * format. */
                 &bytesAfter,            /* (out) # of bytes remaining to be
                                          * read. */
-                (unsigned char **)&data);
+                &prop.data);
 #ifdef notdef
             fprintf(stderr, "%x: property name is %s (format=%d(%d) type=%d result=%d)\n", window, name, format, numItems, typeAtom, result == Success);
 #endif
             if (result == Success) {
-                if (format == 8) {
-                    if (data != NULL) {
-                        Blt_Tree_SetValue(conPtr->interp, tree, parent, name, 
-                                Tcl_NewStringObj(data, numItems));
-                    }
-                } else if (typeAtom == XA_WINDOW) {
-                    int *iPtr = (int *)&data;
-                    sprintf(string, "0x%x", *iPtr);
-                    Blt_Tree_SetValue(conPtr->interp, tree, parent, name, 
-                        Tcl_NewStringObj(string, -1));
+                Tcl_Obj *objPtr;
+
+                objPtr = NULL;
+                if ((format == 8) && (prop.data != NULL)) {
+                    objPtr = Tcl_NewStringObj((char *)prop.data, numItems);
+                } else if ((typeAtom == XA_WINDOW) && (format == 32)) {
+                    char string[200];
+
+                    sprintf(string, "0x%x", prop.window);
+                    objPtr = Tcl_NewStringObj(string, -1);
                 } else {
-                    Blt_Tree_SetValue(conPtr->interp, tree, parent, name, 
-                        Tcl_NewStringObj("???", -1));
+                    objPtr = Tcl_NewStringObj("???", 3);
                 }
-                XFree(data);
+                Blt_Tree_SetValue(conPtr->interp, tree, parent, name, objPtr);
+                XFree(prop.data);
             }
         }
     }   
@@ -1910,14 +1914,12 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
             Blt_TreeNode child;
             char *wmName;
             Window w;
+            char string[200];
 
             w = (Window)Blt_Chain_GetValue(link);
             sprintf(string, "0x%x", (int)w);
             if (XFetchName(conPtr->display, w, &wmName)) {
                 child = Blt_Tree_CreateNode(tree, parent, wmName, -1);
-                if (w == 0x220001c) {
-                    fprintf(stderr, "found xterm (%s)\n", wmName);
-                }
                 XFree(wmName);
             } else {
                 child = Blt_Tree_CreateNode(tree, parent, string, -1);

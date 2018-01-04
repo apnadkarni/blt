@@ -121,7 +121,7 @@
 #define DEF_CHECKBOX_ONVALUE            "1"
 #define DEF_CHECKBOX_RELIEF             "flat"
 #define DEF_CHECKBOX_SHOWVALUE          "yes"
-#define DEF_CHECKBOX_SIZE               "11"
+#define DEF_CHECKBOX_SIZE               "0"
 #define DEF_COMBOBOX_ACTIVE_RELIEF      "raised"
 #define DEF_COMBOBOX_ARROW_BORDERWIDTH  "1"
 #define DEF_COMBOBOX_ARROW_RELIEF       "raised"
@@ -140,8 +140,7 @@
 #define DEF_COMMAND                     (char *)NULL
 #define DEF_DISABLE_BG                  RGB_GREY97
 #define DEF_DISABLE_FG                  RGB_GREY85
-#define DEF_FOCUS_COLOR                 "black"
-#define DEF_FOCUS_DASHES                "dot"
+#define DEF_FOCUS_COLOR                 RGB_SKYBLUE1
 #define DEF_GAP                         "3"
 #define DEF_ICON                        (char *)NULL
 #define DEF_IMAGEBOX_ACTIVE_RELIEF      "flat"
@@ -195,46 +194,46 @@
 #define DEF_PUSHBUTTON_PADX             "0"
 #define DEF_PUSHBUTTON_PADY             "0"
 
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
+static Blt_OptionParseProc ObjToIcon;
+static Blt_OptionPrintProc IconToObj;
 static Blt_OptionFreeProc FreeIconProc;
 static Blt_CustomOption iconOption =
 {
-    ObjToIconProc, IconToObjProc, FreeIconProc, 
+    ObjToIcon, IconToObj, FreeIconProc, 
     (ClientData)0,                      /* Need to point this to the
                                          * tableview widget before calling
                                          * these procedures. */
 };
 
 static Blt_OptionFreeProc FreeIconVarProc;
-static Blt_OptionParseProc ObjToIconVarProc;
-static Blt_OptionPrintProc IconVarToObjProc;
+static Blt_OptionParseProc ObjToIconVar;
+static Blt_OptionPrintProc IconVarToObj;
 static Blt_CustomOption iconVarOption = {
-    ObjToIconVarProc, IconVarToObjProc, FreeIconVarProc, (ClientData)0
+    ObjToIconVar, IconVarToObj, FreeIconVarProc, (ClientData)0
 };
-static Blt_OptionParseProc ObjToStateProc;
-static Blt_OptionPrintProc StateToObjProc;
+static Blt_OptionParseProc ObjToState;
+static Blt_OptionPrintProc StateToObj;
 static Blt_CustomOption stateOption = {
-    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+    ObjToState, StateToObj, NULL, (ClientData)0
 };
 static Blt_OptionFreeProc FreeTextVarProc;
-static Blt_OptionParseProc ObjToTextVarProc;
-static Blt_OptionPrintProc TextVarToObjProc;
+static Blt_OptionParseProc ObjToTextVar;
+static Blt_OptionPrintProc TextVarToObj;
 static Blt_CustomOption textVarOption = {
-    ObjToTextVarProc, TextVarToObjProc, FreeTextVarProc, (ClientData)0
+    ObjToTextVar, TextVarToObj, FreeTextVarProc, (ClientData)0
 };
 static Blt_OptionFreeProc FreeTextProc;
-static Blt_OptionParseProc ObjToTextProc;
-static Blt_OptionPrintProc TextToObjProc;
+static Blt_OptionParseProc ObjToText;
+static Blt_OptionPrintProc TextToObj;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
+    ObjToText, TextToObj, FreeTextProc, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreePushButtonVarProc;
-static Blt_OptionParseProc ObjToPushButtonVarProc;
-static Blt_OptionPrintProc PushButtonVarToObjProc;
+static Blt_OptionParseProc ObjToPushButtonVar;
+static Blt_OptionPrintProc PushButtonVarToObj;
 static Blt_CustomOption pushButtonVarOption = {
-    ObjToPushButtonVarProc, PushButtonVarToObjProc, FreePushButtonVarProc,
+    ObjToPushButtonVar, PushButtonVarToObj, FreePushButtonVarProc,
     (ClientData)0
 };
 
@@ -254,8 +253,8 @@ static Blt_CustomOption pushButtonVarOption = {
 typedef struct {
     int refCount;                       /* Usage reference count.  A
                                          * reference count of zero
-                                         * indicates that the style is no
-                                         * longer used and may be freed. */
+                                         * indicates that the style may be
+                                         * freed. */
     unsigned int flags;                 /* Bit fields containing various
                                          * flags. */
     const char *name;                   /* Instance name. */
@@ -292,6 +291,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -315,6 +315,8 @@ typedef struct {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
@@ -355,14 +357,15 @@ typedef struct {
                                          * reference count of zero
                                          * indicates that the style may be
                                          * freed. */
-    unsigned int flags;                 /* Bit field containing both the
-                                         * style type and various flags. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
     CellStyleClass *classPtr;           /* Contains class-specific
                                          * information such as
                                          * configuration specifications and
-                                         * configure, draw, layout,
-                                         * etc. routines. */
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
                                          * table entry for the style.  A
                                          * style that's been deleted, but
@@ -390,6 +393,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -413,13 +417,14 @@ typedef struct {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
     int borderWidth;                    /* Width of outer border
                                          * surrounding the entire box. */
     int relief, activeRelief;           /* Relief of outer border. */
-
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure
                                          * called to format the style is
                                          * invoked.*/
@@ -465,14 +470,15 @@ typedef struct {
                                          * reference count of zero
                                          * indicates that the style may be
                                          * freed. */
-    unsigned int flags;                 /* Bit field containing both the
-                                         * style type and various flags. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
     CellStyleClass *classPtr;           /* Contains class-specific
                                          * information such as
                                          * configuration specifications and
-                                         * configure, draw, layout,
-                                         * etc. routines. */
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
                                          * table entry for the style.  A
                                          * style that's been deleted, but
@@ -500,12 +506,14 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
-    Blt_Bg normalBg;                    /* Normal background color of cell. */
+    XColor *focusColor;                 /* Background color of the focus. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
                                          * is active. Textboxes are usually
                                          * never active. */
     Blt_Bg altBg;                       /* Alternative normal
-                                           background. */
+                                         * background. */
     Blt_Bg disableBg;                   /* Background color when the cell
                                          * is disabled. */
     Blt_Bg highlightBg;                 /* Background color when the cell
@@ -516,11 +524,14 @@ typedef struct {
                                          * text. */
     GC activeGC;                        /* Graphics context of active
                                          * text. */
-    GC disableGC;                       /* Graphics context of disabled text. */
+    GC disableGC;                       /* Graphics context of disabled
+                                         * text. */
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
@@ -566,7 +577,7 @@ typedef struct {
      *
      * The arrow is a button with an optional 3D border.
      */
-    int arrowBW;
+    int arrowBorderWidth;
     int arrowPad;
     int arrowRelief;
     int reqArrowWidth;
@@ -583,6 +594,8 @@ typedef struct {
     Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be
                                          * executed when this menu is
                                          * posted. */
+    Blt_Painter painter;
+    Blt_Picture downArrow;
 } ComboBoxStyle;
 
 /* 
@@ -594,21 +607,25 @@ typedef struct {
  *      text may be above of below the image.
  */
 typedef struct {
-    int refCount;                       /* Usage reference count.  A reference
-                                         * count of zero indicates that the
-                                         * style may be freed. */
-    unsigned int flags;                 /* Bit field containing both the style
-                                         * type and various flags. */
+    int refCount;                       /* Usage reference count.  A
+                                         * reference count of zero
+                                         * indicates that the style may be
+                                         * freed. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
-    CellStyleClass *classPtr;           /* Contains class-specific information
-                                         * such as configuration
-                                         * specifications and configure, draw,
-                                         * layout, etc. routines. */
+    CellStyleClass *classPtr;           /* Contains class-specific
+                                         * information such as
+                                         * configuration specifications and
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
-                                         * table entry for the style.  A style
-                                         * that's been deleted, but still in
-                                         * use (non-zero reference count) will
-                                         * have no hash table entry. */
+                                         * table entry for the style.  A
+                                         * style that's been deleted, but
+                                         * still in use (non-zero reference
+                                         * count) will have no hash table
+                                         * entry. */
     Blt_HashTable table;                /* Table of cells that have this
                                          * style. We use this to mark the
                                          * cells dirty when the style
@@ -622,39 +639,49 @@ typedef struct {
                                          * text. */
     Blt_Font font;
     XColor *normalFg;                   /* Normal color of the text. */
-    XColor *activeFg;                   /* Color of the text when the cell is
-                                         * active. */
-    XColor *disableFg;                  /* Color of the text when the cell is
-                                         * disabled. */
-    XColor *highlightFg;                /* Color of the text when the cell is
-                                         * highlighted. */
-    XColor *selectFg;                   /* Color of the text when the cell is
-                                         * selected. */
-    Blt_Bg normalBg;                    /* Normal background color of cell. */
-    Blt_Bg activeBg;                    /* Background color when the cell is
-                                         * active. Textboxes are usually never
-                                         * active. */
-    Blt_Bg altBg;                       /* Alternative normal background. */
-    Blt_Bg disableBg;                   /* Background color when the cell is
-                                         * disabled. */
-    Blt_Bg highlightBg;                 /* Background color when the cell is 
-                                         * highlighted. */
-    Blt_Bg selectBg;                    /* Background color when the cell is 
-                                         * selected. */
-    GC normalGC;                        /* Graphics context of normal text. */
-    GC activeGC;                        /* Graphics context of active text. */
-    GC disableGC;                       /* Graphics context of disabled text. */
+    XColor *activeFg;                   /* Color of the text when the cell
+                                         * is active. */
+    XColor *disableFg;                  /* Color of the text when the cell
+                                         * is disabled. */
+    XColor *highlightFg;                /* Color of the text when the cell
+                                         * is highlighted. */
+    XColor *selectFg;                   /* Color of the text when the cell
+                                         * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
+    Blt_Bg activeBg;                    /* Background color when the cell
+                                         * is active. Textboxes are usually
+                                         * never active. */
+    Blt_Bg altBg;                       /* Alternative normal
+                                         * background. */
+    Blt_Bg disableBg;                   /* Background color when the cell
+                                         * is disabled. */
+    Blt_Bg highlightBg;                 /* Background color when the cell
+                                         * is highlighted. */
+    Blt_Bg selectBg;                    /* Background color when the cell
+                                         * is selected. */
+    GC normalGC;                        /* Graphics context of normal
+                                         * text. */
+    GC activeGC;                        /* Graphics context of active
+                                         * text. */
+    GC disableGC;                       /* Graphics context of disabled
+                                         * text. */
     GC highlightGC;                     /* Graphics context of highlighted
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
-    Tk_Justify justify;                 /* Indicates how the text or icon is
-                                         * justified within the column. */
-    int borderWidth;                    /* Width of outer border surrounding
-                                         * the entire box. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
+    Tk_Justify justify;                 /* Indicates how the text or icon
+                                         * is justified within the
+                                         * column. */
+    int borderWidth;                    /* Width of outer border
+                                         * surrounding the entire box. */
     int relief, activeRelief;           /* Relief of outer border. */
-    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure called
-                                         * to format the style is invoked.*/
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure
+                                         * called to format the style is
+                                         * invoked.*/
     XColor *rowRuleColor;               /* Color of the row's rule. */
     GC rowRuleGC;                       /* Graphics context of the row's
                                          * rule. */
@@ -684,14 +711,15 @@ typedef struct {
                                          * reference count of zero
                                          * indicates that the style may be
                                          * freed. */
-    unsigned int flags;                 /* Bit field containing both the
-                                         * style type and various flags. */
+    unsigned int flags;                 /* Bit fields containing various
+                                         * flags. */
     const char *name;                   /* Instance name. */
     CellStyleClass *classPtr;           /* Contains class-specific
                                          * information such as
                                          * configuration specifications and
-                                         * configure, draw, layout,
-                                         * etc. routines. */
+                                         * routines how to configure, draw,
+                                         * layout, etc the cell according
+                                         * to the style. */
     Blt_HashEntry *hashPtr;             /* If non-NULL, points to the hash
                                          * table entry for the style.  A
                                          * style that's been deleted, but
@@ -719,6 +747,7 @@ typedef struct {
                                          * is highlighted. */
     XColor *selectFg;                   /* Color of the text when the cell
                                          * is selected. */
+    XColor *focusColor;                 /* Background color of the focus. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
     Blt_Bg activeBg;                    /* Background color when the cell
@@ -742,13 +771,14 @@ typedef struct {
                                          * text. */
     GC selectGC;                        /* Graphics context of selected
                                          * text. */
+    GC focusGC;                         /* Graphics context for focus
+                                         * rectangle. */
     Tk_Justify justify;                 /* Indicates how the text or icon
                                          * is justified within the
                                          * column. */
     int borderWidth;                    /* Width of outer border
                                          * surrounding the entire box. */
     int relief, activeRelief;           /* Relief of outer border. */
-
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, TCL procedure
                                          * called to format the style is
                                          * invoked.*/
@@ -771,30 +801,25 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(TextBoxStyle, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"}, 
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_TEXTBOX_ACTIVE_COLORS, Blt_Offset(TextBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"}, 
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(TextBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_TEXTBOX_ACTIVE_RELIEF, Blt_Offset(TextBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(TextBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(TextBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -808,17 +833,16 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(TextBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_TEXTBOX_EDIT, 
         Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
     {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_TEXTBOX_EDITOR, 
         Blt_Offset(TextBoxStyle, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(TextBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT,
         Blt_Offset(TextBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -828,10 +852,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(TextBoxStyle, highlightBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlistFackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"}, 
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(TextBoxStyle, highlightFg), 0},
@@ -856,30 +878,25 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(CheckBoxStyle, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_CHECKBOX_ACTIVE_COLORS, Blt_Offset(CheckBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(CheckBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_CHECKBOX_ACTIVE_RELIEF, Blt_Offset(CheckBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(CheckBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(CheckBoxStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_CHECKBOX_BORDERWIDTH, Blt_Offset(CheckBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -897,15 +914,14 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(TextBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_CHECKBOX_EDIT, 
         Blt_Offset(CheckBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(CheckBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_CHECKBOX_FONT,
         Blt_Offset(TextBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -915,10 +931,8 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(CheckBoxStyle, highlightBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlistFackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"}, 
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(CheckBoxStyle, highlightFg), 0},
@@ -961,21 +975,18 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(ComboBoxStyle, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_COMBOBOX_ACTIVE_COLORS, Blt_Offset(ComboBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(ComboBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_COMBOBOX_ACTIVE_RELIEF, Blt_Offset(ComboBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(ComboBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
@@ -984,12 +995,11 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
         "ArrowBorderWidth", DEF_COMBOBOX_ARROW_BORDERWIDTH, 
-        Blt_Offset(ComboBoxStyle, arrowBW), BLT_CONFIG_DONT_SET_DEFAULT},
+        Blt_Offset(ComboBoxStyle, arrowBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(ComboBoxStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
-        0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_COMBOBOX_BORDERWIDTH, Blt_Offset(ComboBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -1003,15 +1013,14 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(ComboBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_COMBOBOX_EDIT, 
         Blt_Offset(ComboBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(ComboBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_COMBOBOX_FONT,
         Blt_Offset(ComboBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -1021,10 +1030,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(ComboBoxStyle, highlightBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"}, 
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(ComboBoxStyle, highlightFg), 0},
@@ -1069,30 +1076,25 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(ImageBoxStyle, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"}, 
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_IMAGEBOX_ACTIVE_COLORS, Blt_Offset(ImageBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"}, 
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(ImageBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_IMAGEBOX_ACTIVE_RELIEF, Blt_Offset(ImageBoxStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(ImageBoxStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(ImageBoxStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_IMAGEBOX_BORDERWIDTH, Blt_Offset(ImageBoxStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -1108,15 +1110,14 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(ImageBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_IMAGEBOX_EDIT, 
         Blt_Offset(ImageBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(ImageBoxStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
         Blt_Offset(ImageBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -1126,10 +1127,8 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(ImageBoxStyle, highlightBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlistFackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"}, 
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(ImageBoxStyle, highlightFg), 0},
@@ -1157,30 +1156,25 @@ static Blt_ConfigSpec pushButtonStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
         "ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(PushButtonStyle, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground"}, 
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
         DEF_IMAGEBOX_ACTIVE_COLORS, Blt_Offset(PushButtonStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground"}, 
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
         "ActiveForeground", DEF_ACTIVE_FG, 
         Blt_Offset(PushButtonStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
         DEF_IMAGEBOX_ACTIVE_RELIEF, Blt_Offset(PushButtonStyle, activeRelief), 
         BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground"},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
         "Background", DEF_ALT_BG, Blt_Offset(PushButtonStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(PushButtonStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-        0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth"},
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
         DEF_IMAGEBOX_BORDERWIDTH, Blt_Offset(PushButtonStyle, borderWidth),
         BLT_CONFIG_DONT_SET_DEFAULT},
@@ -1196,15 +1190,14 @@ static Blt_ConfigSpec pushButtonStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
         Blt_Offset(PushButtonStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-        (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-        (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground"},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground"},
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_IMAGEBOX_EDIT, 
         Blt_Offset(PushButtonStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)EDIT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
+        DEF_FOCUS_COLOR, Blt_Offset(PushButtonStyle, focusColor), 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
         Blt_Offset(PushButtonStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -1214,10 +1207,8 @@ static Blt_ConfigSpec pushButtonStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
         "HighlightBackground", DEF_HIGHLIGHT_BG, 
         Blt_Offset(PushButtonStyle, highlightBg), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlistFackground", 
-        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground"}, 
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground"}, 
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
         "HighlightForeground", DEF_HIGHLIGHT_FG, 
         Blt_Offset(PushButtonStyle, highlightFg), 0},
@@ -1336,9 +1327,11 @@ GetFormattedCellObj(Tcl_Interp *interp, Cell *cellPtr, Row *rowPtr,
     
     /* command rowIndex columnIndex */
     cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->viewPtr->table, 
+                                                rowPtr->row));
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->viewPtr->table, 
+                                                   colPtr->column));
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -1381,6 +1374,50 @@ FreeCell(Cell *cellPtr)
     cellPtr->tkImage = NULL;
 }
 
+static int
+CellIsSelected(TableView *viewPtr, Cell *cellPtr) 
+{
+    CellKey *keyPtr;
+    Blt_HashEntry *hPtr;
+    CellSelection *selPtr;
+
+    keyPtr = GetKey(cellPtr);
+    if ((keyPtr->rowPtr->flags|keyPtr->colPtr->flags) & SELECTED) {
+        return TRUE;
+    }
+    if (viewPtr->selectMode != SELECT_CELLS) {
+        return FALSE;
+    }
+    selPtr = &viewPtr->selectCells;
+    if (selPtr->anchorPtr != NULL) {
+        Row  *firstRowPtr, *lastRowPtr;
+        Column *firstColPtr, *lastColPtr;
+
+        if (selPtr->anchorPtr->rowPtr->index > selPtr->markPtr->rowPtr->index) {
+            lastRowPtr = selPtr->anchorPtr->rowPtr;
+            firstRowPtr = selPtr->markPtr->rowPtr;
+        } else {
+            firstRowPtr = selPtr->anchorPtr->rowPtr;
+            lastRowPtr = selPtr->markPtr->rowPtr;
+        }        
+        if (selPtr->anchorPtr->colPtr->index > selPtr->markPtr->colPtr->index) {
+            lastColPtr = selPtr->anchorPtr->colPtr;
+            firstColPtr = selPtr->markPtr->colPtr;
+        } else {
+            firstColPtr = selPtr->anchorPtr->colPtr;
+            lastColPtr = selPtr->markPtr->colPtr;
+        }        
+        if ((keyPtr->rowPtr->index >= firstRowPtr->index) &&
+            (keyPtr->rowPtr->index <= lastRowPtr->index) &&
+            (keyPtr->colPtr->index >= firstColPtr->index) &&
+            (keyPtr->colPtr->index <= lastColPtr->index)) {
+            return TRUE;
+        }
+    }
+    hPtr = Blt_FindHashEntry(&viewPtr->selectCells.cellTable, (char *)keyPtr);
+    return (hPtr != NULL);
+}
+
 static INLINE Blt_Bg 
 GetHighlightBg(CellStyle *stylePtr, Row *rowPtr) 
 {
@@ -1411,8 +1448,9 @@ PropagateGeometryFlags(TableView *viewPtr, CellStyle *stylePtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    long i;
-
+    Row *rowPtr;
+    Column *colPtr;
+    
     /* Step 1: Check for specially applied cells.  */
     for (hPtr = Blt_FirstHashEntry(&stylePtr->table, &iter); hPtr != NULL;
          hPtr = Blt_NextHashEntry(&iter)) {
@@ -1422,19 +1460,15 @@ PropagateGeometryFlags(TableView *viewPtr, CellStyle *stylePtr)
         cellPtr->flags |= GEOMETRY;
     }
     /* Step 2: Check for rows with the same style.  */
-    for (i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-
-        rowPtr = viewPtr->rows[i];
+    for (rowPtr = viewPtr->rowHeadPtr; rowPtr != NULL;
+         rowPtr = rowPtr->nextPtr) {
         if (rowPtr->stylePtr == stylePtr) {
             rowPtr->flags |= GEOMETRY;
         }
     }
     /* Step 3: Check for columns with the same style.  */
-    for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-
-        colPtr = viewPtr->columns[i];
+    for (colPtr = viewPtr->colHeadPtr; colPtr != NULL;
+         colPtr = colPtr->nextPtr) {
         if (colPtr->stylePtr == stylePtr) {
             colPtr->flags |= GEOMETRY;
         }
@@ -1622,7 +1656,7 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconProc --
+ * ObjToIcon --
  *
  *      Convert the name of an icon into a Tk image.
  *
@@ -1635,8 +1669,8 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
+ObjToIcon(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
     CellStyle *stylePtr = (CellStyle *)widgRec;
@@ -1671,7 +1705,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * IconToObjProc --
+ * IconToObj --
  *
  *      Converts the icon into its string representation (its name).
  *
@@ -1682,7 +1716,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+IconToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
               char *widgRec, int offset, int flags)     
 {
     Icon icon = *(Icon *)(widgRec + offset);
@@ -1800,19 +1834,26 @@ IconVarTraceProc(
     if (flags & TCL_TRACE_WRITES) {
         Icon icon;
         Tcl_Obj *objPtr;
-
+        const char *imageName;
+        int length;
+        
         /*
          * Update the style's icon with the image whose name is stored in
-         * the variable.
+         * the variable.  We assume that an empty string means "no icon".
          */
         objPtr = Tcl_GetVar2Ex(interp, name1, name2,
                                TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
         if (objPtr == NULL) {
             return GetInterpResult(interp);
         }
-        icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(objPtr));
-        if (icon == NULL) {
-            return GetInterpResult(interp);
+        imageName = Tcl_GetStringFromObj(objPtr, &length);
+        if (length > 0) {
+            icon = GetIcon((CellStyle *)stylePtr, imageName);
+            if (icon == NULL) {
+                return GetInterpResult(interp);
+            }
+        } else {
+            icon = NULL;
         }
         if (stylePtr->icon != NULL) {
             FreeIcon(stylePtr->icon);
@@ -1847,7 +1888,7 @@ FreeIconVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToIconVarProc --
+ * ObjToIconVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -1859,14 +1900,8 @@ FreeIconVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToIconVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToIconVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -1907,7 +1942,7 @@ ObjToIconVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * IconVarToObjProc --
+ * IconVarToObj --
  *
  *      Return the name of the style.
  *
@@ -1918,7 +1953,7 @@ ObjToIconVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-IconVarToObjProc(
+IconVarToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -1990,8 +2025,8 @@ PushButtonVarTraceProc(
     if (flags & TCL_TRACE_UNSETS) {
         if (flags & TCL_TRACE_DESTROYED) {
             Tcl_SetVar2Ex(interp, name1, name2,
-                Tcl_NewLongObj(blt_table_row_index(stylePtr->row)),
-                TCL_GLOBAL_ONLY);
+             Tcl_NewLongObj(blt_table_row_index(stylePtr->viewPtr->table,
+             stylePtr->row)), TCL_GLOBAL_ONLY);
             Tcl_TraceVar2(interp, name1, name2, TRACE_VAR_FLAGS,
                           PushButtonVarTraceProc, clientData);
             stylePtr->flags |= ICON_VAR_TRACED;
@@ -2039,7 +2074,7 @@ FreePushButtonVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPushButtonVarProc --
+ * ObjToPushButtonVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -2051,14 +2086,8 @@ FreePushButtonVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPushButtonVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToPushButtonVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     PushButtonStyle *stylePtr = (PushButtonStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -2091,7 +2120,7 @@ ObjToPushButtonVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * PushButtonVarToObjProc --
+ * PushButtonVarToObj --
  *
  *      Return the name of the pushbutton variable.
  *
@@ -2102,7 +2131,7 @@ ObjToPushButtonVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PushButtonVarToObjProc(
+PushButtonVarToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2121,7 +2150,7 @@ PushButtonVarToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToStateProc --
+ * ObjToState --
  *
  *      Converts the string representing a state into a bitflag.
  *
@@ -2133,14 +2162,8 @@ PushButtonVarToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToStateProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing state. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToState(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     const char *string;
@@ -2164,7 +2187,7 @@ ObjToStateProc(
 /*
  *---------------------------------------------------------------------------
  *
- * StateToObjProc --
+ * StateToObj --
  *
  *      Return the name of the style.
  *
@@ -2175,7 +2198,7 @@ ObjToStateProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-StateToObjProc(
+StateToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2219,7 +2242,7 @@ FreeTextVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextVarProc --
+ * ObjToTextVar --
  *
  *      Convert the variable to a traced variable.
  *
@@ -2231,14 +2254,8 @@ FreeTextVarProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextVarProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToTextVar(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
@@ -2276,7 +2293,7 @@ ObjToTextVarProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextVarToObjProc --
+ * TextVarToObj --
  *
  *      Return the name of the text variable.
  *
@@ -2287,7 +2304,7 @@ ObjToTextVarProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextVarToObjProc(
+TextVarToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2319,7 +2336,7 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextProc --
+ * ObjToText --
  *
  *      Save the text and add the item to the text hashtable.
  *
@@ -2330,14 +2347,8 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing style. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToText(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)(widgRec);
 
@@ -2358,7 +2369,7 @@ ObjToTextProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TextToObjProc --
+ * TextToObj --
  *
  *      Return the text of the item.
  *
@@ -2369,7 +2380,7 @@ ObjToTextProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextToObjProc(
+TextToObj(
     ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,                    /* Not used. */
@@ -2423,8 +2434,8 @@ NewTextBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
  *
  * TextBoxStyleConfigureProc --
  *
- *      Configures a "textbox" style.  This routine generates the GCs required
- *      for a textbox style.
+ *      Configures a "textbox" style.  This routine generates the GCs
+ *      required for a textbox style.
  *
  * Results:
  *      None.
@@ -2442,11 +2453,9 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -2455,6 +2464,14 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
@@ -2667,7 +2684,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -2707,8 +2725,15 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -2807,7 +2832,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -2857,6 +2883,9 @@ TextBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
     Blt_Free(stylePtr);
 }
 
@@ -2881,7 +2910,7 @@ NewCheckBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->classPtr = &checkBoxStyleClass;
     stylePtr->viewPtr = viewPtr;
     stylePtr->gap = 4;
-    stylePtr->size = 15;
+    stylePtr->size = 0;
     stylePtr->lineWidth = 2;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
@@ -2919,12 +2948,16 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
+    if (stylePtr->size <= 0) {
+        Blt_FontMetrics fm;
+
+        Blt_Font_GetMetrics(stylePtr->font, &fm);
+        stylePtr->size = fm.linespace * 75 / 100;
+    }
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
@@ -2932,6 +2965,14 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Active text. */
     gcValues.foreground = stylePtr->activeFg->pixel;
@@ -3047,10 +3088,10 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
  *
  * CheckBoxStyleGeometryProc --
  *
- *      Determines the space requirements for the "checkbox" given the value
- *      to be displayed.  Depending upon whether an icon or text is displayed
- *      and their relative placements, this routine computes the space needed
- *      for the text entry.
+ *      Determines the space requirements for the "checkbox" given the
+ *      value to be displayed.  Depending upon whether an icon or text is
+ *      displayed and their relative placements, this routine computes the
+ *      space needed for the text entry.
  *
  * Results:
  *      None.
@@ -3118,7 +3159,7 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
             gap = stylePtr->gap;
         }
     }
-    cellPtr->width  += stylePtr->gap + bw + iw + gap + tw;
+    cellPtr->width  += bw + iw + gap + tw;
     cellPtr->height += MAX3(bh, th, ih) | 0x1;
     cellPtr->width  = ODD(cellPtr->width);
     cellPtr->height = ODD(cellPtr->height);
@@ -3177,7 +3218,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -3218,8 +3260,15 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3332,7 +3381,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
     }
 }
@@ -3435,6 +3485,9 @@ CheckBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
     if (stylePtr->offPtr != NULL) {
         Blt_Free(stylePtr->offPtr);
     }
@@ -3467,8 +3520,7 @@ NewComboBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->gap = STYLE_GAP;
     stylePtr->arrowRelief = TK_RELIEF_RAISED;
     stylePtr->activeRelief = TK_RELIEF_RAISED;
-    stylePtr->arrowBW = 1;
-    stylePtr->arrowWidth = ARROW_WIDTH;
+    stylePtr->arrowBorderWidth = 1;
     stylePtr->borderWidth = 1;
     stylePtr->relief = TK_RELIEF_FLAT;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
@@ -3505,11 +3557,9 @@ ComboBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -3518,6 +3568,14 @@ ComboBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Active text. */
     gcValues.foreground = stylePtr->activeFg->pixel;
@@ -3691,14 +3749,45 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->textHeight = th;
 
     Blt_Font_GetMetrics(stylePtr->font, &fm);
-    stylePtr->arrowWidth = fm.ascent - 2;
-    aw = ah = (2 * stylePtr->arrowBW) + stylePtr->arrowWidth;
+    stylePtr->arrowHeight = fm.linespace;
+    stylePtr->arrowWidth = stylePtr->arrowHeight * 60 / 100;
+    stylePtr->arrowHeight += 2 * stylePtr->arrowBorderWidth;
+    stylePtr->arrowWidth += 2 * stylePtr->arrowBorderWidth;
+    aw = stylePtr->arrowWidth;
+    ah = stylePtr->arrowHeight;
     aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
     cellPtr->width  = ODD(cellPtr->width);
     cellPtr->height = ODD(cellPtr->height);
+}
+
+static Blt_Picture
+GetArrowPicture(ComboBoxStyle *stylePtr, int w, int h, XColor *colorPtr)
+{
+    if ((stylePtr->downArrow == NULL) ||
+        (Blt_Picture_Width(stylePtr->downArrow) != w) ||
+        (Blt_Picture_Height(stylePtr->downArrow) != h)) {
+        int ih, iw;
+        Blt_Picture picture;
+        int ix, iy;
+
+        if (stylePtr->downArrow != NULL) {
+            Blt_FreePicture(stylePtr->downArrow);
+        }
+        ih = h * 40 / 100;
+        iw = w * 80 / 100;
+        
+        picture = Blt_CreatePicture(w, h);
+        Blt_BlankPicture(picture, 0x0);
+        iy = (h - ih) / 2;
+        ix = (w - iw) / 2;
+        Blt_PaintArrowHead(picture, ix, iy, iw, ih,
+                           Blt_XColorToPixel(colorPtr), ARROW_DOWN);
+        stylePtr->downArrow = picture;
+    }
+    return stylePtr->downArrow;
 }
 
 /*
@@ -3754,8 +3843,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-     } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
-        /* Disabled */
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
+        /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
         fg = stylePtr->selectFg;
@@ -3798,8 +3888,15 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3869,7 +3966,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -3877,9 +3975,9 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         int ax, ay;
         unsigned int aw, ah;
 
-        aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBW);
-        ah = aw;
-        ax = x + colWidth - aw;
+        aw = stylePtr->arrowWidth;
+        ah = stylePtr->arrowHeight;
+        ax = x + colWidth - stylePtr->arrowWidth;
         ay = y;
         
         if (rowHeight > ah) {
@@ -3891,11 +3989,21 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         relief = (cellPtr->flags & POSTED) ? 
             stylePtr->postedRelief : stylePtr->activeRelief;
         Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
-                stylePtr->arrowBW, relief);
-        aw -= 2 * stylePtr->arrowBW;
-        ax += stylePtr->arrowBW;
-        Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
-                stylePtr->arrowBW, ARROW_DOWN);
+                stylePtr->arrowBorderWidth, relief);
+        aw -= 2 * stylePtr->arrowBorderWidth;
+        ax += stylePtr->arrowBorderWidth;
+        ah -= 2 * stylePtr->arrowBorderWidth;
+        ay += stylePtr->arrowBorderWidth;
+        {
+            Blt_Picture picture;
+            
+            picture = GetArrowPicture(stylePtr, aw, ah, fg);
+            if (stylePtr->painter == NULL) {
+                stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+            }
+            Blt_PaintPicture(stylePtr->painter, drawable,
+                             picture, 0, 0, aw, ah, ax, ay, 0);
+        }
     }
 }
 
@@ -3926,7 +4034,7 @@ ComboBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, int x, int y)
 
     keyPtr = GetKey(cellPtr);
     colPtr = keyPtr->colPtr;
-    aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBW);
+    aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBorderWidth);
     ax = colPtr->width - stylePtr->borderWidth - aw - stylePtr->gap;
     if ((x >= 0) && (x < ax)) {
         return "text";
@@ -3977,6 +4085,15 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
     }
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    if (stylePtr->painter != NULL) {
+        Blt_FreePainter(stylePtr->painter);
+    }
+    if (stylePtr->downArrow != NULL) {
+        Blt_FreePicture(stylePtr->downArrow);
     }
     Blt_Free(stylePtr);
 }
@@ -4037,11 +4154,9 @@ ImageBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -4050,6 +4165,14 @@ ImageBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
@@ -4293,7 +4416,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         bg = stylePtr->activeBg;
         gc = stylePtr->activeGC;
         relief = stylePtr->activeRelief;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -4334,8 +4458,15 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
 
     x += CELL_PADX + FOCUS_PAD;
@@ -4414,7 +4545,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+               &ts, tx, ty);
         }
         Blt_Free(textPtr);
     }
@@ -4463,6 +4595,9 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
     }
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
     }
     Blt_Free(stylePtr);
 }
@@ -4524,11 +4659,9 @@ PushButtonStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
-    gcValues.dashes = 1;
+    gcMask = GCForeground | GCFont | GCLineWidth;
     gcValues.font = Blt_Font_Id(stylePtr->font);
-    gcValues.line_width = 0;
-    gcValues.line_style = LineOnOffDash;
+    gcValues.line_width = 1;
 
     /* Normal text. */
     gcValues.foreground = stylePtr->normalFg->pixel;
@@ -4537,6 +4670,14 @@ PushButtonStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     stylePtr->normalGC = newGC;
+
+    /* Focus ring. */
+    gcValues.foreground = stylePtr->focusColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
+    }
+    stylePtr->focusGC = newGC;
 
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
@@ -4727,13 +4868,8 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         /* Disabled */
         bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
-    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
-               (viewPtr->activePtr == cellPtr)) {
-        /* Active */
-        bg = stylePtr->activeBg;
-        gc = stylePtr->activeGC;
-        /* relief = stylePtr->activeRelief; */
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
         /* Selected */
         bg = stylePtr->selectBg;
         gc = stylePtr->selectGC;
@@ -4773,6 +4909,33 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
     x += stylePtr->padX;
     y += stylePtr->padY;
     
+    if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
+        /* Disabled */
+        bg = stylePtr->disableBg;
+        gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activePtr == cellPtr)) {
+        /* Active */
+        bg = stylePtr->activeBg;
+        gc = stylePtr->activeGC;
+        /* relief = stylePtr->activeRelief; */
+    } else if (((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) ||
+               (CellIsSelected(viewPtr, cellPtr))) { 
+        /* Selected */
+        bg = stylePtr->selectBg;
+        gc = stylePtr->selectGC;
+    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
+        /* Highlighted */
+        bg = GetHighlightBg((CellStyle *)stylePtr, rowPtr);
+        gc = stylePtr->highlightGC;
+    } else {            
+        /* Normal */
+        bg = stylePtr->normalBg;
+        if ((stylePtr->altBg != NULL) && (rowPtr->visibleIndex & 0x1)) {
+            bg = stylePtr->altBg;
+        }
+        gc = stylePtr->normalGC;
+    }
     /* Draw button. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
         rowHeight, stylePtr->borderWidth, relief);
@@ -4782,8 +4945,15 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-        XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
-                       rowHeight - 4);
+        GC focusGC;
+        
+        if (gc == stylePtr->normalGC) {
+            focusGC = stylePtr->focusGC;
+        } else {
+            focusGC = gc;
+        }
+        XDrawRectangle(viewPtr->display, drawable, focusGC, x+1, y+1,
+                       colWidth - 4, rowHeight - 4);
     }
 
     x += CELL_PADX + FOCUS_PAD;
@@ -4833,7 +5003,8 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
         Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, x, y);
         if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activePtr == cellPtr)) {
-            Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,x,y);
+            Blt_Ts_UnderlineChars(viewPtr->tkwin, drawable, textPtr,
+               &ts, x, y);
         }
         Blt_Free(textPtr);
     }
@@ -4910,6 +5081,9 @@ PushButtonStyleFreeProc(CellStyle *cellStylePtr)
     }
     if (stylePtr->normalGC != NULL) {
         Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    if (stylePtr->focusGC != NULL) {
+        Tk_FreeGC(viewPtr->display, stylePtr->focusGC);
     }
     Blt_Free(stylePtr);
 }

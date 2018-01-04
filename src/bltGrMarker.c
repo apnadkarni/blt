@@ -40,6 +40,10 @@
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 
+#ifdef HAVE_CTYPE_H
+  #include <ctype.h>
+#endif  /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
@@ -65,8 +69,6 @@
         (((b)->destBitmap == None) ? (b)->srcBitmap : (b)->destBitmap)
 
 #define MAX_OUTLINE_POINTS      12
-
-#define IMAGE_PICTURE           (1<<7)
 
 /* Map graph coordinates to normalized coordinates [0..1] */
 #define NORMALIZE(A,x)  (((x) - (A)->tickRange.min) * (A)->tickRange.scale)
@@ -114,27 +116,27 @@
 #define DEF_RECTANGLE_TAGS      "Rectangle all"
 #define DEF_LINE_TAGS           "Line all"
 
-static Blt_OptionParseProc ObjToCoordsProc;
-static Blt_OptionPrintProc CoordsToObjProc;
+static Blt_OptionParseProc ObjToCoords;
+static Blt_OptionPrintProc CoordsToObj;
 static Blt_OptionFreeProc CoordsFreeProc;
 static Blt_CustomOption coordsOption =
 {
-    ObjToCoordsProc, CoordsToObjProc, CoordsFreeProc, (ClientData)0
+    ObjToCoords, CoordsToObj, CoordsFreeProc, (ClientData)0
 };
+static Blt_OptionParseProc ObjToColorPair;
+static Blt_OptionPrintProc ColorPairToObj;
 static Blt_OptionFreeProc ColorPairFreeProc;
-static Blt_OptionParseProc ObjToColorPairProc;
-static Blt_OptionPrintProc ColorPairToObjProc;
 static Blt_CustomOption colorPairOption =
 {
-    ObjToColorPairProc, ColorPairToObjProc, ColorPairFreeProc, (ClientData)0
+    ObjToColorPair, ColorPairToObj, ColorPairFreeProc, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToPictImageProc;
-static Blt_OptionPrintProc PictImageToObjProc;
+static Blt_OptionParseProc ObjToPictImage;
+static Blt_OptionPrintProc PictImageToObj;
 static Blt_OptionFreeProc PictImageFreeProc;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToPictImageProc, PictImageToObjProc, PictImageFreeProc, (ClientData)0
+    ObjToPictImage, PictImageToObj, PictImageFreeProc, (ClientData)0
 };
 
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
@@ -142,10 +144,10 @@ BLT_EXTERN Blt_CustomOption bltYAxisOption;
 BLT_EXTERN Blt_CustomOption bltFilterOption;
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 static Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 typedef Marker *(MarkerCreateProc)(void);
@@ -153,9 +155,9 @@ typedef void    (MarkerDrawProc)(Marker *markerPtr, Drawable drawable);
 typedef void    (MarkerFreeProc)(Marker *markerPtr);
 typedef int     (MarkerConfigProc)(Marker *markerPtr);
 typedef void    (MarkerMapProc)(Marker *markerPtr);
-typedef void    (MarkerPostscriptProc)(Marker *markerPtr, Blt_Ps ps);
+typedef void    (MarkerPostScriptProc)(Marker *markerPtr, Blt_Ps ps);
 typedef int     (MarkerPointProc)(Marker *markerPtr, Point2d *samplePtr);
-typedef int     (MarkerAreaProc)(Marker *markerPtr, Region2d *extsPtr, 
+typedef int     (MarkerAreaProc)(Marker *markerPtr, Region2d *rgnPtr, 
                                    int enclosed);
 
 typedef struct {
@@ -167,7 +169,7 @@ typedef struct {
     MarkerMapProc *mapProc;
     MarkerPointProc *pointProc;
     MarkerAreaProc *regionProc;
-    MarkerPostscriptProc *psProc;
+    MarkerPostScriptProc *psProc;
 
 }  MarkerClass;
 
@@ -325,8 +327,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-background", "background", "Background",
         DEF_MARKER_BACKGROUND, Blt_Offset(BitmapMarker, fillColor),
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_BITMAP, "-bitmap", "bitmap", "Bitmap", DEF_MARKER_BITMAP, 
         Blt_Offset(BitmapMarker, srcBitmap), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -334,9 +336,8 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
         Blt_Offset(BitmapMarker, elemName), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
         DEF_MARKER_FOREGROUND, Blt_Offset(BitmapMarker, outlineColor),
         BLT_CONFIG_NULL_OK},
@@ -349,8 +350,7 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
         Blt_Offset(BitmapMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
         Blt_Offset(BitmapMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_FLOAT, "-rotate", "rotate", "Rotate", DEF_MARKER_ANGLE, 
         Blt_Offset(BitmapMarker, reqAngle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
@@ -372,7 +372,7 @@ static MarkerDrawProc BitmapDrawProc;
 static MarkerFreeProc BitmapFreeProc;
 static MarkerMapProc BitmapMapProc;
 static MarkerPointProc BitmapPointProc;
-static MarkerPostscriptProc BitmapPostscriptProc;
+static MarkerPostScriptProc BitmapPostScriptProc;
 static MarkerAreaProc BitmapAreaProc;
 
 static MarkerClass bitmapMarkerClass = {
@@ -383,7 +383,7 @@ static MarkerClass bitmapMarkerClass = {
     BitmapMapProc,
     BitmapPointProc,
     BitmapAreaProc,
-    BitmapPostscriptProc,
+    BitmapPostScriptProc,
 };
 
 /*
@@ -443,7 +443,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(ImageMarker, anchor), 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(ImageMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
@@ -481,7 +481,7 @@ static MarkerDrawProc ImageDrawProc;
 static MarkerFreeProc ImageFreeProc;
 static MarkerMapProc ImageMapProc;
 static MarkerPointProc ImagePointProc;
-static MarkerPostscriptProc ImagePostscriptProc;
+static MarkerPostScriptProc ImagePostScriptProc;
 static MarkerAreaProc ImageAreaProc;
 
 static MarkerClass imageMarkerClass = {
@@ -492,7 +492,7 @@ static MarkerClass imageMarkerClass = {
     ImageMapProc,
     ImagePointProc,
     ImageAreaProc,
-    ImagePostscriptProc,
+    ImagePostScriptProc,
 };
 
 /*
@@ -555,7 +555,7 @@ typedef struct {
 
 static Blt_ConfigSpec lineConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(LineMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -607,7 +607,7 @@ static MarkerDrawProc LineDrawProc;
 static MarkerFreeProc LineFreeProc;
 static MarkerMapProc LineMapProc;
 static MarkerPointProc LinePointProc;
-static MarkerPostscriptProc LinePostscriptProc;
+static MarkerPostScriptProc LinePostScriptProc;
 static MarkerAreaProc LineAreaProc;
 
 static MarkerClass lineMarkerClass = {
@@ -618,7 +618,7 @@ static MarkerClass lineMarkerClass = {
     LineMapProc,
     LinePointProc,
     LineAreaProc,
-    LinePostscriptProc,
+    LinePostScriptProc,
 };
 
 /*
@@ -705,7 +705,7 @@ typedef struct {
 
 static Blt_ConfigSpec polygonConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(PolygonMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -760,7 +760,7 @@ static MarkerDrawProc PolygonDrawProc;
 static MarkerFreeProc PolygonFreeProc;
 static MarkerMapProc PolygonMapProc;
 static MarkerPointProc PolygonPointProc;
-static MarkerPostscriptProc PolygonPostscriptProc;
+static MarkerPostScriptProc PolygonPostScriptProc;
 static MarkerAreaProc PolygonAreaProc;
 
 static MarkerClass polygonMarkerClass = {
@@ -771,7 +771,7 @@ static MarkerClass polygonMarkerClass = {
     PolygonMapProc,
     PolygonPointProc,
     PolygonAreaProc,
-    PolygonPostscriptProc,
+    PolygonPostScriptProc,
 };
 
 /*
@@ -852,7 +852,7 @@ typedef struct {
 
 static Blt_ConfigSpec rectangleConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CAP_STYLE, "-cap", "cap", "Cap", DEF_MARKER_CAP_STYLE, 
         Blt_Offset(RectangleMarker, capStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
@@ -909,7 +909,7 @@ static MarkerDrawProc RectangleDrawProc;
 static MarkerFreeProc RectangleFreeProc;
 static MarkerMapProc RectangleMapProc;
 static MarkerPointProc RectanglePointProc;
-static MarkerPostscriptProc RectanglePostscriptProc;
+static MarkerPostScriptProc RectanglePostScriptProc;
 static MarkerAreaProc RectangleAreaProc;
 
 static MarkerClass rectangleMarkerClass = {
@@ -920,7 +920,7 @@ static MarkerClass rectangleMarkerClass = {
     RectangleMapProc,
     RectanglePointProc,
     RectangleAreaProc,
-    RectanglePostscriptProc,
+    RectanglePostScriptProc,
 };
 
 
@@ -983,22 +983,21 @@ typedef struct {
 
 static Blt_ConfigSpec textConfigSpecs[] =
 {
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(TextMarker, anchor), 0},
     {BLT_CONFIG_COLOR, "-background", "background", "MarkerBackground",
         (char *)NULL, Blt_Offset(TextMarker, fillColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", "Background", (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bg", "background"},
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(TextMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element",
         DEF_MARKER_ELEMENT, Blt_Offset(TextMarker, elemName), 
         BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", "Foreground", (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground"},
+    {BLT_CONFIG_SYNONYM, "-fill", "background"},
     {BLT_CONFIG_FONT, "-font", "font", "Font",  DEF_MARKER_FONT, 
         Blt_Offset(TextMarker, style.font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
@@ -1015,8 +1014,7 @@ static Blt_ConfigSpec textConfigSpecs[] =
         Blt_Offset(TextMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
         Blt_Offset(TextMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL, (char *)NULL, 
-        0, 0},
+    {BLT_CONFIG_SYNONYM, "-outline", "foreground"},
     {BLT_CONFIG_PAD, "-padx", "padX", "PadX", DEF_MARKER_PAD, 
         Blt_Offset(TextMarker, style.padX), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-pady", "padY", "PadY", DEF_MARKER_PAD, 
@@ -1044,7 +1042,7 @@ static MarkerDrawProc TextDrawProc;
 static MarkerFreeProc TextFreeProc;
 static MarkerMapProc TextMapProc;
 static MarkerPointProc TextPointProc;
-static MarkerPostscriptProc TextPostscriptProc;
+static MarkerPostScriptProc TextPostScriptProc;
 static MarkerAreaProc TextAreaProc;
 
 static MarkerClass textMarkerClass = {
@@ -1055,7 +1053,7 @@ static MarkerClass textMarkerClass = {
     TextMapProc,
     TextPointProc,
     TextAreaProc,
-    TextPostscriptProc,
+    TextPostScriptProc,
 };
 
 /*
@@ -1112,7 +1110,7 @@ static Blt_ConfigSpec windowConfigSpecs[] =
 {
     {BLT_CONFIG_ANCHOR, "-anchor", "anchor", "Anchor", DEF_MARKER_ANCHOR, 
         Blt_Offset(WindowMarker, anchor), 0},
-    {BLT_CONFIG_SYNONYM, "-bindtags", "tags" },
+    {BLT_CONFIG_SYNONYM, "-bindtags", "tags"},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
         Blt_Offset(WindowMarker, worldPts), BLT_CONFIG_NULL_OK, 
         &coordsOption},
@@ -1152,7 +1150,7 @@ static MarkerDrawProc WindowDrawProc;
 static MarkerFreeProc WindowFreeProc;
 static MarkerMapProc WindowMapProc;
 static MarkerPointProc WindowPointProc;
-static MarkerPostscriptProc WindowPostscriptProc;
+static MarkerPostScriptProc WindowPostScriptProc;
 static MarkerAreaProc WindowAreaProc;
 
 static MarkerClass windowMarkerClass = {
@@ -1163,7 +1161,7 @@ static MarkerClass windowMarkerClass = {
     WindowMapProc,
     WindowPointProc,
     WindowAreaProc,
-    WindowPostscriptProc,
+    WindowPostScriptProc,
 };
 
 static Tk_ImageChangedProc ImageChangedProc;
@@ -1180,7 +1178,7 @@ static MarkerClass ovalMarkerClass = {
     OvalMapProc,
     OvalPointProc,
     OvalAreaProc,
-    OvalPostscriptProc,
+    OvalPostScriptProc,
 };
 #endif
 
@@ -1422,17 +1420,17 @@ FreeMarker(DestroyData data)
  *---------------------------------------------------------------------------
  */
 static int
-BoxesDontOverlap(Graph *graphPtr, Region2d *extsPtr)
+BoxesDontOverlap(Graph *graphPtr, Region2d *rgnPtr)
 {
-    assert(extsPtr->right >= extsPtr->left);
-    assert(extsPtr->bottom >= extsPtr->top);
+    assert(rgnPtr->right >= rgnPtr->left);
+    assert(rgnPtr->bottom >= rgnPtr->top);
     assert(graphPtr->x2 >= graphPtr->x1);
     assert(graphPtr->y2 >= graphPtr->y1);
 
-    return (((double)graphPtr->x2 < extsPtr->left) ||
-            ((double)graphPtr->y2 < extsPtr->top) ||
-            (extsPtr->right < (double)graphPtr->x1) ||
-            (extsPtr->bottom < (double)graphPtr->y1));
+    return (((double)graphPtr->x2 < rgnPtr->left) ||
+            ((double)graphPtr->y2 < rgnPtr->top) ||
+            (rgnPtr->right < (double)graphPtr->x1) ||
+            (rgnPtr->bottom < (double)graphPtr->y1));
 }
 
 
@@ -1533,7 +1531,6 @@ ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
     int numWorldPts;
     int minArgs, maxArgs;
     Point2d *worldPts;
-    int i;
 
     if (objc == 0) {
         return TCL_OK;
@@ -1586,6 +1583,7 @@ ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
 
     {
         Point2d *pp;
+        int i;
 
         pp = worldPts;
         for (i = 0; i < objc; i += 2) {
@@ -1628,7 +1626,7 @@ CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToCoordsProc --
+ * ObjToCoords --
  *
  *      Given a TCL list of numeric expression representing the element
  *      values, convert into an array of floating point values. In
@@ -1644,8 +1642,8 @@ CoordsFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToCoords(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj **objv;
@@ -1663,7 +1661,7 @@ ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * CoordsToObjProc --
+ * CoordsToObj --
  *
  *      Convert the vector of floating point values into a TCL list.
  *
@@ -1674,8 +1672,8 @@ ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CoordsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                char *widgRec, int offset, int flags)
+CoordsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj *listObjPtr;
@@ -1766,7 +1764,7 @@ ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorPairProc --
+ * ObjToColorPair --
  *
  *      Convert the color names into pair of XColor pointers.
  *
@@ -1778,14 +1776,14 @@ ColorPairFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToColorPairProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+ObjToColorPair(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
     Tcl_Obj **objv;
     int state;
     int objc;
-    long longValue = (long)clientData;
+    size_t longValue = (size_t)clientData;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;
@@ -1841,7 +1839,7 @@ NameOfColor(XColor *colorPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ColorPairToObjProc --
+ * ColorPairToObj --
  *
  *      Convert the color pairs into color names.
  *
@@ -1852,8 +1850,8 @@ NameOfColor(XColor *colorPtr)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorPairToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   char *widgRec, int offset, int flags)
+ColorPairToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
     Tcl_Obj *listObjPtr, *objPtr;
@@ -1884,24 +1882,18 @@ ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
 {
     Graph *graphPtr;
     ImageMarker *imPtr = clientData;
-    int isPicture;
 
     graphPtr = imPtr->obj.graphPtr;
-    if ((imPtr->picture != NULL) && ((imPtr->flags & IMAGE_PICTURE) == 0)) {
+    if (imPtr->picture != NULL) {
         Blt_FreePicture(imPtr->picture);
     }
     imPtr->picture = NULL;
-    imPtr->flags &= ~IMAGE_PICTURE;
     if (Blt_Image_IsDeleted(imPtr->tkImage)) {
         Tk_FreeImage(imPtr->tkImage);
         imPtr->tkImage = NULL;
         return;
     }
-    imPtr->picture = Blt_GetPictureFromImage(graphPtr->interp, imPtr->tkImage, 
-                &isPicture);
-    if (isPicture) {
-        imPtr->flags |= IMAGE_PICTURE;
-    }
+    imPtr->picture = Blt_GetPictureFromImage(graphPtr->interp, imPtr->tkImage);
     graphPtr->flags |= CACHE_DIRTY;
     imPtr->flags |= MAP_ITEM;
     Blt_EventuallyRedrawGraph(graphPtr);
@@ -1914,7 +1906,7 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
 {
     ImageMarker *imPtr = (ImageMarker *)widgRec;
 
-    if ((imPtr->picture != NULL) && ((imPtr->flags & IMAGE_PICTURE) == 0)) {
+    if (imPtr->picture != NULL) {
         Blt_FreePicture(imPtr->picture);
     }
     imPtr->picture = NULL;
@@ -1922,13 +1914,12 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
         Tk_FreeImage(imPtr->tkImage);
     }
     imPtr->tkImage = NULL;
-    imPtr->flags &= ~IMAGE_PICTURE;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPictImageProc --
+ * ObjToPictImage --
  *
  *      Given an image name, get the Tk image associated with it.
  *
@@ -1939,42 +1930,37 @@ PictImageFreeProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
+ObjToPictImage(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     Blt_Picture *pictPtr = (Blt_Picture *)(widgRec + offset);
     Graph *graphPtr;
     ImageMarker *imPtr = (ImageMarker *)widgRec;
     Tk_Image tkImage;
     const char *name;
-    int isPicture;
 
     name = Tcl_GetString(objPtr);
     tkImage = Tk_GetImage(interp, tkwin, name, ImageChangedProc, imPtr);
     if (tkImage == NULL) {
         return TCL_ERROR;
     }
-    if ((*pictPtr != NULL) && ((imPtr->flags & IMAGE_PICTURE) == 0)) {
+    if (*pictPtr != NULL) {
         Blt_FreePicture(*pictPtr);
     }
     if (imPtr->tkImage != NULL) {
         Tk_FreeImage(imPtr->tkImage);
     }
-    imPtr->flags &= ~IMAGE_PICTURE;
     *pictPtr = NULL;
     imPtr->tkImage = tkImage;
     graphPtr = imPtr->obj.graphPtr;
-    *pictPtr = Blt_GetPictureFromImage(graphPtr->interp, tkImage, &isPicture);
-    if (isPicture) {
-        imPtr->flags |= IMAGE_PICTURE;
-    }
+    *pictPtr = Blt_GetPictureFromImage(graphPtr->interp, tkImage);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * PictImageToObjProc --
+ * PictImageToObj --
  *
  *      Convert the image name into a string Tcl_Obj.
  *
@@ -1985,8 +1971,8 @@ ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PictImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                   char *widgRec, int offset, int flags)        
+PictImageToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)        
 {
     ImageMarker *imPtr = (ImageMarker *)(widgRec);
     
@@ -2034,38 +2020,41 @@ IsElementHidden(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Marker *markerPtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Marker *markerPtr, Tcl_Obj *objPtr)
 {
     Graph *graphPtr;
-    long dummy;
+    const char *string;
+    char c;
     
-    if (strcmp(tagName, "all") == 0) {
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tag. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     graphPtr = markerPtr->obj.graphPtr;
-    Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tagName, markerPtr);
+    Blt_Tags_AddItemToTag(&graphPtr->markers.tags, string, markerPtr);
     return TCL_OK;
 }
 
@@ -2083,7 +2072,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -2095,8 +2084,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Marker *markerPtr = (Marker *)widgRec;
@@ -2115,7 +2104,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, markerPtr, Tcl_GetString(objv[i]));
+        SetTag(interp, markerPtr, objv[i]);
     }
     return TCL_OK;
 }
@@ -2123,7 +2112,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the marker.
  *
@@ -2134,8 +2123,8 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Marker *markerPtr = (Marker *)widgRec;
@@ -2522,7 +2511,6 @@ BitmapMapProc(Marker *markerPtr)
     Point2d corner1, corner2;
     int destWidth, destHeight;
     int srcWidth, srcHeight;
-    int i;
 
     if (bmPtr->srcBitmap == None) {
         return;
@@ -2631,14 +2619,15 @@ BitmapMapProc(Marker *markerPtr)
         double rotWidth, rotHeight;
         Point2d polygon[5];
         int n;
+        int i;
 
         /* 
          * Compute a polygon to represent the background area of the
          * bitmap.  This is needed for backgrounds of arbitrarily rotated
          * bitmaps.  We also use it to print a background in PostScript.
          */
-        Blt_GetBoundingBox(srcWidth, srcHeight, bmPtr->angle, &rotWidth, 
-                           &rotHeight, polygon);
+        Blt_GetBoundingBox((double)srcWidth, (double)srcHeight, bmPtr->angle, 
+                        &rotWidth, &rotHeight, polygon);
         xScale = (double)destWidth / rotWidth;
         yScale = (double)destHeight / rotHeight;
         
@@ -2714,7 +2703,7 @@ BitmapPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-BitmapAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+BitmapAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
 
@@ -2733,19 +2722,19 @@ BitmapAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
             points[i].x = bmPtr->outlinePts[i].x + bmPtr->anchorPt.x;
             points[i].y = bmPtr->outlinePts[i].y + bmPtr->anchorPt.y;
         }
-        return Blt_RegionInPolygon(extsPtr, points, bmPtr->numOutlinePts, 
+        return Blt_PolygonInRegion(points, bmPtr->numOutlinePts, rgnPtr,
                    enclosed);
     }
     if (enclosed) {
-        return ((bmPtr->anchorPt.x >= extsPtr->left) &&
-                (bmPtr->anchorPt.y >= extsPtr->top) && 
-                ((bmPtr->anchorPt.x + bmPtr->destWidth) <= extsPtr->right) &&
-                ((bmPtr->anchorPt.y + bmPtr->destHeight) <= extsPtr->bottom));
+        return ((bmPtr->anchorPt.x >= rgnPtr->left) &&
+                (bmPtr->anchorPt.y >= rgnPtr->top) && 
+                ((bmPtr->anchorPt.x + bmPtr->destWidth) <= rgnPtr->right) &&
+                ((bmPtr->anchorPt.y + bmPtr->destHeight) <= rgnPtr->bottom));
     }
-    return !((bmPtr->anchorPt.x >= extsPtr->right) ||
-             (bmPtr->anchorPt.y >= extsPtr->bottom) ||
-             ((bmPtr->anchorPt.x + bmPtr->destWidth) <= extsPtr->left) ||
-             ((bmPtr->anchorPt.y + bmPtr->destHeight) <= extsPtr->top));
+    return !((bmPtr->anchorPt.x >= rgnPtr->right) ||
+             (bmPtr->anchorPt.y >= rgnPtr->bottom) ||
+             ((bmPtr->anchorPt.x + bmPtr->destWidth) <= rgnPtr->left) ||
+             ((bmPtr->anchorPt.y + bmPtr->destHeight) <= rgnPtr->top));
 }
 
 /*
@@ -2809,7 +2798,7 @@ BitmapDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * BitmapPostscriptProc --
+ * BitmapPostScriptProc --
  *
  *      Generates PostScript to print a bitmap marker.
  *
@@ -2819,7 +2808,7 @@ BitmapDrawProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-BitmapPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+BitmapPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     BitmapMarker *bmPtr = (BitmapMarker *)markerPtr;
@@ -3176,7 +3165,7 @@ ImageDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * ImagePostscriptProc --
+ * ImagePostScriptProc --
  *
  *      This procedure is invoked to print a image marker.
  *
@@ -3186,7 +3175,7 @@ ImageDrawProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-ImagePostscriptProc(Marker *markerPtr, Blt_Ps ps)
+ImagePostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     ImageMarker *imPtr = (ImageMarker *)markerPtr;
     Blt_Picture picture;
@@ -3282,8 +3271,6 @@ TextConfigureProc(Marker *markerPtr)
     Graph *graphPtr = markerPtr->obj.graphPtr;
     TextMarker *tmPtr = (TextMarker *)markerPtr;
     GC newGC;
-    XGCValues gcValues;
-    unsigned long gcMask;
 
     tmPtr->style.angle = (float)FMOD(tmPtr->style.angle, 360.0);
     if (tmPtr->style.angle < 0.0f) {
@@ -3291,6 +3278,9 @@ TextConfigureProc(Marker *markerPtr)
     }
     newGC = NULL;
     if (tmPtr->fillColor != NULL) {
+        unsigned long gcMask;
+        XGCValues gcValues;
+    
         gcMask = GCForeground;
         gcValues.foreground = tmPtr->fillColor->pixel;
         newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
@@ -3343,7 +3333,8 @@ TextMapProc(Marker *markerPtr)
         return;
     }
     Blt_Ts_GetExtents(&tmPtr->style, tmPtr->string, &w, &h);
-    Blt_GetBoundingBox(w, h, tmPtr->style.angle, &rw, &rh, tmPtr->outlinePts);
+    Blt_GetBoundingBox((double)w, (double)h, tmPtr->style.angle, &rw, &rh, 
+                tmPtr->outlinePts);
     tmPtr->width = ROUND(rw);
     tmPtr->height = ROUND(rh);
     for (i = 0; i < 4; i++) {
@@ -3406,7 +3397,7 @@ TextPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-TextAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+TextAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -3425,18 +3416,18 @@ TextAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
             points[i].x = tmPtr->outlinePts[i].x + tmPtr->anchorPt.x;
             points[i].y = tmPtr->outlinePts[i].y + tmPtr->anchorPt.y;
         }
-        return Blt_RegionInPolygon(extsPtr, points, 4, enclosed);
+        return Blt_PolygonInRegion(points, 4, rgnPtr, enclosed);
     } 
     if (enclosed) {
-        return ((tmPtr->anchorPt.x >= extsPtr->left) &&
-                (tmPtr->anchorPt.y >= extsPtr->top) && 
-                ((tmPtr->anchorPt.x + tmPtr->width) <= extsPtr->right) &&
-                ((tmPtr->anchorPt.y + tmPtr->height) <= extsPtr->bottom));
+        return ((tmPtr->anchorPt.x >= rgnPtr->left) &&
+                (tmPtr->anchorPt.y >= rgnPtr->top) && 
+                ((tmPtr->anchorPt.x + tmPtr->width) <= rgnPtr->right) &&
+                ((tmPtr->anchorPt.y + tmPtr->height) <= rgnPtr->bottom));
     }
-    return !((tmPtr->anchorPt.x >= extsPtr->right) ||
-             (tmPtr->anchorPt.y >= extsPtr->bottom) ||
-             ((tmPtr->anchorPt.x + tmPtr->width) <= extsPtr->left) ||
-             ((tmPtr->anchorPt.y + tmPtr->height) <= extsPtr->top));
+    return !((tmPtr->anchorPt.x >= rgnPtr->right) ||
+             (tmPtr->anchorPt.y >= rgnPtr->bottom) ||
+             ((tmPtr->anchorPt.x + tmPtr->width) <= rgnPtr->left) ||
+             ((tmPtr->anchorPt.y + tmPtr->height) <= rgnPtr->top));
 }
 
 /*
@@ -3489,7 +3480,7 @@ TextDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * TextPostscriptProc --
+ * TextPostScriptProc --
  *
  *      Outputs PostScript commands to draw a text marker at a given x,y
  *      coordinate, rotation, anchor, and font.
@@ -3503,7 +3494,7 @@ TextDrawProc(Marker *markerPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-TextPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+TextPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     TextMarker *tmPtr = (TextMarker *)markerPtr;
 
@@ -3738,7 +3729,7 @@ WindowPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-WindowAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+WindowAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -3746,15 +3737,15 @@ WindowAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
         return FALSE;
     }
     if (enclosed) {
-        return ((wmPtr->anchorPt.x >= extsPtr->left) &&
-                (wmPtr->anchorPt.y >= extsPtr->top) && 
-                ((wmPtr->anchorPt.x + wmPtr->width) <= extsPtr->right) &&
-                ((wmPtr->anchorPt.y + wmPtr->height) <= extsPtr->bottom));
+        return ((wmPtr->anchorPt.x >= rgnPtr->left) &&
+                (wmPtr->anchorPt.y >= rgnPtr->top) && 
+                ((wmPtr->anchorPt.x + wmPtr->width) <= rgnPtr->right) &&
+                ((wmPtr->anchorPt.y + wmPtr->height) <= rgnPtr->bottom));
     }
-    return !((wmPtr->anchorPt.x >= extsPtr->right) ||
-             (wmPtr->anchorPt.y >= extsPtr->bottom) ||
-             ((wmPtr->anchorPt.x + wmPtr->width) <= extsPtr->left) ||
-             ((wmPtr->anchorPt.y + wmPtr->height) <= extsPtr->top));
+    return !((wmPtr->anchorPt.x >= rgnPtr->right) ||
+             (wmPtr->anchorPt.y >= rgnPtr->bottom) ||
+             ((wmPtr->anchorPt.x + wmPtr->width) <= rgnPtr->left) ||
+             ((wmPtr->anchorPt.y + wmPtr->height) <= rgnPtr->top));
 }
 
 /*
@@ -3788,12 +3779,12 @@ WindowDrawProc(Marker *markerPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * WindowPostscriptProc --
+ * WindowPostScriptProc --
  *
  *---------------------------------------------------------------------------
  */
 static void
-WindowPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+WindowPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     WindowMarker *wmPtr = (WindowMarker *)markerPtr;
 
@@ -4094,7 +4085,7 @@ LinePointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+LineAreaProc(Marker *markerPtr, Region2d *rgnPtr, int enclosed)
 {
     if (markerPtr->numWorldPts < 2) {
         return FALSE;
@@ -4107,8 +4098,8 @@ LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
             Point2d p;
 
             p = MapPoint(pp, &markerPtr->axes);
-            if ((p.x < extsPtr->left) && (p.x > extsPtr->right) &&
-                (p.y < extsPtr->top) && (p.y > extsPtr->bottom)) {
+            if ((p.x < rgnPtr->left) && (p.x > rgnPtr->right) &&
+                (p.y < rgnPtr->top) && (p.y > rgnPtr->bottom)) {
                 return FALSE;
             }
         }
@@ -4125,7 +4116,7 @@ LineAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 
             p = MapPoint(pp, &markerPtr->axes);
             q = MapPoint(pp + 1, &markerPtr->axes);
-            if (Blt_LineRectClip(extsPtr, &p, &q)) {
+            if (Blt_LineRectClip(rgnPtr, &p, &q)) {
                 count++;
             }
         }
@@ -4250,7 +4241,7 @@ LineConfigureProc(Marker *markerPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * LinePostscriptProc --
+ * LinePostScriptProc --
  *
  *      Prints postscript commands to display the connect line.  Dashed
  *      lines need to be handled specially, especially if a background
@@ -4266,7 +4257,7 @@ LineConfigureProc(Marker *markerPtr)
  *---------------------------------------------------------------------------
  */
 static void
-LinePostscriptProc(Marker *markerPtr, Blt_Ps ps)
+LinePostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     LineMarker *lmPtr = (LineMarker *)markerPtr;
 
@@ -4630,7 +4621,7 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
     Blt_PaintBrush brush;
     Blt_Painter painter;
     Blt_Picture bg;
-    Point2f *vertices;
+    Point2d *vertices;
     int i;
     int w, h;
     int x1, x2, y1, y2;
@@ -4645,17 +4636,17 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
     GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
+    bg = Blt_CreatePicture(w, h);
     if (bg == NULL) {
         return;                         /* Background is obscured. */
     }
-    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
+    Blt_BlankPicture(bg, 0x0);
+    vertices = Blt_AssertMalloc(n * sizeof(Point2d));
     /* Translate the polygon */
     for (i = 0; i < n; i++) {
-        vertices[i].x = (float)(points[i].x - x1);
-        vertices[i].y = (float)(points[i].y - y1);
+        vertices[i].x = points[i].x - x1;
+        vertices[i].y = points[i].y - y1;
     }
-    
     brush = Blt_NewLinearGradientBrush();
     Blt_SetBrushOrigin(brush, -x1, -y1);
     Blt_SetLinearGradientBrushPalette(brush, markerPtr->palette);
@@ -4705,7 +4696,7 @@ PolygonDrawProc(Marker *markerPtr, Drawable drawable)
 
 
 static void
-PolygonPostscriptProc(Marker *markerPtr, Blt_Ps ps)
+PolygonPostScriptProc(Marker *markerPtr, Blt_Ps ps)
 {
     Graph *graphPtr = markerPtr->obj.graphPtr;
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
@@ -4794,13 +4785,13 @@ PolygonPointProc(Marker *markerPtr, Point2d *samplePtr)
  *---------------------------------------------------------------------------
  */
 static int
-PolygonAreaProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
+PolygonAreaProc(Marker *markerPtr, Region2d *regionPtr, int enclosed)
 {
     PolygonMarker *pmPtr = (PolygonMarker *)markerPtr;
     
     if ((markerPtr->numWorldPts >= 3) && (pmPtr->screenPts != NULL)) {
-        return Blt_RegionInPolygon(extsPtr, pmPtr->screenPts, 
-                markerPtr->numWorldPts, enclosed);
+        return Blt_PolygonInRegion(pmPtr->screenPts, markerPtr->numWorldPts, 
+                regionPtr, enclosed);
     }
     return FALSE;
 }
@@ -5135,10 +5126,11 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable,
     GetRectangleBBox(points, n, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
+    bg = Blt_CreatePicture(w, h);
     if (bg == NULL) {
         return;                         /* Background is obscured. */
     }
+    Blt_BlankPicture(bg, 0x0);
     vertices = Blt_AssertMalloc(n * sizeof(Point2f));
     /* Translate the rectangle */
     for (i = 0; i < n; i++) {
@@ -5189,7 +5181,7 @@ RectangleDrawProc(Marker *basePtr, Drawable drawable)
 
 
 static void
-RectanglePostscriptProc(Marker *basePtr, Blt_Ps ps)
+RectanglePostScriptProc(Marker *basePtr, Blt_Ps ps)
 {
     Graph *graphPtr = basePtr->obj.graphPtr;
     RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
@@ -5280,20 +5272,20 @@ RectanglePointProc(Marker *basePtr, Point2d *p)
  *---------------------------------------------------------------------------
  */
 static int
-RectangleAreaProc(Marker *basePtr, Region2d *extsPtr, int enclosed)
+RectangleAreaProc(Marker *basePtr, Region2d *rgnPtr, int enclosed)
 {
     RectangleMarker *markerPtr = (RectangleMarker *)basePtr;
     
     if (enclosed) {
-        return ((markerPtr->corner1.x >= extsPtr->left) &&
-                (markerPtr->corner2.x < extsPtr->right) &&
-                (markerPtr->corner1.y >= extsPtr->top) &&
-                (markerPtr->corner2.y < extsPtr->bottom));
+        return ((markerPtr->corner1.x >= rgnPtr->left) &&
+                (markerPtr->corner2.x < rgnPtr->right) &&
+                (markerPtr->corner1.y >= rgnPtr->top) &&
+                (markerPtr->corner2.y < rgnPtr->bottom));
     } else {
-        return ((markerPtr->corner1.x >= extsPtr->right) ||
-                (markerPtr->corner2.x < extsPtr->left) ||
-                (markerPtr->corner1.y >= extsPtr->bottom) ||
-                (markerPtr->corner2.y < extsPtr->top));
+        return ((markerPtr->corner1.x >= rgnPtr->right) ||
+                (markerPtr->corner2.x < rgnPtr->left) ||
+                (markerPtr->corner1.y >= rgnPtr->bottom) ||
+                (markerPtr->corner2.y < rgnPtr->top));
     }
 }
 
@@ -5557,7 +5549,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* If no name was given for the marker, make up one. */
     if (name == NULL) {
-        Blt_FormatString(ident, 200, "marker%d", graphPtr->nextMarkerId++);
+        Blt_FmtString(ident, 200, "marker%d", graphPtr->nextMarkerId++);
         name = ident;
     } else if (name[0] == '-') {
         Tcl_AppendResult(interp, "name of marker \"", name, 
@@ -5886,23 +5878,24 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    const char *tag;
-    long markerId;
+    const char *string;
+    char c;
 
-    tag = Tcl_GetString(objv[4]);
-    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[4]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[4]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
     if (objc == 5) {
         /* No nodes specified.  Just add the tag. */
-        Blt_Tags_AddTag(&graphPtr->markers.tags, tag);
+        Blt_Tags_AddTag(&graphPtr->markers.tags, string);
     } else {
         int i;
 
@@ -5915,7 +5908,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
             }
             for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
                  markerPtr = NextTaggedMarker(&iter)) {
-                Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tag, markerPtr);
+                Blt_Tags_AddItemToTag(&graphPtr->markers.tags, string, markerPtr);
             }
         }
     }
@@ -5937,18 +5930,19 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
-    const char *tag;
-    long markerId;
+    const char *string;
+    char c;
     int i;
 
-    tag = Tcl_GetString(objv[4]);
-    if (Blt_GetLongFromObj(NULL, objv[4], &markerId) == TCL_OK) {
-        Tcl_AppendResult(interp, "bad tag \"", tag, 
+    string = Tcl_GetString(objv[4]);
+    c = string[0];
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objv[4]))) {
+        Tcl_AppendResult(interp, "bad tag \"", string, 
                  "\": can't be a number.", (char *)NULL);
         return TCL_ERROR;
     }
-    if (strcmp(tag, "all") == 0) {
-        Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
+        Tcl_AppendResult(interp, "can't delete reserved tag \"", string, "\"", 
                          (char *)NULL);
         return TCL_ERROR;
     }
@@ -5961,7 +5955,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
              markerPtr = NextTaggedMarker(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&graphPtr->markers.tags, tag, markerPtr);
+            Blt_Tags_RemoveItemFromTag(&graphPtr->markers.tags, string, markerPtr);
         }
     }
     return TCL_OK;
@@ -6029,16 +6023,17 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 4; i < objc; i++) {
-        const char *tag;
-        long markerId;
-
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        const char *string;
+        char c;
+        
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        Blt_Tags_ForgetTag(&graphPtr->markers.tags, tag);
+        Blt_Tags_ForgetTag(&graphPtr->markers.tags, string);
     }
     return TCL_OK;
 }
@@ -6218,24 +6213,25 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
-        const char *tag;
         Marker *markerPtr;
-        long markerId;
+        char c;
+        const char *string;
 
-        tag = Tcl_GetString(objv[i]);
-        if (Blt_GetLongFromObj(NULL, objv[i], &markerId) == TCL_OK) {
-            Tcl_AppendResult(interp, "bad tag \"", tag, 
+        string = Tcl_GetString(objv[i]);
+        c = string[0];
+        if ((isdigit(c)) && (Blt_ObjIsInteger(objv[i]))) {
+            Tcl_AppendResult(interp, "bad tag \"", string, 
                              "\": can't be a number.", (char *)NULL);
             return TCL_ERROR;
         }
-        if (strcmp(tag, "all") == 0) {
-            Tcl_AppendResult(interp, "can't add reserved tag \"", tag, "\"",
+        if ((c == 'a') && (strcmp(string, "all") == 0)) {
+            Tcl_AppendResult(interp, "can't add reserved tag \"", string, "\"",
                              (char *)NULL);     
             return TCL_ERROR;
         }
         for (markerPtr = FirstTaggedMarker(&iter); markerPtr != NULL; 
              markerPtr = NextTaggedMarker(&iter)) {
-            Blt_Tags_AddItemToTag(&graphPtr->markers.tags, tag, markerPtr);
+            Blt_Tags_AddItemToTag(&graphPtr->markers.tags, string, markerPtr);
         }    
     }
     return TCL_OK;

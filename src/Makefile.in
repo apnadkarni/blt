@@ -89,7 +89,6 @@ instdirs =		$(prefix) \
 			$(pkgdir) \
 			$(scriptdir)
 
- 
 # ------------------------------------------------------------------------
 # 	Directories containing Tcl and Tk include files and libraries
 # ------------------------------------------------------------------------
@@ -344,7 +343,6 @@ DATATABLE_PKG_OBJS =	bltDataTableCsv.o \
 BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			$(TREE_OBJS) \
 			bltAlloc.o \
-			bltArrayObj.o \
 			bltBase64.o \
 			bltBgexec.o \
 			bltChain.o \
@@ -353,11 +351,13 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltCsv.o \
 			bltDBuffer.o \
 			bltDebug.o \
+			bltGeomUtil.o \
 			bltHash.o \
 			bltInitCmd.o \
 			bltList.o \
 			bltMesh.o \
 			bltNsUtil.o \
+			bltObj.o \
 			bltParse.o \
 			bltPool.o \
 			bltSpline.o \
@@ -368,7 +368,6 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltTclProcs.o \
 			bltTimeStamp.o \
 			bltTri.o \
-			bltUnixBgexec.o \
 			bltUnixPipe.o \
 			bltUtil.o \
 			bltVar.o \
@@ -379,7 +378,7 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltWatch.o 
 
 BLT_TCL_OBJS =		$(BLT_TCL_SO_OBJS) \
-			bltTclPkgsInit.o\
+			bltTclPkgsInit.o \
 			$(TREE_PKG_OBJS) \
 			$(DATATABLE_PKG_OBJS) \
 			$(MISC_PKG_OBJS)
@@ -396,9 +395,11 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltBitmap.o \
 			bltBusy.o \
 			bltCanvEps.o \
+			bltCanvLabel.o \
 			bltComboButton.o \
 			bltComboEditor.o \
 			bltComboEntry.o \
+			bltComboFrame.o \
 			bltComboMenu.o \
 			bltComboTree.o \
 			bltConfig.o \
@@ -661,7 +662,7 @@ $(blt_pict_xpm_so): bltPictXpm.o $(blt_libs)
 	$(RM) $@
 	$(SO_LD) $(SO_LDFLAGS) -o $@ bltPictXpm.o \
 		$(blt_libs) $(X11_LIB_SPEC) $(XPM_LIB_SPEC) \
-		$(tcl_lib_spec)
+		$(tcl_lib_spec) 
 
 $(blt_pict_text_so): bltPictText.o $(blt_libs)
 	$(RM) $@
@@ -673,6 +674,7 @@ BLT_TCL_INT_HEADERS =	\
 		$(srcdir)/bltArrayObj.h \
 		$(srcdir)/bltAssert.h  \
 		$(srcdir)/bltDBuffer.h  \
+		$(srcdir)/bltGeomUtil.h \
 		$(srcdir)/bltInitCmd.h \
 		$(srcdir)/bltInt.h \
 		$(srcdir)/bltMath.h \
@@ -687,7 +689,7 @@ BLT_TCL_INT_HEADERS =	\
 BLT_TCL_HEADERS = \
 		$(srcdir)/bltAlloc.h \
 		$(srcdir)/bltChain.h \
-		$(srcdir)/bltHash.h.in \
+		bltHash.h \
 		$(srcdir)/bltTags.h \
 		$(srcdir)/bltList.h \
 		$(srcdir)/bltPool.h \

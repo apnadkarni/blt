@@ -415,9 +415,6 @@ typedef enum Blt_PaintBrushTypes {
 #define BLT_PAINTBRUSH_SCALING_LOG     (1<<5)
 #define BLT_PAINTBRUSH_REPEAT_NORMAL   (1<<7)
 #define BLT_PAINTBRUSH_REPEAT_OPPOSITE (1<<8)
-#define BLT_PAINTBRUSH_ORIENT_VERTICAL    (1<<9)
-#define BLT_PAINTBRUSH_ORIENT_HORIZONTAL  (1<<10)
-#define BLT_PAINTBRUSH_FREE_PICTURE   (1<<11)
 
 BLT_EXTERN Blt_PaintBrush Blt_NewTileBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewLinearGradientBrush(void);
@@ -427,10 +424,13 @@ BLT_EXTERN Blt_PaintBrush Blt_NewRadialGradientBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewConicalGradientBrush(void);
 BLT_EXTERN Blt_PaintBrush Blt_NewColorBrush(unsigned int color);
 
-BLT_EXTERN const char *Blt_GetBrushType(Blt_PaintBrush brush);
+BLT_EXTERN const char *Blt_GetBrushTypeName(Blt_PaintBrush brush);
 BLT_EXTERN const char *Blt_GetBrushName(Blt_PaintBrush brush);
-BLT_EXTERN const char *Blt_GetBrushColor(Blt_PaintBrush brush);
-
+BLT_EXTERN const char *Blt_GetBrushColorName(Blt_PaintBrush brush);
+BLT_EXTERN Blt_Pixel *Blt_GetBrushPixel(Blt_PaintBrush brush);
+BLT_EXTERN Blt_PaintBrushType Blt_GetBrushType(Blt_PaintBrush brush);
+BLT_EXTERN XColor *Blt_GetXColorFromBrush(Tk_Window tkwin,
+        Blt_PaintBrush brush);
 BLT_EXTERN int Blt_ConfigurePaintBrush(Tcl_Interp *interp,
         Blt_PaintBrush brush);
 BLT_EXTERN int Blt_GetBrushTypeFromObj(Tcl_Interp *interp,
@@ -454,20 +454,21 @@ BLT_EXTERN void Blt_SetColorBrushColor(Blt_PaintBrush brush,
         unsigned int value);
 BLT_EXTERN void Blt_SetBrushOrigin(Blt_PaintBrush brush, int x, int y);
 BLT_EXTERN void Blt_SetBrushOpacity(Blt_PaintBrush brush, double percent);
-BLT_EXTERN void Blt_SetBrushRegion(Blt_PaintBrush brush, int x, int y, 
+BLT_EXTERN void Blt_SetBrushArea(Blt_PaintBrush brush, int x, int y, 
         int w,  int h);
 
 BLT_EXTERN int Blt_GetBrushAlpha(Blt_PaintBrush brush);
 BLT_EXTERN void Blt_GetBrushOrigin(Blt_PaintBrush brush, int *xPtr, int *yPtr);
-BLT_EXTERN int Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, int x,
-        int y);
+BLT_EXTERN unsigned int Blt_GetAssociatedColorFromBrush(Blt_PaintBrush brush, 
+        int x, int y);
 BLT_EXTERN int Blt_IsVerticalLinearBrush(Blt_PaintBrush brush);
+BLT_EXTERN int Blt_IsHorizontalLinearBrush(Blt_PaintBrush brush);
 
 BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, 
         int h, int dx, int dy, Blt_PaintBrush brush, int composite);
 
 #ifdef _BLT_INT_H
-BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
+BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2d *vertices,
         Blt_PaintBrush brush);
 #endif  /* _BLT_INT_H */
 

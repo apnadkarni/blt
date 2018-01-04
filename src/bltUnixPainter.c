@@ -87,8 +87,26 @@
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h>
+#include <string.h>
+#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xproto.h>
+#ifdef HAVE_X11_EXTENSIONS_XRENDER_H
+#include <X11/extensions/Xrender.h>
+#endif  /* HAVE_X11_EXTENSIONS_XRENDER_H */
+#ifdef HAVE_X11_EXTENSIONS_XCOMPOSITE_H
+#include <X11/extensions/Xcomposite.h>
+#endif  /* HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
+#ifdef HAVE_X11_EXTENSIONS_XSHM_H
+#include <X11/extensions/XShm.h>
+#endif  /* HAVE_X11_EXTENSIONS_XSHM_H */
+#ifdef HAVE_X11_EXTENSIONS_SHMPROTO_H
+#include <X11/extensions/shmproto.h>
+#endif  /* HAVE_X11_EXTENSIONS_SHMPROTO_H */
+
 #include "bltAlloc.h"
 #include "bltMath.h"
 #include "bltHash.h"
@@ -110,7 +128,7 @@ typedef struct _Blt_Picture Pict;
 #define DEBUG 0
 
 static Blt_HashTable painterTable;
-static int initialized = 0;
+static int painterTableInitialized = 0;
 
 #define COLOR_WINDOW            (1<<0)
 #define BLACK_AND_WHITE         (1<<1)
@@ -144,6 +162,7 @@ typedef struct {
                                          * XCreateGC). */
 
 static Tcl_FreeProc FreePainter;
+int bltEnableXShm = FALSE;
 
 #ifdef notdef
 static void
@@ -201,7 +220,7 @@ FindShift(unsigned int mask)            /* 32-bit word */
     int bit;
 
     for (bit = 0; bit < 32; bit++) {
-        if (mask & (1 << bit)) {
+        if (mask & (1U << bit)) {
             break;
         }
     }
@@ -898,21 +917,17 @@ FreePainter(DestroyData data)
  *---------------------------------------------------------------------------
  */
 static Painter *
-GetPainter(
-    Display *display, 
-    Colormap colormap, 
-    Visual *visualPtr,
-    int depth,
-    float gamma)
+GetPainter(Display *display, Colormap colormap, Visual *visualPtr, int depth,
+           float gamma)
 {
     Painter *p;
     PainterKey key;
     int isNew;
     Blt_HashEntry *hPtr;
 
-    if (!initialized) {
+    if (!painterTableInitialized) {
         Blt_InitHashTable(&painterTable, sizeof(PainterKey) / sizeof(int));
-        initialized = TRUE;
+        painterTableInitialized = TRUE;
     }
     key.display = display;
     key.colormap = colormap;
@@ -960,6 +975,11 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
     if (n > h ) {
         n = h;
     }
+#ifndef notdef
+    if (n > 90) {
+        n = 90;
+    }
+#endif
     for (y = 0; y < h; y += n) {
         if ((y + n) > h) {
             n = h - y;
@@ -969,402 +989,26 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
     }
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * XGetImageErrorProc --
- *
- *      Error handling routine for the XGetImage request below. Sets the
- *      flag passed via *clientData* to TCL_ERROR indicating an error
- *      occurred.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static int
-XGetImageErrorProc(
-    ClientData clientData, 
-    XErrorEvent *errEventPtr)           /* Not used. */
+static void
+PictureToXImage(Painter *p, Pict *srcPtr, int sx, int sy, int w, int h,
+                XImage *imgPtr)
 {
-    int *errorPtr = clientData;
+    Blt_Pixel *srcRowPtr;
+    int dw, dh;
+    int y;
+    unsigned char *destRowPtr;
 
-    *errorPtr = TCL_ERROR;
-    return 0;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawableToXImage --
- *
- *      Attempts to snap the image from the drawable into an XImage
- *      structure (using XGetImage).  This may fail is the coordinates of
- *      the region in the drawable are obscured.
- *
- * Results:
- *      Returns a pointer to the XImage if successful. Otherwise NULL is
- *      returned.
- *
- *---------------------------------------------------------------------------
- */
-static XImage *
-DrawableToXImage(
-    Display *display,
-    Drawable drawable, 
-    int x, int y, int w, int h)
-{
-    XImage *imgPtr;
-    int code;
-    code = TCL_OK;
-
-    Tk_ErrorHandler handler;
-
-    handler = Tk_CreateErrorHandler(display, -1, X_GetImage, -1, 
-        XGetImageErrorProc, &code);
-    imgPtr = XGetImage(display, drawable, x, y, w, h, AllPlanes, ZPixmap);
-    Tk_DeleteErrorHandler(handler);
-    XSync(display, False);
-    if ((imgPtr == NULL) || (code != TCL_OK)) {
-#if DEBUG
-        Blt_Warn("can't snap picture of drawable\n");
-#endif
-        return NULL;
-    }
-    return imgPtr;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawableToPicture --
- *
- *      Takes a snapshot of an X drawable (pixmap or window) and converts
- *      it to a picture.
- *
- * Results:
- *      Returns a picture of the drawable.  If an error occurred (a portion
- *      of the region specified is obscured), then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-static Blt_Picture
-DrawableToPicture(
-    Painter *p,
-    Drawable drawable,
-    int x, int y,                       /* Coordinates of region in source
-                                         * drawable. */
-    int w, int h)                       /* Dimension of the region in the
-                                         * source drawable. Region must be
-                                         * completely contained by the
-                                         * drawable. */
-{
-    Blt_Pixel *destRowPtr;
-    Blt_Pixel palette[256];
-    Pict *destPtr;
-    XImage *imgPtr;
-    int shift[4];
-    unsigned char *srcRowPtr;
-
-    if (x < 0) {
-        w += x;
-        x = 0;
-    }
-    if (y < 0) {
-        h += y;
-        y = 0;
-    }
-    imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
-    if (imgPtr == NULL) {
-        int dw, dh;
-
-        /* 
-         * Failed to acquire an XImage from the drawable. The drawable may
-         * be partially obscured (if it's a window) or too small for the
-         * requested area.  Try it again, after fixing the area with the
-         * dimensions of the drawable.
-         */
-        if (Blt_GetWindowRegion(p->display, drawable, NULL, NULL, &dw, &dh)
-            == TCL_OK) {
-            if ((x + w) > dw) {
-                w = dw - x;
-            }
-            if ((y + h) > dh) {
-                h = dh - y;
-            }
-            imgPtr = DrawableToXImage(p->display, drawable, x, y, w, h);
-        }
-    }
-    if (imgPtr == NULL) {
-        return NULL;
-    }
-
-    /* Allocate a picture to hold the screen snapshot. */
-    destPtr = Blt_CreatePicture(w, h);
-
-    /* Get the palette of the current painter/window */
-    QueryPalette(p, palette);
-
-    /* Suppress compiler warnings. */
-    shift[0] = shift[1] = shift[2] = shift[3] = 0; 
-
-    switch (p->visualPtr->class) {
-    case TrueColor:
-    case DirectColor:
-        if (imgPtr->byte_order == MSBFirst) {
-            shift[0] = 24, shift[1] = 16, shift[2] = 8, shift[3] = 0;
-        } else {
-            switch (imgPtr->bits_per_pixel) {
-            case 32:
-                shift[0] = 0, shift[1] = 8, shift[2] = 16, shift[3] = 24;
-                break;
-            case 24:
-                shift[1] = 0, shift[2] = 8, shift[3] = 16;
-                break;
-            case 16:
-                shift[2] = 0, shift[3] = 8;
-                break;
-            case 8:
-                shift[3] = 0;
-                break;
-            }
-        }
-        srcRowPtr = (unsigned char *)imgPtr->data;
-        destRowPtr = destPtr->bits;
-        switch (imgPtr->bits_per_pixel) {
-        case 32:
-            for (y = 0; y < h; y++) {
-                unsigned char *sp;
-                Blt_Pixel *dp, *dend;
-                
-                sp = srcRowPtr;
-                for (dp = destRowPtr, dend = dp + w; dp < dend; dp++) {
-                    int r, g, b;
-                    unsigned long pixel;
-                    
-                    /* Get the next pixel from the image. */
-                    pixel = ((sp[0] << shift[0]) | (sp[1] << shift[1]) |
-                             (sp[2] << shift[2]) | (sp[3] << shift[3]));
-                    
-                    /* Convert the pixel to RGB, correcting for input
-                     * gamma. */
-                    r = ((pixel & p->rMask) >> p->rShift);
-                    g = ((pixel & p->gMask) >> p->gShift);
-                    b = ((pixel & p->bMask) >> p->bShift);
-                    dp->Red = palette[r].Red;
-                    dp->Green = palette[g].Green;
-                    dp->Blue = palette[b].Blue;
-                    dp->Alpha = ALPHA_OPAQUE;
-                    sp += 4;
-                }
-                destRowPtr += destPtr->pixelsPerRow;
-                srcRowPtr += imgPtr->bytes_per_line;
-            }
-            break;
-
-        case 24:
-            for (y = 0; y < h; y++) {
-                unsigned char *sp;
-                Blt_Pixel *dp, *dend;
-                
-                sp = srcRowPtr;
-                for (dp = destRowPtr, dend = dp + w; dp < dend; dp++) {
-                    int r, g, b;
-                    unsigned long pixel;
-                    
-                    /* Get the next pixel from the image. */
-                    pixel = ((sp[0] << shift[1]) | (sp[1] << shift[2]) |
-                             (sp[2] << shift[3]));
-                    
-                    /* Convert the pixel to RGB, correcting for input
-                     * gamma. */
-                    r = ((pixel & p->rMask) >> p->rShift);
-                    g = ((pixel & p->gMask) >> p->gShift);
-                    b = ((pixel & p->bMask) >> p->bShift);
-                    dp->Red = palette[r].Red;
-                    dp->Green = palette[g].Green;
-                    dp->Blue = palette[b].Blue;
-                    dp->Alpha = ALPHA_OPAQUE;
-                    sp += 3;
-                }
-                destRowPtr += destPtr->pixelsPerRow;
-                srcRowPtr += imgPtr->bytes_per_line;
-            }
-            break;
-            
-        case 16:
-            for (y = 0; y < h; y++) {
-                unsigned char *sp;
-                Blt_Pixel *dp, *dend;
-                
-                sp = srcRowPtr;
-                for (dp = destRowPtr, dend = dp + w; dp < dend; dp++) {
-                    int r, g, b;
-                    unsigned long pixel;
-                    
-                    /* Get the next pixel from the image. */
-                    pixel = ((sp[0] << shift[2]) | (sp[1] << shift[3]));
-
-                    /* Convert the pixel to RGB, correcting for input
-                     * gamma. */
-                    r = ((pixel & p->rMask) >> p->rShift);
-                    g = ((pixel & p->gMask) >> p->gShift);
-                    b = ((pixel & p->bMask) >> p->bShift);
-                    dp->Red = palette[r].Red;
-                    dp->Green = palette[g].Green;
-                    dp->Blue = palette[b].Blue;
-                    dp->Alpha = ALPHA_OPAQUE;
-                    sp += 2;
-                }
-                destRowPtr += destPtr->pixelsPerRow;
-                srcRowPtr += imgPtr->bytes_per_line;
-            }
-            break;
-            
-        case 8:
-            for (y = 0; y < h; y++) {
-                unsigned char *sp;
-                Blt_Pixel *dp, *dend;
-                
-                sp = srcRowPtr;
-                for (dp = destRowPtr, dend = dp + w; dp < dend; dp++) {
-                    int r, g, b;
-                    unsigned long pixel;
-                    
-                    /* Get the next pixel from the image. */
-                    pixel = (*sp << shift[3]);
-
-                    /* Convert the pixel to RGB, correcting for input
-                     * gamma. */
-                    r = ((pixel & p->rMask) >> p->rShift);
-                    g = ((pixel & p->gMask) >> p->gShift);
-                    b = ((pixel & p->bMask) >> p->bShift);
-                    dp->Red = palette[r].Red;
-                    dp->Green = palette[g].Green;
-                    dp->Blue = palette[b].Blue;
-                    dp->Alpha = ALPHA_OPAQUE;
-                    sp++;
-                }
-                destRowPtr += destPtr->pixelsPerRow;
-                srcRowPtr += imgPtr->bytes_per_line;
-            }
-            break;
-        }
-        break;
-
-    case PseudoColor:
-    case StaticColor:
-    case GrayScale:
-    case StaticGray:
-        if ((imgPtr->bits_per_pixel != 8) && (imgPtr->bits_per_pixel != 4)) {
-            return NULL;                /* Can only handle 4 or 8 bit
-                                         * pixels. */
-        }
-        srcRowPtr = (unsigned char *)imgPtr->data;
-        destRowPtr = destPtr->bits;
-        for (y = 0; y < h; y++) {
-            unsigned char *sp;
-            Blt_Pixel *dp;
-
-            sp = srcRowPtr, dp = destRowPtr;
-            for (x = 0; x < w; x++) {
-                unsigned long pixel;
-
-                if (imgPtr->bits_per_pixel == 8) {
-                    pixel = *sp++;
-                } else {
-                    if (x & 1) {        /* Odd: pixel is high nybble. */
-                        pixel = (*sp & 0xF0) >> 4;
-                        sp++;
-                    } else {            /* Even: pixel is low nybble. */
-                        pixel = (*sp & 0x0F);
-                    }
-                } 
-                /* Convert the pixel to RGB, correcting for input gamma. */
-                dp->Red = palette[pixel].Red;
-                dp->Green = palette[pixel].Green;
-                dp->Blue = palette[pixel].Blue;
-                dp->Alpha = ALPHA_OPAQUE;
-                dp++;
-            }
-            srcRowPtr += imgPtr->bytes_per_line;
-            destRowPtr += destPtr->pixelsPerRow;
-        }
-        break;
-    default:
-        break;
-    }
-    XDestroyImage(imgPtr);
-    /* Opaque image, set associate colors flag.  */
-    destPtr->flags |= BLT_PIC_PREMULT_COLORS;
-    return destPtr;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * PaintPicture --
- *
- *      Paints the picture to the given drawable. The region of the picture
- *      is specified and the coordinates where in the destination drawable
- *      is the image to be displayed.
- *
- *      The image may be dithered depending upon the bit set in the flags
- *      parameter: 0 no dithering, 1 for dithering.
- * 
- * Results:
- *      Returns TRUE is the picture was successfully displayed.  Otherwise
- *      FALSE is returned if the particular combination visual and image
- *      depth is not handled.
- *
- *---------------------------------------------------------------------------
- */
-static int
-PaintPicture(
-    Painter *p,
-    Drawable drawable,
-    Pict *srcPtr,
-    int sx, int sy,                     /* Coordinates of region in the
-                                         * picture. */
-    int w, int h,                       /* Dimension of the source region.
-                                         * Area cannot extend beyond the
-                                         * end of the picture. */
-    int dx, int dy,                     /* Coordinates of destination
-                                         * region in the drawable.  */
-    unsigned int flags)
-{
 #ifdef WORD_BIGENDIAN
     static int nativeByteOrder = MSBFirst;
 #else
     static int nativeByteOrder = LSBFirst;
-#endif
-    int dw, dh;
-    Pict *ditherPtr;
-    Blt_Pixel *srcRowPtr;
-    XImage *imgPtr;
-    int y;
-    unsigned char *destRowPtr;
+#endif  /* WORD_BIGENDIAN */
 
-#ifdef notdef
-    fprintf(stderr, "PaintPicture: x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-            sx, sy, w, h, dx, dy);
-#endif
-    ditherPtr = NULL;
-    if (flags & BLT_PAINTER_DITHER) {
-        ditherPtr = Blt_DitherPicture(srcPtr, p->palette);
-        if (ditherPtr != NULL) {
-            srcPtr = ditherPtr;
-        }
-    }
-    imgPtr = XCreateImage(p->display, p->visualPtr, p->depth, ZPixmap, 0, 
-        (char *)NULL, w, h, 32, 0);
-    assert(imgPtr);
     /* 
      * Set the byte order to the platform's native byte order. We'll let
      * Xlib handle byte swapping.
      */
     imgPtr->byte_order = nativeByteOrder;
-    imgPtr->data = Blt_AssertMalloc(sizeof(Blt_Pixel) * w * h);
     srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
     destRowPtr = (unsigned char *)imgPtr->data;
     
@@ -1375,7 +1019,7 @@ PaintPicture(
 
         /* Directly compute the pixel 8, 16, 24, or 32 bit values from the
          * RGB components. */
-
+        
         switch (imgPtr->bits_per_pixel) {
         case 32:
             for (y = 0; y < dh; y++) {
@@ -1603,16 +1247,389 @@ PaintPicture(
         break;
 
     default:
-        if (ditherPtr != NULL) {
-            Blt_FreePicture(ditherPtr);
+        Blt_Panic("unknown visual class");
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XImageToPicture --
+ *
+ *      Converts an XImage to a picture image. 
+ *
+ * Results:
+ *      Returns a pointer to the picture if successful. Otherwise NULL is
+ *      returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_Picture
+XImageToPicture(Painter *p, XImage *imgPtr)
+{
+    Blt_Pixel *destRowPtr;
+    Blt_Pixel palette[256];
+    Pict *destPtr;
+    int shift[4];
+    unsigned char *srcRowPtr;
+    int x, y;
+    
+    /* Allocate a picture to hold the screen snapshot. */
+    destPtr = Blt_CreatePicture(imgPtr->width, imgPtr->height);
+
+    /* Get the palette of the current painter/window */
+    QueryPalette(p, palette);
+
+    /* Suppress compiler warnings. */
+    shift[0] = shift[1] = shift[2] = shift[3] = 0; 
+
+    switch (p->visualPtr->class) {
+    case TrueColor:
+    case DirectColor:
+        if (imgPtr->byte_order == MSBFirst) {
+            shift[0] = 24, shift[1] = 16, shift[2] = 8, shift[3] = 0;
+        } else {
+            switch (imgPtr->bits_per_pixel) {
+            case 32:
+                shift[0] = 0, shift[1] = 8, shift[2] = 16, shift[3] = 24;
+                break;
+            case 24:
+                shift[1] = 0, shift[2] = 8, shift[3] = 16;
+                break;
+            case 16:
+                shift[2] = 0, shift[3] = 8;
+                break;
+            case 8:
+                shift[3] = 0;
+                break;
+            }
         }
-        XDestroyImage(imgPtr);
+        srcRowPtr = (unsigned char *)imgPtr->data;
+        destRowPtr = destPtr->bits; 
+        switch (imgPtr->bits_per_pixel) {
+        case 32:
+            for (y = 0; y < imgPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + imgPtr->width; dp < dend;
+                     dp++) {
+                    int r, g, b;
+                    unsigned long pixel;
+                    
+                    /* Get the next pixel from the image. */
+                    pixel = ((sp[0] << shift[0]) | (sp[1] << shift[1]) |
+                             (sp[2] << shift[2]) | (sp[3] << shift[3]));
+                    
+                    /* Convert the pixel to RGB, correcting for input
+                     * gamma. */
+                    r = ((pixel & p->rMask) >> p->rShift);
+                    g = ((pixel & p->gMask) >> p->gShift);
+                    b = ((pixel & p->bMask) >> p->bShift);
+                    dp->Red = palette[r].Red;
+                    dp->Green = palette[g].Green;
+                    dp->Blue = palette[b].Blue;
+                    dp->Alpha = ALPHA_OPAQUE;
+                    sp += 4;
+                }
+                destRowPtr += destPtr->pixelsPerRow;
+                srcRowPtr += imgPtr->bytes_per_line;
+            }
+            break;
+
+        case 24:
+            for (y = 0; y < imgPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + imgPtr->width; dp < dend;
+                     dp++) {
+                    int r, g, b;
+                    unsigned long pixel;
+                    
+                    /* Get the next pixel from the image. */
+                    pixel = ((sp[0] << shift[1]) | (sp[1] << shift[2]) |
+                             (sp[2] << shift[3]));
+                    
+                    /* Convert the pixel to RGB, correcting for input
+                     * gamma. */
+                    r = ((pixel & p->rMask) >> p->rShift);
+                    g = ((pixel & p->gMask) >> p->gShift);
+                    b = ((pixel & p->bMask) >> p->bShift);
+                    dp->Red = palette[r].Red;
+                    dp->Green = palette[g].Green;
+                    dp->Blue = palette[b].Blue;
+                    dp->Alpha = ALPHA_OPAQUE;
+                    sp += 3;
+                }
+                destRowPtr += destPtr->pixelsPerRow;
+                srcRowPtr += imgPtr->bytes_per_line;
+            }
+            break;
+            
+        case 16:
+            for (y = 0; y < imgPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + imgPtr->width; dp < dend;
+                     dp++) {
+                    int r, g, b;
+                    unsigned long pixel;
+                    
+                    /* Get the next pixel from the image. */
+                    pixel = ((sp[0] << shift[2]) | (sp[1] << shift[3]));
+
+                    /* Convert the pixel to RGB, correcting for input
+                     * gamma. */
+                    r = ((pixel & p->rMask) >> p->rShift);
+                    g = ((pixel & p->gMask) >> p->gShift);
+                    b = ((pixel & p->bMask) >> p->bShift);
+                    dp->Red = palette[r].Red;
+                    dp->Green = palette[g].Green;
+                    dp->Blue = palette[b].Blue;
+                    dp->Alpha = ALPHA_OPAQUE;
+                    sp += 2;
+                }
+                destRowPtr += destPtr->pixelsPerRow;
+                srcRowPtr += imgPtr->bytes_per_line;
+            }
+            break;
+            
+        case 8:
+            for (y = 0; y < imgPtr->height; y++) {
+                unsigned char *sp;
+                Blt_Pixel *dp, *dend;
+                
+                sp = srcRowPtr;
+                for (dp = destRowPtr, dend = dp + imgPtr->width; dp < dend;
+                     dp++) {
+                    int r, g, b;
+                    unsigned long pixel;
+                    
+                    /* Get the next pixel from the image. */
+                    pixel = (*sp << shift[3]);
+
+                    /* Convert the pixel to RGB, correcting for input
+                     * gamma. */
+                    r = ((pixel & p->rMask) >> p->rShift);
+                    g = ((pixel & p->gMask) >> p->gShift);
+                    b = ((pixel & p->bMask) >> p->bShift);
+                    dp->Red = palette[r].Red;
+                    dp->Green = palette[g].Green;
+                    dp->Blue = palette[b].Blue;
+                    dp->Alpha = ALPHA_OPAQUE;
+                    sp++;
+                }
+                destRowPtr += destPtr->pixelsPerRow;
+                srcRowPtr += imgPtr->bytes_per_line;
+            }
+            break;
+        }
+        break;
+
+    case PseudoColor:
+    case StaticColor:
+    case GrayScale:
+    case StaticGray:
+        if ((imgPtr->bits_per_pixel != 8) && (imgPtr->bits_per_pixel != 4)) {
+            return NULL;                /* Can only handle 4 or 8 bit
+                                         * pixels. */
+        }
+        srcRowPtr = (unsigned char *)imgPtr->data;
+        destRowPtr = destPtr->bits;
+        for (y = 0; y < imgPtr->height; y++) {
+            unsigned char *sp;
+            Blt_Pixel *dp;
+
+            sp = srcRowPtr, dp = destRowPtr;
+            for (x = 0; x < imgPtr->width; x++) {
+                unsigned long pixel;
+
+                if (imgPtr->bits_per_pixel == 8) {
+                    pixel = *sp++;
+                } else {
+                    if (x & 1) {        /* Odd: pixel is high nybble. */
+                        pixel = (*sp & 0xF0) >> 4;
+                        sp++;
+                    } else {            /* Even: pixel is low nybble. */
+                        pixel = (*sp & 0x0F);
+                    }
+                } 
+                /* Convert the pixel to RGB, correcting for input gamma. */
+                dp->Red = palette[pixel].Red;
+                dp->Green = palette[pixel].Green;
+                dp->Blue = palette[pixel].Blue;
+                dp->Alpha = ALPHA_OPAQUE;
+                dp++;
+            }
+            srcRowPtr += imgPtr->bytes_per_line;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+    default:
+        break;
+    }
+    /* Opaque image, set associate colors flag.  */
+    destPtr->flags |= BLT_PIC_PREMULT_COLORS;
+    return destPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PainterErrorProc --
+ *
+ *      Error handling routine for the XGetImage request below. Sets the
+ *      flag passed via *clientData* to TCL_ERROR indicating an error
+ *      occurred.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static int
+PainterErrorProc(ClientData clientData, XErrorEvent *errEventPtr) 
+{
+    int *errorPtr = clientData;
+
+    *errorPtr = TCL_ERROR;
+    return 0;
+}
+
+#ifdef HAVE_XSHMQUERYEXTENSION
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SnapPictureWithXShm --
+ *
+ *      Try to snap the image from the drawable (using XShmGetImage) and
+ *      convert it into a picture image.  This may fail if the drawable is
+ *      a window and a region of the drawable is obscured.
+ *
+ * Results:
+ *      Returns TRUE if successful, FALSE otherwise. The pointer
+ *      *picturePtr* will point to the malloc-ed picture image.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SnapPictureWithXShm(Painter *p, Drawable drawable, int x, int y, int w, int h,
+                     Blt_Picture *picturePtr)
+{
+    XImage *imgPtr;
+    int code;
+    Tk_ErrorHandler handler;
+    XShmSegmentInfo xssi;
+
+    code = TCL_OK;
+    if (p->flags & PAINTER_DONT_USE_SHM) {
         return FALSE;
     }
-    PaintXImage(p, drawable, imgPtr, 0, 0, w, h, dx, dy);
-    if (ditherPtr != NULL) {
-        Blt_FreePicture(ditherPtr);
+    if (!XShmQueryExtension(p->display)) {
+        p->flags |= PAINTER_DONT_USE_SHM;
+        return FALSE;
     }
+
+    assert((w > 0) && (h > 0));
+    imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
+                             NULL, &xssi, w, h); 
+    xssi.shmid = shmget(IPC_PRIVATE,
+                        imgPtr->bytes_per_line * imgPtr->height,
+                        IPC_CREAT|0610);
+    if (xssi.shmid == -1) {
+        Blt_Warn("shmget: %s bytesPerLine=%d height=%d w=%d h=%d d=%d\n", 
+                 strerror(errno), imgPtr->bytes_per_line, imgPtr->height,
+                 w, h, p->depth);
+        return FALSE;
+    }
+
+    xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
+    if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
+        Blt_Warn("shmat: %s\n", strerror(errno));
+        shmctl (xssi.shmid, IPC_RMID, 0);
+        return FALSE;
+    }
+    handler = Tk_CreateErrorHandler(p->display, -1, -1, X_ShmAttach, 
+                                    PainterErrorProc, &code);
+    xssi.readOnly = False;
+    XShmAttach(p->display, &xssi);
+    XSync(p->display, False);
+    Tk_DeleteErrorHandler(handler);
+    if (code != TCL_OK) {
+        shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
+        p->flags |= PAINTER_DONT_USE_SHM;
+        return FALSE;
+    }
+    handler = Tk_CreateErrorHandler(p->display, -1, -1, X_ShmGetImage, 
+                                    PainterErrorProc, &code);
+    XShmGetImage(p->display, drawable, imgPtr, x, y, AllPlanes);
+    XSync(p->display, False);
+    Tk_DeleteErrorHandler(handler);
+    if ((imgPtr == NULL) || (code != TCL_OK)) {
+        if (imgPtr != NULL) {
+            XDestroyImage(imgPtr);
+        }
+        shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
+        return FALSE;
+    }
+    *picturePtr = XImageToPicture(p, imgPtr);
+    XShmDetach(p->display, &xssi);
+    shmdt(xssi.shmaddr);
+    shmctl (xssi.shmid, IPC_RMID, 0);
+    XDestroyImage(imgPtr);
+    return TRUE;
+}
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SnapPicture --
+ *
+ *      Try to snap the image from the drawable (using XGetImage) and
+ *      convert it into a picture image.  This may fail if the drawable is
+ *      a window and a region of the drawable is obscured.
+ *
+ * Results:
+ *      Returns TRUE if successful, FALSE otherwise. The pointer
+ *      *picturePtr* will point to the malloc-ed picture image.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SnapPicture(Painter *p, Drawable drawable, int x, int y, int w, int h,
+             Blt_Picture *picturePtr)
+{
+    XImage *imgPtr;
+    int code;
+    Tk_ErrorHandler handler;
+
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if ((bltEnableXShm) &&
+        (SnapPictureWithXShm(p, drawable, x, y, w, h, picturePtr))) {
+        return (*picturePtr != NULL);
+    }
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    code = TCL_OK;
+    handler = Tk_CreateErrorHandler(p->display, -1, X_GetImage, -1, 
+                                    PainterErrorProc, &code);
+    imgPtr = XGetImage(p->display, drawable, x, y, w, h, AllPlanes,
+                       ZPixmap);
+    XSync(p->display, False);
+    Tk_DeleteErrorHandler(handler);
+    if ((imgPtr == NULL) || (code != TCL_OK)) {
+        if (imgPtr != NULL) {
+            XDestroyImage(imgPtr);
+        }
+        return FALSE;
+    }
+    *picturePtr = XImageToPicture(p, imgPtr);
     XDestroyImage(imgPtr);
     return TRUE;
 }
@@ -1620,7 +1637,472 @@ PaintPicture(
 /*
  *---------------------------------------------------------------------------
  *
- * PaintPictureWithBlend --
+ * DrawableToPicture --
+ *
+ *      Takes a snapshot of an X drawable (pixmap or window) and converts
+ *      it to a picture.
+ *
+ * Results:
+ *      Returns a picture of the drawable.  If an error occurred (a portion
+ *      of the region specified is obscured), then NULL is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_Picture
+DrawableToPicture(
+    Painter *p,
+    Drawable drawable,
+    int x, int y,                       /* Coordinates of region in source
+                                         * drawable. */
+    int w, int h)                       /* Dimension of the region in the
+                                         * source drawable. Region must be
+                                         * completely contained by the
+                                         * drawable. */
+{
+    Pict *destPtr;
+
+    if (x < 0) {
+        w += x;
+        x = 0;
+    }
+    if (y < 0) {
+        h += y;
+        y = 0;
+    }
+    if (!SnapPicture(p, drawable, x, y, w, h, &destPtr)) {
+        int dw, dh;
+
+        /* 
+         * Failed to acquire an XImage from the drawable. The drawable may
+         * be partially obscured (if it's a window) or too small for the
+         * requested area.  Try it again, after fixing the area with the
+         * dimensions of the drawable.
+         */
+        if (Blt_GetWindowExtents(p->display, drawable, NULL, NULL, &dw, &dh)
+            == TCL_OK) {
+            if ((x >= dw) || (y >= dh)) {
+                return NULL;            /* Region starts outside of
+                                         * destination. */
+            }
+            if ((x + w) > dw) {
+                w = dw - x;             /* Reduce width of region. */
+            }
+            if ((y + h) > dh) {
+                h = dh - y;             /* Reduce height of region. */
+            }
+            if (!SnapPicture(p, drawable, x, y, w, h, &destPtr)) {
+                return NULL;
+            }
+        }
+    }
+    /* Opaque image, set associate colors flag.  */
+    destPtr->flags |= BLT_PIC_PREMULT_COLORS;
+    return destPtr;
+}
+
+
+#ifdef HAVE_XSHMQUERYEXTENSION
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PaintPictureWithXShm --
+ *
+ *      Tries to paint the picture to the given drawable using the XShm
+ *      extension.  Return 1 is successful and 0 otherwise.  The region of
+ *      the picture is specified and the coordinates where in the
+ *      destination drawable is the image to be displayed.
+ *
+ * Results:
+ *      Returns TRUE is the picture was successfully displayed.  Otherwise
+ *      FALSE is returned if the particular combination visual and image
+ *      depth is not handled.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PaintPictureWithXShm(
+    Painter *p,
+    Drawable drawable,
+    Pict *srcPtr,
+    int sx, int sy,                     /* Coordinates of region in the
+                                         * picture. */
+    int w, int h,                       /* Dimension of the source region.
+                                         * Area cannot extend beyond the
+                                         * end of the picture. */
+    int dx, int dy)                     /* Coordinates of destination
+                                         * region in the drawable.  */
+{
+    int code;
+    Tk_ErrorHandler handler;
+    XImage *imgPtr;
+    XShmSegmentInfo xssi;
+
+#ifdef notdef
+    fprintf(stderr,
+            "PaintPictureWithXShm: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d flags=%x\n",
+            drawable, sx, sy, w, h, dx, dy, srcPtr->flags);
+#endif
+    if (p->flags & PAINTER_DONT_USE_SHM) {
+        return FALSE;
+    }
+    if (!XShmQueryExtension(p->display)) {
+        p->flags |= PAINTER_DONT_USE_SHM;
+        return FALSE;
+    }
+    code = TCL_OK;
+    /* for the XShmPixmap */
+    xssi.shmid = -1;
+    xssi.shmaddr = (char *)-1;
+    xssi.readOnly = False;
+    
+    imgPtr = XShmCreateImage(p->display, p->visualPtr, p->depth, ZPixmap,
+                             (char *)NULL, &xssi, w, h);
+    assert(imgPtr);
+    xssi.shmid = shmget(IPC_PRIVATE,
+                        imgPtr->bytes_per_line * imgPtr->height,
+                        IPC_CREAT | 0620);
+    if (xssi.shmid == -1) {
+        Blt_Warn("shmget: %s\n", strerror(errno));
+        return FALSE;
+    }
+
+    xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
+    if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
+        Blt_Warn("shmat: %s\n", strerror(errno));
+        return FALSE;
+    }
+    handler = Tk_CreateErrorHandler(p->display, -1, -1, X_ShmAttach, 
+                                    PainterErrorProc, &code);
+    XShmAttach(p->display, &xssi);
+    XSync(p->display, False);
+    Tk_DeleteErrorHandler(handler);
+    if (code != TCL_OK) {
+        shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
+        p->flags |= PAINTER_DONT_USE_SHM;
+        return FALSE;
+    }
+    PictureToXImage(p, srcPtr, sx, sy, w, h, imgPtr);
+    XShmPutImage(p->display, drawable, p->gc, imgPtr, 0, 0, dx, dy, w, h,
+                 False /*send_event*/);
+    XShmDetach(p->display, &xssi);
+    shmdt(xssi.shmaddr);
+    shmctl (xssi.shmid, IPC_RMID, 0);
+    XSync(p->display, False);
+    XDestroyImage(imgPtr);
+    return TRUE;
+}
+
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PaintPicture --
+ *
+ *      Paints the picture to the given drawable. The region of the picture
+ *      is specified and the coordinates where in the destination drawable
+ *      is the image to be displayed.
+ *
+ *      First tries to paint the picture using the XShmPutImage, if that
+ *      fails, try XPutImage.
+ *      The image may be dithered depending upon the bit set in the flags
+ *      parameter: 0 no dithering, 1 for dithering.
+ * 
+ * Results:
+ *      Returns TRUE is the picture was successfully displayed.  Otherwise
+ *      FALSE is returned if the particular combination visual and image
+ *      depth is not handled.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PaintPicture(
+    Painter *p,
+    Drawable drawable,
+    Pict *srcPtr,
+    int sx, int sy,                     /* Coordinates of region in the
+                                         * picture. */
+    int w, int h,                       /* Dimension of the source region.
+                                         * Area cannot extend beyond the
+                                         * end of the picture. */
+    int dx, int dy,                     /* Coordinates of destination
+                                         * region in the drawable.  */
+    unsigned int flags)
+{
+    Pict *ditherPtr;
+    XImage *imgPtr;
+    
+#ifdef notdef
+    fprintf(stderr,
+            "PaintPicture: drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d flags=%x\n",
+            drawable, sx, sy, w, h, dx, dy, srcPtr->flags);
+#endif
+    ditherPtr = NULL;
+    if (flags & BLT_PAINTER_DITHER) {
+        ditherPtr = Blt_DitherPicture(srcPtr, p->palette);
+        if (ditherPtr != NULL) {
+            srcPtr = ditherPtr;
+        }
+    }
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if ((bltEnableXShm) &&
+        (PaintPictureWithXShm(p, drawable, srcPtr, sx, sy, w, h, dx, dy))) {
+        if (ditherPtr != NULL) {
+            Blt_FreePicture(ditherPtr);
+        }
+        return TRUE;
+    }
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    imgPtr = XCreateImage(p->display, p->visualPtr, p->depth, ZPixmap, 0, 
+                          (char *)NULL, w, h, 32, 0);
+    assert(imgPtr);
+    imgPtr->data = Blt_AssertMalloc(sizeof(Blt_Pixel) * w * h);
+
+    PictureToXImage(p, srcPtr, sx, sy, w, h, imgPtr);
+    PaintXImage(p, drawable, imgPtr, 0, 0, w, h, dx, dy);
+    XDestroyImage(imgPtr);
+    if (ditherPtr != NULL) {
+        Blt_FreePicture(ditherPtr);
+    }
+    return TRUE;
+}
+
+#ifdef HAVE_XSHMQUERYEXTENSION
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CompositePictureWithXRender --
+ *
+ *      Blends and paints the picture in the given drawable using
+ *      XRenderComposite. This has the advantage of not requiring the
+ *      background to be snapped from the drawable on the server,
+ *      composited on the client, and then redisplayed on the server.  We
+ *      are also using a shared memory pixmap.  If XRender or XShm and not
+ *      available or fail for some reason, return FALSE so that the calling
+ *      routine can fall back to another compositing method.
+ * 
+ * Results:
+ *      Returns TRUE is the picture was successfully displayed.  Otherwise
+ *      FALSE is returned.  
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CompositePictureWithXRender(
+    Painter *p,
+    Drawable drawable,
+    Pict *srcPtr,
+    int sx, int sy,                     /* Coordinates of source region in
+                                         * the picture. */
+    int w, int h,                       /* Dimension of the source region.
+                                         * Region cannot extend beyond the
+                                         * end of the picture. */
+    int dx, int dy)                     /* Coordinates of destination
+                                         * region in the drawable.  */
+{
+    int code;
+    Tk_ErrorHandler handler;
+#ifdef HAVE_LIBXRENDER
+#define FMT_ARGB32      (PictFormatType | PictFormatDepth |      \
+                         PictFormatRedMask | PictFormatRed |     \
+                         PictFormatGreenMask | PictFormatGreen | \
+                         PictFormatBlueMask | PictFormatBlue |   \
+                         PictFormatAlphaMask | PictFormatAlpha)
+#ifdef WORD_BIGENDIAN
+    static int nativeByteOrder = MSBFirst;
+#else
+    static int nativeByteOrder = LSBFirst;
+#endif  /* WORD_BIGENDIAN */
+    XRenderPictureAttributes xrpa;
+    Picture srcPict, dstPict;
+    Blt_Pixel *srcRowPtr;
+    Pixmap pixmap;
+    XImage *imgPtr;
+    int y;
+    unsigned char *destRowPtr;
+    XShmSegmentInfo xssi;
+    XRenderPictFormat *fmtPtr;
+    Visual *visualPtr;
+    int majorNum, minorNum, haveShmPixmaps;
+
+#ifdef notdef
+    fprintf(stderr, "CompositePictureWithXRender: "
+            "drawable=%x x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+            drawable, sx, sy, w, h, dx, dy);
+#endif
+    code = TCL_OK;
+    if (!bltEnableXShm) {
+        return FALSE;
+    }
+    if (p->flags & (PAINTER_DONT_USE_SHM|PAINTER_NO_32BIT_VISUAL)) {
+        return FALSE;
+    }
+    if (!XRenderQueryVersion(p->display, &majorNum, &minorNum)) {
+        return FALSE;
+    }
+    if (!Blt_Picture_IsPremultiplied(srcPtr)) {
+        Blt_PremultiplyColors(srcPtr);
+    }
+    fmtPtr = XRenderFindStandardFormat(p->display, PictStandardARGB32);
+    if (fmtPtr == NULL) {
+        XRenderPictFormat xrpf;
+
+        fprintf(stderr, "Can't find standard format for ARGB32\n");
+        
+        /* lookup another ARGB32 picture format */
+        xrpf.type = PictTypeDirect;
+        xrpf.depth = 32;
+        xrpf.direct.alphaMask = 0xff;
+        xrpf.direct.redMask = 0xff;
+        xrpf.direct.greenMask = 0xff;
+        xrpf.direct.blueMask = 0xff;
+        xrpf.direct.alpha = 24;
+        xrpf.direct.red = 16;
+        xrpf.direct.green = 8;
+        xrpf.direct.blue = 0;
+        fmtPtr = XRenderFindFormat(p->display, FMT_ARGB32, &xrpf, 0);
+    }
+    visualPtr = NULL;
+    if (fmtPtr == NULL) {
+        fprintf(stderr, "Can't find 32 bit picture format\n");
+        return FALSE;
+    } else {
+        XVisualInfo *visuals, template;
+        int numVisuals;
+        int i;
+        
+        /* Try to lookup a RGB visual with depth 32. */
+        numVisuals = 0;
+        template.screen = DefaultScreen(p->display);
+        template.depth = 32;
+        template.bits_per_rgb = 8;
+        
+        visuals = XGetVisualInfo(p->display,
+               (VisualScreenMask | VisualDepthMask | VisualBitsPerRGBMask),
+                                 &template, &numVisuals);
+
+        if (visuals == NULL) {
+            fprintf(stderr, "No visual matching criteria\n");
+            p->flags |= PAINTER_NO_32BIT_VISUAL;
+            return FALSE;
+        }
+
+        for (i = 0; i < numVisuals; i++) {
+            XRenderPictFormat *fmtPtr2;
+            
+            fmtPtr2 = XRenderFindVisualFormat(p->display, visuals[i].visual);
+            if ((fmtPtr2 != NULL) && (fmtPtr2->id == fmtPtr->id)) {
+                visualPtr = visuals[i].visual;
+                break;
+            }
+        }
+        XFree(visuals);
+    }                   /* pict_format_alpha != NULL */
+    if (visualPtr == NULL) {
+        fprintf(stderr, "Can't find matching visual.\n");
+        p->flags |= PAINTER_NO_32BIT_VISUAL;
+        return FALSE;
+    }
+    if (!XShmQueryVersion(p->display, &majorNum, &minorNum, &haveShmPixmaps)) {
+        p->flags |= PAINTER_DONT_USE_SHM;
+        return FALSE;
+    }
+                                        
+    /* for the XShmPixmap */
+    xssi.shmid = -1;
+    xssi.shmaddr = (char *)-1;
+    xssi.readOnly = False;
+    
+    imgPtr = XShmCreateImage(p->display, visualPtr, 32, ZPixmap,
+                             (char *)NULL, &xssi, w, h);
+    assert(imgPtr);
+    xssi.shmid = shmget(IPC_PRIVATE, imgPtr->bytes_per_line * imgPtr->height,
+                        IPC_CREAT | 0630);
+    if (xssi.shmid == -1) {
+        Blt_Warn("shmget: %s\n", strerror(errno));
+        return FALSE;
+    }
+
+    xssi.shmaddr = imgPtr->data = shmat(xssi.shmid, NULL, 0);
+    if ((xssi.shmaddr == (void *)-1) ||  (xssi.shmaddr == NULL)) {
+        Blt_Warn("shmat: %s\n", strerror(errno));
+        return FALSE;
+    }
+    handler = Tk_CreateErrorHandler(p->display, -1, -1, X_ShmAttach, 
+                                    PainterErrorProc, &code);
+    XShmAttach(p->display, &xssi);
+    XSync(p->display, False);
+    Tk_DeleteErrorHandler(handler);
+    if (code != TCL_OK) {
+        shmdt(xssi.shmaddr);
+        shmctl (xssi.shmid, IPC_RMID, 0);
+        p->flags |= PAINTER_DONT_USE_SHM;
+        return FALSE;
+    }
+    imgPtr->byte_order = nativeByteOrder;
+    srcRowPtr = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
+    destRowPtr = (unsigned char *)imgPtr->data;
+    
+    for (y = 0; y < h; y++) {
+        Blt_Pixel *sp, *send;
+        unsigned int *dp;
+        
+        dp = (unsigned int *)destRowPtr;
+        for (sp = srcRowPtr, send = sp + w; sp < send; sp++) {
+            unsigned int a, r, g, b;
+            /* Format is ARGB */
+            a = sp->Alpha << 24;
+            r = p->igammaTable[sp->Red] << 16;
+            g = p->igammaTable[sp->Green] << 8;
+            b = p->igammaTable[sp->Blue];
+            *dp = r | g | b | a;
+            dp++;
+        }
+        destRowPtr += imgPtr->bytes_per_line;
+        srcRowPtr += srcPtr->pixelsPerRow;
+    }
+    if (haveShmPixmaps) {
+        pixmap = XShmCreatePixmap(p->display, drawable, xssi.shmaddr, &xssi,
+                              w, h, 32);
+    } else {
+        GC gc;
+        
+        pixmap = XCreatePixmap(p->display, drawable, w, h, 32);
+        gc = XCreateGC(p->display, pixmap, 0L, NULL);
+        XShmPutImage(p->display, pixmap, gc, imgPtr, 0, 0, 0, 0, w, h,
+                     False /*send_event*/);
+        XFreeGC(p->display, gc);
+    }
+    xrpa.component_alpha = True;
+    srcPict = XRenderCreatePicture(p->display, pixmap, fmtPtr,
+                                   CPComponentAlpha, &xrpa);
+    xrpa.component_alpha = False;
+    dstPict = XRenderCreatePicture(p->display, drawable,
+                   XRenderFindStandardFormat(p->display, PictStandardRGB24),
+                                   CPComponentAlpha, &xrpa);
+    XRenderComposite(p->display, PictOpOver, srcPict, None, dstPict, 0, 0, 0, 0,
+                     dx, dy, w, h);
+    XShmDetach(p->display, &xssi);
+    shmdt(xssi.shmaddr);
+    shmctl (xssi.shmid, IPC_RMID, 0);
+    XRenderFreePicture(p->display, srcPict);
+    XRenderFreePicture(p->display, dstPict);
+    XDestroyImage(imgPtr);
+    XFreePixmap(p->display, pixmap);
+    return TRUE;
+#else 
+    return FALSE;
+#endif /* HAVE_LIBXRENDER */
+}
+
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CompositePicture --
  *
  *      Blends and paints the picture in the given drawable. The region of
  *      the picture is specified and the coordinates where in the
@@ -1638,11 +2120,11 @@ PaintPicture(
  *---------------------------------------------------------------------------
  */
 static int
-PaintPictureWithBlend(
+CompositePicture(
     Painter *p,
     Drawable drawable,
     Blt_Picture fg,
-    int x, int y,                       /* Coordinates of source region in
+    int sx, int sy,                     /* Coordinates of source region in
                                          * the picture. */
     int w, int h,                       /* Dimension of the source region.
                                          * Region cannot extend beyond the
@@ -1651,40 +2133,48 @@ PaintPictureWithBlend(
                                          * region in the drawable.  */
     unsigned int flags)
 {
-    Pict *bgPtr;
-
 #ifdef notdef
-    fprintf(stderr, "PaintPictureWithBlend: drawable=%x, x=%d,y=%d,w=%d,h=%d,dx=%d,dy=%d\n",
-            drawable, x, y, w, h, dx, dy);
+    fprintf(stderr, "CompositePicture: drawable=%x, sx=%d,sy=%d,w=%d,h=%d,dx=%d,dy=%d\n",
+            drawable, sx, sy, w, h, dx, dy);
 #endif
     if (dx < 0) {
-        w -= -dx;                       /* Shrink the width. */
-        x += -dx;                       /* Change the left of the source
+        w += dx;                        /* Shrink the width. */
+        sx += -dx;                      /* Change the left of the source
                                          * region. */
         dx = 0;                         /* Start at the left of the
                                          * destination. */
     } 
     if (dy < 0) {
         h -= -dy;                       /* Shrink the height. */
-        y += -dy;                       /* Change the top of the source
+        sy += -dy;                      /* Change the top of the source
                                          * region. */
         dy = 0;                         /* Start at the top of the
                                          * destination. */
     }
-    if ((w < 0) || (h < 0)) {
+    if ((w <= 0) || (h <= 0)) {
         return FALSE;
     }
-    bgPtr = DrawableToPicture(p, drawable, dx, dy, w, h);
-    if (bgPtr == NULL) {
-        return FALSE;
+    w = MIN(w, Blt_Picture_Width(fg));
+    h = MIN(h, Blt_Picture_Height(fg));
+#ifdef HAVE_XSHMQUERYEXTENSION
+    if (!CompositePictureWithXRender(p, drawable, fg, sx, sy, w, h, dx, dy)) 
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    {
+        Pict *bgPtr;
+
+        bgPtr = DrawableToPicture(p, drawable, dx, dy, w, h);
+        if (bgPtr == NULL) {
+            return FALSE;
+        }
+        /* Dimension of source region may be adjusted by the actual size of
+         * the drawable.  This is reflected in the size of the background
+         * picture. */
+        Blt_CompositeArea(bgPtr, fg, sx, sy, bgPtr->width, bgPtr->height, 
+                0, 0);
+        PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height,
+                     dx, dy, flags);
+        Blt_FreePicture(bgPtr);
     }
-    /* Dimension of source region may be adjusted by the actual size of the
-     * drawable.  This is reflected in the size of the background
-     * picture. */
-    Blt_CompositeRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
-    PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height, dx, dy,
-                 flags);
-    Blt_FreePicture(bgPtr);
     return TRUE;
 }
 
@@ -1811,7 +2301,7 @@ Blt_PaintPicture(
     }
     /* 
      * Correct the dimensions if the origin starts before the picture
-     * (i.e. coordinate is negative).  Reset the coordinate the 0.
+     * (i.e. coordinate is negative).  Reset the coordinate to 0.
      *
      * x,y                     
      *   +---------+               0,0                 
@@ -1863,8 +2353,8 @@ Blt_PaintPicture(
         return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
                             y2 - y1, dx, dy, flags);
     } else {
-        return PaintPictureWithBlend(painter, drawable, picture, x1, y1, 
-                x2 - x1, y2 - y1, dx, dy, flags);
+        return CompositePicture(painter, drawable, picture, x1, y1, x2 - x1,
+                            y2 - y1, dx, dy, flags);
     }
 }
 
@@ -1965,8 +2455,8 @@ Blt_PaintPictureWithBlend(
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
         return TRUE;
     }
-    return PaintPictureWithBlend(painter, drawable, picture, x1, y1, x2 - x1, 
-                y2 - y1, dx, dy, flags);
+    return CompositePicture(painter, drawable, picture, x1, y1, x2 - x1, 
+                            y2 - y1, dx, dy, flags);
 }
 
 /*
@@ -1999,6 +2489,7 @@ Blt_GetPainterFromDrawable(Display *display, Drawable drawable, float gamma)
                 attrPtr->depth, gamma);
         } else {
             XWindowAttributes a;
+
             XGetWindowAttributes(display, drawable, &a);
             p = GetPainter(display, a.colormap, a.visual, a.depth, gamma);
         }
@@ -2093,3 +2584,106 @@ Blt_UnsetPainterClipRegion(Painter *p)
     XSetClipMask(p->display, p->gc, None);
 }
 
+#ifdef notdef
+
+typedef struct {
+    Pixmap pixmap;
+    Display *display;
+    int w, h;
+    int depth;
+#ifdef HAVE_XSHMQUERYEXTENSION
+    XShmSegmentInfo xssi;
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+} Blt_PixmapInfo;
+
+static int pixmapTableInitialized = 0;
+static Blt_HashTable pixmapTable;
+
+Blt_PixmapInfo  *
+Blt_GetPixmapInfo(Pixmap pixmap)
+{
+    if (!pixmapTableInitialized) {
+        Blt_InitHashTable(&pixmapTable, BLT_ONE_WORD_KEYS);
+        pixmapTableInitialized = TRUE;
+    }
+    hPtr = Blt_FindHashEntry(&pixmapTable, pixmap);
+    if (hPtr == NULL) {
+        return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
+static void
+AddPixmapInfoEntry(Display *display, Pixmap pixmap, int w, int h, int depth)
+{
+    int isNew;
+    Blt_HashEntry *hPtr;
+    Blt_PixmapInfo *pmiPtr;
+
+    if (!pixmapTableInitialized) {
+        Blt_InitHashTable(&pixmapTable, BLT_ONE_WORD_KEYS);
+        pixmapTableInitialized = TRUE;
+    }
+    hPtr = Blt_CreateHashEntry(&pixmapTable, pixmap, &isNew);
+    assert(isNew);
+    pmiPtr = Blt_AssertMalloc(sizeof(Blt_PixmapInfo));
+    pmiPtr->display = display;
+    pmiPtr->pixmap = pixmap;
+    pmiPtr->hashPtr = hPtr;
+    pmiPtr->w = w;
+    pmiPtr->h = h;
+    pmiPtr->depth = depth;
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    Blt_SetHashValue(hPtr, pmiPtr);
+}
+
+static void
+DeletePixmapInfoEntry(Pixmap pixmap)
+{
+    Blt_HashEntry *hPtr;
+
+    if (!pixmapTableInitialized) {
+        Blt_InitHashTable(&pixmapTable, BLT_ONE_WORD_KEYS);
+        pixmapTableInitialized = TRUE;
+    }
+    hPtr = Blt_FindHashEntry(&pixmapTable, pixmap);
+    if (hPtr != NULL) {
+        Blt_PixmapInfo *pmiPtr;
+
+        pmiPtr = Blt_GetHashValue(hPtr);
+        Blt_DeleteHashEntry(&pixmapTable, pmiPtr->hashPtr);
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+        Blt_Free(pmiPtr);
+    }
+}
+
+Pixmap 
+Blt_GetPixmapAbortOnError(Display *display, Drawable drawable, int w, int h, 
+                          int depth, int lineNum, const char *fileName)
+{
+    if (w <= 0) {
+        Blt_Warn("line %d of %s: width is %d\n", lineNum, fileName, w);
+        abort();
+    }
+    if (h <= 0) {
+        Blt_Warn("line %d of %s: height is %d\n", lineNum, fileName, h);
+        abort();
+    }
+    pixmap = Tk_GetPixmap(display, drawable, w, h, depth);
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    AddPixmapInfoEntry(display, pixmap, w, h, depth);
+    return pixmap;
+}
+
+void
+Blt_FreePixmap(Display *display, Pixmap pixmap) 
+{
+    DeletePixmapInfoEntry(pixmap);
+#ifdef HAVE_XSHMQUERYEXTENSION
+#endif  /* HAVE_XSHMQUERYEXTENSION */
+    Tk_FreePixmap(display, pixmap);
+}
+#endif

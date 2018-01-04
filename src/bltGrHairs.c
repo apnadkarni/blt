@@ -118,11 +118,11 @@ static Blt_ConfigSpec configSpecs[] =
  *
  * ObjToPosition --
  *
- *      Convert the string representation of a legend XY position into
+ *      Convert the string representation of a screen XY position into
  *      window coordinates.  The form of the string must be "@x,y" or none.
  *
  * Results:
- *      A standard TCL result.  The symbol type is written into the widget
+ *      A standard TCL result.  The position is written into the Crosshairs
  *      record.
  *
  *---------------------------------------------------------------------------
@@ -162,7 +162,7 @@ PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Crosshairs *chPtr = (Crosshairs *)widgRec;
     char string[200];
     
-    Blt_FormatString(string, 200, "@%d,%d", chPtr->x, chPtr->y);
+    Blt_FmtString(string, 200, "@%d,%d", chPtr->x, chPtr->y);
     return Tcl_NewStringObj(string, -1);
 }
 

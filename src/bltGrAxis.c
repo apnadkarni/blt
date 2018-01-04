@@ -40,6 +40,12 @@
 
 #include "bltInt.h"
 
+#include "bltMath.h"
+
+#ifdef HAVE_CTYPE_H
+  #include <ctype.h>
+#endif  /* HAVE_CTYPE_H */
+
 #ifdef HAVE_STRING_H
   #include <string.h>
 #endif /* HAVE_STRING_H */
@@ -47,8 +53,6 @@
 #ifdef HAVE_FLOAT_H
   #include <float.h>
 #endif /* HAVE_FLOAT_H */
-
-#include "bltMath.h"
 
 #include <X11/Xutil.h>
 #include "bltAlloc.h"
@@ -313,10 +317,10 @@ static Blt_CustomOption paletteOption =
 };
 
 static Blt_OptionFreeProc FreeTagsProc;
-static Blt_OptionParseProc ObjToTagsProc;
-static Blt_OptionPrintProc TagsToObjProc;
+static Blt_OptionParseProc ObjToTags;
+static Blt_OptionPrintProc TagsToObj;
 Blt_CustomOption tagsOption = {
-    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+    ObjToTags, TagsToObj, FreeTagsProc, (ClientData)0
 };
 
 static Blt_ConfigSpec configSpecs[] =
@@ -1219,7 +1223,7 @@ FreeTicks(ClientData clientData, Display *display, char *widgRec, int offset)
     Axis *axisPtr = (Axis *)widgRec;
     TickGrid *ptr = (TickGrid *)(widgRec + offset);
     Ticks *ticksPtr;
-    unsigned long mask = (unsigned long)clientData;
+    size_t mask = (size_t)clientData;
 
     ticksPtr = &ptr->ticks;
     if (ticksPtr->values != NULL) {
@@ -1251,7 +1255,7 @@ ObjToTicks(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Ticks *ticksPtr;
     double *values;
     int objc;
-    unsigned long mask = (unsigned long)clientData;
+    size_t mask = (size_t)clientData;
 
     ticksPtr = &ptr->ticks;
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
@@ -1308,11 +1312,11 @@ TicksToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     Axis *axisPtr = (Axis *)widgRec;
     Tcl_Obj *listObjPtr;
     Ticks *ticksPtr;
-    unsigned long mask;
+    size_t mask;
     TickGrid *ptr = (TickGrid *)(widgRec + offset);
 
     ticksPtr = &ptr->ticks;
-    mask = (unsigned long)clientData;
+    mask = (size_t)clientData;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if ((ticksPtr->values != NULL) && ((axisPtr->flags & mask) == 0)) {
         int i;
@@ -1505,9 +1509,6 @@ PaletteChangedProc(Blt_Palette palette, ClientData clientData,
 {
     Axis *axisPtr = clientData;
 
-     if (flags & PALETTE_DELETE_NOTIFY) {
-        axisPtr->palette = NULL;
-    }
     axisPtr->flags |= MAP_ITEM;
     axisPtr->obj.graphPtr->flags |= CACHE_DIRTY;
     Blt_EventuallyRedrawGraph(axisPtr->obj.graphPtr);
@@ -1520,8 +1521,11 @@ FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     Axis *axisPtr = (Axis *)widgRec;
 
-    Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
-    *palPtr = NULL;
+    if (*palPtr != NULL) {
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
+        Blt_Palette_Delete(*palPtr);
+        *palPtr = NULL;
+    }
 }
 
 /*
@@ -1543,18 +1547,30 @@ ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
+    Blt_Palette palette;
     Axis *axisPtr = (Axis *)widgRec;
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-        FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
-        return TCL_OK;
+    int length;
+
+    Tcl_GetStringFromObj(objPtr, &length);
+    palette = NULL;
+    /* If the palette is the empty string (""), just remove the current
+     * palette. */
+    if (length > 0) {
+        if (Blt_Palette_GetFromObj(interp, objPtr, &palette) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
-    if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
-        return TCL_ERROR;
+    if (*palPtr != NULL) {
+        /* Delete the old palette and its associated notifier. */
+        Blt_Palette_DeleteNotifier(*palPtr, PaletteChangedProc, axisPtr);
+        Blt_Palette_Delete(*palPtr);
     }
-    Blt_Palette_CreateNotifier(*palPtr, PaletteChangedProc, axisPtr);
+    /* Create a notifier to tell us when the palette changes or is
+     * deleted. */
+    if (palette != NULL) {
+        Blt_Palette_CreateNotifier(palette, PaletteChangedProc, axisPtr);
+    }
+    *palPtr = palette;
     return TCL_OK;
 }
 
@@ -1601,38 +1617,41 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *---------------------------------------------------------------------------
  */
 static int
-SetTag(Tcl_Interp *interp, Axis *axisPtr, const char *tagName)
+SetTag(Tcl_Interp *interp, Axis *axisPtr, Tcl_Obj *objPtr)
 {
     Graph *graphPtr;
-    long dummy;
-    
-    if (strcmp(tagName, "all") == 0) {
+    const char *string;
+    char c;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'a') && (strcmp(string, "all") == 0)) {
         return TCL_OK;                  /* Don't need to create reserved
                                          * tag. */
     }
-    if (tagName[0] == '\0') {
+    if (c == '\0') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be empty.", 
                 (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (c == '-') {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, 
+            Tcl_AppendResult(interp, "tag \"", string, 
                 "\" can't start with a '-'.", (char *)NULL);
         }
         return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if ((isdigit(c)) && (Blt_ObjIsInteger(objPtr))) {
         if (interp != NULL) {
-            Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+            Tcl_AppendResult(interp, "tag \"", string, "\" can't be a number.",
                              (char *)NULL);
         }
         return TCL_ERROR;
     }
     graphPtr = axisPtr->obj.graphPtr;
-    Blt_Tags_AddItemToTag(&graphPtr->axes.tags, tagName, axisPtr);
+    Blt_Tags_AddItemToTag(&graphPtr->axes.tags, string, axisPtr);
     return TCL_OK;
 }
 
@@ -1650,7 +1669,7 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTagsProc --
+ * ObjToTags --
  *
  *      Convert the string representation of a list of tags.
  *
@@ -1662,8 +1681,8 @@ FreeTagsProc(ClientData clientData, Display *display, char *widgRec, int offset)
  */
 /*ARGSUSED*/
 static int
-ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
+ObjToTags(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
+          Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Axis *axisPtr = (Axis *)widgRec;
@@ -1682,7 +1701,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         return TCL_ERROR;
     }
     for (i = 0; i < objc; i++) {
-        SetTag(interp, axisPtr, Tcl_GetString(objv[i]));
+        SetTag(interp, axisPtr, objv[i]);
     }
     return TCL_OK;
 }
@@ -1690,7 +1709,7 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
- * TagsToObjProc --
+ * TagsToObj --
  *
  *      Returns the tags associated with the element.
  *
@@ -1701,8 +1720,8 @@ ObjToTagsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TagsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)  
+TagsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)  
 {
     Graph *graphPtr;
     Axis *axisPtr = (Axis *)widgRec;
@@ -1787,7 +1806,7 @@ MakeLabel(Axis *axisPtr, double value)
         Tcl_DStringGetResult(interp, &ds);
         string = Tcl_DStringValue(&ds);
     } else if (IsLogScale(axisPtr)) {
-        Blt_FormatString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
+        Blt_FmtString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
         string = buffer;
     } else if ((IsTimeScale(axisPtr)) && (axisPtr->major.ticks.fmt != NULL)) {
         Blt_DateTime date;
@@ -1801,7 +1820,7 @@ MakeLabel(Axis *axisPtr, double value)
             value = fmod(value, 60.0);
             value = UROUND(value, axisPtr->major.ticks.step);
         }
-        Blt_FormatString(buffer, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
+        Blt_FmtString(buffer, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
         string = buffer;
     }
     labelPtr = Blt_AssertMalloc(sizeof(TickLabel) + strlen(string));
@@ -2282,7 +2301,6 @@ NiceNum(double x, int round)            /* If non-zero, round. Otherwise
 static void
 LogAxis(Axis *axisPtr, double min, double max)
 {
-    double range;
     double tickMin, tickMax;
     double majorStep, minorStep;
     int numMajor, numMinor;
@@ -2293,6 +2311,7 @@ LogAxis(Axis *axisPtr, double min, double max)
     tickMin = tickMax = Blt_NaN();
     if (min < max) {
         double amin, amax;
+        double range;
         
         if (min > 0.0) {
             amin = log10(min);
@@ -3094,10 +3113,12 @@ static void
 MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
 {
     double min, max;
-    int x1, y1, x2, y2;
+
     min = axisPtr->tickMin;
     max = axisPtr->tickMax;
     if (HORIZONTAL(axisPtr->marginPtr)) {
+        int x1, x2;
+
         x2 = Blt_HMap(axisPtr, min);
         x1 = Blt_HMap(axisPtr, max);
         axisPtr->colorbar.rect.x = MIN(x1, x2);
@@ -3105,6 +3126,8 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
         axisPtr->colorbar.rect.width = ABS(x1 - x2) + 1;
         axisPtr->colorbar.rect.height = axisPtr->colorbar.thickness;
     } else {
+        int y1, y2;
+
         y2 = Blt_VMap(axisPtr, min);
         y1 = Blt_VMap(axisPtr, max);
         axisPtr->colorbar.rect.x = infoPtr->colorbar;
@@ -3566,7 +3589,6 @@ static void
 DrawAxis(Axis *axisPtr, Drawable drawable)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
-    int isHoriz;
 
 #ifdef notdef
     fprintf(stderr, "axis=%s scale=%d tmin=%g tmax=%g vmin=%g vmax=%g\n",
@@ -3612,6 +3634,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
         double viewWidth, viewMin, viewMax;
         double worldWidth, worldMin, worldMax;
         double fract;
+        int isHoriz;
 
         worldMin = axisPtr->dataRange.min;
         worldMax = axisPtr->dataRange.max;
@@ -3979,7 +4002,8 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 
             if (axisPtr->tickAngle != 0.0f) {
                 double rlw, rlh;        /* Rotated label width and height. */
-                Blt_GetBoundingBox(labelPtr->width, labelPtr->height, 
+                Blt_GetBoundingBox((double)labelPtr->width, 
+                        (double)labelPtr->height, 
                         axisPtr->tickAngle, &rlw, &rlh, NULL);
                 lw = ROUND(rlw), lh = ROUND(rlh);
             } else {
@@ -4546,7 +4570,7 @@ ConfigureAxis(Axis *axisPtr)
     if (((DEFINED(axisPtr->reqMin)) && (DEFINED(axisPtr->reqMax))) &&
         (axisPtr->reqMin >= axisPtr->reqMax)) {
         char msg[200];
-        Blt_FormatString(msg, 200, 
+        Blt_FmtString(msg, 200, 
                   "impossible axis limits (-min %g >= -max %g) for \"%s\"",
                   axisPtr->reqMin, axisPtr->reqMax, axisPtr->obj.name);
         Tcl_AppendResult(graphPtr->interp, msg, (char *)NULL);
@@ -7007,11 +7031,11 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
         }
         if (minFmt[0] != '\0') {
             minPtr = minString;
-            Blt_FormatString(minString, 200, minFmt, axisPtr->tickMin);
+            Blt_FmtString(minString, 200, minFmt, axisPtr->tickMin);
         }
         if (maxFmt[0] != '\0') {
             maxPtr = maxString;
-            Blt_FormatString(maxString, 200, maxFmt, axisPtr->tickMax);
+            Blt_FmtString(maxString, 200, maxFmt, axisPtr->tickMax);
         }
         if (axisPtr->decreasing) {
             char *tmp;
@@ -7087,7 +7111,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             maxFmt = Tcl_GetString(objv[1]);
         }
         if (*maxFmt != '\0') {
-            Blt_FormatString(string, 200, maxFmt, axisPtr->tickMax);
+            Blt_FmtString(string, 200, maxFmt, axisPtr->tickMax);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -7107,7 +7131,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
             }
         }
         if (*minFmt != '\0') {
-            Blt_FormatString(string, 200, minFmt, axisPtr->tickMin);
+            Blt_FmtString(string, 200, minFmt, axisPtr->tickMin);
             Blt_GetTextExtents(axisPtr->tickFont, 0, string, -1, &textWidth,
                 &textHeight);
             if ((textWidth > 0) && (textHeight > 0)) {
@@ -7166,7 +7190,8 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
                 Point2d bbox[5];
 
                 labelPtr = Blt_Chain_GetValue(link);
-                Blt_GetBoundingBox(labelPtr->width, labelPtr->height, 
+                Blt_GetBoundingBox((double)labelPtr->width, 
+                        (double)labelPtr->height, 
                         axisPtr->tickAngle, &rw, &rh, bbox);
                 t = Blt_AnchorPoint(labelPtr->anchorPos.x, 
                         labelPtr->anchorPos.y, rw, rh, axisPtr->tickAnchor);
@@ -7187,7 +7212,8 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
             unsigned int w, h;
 
             Blt_GetTextExtents(axisPtr->titleFont, 0, axisPtr->title,-1,&w,&h);
-            Blt_GetBoundingBox(w, h, axisPtr->titleAngle, &rw, &rh, bbox);
+            Blt_GetBoundingBox((double)w, (double)h, axisPtr->titleAngle, 
+                &rw, &rh, bbox);
             t = Blt_AnchorPoint(axisPtr->titlePos.x, axisPtr->titlePos.y, 
                 rw, rh, axisPtr->titleAnchor);
             /* Translate the point so that the 0,0 is the upper left 
