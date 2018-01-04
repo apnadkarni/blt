@@ -67,6 +67,11 @@
 #define BOUND(x, lo, hi)         \
         (((x) > (hi)) ? (hi) : ((x) < (lo)) ? (lo) : (x))
 
+typedef struct {
+    double x, y;
+    int index;
+} HullVertex;
+
 static double
 FindSplit(Point2d *points, long i, long j, long *split)    
 {    
@@ -638,3 +643,208 @@ Blt_GetProjection2(
     return t;
 }
 
+static INLINE double 
+IsLeft(HullVertex *p0, HullVertex *p1, HullVertex *p2) 
+{
+    return (((p1->x - p0->x) * (p2->y - p0->y)) - 
+            ((p2->x - p0->x) * (p1->y - p0->y)));
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ChainHull2d --
+ *
+ *      Computes the convex hull from the vertices of the mesh.  
+ *
+ *      Notes: 1. The array of vertices is assumed to be sorted.  
+ *             2. An array to contain the vertices is assumed.  This is 
+ *                allocated by the caller.
+ *      
+ * Results:
+ *      The number of vertices in the convex hull is returned. The
+ *      coordinates of the hull will be written in the given point array.
+ *
+ * Copyright 2001, softSurfer (www.softsurfer.com) 
+ *
+ *   This code may be freely used and modified for any purpose providing
+ *   that this copyright notice is included with it.  SoftSurfer makes no
+ *   warranty for this code, and cannot be held liable for any real or
+ *   imagined damage resulting from its use.  Users of this code must
+ *   verify correctness for their application.
+ *
+ *---------------------------------------------------------------------------
+ */
+#define PUSH(i)     (top++, hull[top] = (i))
+#define POP()       (top--)
+
+static int 
+ChainHull2d(int numPoints, HullVertex *points, int *hull) 
+{
+    int bot, top, i; 
+    int minMin, minMax;
+    int maxMin, maxMax;
+    double xMin, xMax;
+
+    bot = 0;                            /* Index to bottom of stack. */
+    top = -1;                           /* Index to top of stack. */
+    minMin = 0;
+
+    /* 
+     * Step 1. Get the indices of points with max x-coord and min|max
+     *         y-coord .
+     */
+    xMin = points[0].x;
+    for (i = 1; i < numPoints; i++) {
+        if (points[i].x != xMin) {
+            break;
+        }
+    }
+    minMax = i - 1;
+    
+    if (minMax == (numPoints - 1)) {    /* Degenerate case: all x-coords ==
+                                         * xMin */
+        PUSH(minMin);
+        if (points[minMax].y != points[minMin].y) {
+            PUSH(minMax);               /* A nontrivial segment. */
+        }
+        PUSH(minMin);
+        return top + 1;
+    }
+
+    maxMax = numPoints - 1;
+    xMax = points[maxMax].x;
+    for (i = numPoints - 2; i >= 0; i--) {
+        if (points[i].x != xMax) {
+            break;
+        }
+    }
+    maxMin = i + 1;
+
+    /* Step 2. Compute the lower hull on the stack. */
+
+    PUSH(minMin);                       /* Push minMin point onto stack. */
+    i = minMax;
+
+    while (++i <= maxMin) {
+        /* The lower line joins v[minMin] with v[maxMin]. */
+        if ((IsLeft(points + minMin, points + maxMin, points + i) >= 0.0) && 
+            (i < maxMin)) {
+            continue;                   /* Ignore points[i] above or on the
+                                         * lower line */
+        }
+        while (top > 0) {               /* There are at least 2 vertices on
+                                         * the stack. */
+
+            /* Test if points[i] is left of the line at the stack top. */
+            if (IsLeft(points+hull[top-1], points+hull[top], points+i) > 0.0) {
+                break;                  /* points[i] is a new hull vertex. */
+            } else {
+                POP();                  /* Pop top point off stack */
+            }
+        }
+        PUSH(i);                        /* Push point[i] onto stack. */
+    }
+
+    /* Step 3. Compute the upper hull on the stack above the bottom hull. */
+    if (maxMax != maxMin)  {            /* if distinct xMax points */
+        PUSH(maxMax);                   /* Push maxMax point onto stack. */
+    }
+
+    bot = top;                          /* The bottom point of the upper hull
+                                           stack. */
+    i = maxMin;
+
+    while (--i >= minMax) {
+        /* The upper line joins points[maxMax] with points[minMax]. */
+        if ((IsLeft(points + maxMax, points + minMax, points + i) >= 0.0) && 
+            (i > minMax)) {
+            continue;                   /* Ignore points[i] below or on the
+                                         * upper line. */
+        }
+        while (top > bot) {             /* At least 2 points on the upper
+                                         * stack. */
+
+            /*  Test if points[i] is left of the line at the stack top. */
+            if (IsLeft(points+hull[top-1], points+hull[top], points+i) > 0.0) {
+                break;                  /* v[i] is a new hull vertex. */
+            } else {
+                POP();                  /* Pop top point off stack. */
+            }
+        }
+        PUSH(i);                        /* Push points[i] onto stack. */
+    }
+    if (minMax != minMin) {
+        PUSH(minMin);                  /* Push joining endpoint onto stack. */
+    }
+    return top + 1;
+}
+
+
+static int
+CompareVertices(const void *a, const void *b)
+{
+    const HullVertex *v1 = a;
+    const HullVertex *v2 = b;
+
+    if (v1->y < v2->y) {
+        return -1;
+    }
+    if (v1->y > v2->y) {
+        return 1;
+    }
+    if (v1->x < v2->x) {
+        return -1;
+    }
+    if (v1->x > v2->x) {
+        return 1;
+    }
+    return 0;
+}
+
+int *
+Blt_ConvexHull(int numPoints, Point2d *points, int *numHullPtsPtr) 
+{
+    HullVertex *vertices;
+    int *hull;
+    int i, numVertices;
+    
+    vertices = Blt_Malloc(numPoints * sizeof(HullVertex));
+    for (i = 0; i < numPoints; i++) {
+        vertices[i].x = points[i].x;
+        vertices[i].y = points[i].y;
+        vertices[i].index = i;
+    }
+    if (vertices == NULL) {
+        return NULL;
+    }
+    qsort(vertices, numPoints, sizeof(HullVertex), CompareVertices);
+
+    /* Allocate worst-case storage initially for the hull. */
+    hull = Blt_Malloc(numPoints * sizeof(int));
+    if (hull == NULL) {
+        Blt_Free(vertices);
+        return NULL;
+    }
+
+    /* Compute the convex hull. */
+    numVertices = ChainHull2d(numPoints, vertices, hull);
+    /* Resize the hull array to the actual # of boundary points. */
+    if (numVertices < numPoints) {
+        hull = Blt_Realloc(hull, numVertices * sizeof(int));
+        if (hull == NULL) {
+            Blt_Free(vertices);
+            return NULL;
+        }
+    }
+    if (meshPtr->hull != NULL) {
+        Blt_Free(meshPtr->hull);
+    }
+    /* Remap the indices back to the unsorted point array. */
+    for (i = 0; i < numVertices; i++) {
+        hull[i] = vertices[hull[i]].index;
+    }
+    Blt_Free(vertices);
+    *numHullPtsPtr = numVertices;
+    return hull;
+}
