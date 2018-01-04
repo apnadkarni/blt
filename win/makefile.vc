@@ -100,7 +100,6 @@ DATATABLE_PKG_OBJS =	$(TMP_DIR)\bltDataTableCsv.obj \
 BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			$(TREE_OBJS) \
 			$(TMP_DIR)\bltAlloc.obj \
-			$(TMP_DIR)\bltArrayObj.obj \
 			$(TMP_DIR)\bltBase64.obj \
 			$(TMP_DIR)\bltBgexec.obj \
 			$(TMP_DIR)\bltChain.obj \
@@ -109,11 +108,13 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			$(TMP_DIR)\bltCsv.obj \
 			$(TMP_DIR)\bltDBuffer.obj \
 			$(TMP_DIR)\bltDebug.obj \
+			$(TMP_DIR)\bltGeomUtil.obj \
 			$(TMP_DIR)\bltHash.obj \
 			$(TMP_DIR)\bltInitCmd.obj \
 			$(TMP_DIR)\bltList.obj \
 			$(TMP_DIR)\bltMesh.obj \
 			$(TMP_DIR)\bltNsUtil.obj \
+			$(TMP_DIR)\bltObj.obj \
 			$(TMP_DIR)\bltParse.obj \
 			$(TMP_DIR)\bltPool.obj \
 			$(TMP_DIR)\bltSpline.obj \
@@ -153,9 +154,11 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			$(TMP_DIR)\bltBitmap.obj \
 			$(TMP_DIR)\bltBusy.obj \
 			$(TMP_DIR)\bltCanvEps.obj \
+			$(TMP_DIR)\bltCanvLabel.obj \
 			$(TMP_DIR)\bltComboButton.obj \
 			$(TMP_DIR)\bltComboEditor.obj \
 			$(TMP_DIR)\bltComboEntry.obj \
+			$(TMP_DIR)\bltComboFrame.obj \
 			$(TMP_DIR)\bltComboMenu.obj \
 			$(TMP_DIR)\bltComboTree.obj \
 			$(TMP_DIR)\bltConfig.obj \
@@ -195,8 +198,8 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			$(TK_OBJS)
 
 BLT_TK_OBJS =		$(BLT_TK_SO_OBJS) \
-			$(TMP_DIR)\bltTkPkgsInit.obj \
 			$(TMP_DIR)\bltStaticInit.obj \
+			$(TMP_DIR)\bltTkPkgsInit.obj \
 			$(PICTURE_PKG_OBJS) 
 
 PRJ_OBJS = $(BLT_TCL_SO_OBJS) $(BLT_TK_SO_OBJS)
