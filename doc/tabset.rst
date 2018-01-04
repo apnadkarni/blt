@@ -782,7 +782,7 @@ available for *tabset* widgets:
     when the window is torn off.  *BitmapName* specifies a bitmap to use as
     the stipple pattern. The default is "BLT".
 
-*pathName* **style create** *styleName* ?\ *option* *value* ... ?
+*pathName* **style create** ?\ *styleName* ? ?\ *option* *value* ... ?
   Creates a new style named *styleName*.  By default all tabs use the
   same set of global style (called "default").  The style specifies the
   tab's appearance: color, font, etc.  Styles contain sets of configuration
@@ -792,10 +792,10 @@ available for *tabset* widgets:
   *option*-*value* pairs are specified, they specify options valid for the
   **style configure** operation.  The name of the style is returned.
    
-*pathName* **style delete** *styleName*
-  Deletes *styleName*.  *StyleName* is the name of a style created by the
-  **style create** operaton.  Styles are reference counted.  The resources
-  used by *styleName* are not freed until no item is using it.
+*pathName* **style delete** ?\ *styleName* ... ?
+  Deletes the given styles.  *StyleName* is the name of a style created by
+  the **style create** operaton.  Styles are reference counted.  The
+  resources used by *styleName* are not freed until no item is using it.
    
 *pathName* **style exists** *styleName*
   Indicates if the style *styleName* exists in the widget. Returns "1" if

@@ -6307,7 +6307,7 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     iconOption.clientData = setPtr;
     styleOption.clientData = setPtr;
     flags = BLT_CONFIG_OBJV_ONLY;
-    if (objc == 4 {
+    if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
                 styleConfigSpecs, (char *)stylePtr, (Tcl_Obj *)NULL, flags);
     } else if (objc == 5) {
@@ -6331,7 +6331,7 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleDeleteOp --
  *
- *        pathName style delete styleName
+ *        pathName style delete ?styleName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6340,17 +6340,21 @@ StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
     Tabset *setPtr = clientData;
-    TabStyle *stylePtr;
+    int i;
 
-    if (GetStyleFromObj(interp, setPtr, objv[3], &stylePtr) != TCL_OK) {
-        return TCL_ERROR;
+    for (i = 3; i < objc; i++) {
+        TabStyle *stylePtr;
+
+        if (GetStyleFromObj(interp, setPtr, objv[i], &stylePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (stylePtr->refCount > 0) {
+            Tcl_AppendResult(interp, "can't destroy tabset style \"", 
+                             stylePtr->name, "\": style in use.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        DestroyStyle(stylePtr);
     }
-    if (stylePtr->refCount > 0) {
-        Tcl_AppendResult(interp, "can't destroy tabset style \"", 
-                         stylePtr->name, "\": style in use.", (char *)NULL);
-        return TCL_ERROR;
-    }
-    DestroyStyle(stylePtr);
     return TCL_OK;
 }
 
@@ -6429,7 +6433,7 @@ static Blt_OpSpec styleOps[] =
     {"cget",      2, StyleCgetOp,        5, 5, "styleName option",},
     {"configure", 2, StyleConfigureOp,   4, 0, "styleName ?option value ...?",},
     {"create",    2, StyleCreateOp,      4, 0, "styleName ?option value ...?",},
-    {"delete",    1, StyleDeleteOp,      3, 3, "styleName",},
+    {"delete",    1, StyleDeleteOp,      3, 0, "?styleName ...?",},
     {"exists",    1, StyleExistsOp,      4, 4, "styleName"},
     {"names",     1, StyleNamesOp,       3, 0, "?pattern ...?",},
 };

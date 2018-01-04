@@ -1012,7 +1012,7 @@ command.  The following operations are available for *combomenu* widgets:
     **solid**, and **groove**. For example, "raised" means the item should
     appear to protrude from the menu.  The default is "flat".
 
-*pathName* **style create** *styleName* ?\ *option* *value* ... ?
+*pathName* **style create** ?\ *styleName* ? ?\ *option* *value* ... ?
   Creates a new style named *styleName*.  By default all menu items use the
   same set of global widget configuration options to specify the item's the
   color, font, borderwidth, etc.  Styles contain sets of configuration
@@ -1022,8 +1022,8 @@ command.  The following operations are available for *combomenu* widgets:
   *option*-*value* pairs are specified, they specify options valid for the
   **style configure** operation.  The name of the style is returned.
    
-*pathName* **style delete** ? *styleName* ... ?
-  Deletes one or more styles.  *StyleName* is the name of a style created
+*pathName* **style delete** ?\ *styleName* ... ?
+  Deletes the given styles.  *StyleName* is the name of a style created
   by the **style create** operaton.  Styles are reference counted.  The
   resources used by *styleName* are not freed until no item is using it.
    

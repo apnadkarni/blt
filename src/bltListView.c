@@ -569,6 +569,8 @@ struct _ListView {
     int itemHeight;
 
     Blt_HashTable styleTable;           /* Table of styles used. */
+    int nextStyleId;
+
     /*
      * Scanning Information:
      */
@@ -5616,6 +5618,15 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 /* .m style create name option value option value */
     
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCreateOp --
+ *
+ *        pathName style create ?styleName? ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -5624,9 +5635,17 @@ StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Style *stylePtr;
     Blt_HashEntry *hPtr;
     int isNew;
+    const char *string;
+    char ident[200];
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->styleTable, Tcl_GetString(objv[3]),
-                &isNew);
+    string = Tcl_GetString(objv[3]);
+    if (string[0] == '-') {
+        Blt_FmtString(ident, 200, "style%d", viewPtr->nextStyleId++);
+        string = ident;
+    } else {
+        objc--, objv++;
+    }
+    hPtr = Blt_CreateHashEntry(&viewPtr->styleTable, string, &isNew);
     if (!isNew) {
         Tcl_AppendResult(interp, "listview style \"", Tcl_GetString(objv[3]),
                 "\" already exists.", (char *)NULL);
@@ -5647,6 +5666,15 @@ StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCgetOp --
+ *
+ *        pathName style cget styleName option
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
@@ -5662,6 +5690,15 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (char *)stylePtr, objv[4], 0);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleConfigureOp --
+ *
+ *        pathName style configure styleName ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
@@ -5675,12 +5712,12 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     iconOption.clientData = viewPtr;
     flags = BLT_CONFIG_OBJV_ONLY;
-    if (objc == 1) {
+    if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
                 styleSpecs, (char *)stylePtr, (Tcl_Obj *)NULL, flags);
-    } else if (objc == 2) {
+    } else if (objc == 5) {
         return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
-                styleSpecs, (char *)stylePtr, objv[2], flags);
+                styleSpecs, (char *)stylePtr, objv[4], flags);
     }
     Tcl_Preserve(stylePtr);
     result = ConfigureStyle(interp, stylePtr, objc - 4, objv + 4, flags);
@@ -5693,25 +5730,73 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleDeleteOp --
+ *
+ *        pathName style delete ?styleName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
     ListView *viewPtr = clientData;
-    Style *stylePtr;
+    int i;
 
-    if (GetStyleFromObj(interp, viewPtr, objv[3], &stylePtr) != TCL_OK) {
-        return TCL_ERROR;
+    for (i = 3; i < objc; i++) {
+        Style *stylePtr;
+
+        if (GetStyleFromObj(interp, viewPtr, objv[i], &stylePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (stylePtr->refCount > 0) {
+            Tcl_AppendResult(interp, "can't destroy listview style \"", 
+                             stylePtr->name, "\": style in use.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        DestroyStyle(stylePtr);
     }
-    if (stylePtr->refCount > 0) {
-        Tcl_AppendResult(interp, "can't destroy listview style \"", 
-                         stylePtr->name, "\": style in use.", (char *)NULL);
-        return TCL_ERROR;
-    }
-    DestroyStyle(stylePtr);
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleExistsOp --
+ *
+ *        pathName style exists styleName
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+              Tcl_Obj *const *objv)
+{
+    ListView *viewPtr = clientData;
+    Style *stylePtr;
+    int state;
+
+    state = FALSE;
+    if (GetStyleFromObj(NULL, viewPtr, objv[3], &stylePtr) == TCL_OK) {
+        state = TRUE;
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleNamesOp --
+ *
+ *        pathName style names ?pattern ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
@@ -5754,6 +5839,7 @@ static Blt_OpSpec styleOps[] =
     {"configure", 2, StyleConfigureOp, 4, 0, "styleName ?option value ...?",},
     {"create",    2, StyleCreateOp,    4, 0, "styleName ?option value ...?",},
     {"delete",    1, StyleDeleteOp,    3, 0, "?styleName ...?",},
+    {"exists",    1, StyleExistsOp,    4, 4, "styleName"},
     {"names",     1, StyleNamesOp,     3, 0, "?pattern ...?",},
 };
 

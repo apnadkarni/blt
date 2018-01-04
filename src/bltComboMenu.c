@@ -6470,6 +6470,15 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 /* pathName style create ?styleName? ?option value ...? */
     
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCreateOp --
+ *
+ *        pathName style create ?styleName? ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6510,6 +6519,15 @@ StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCgetOp --
+ *
+ *        pathName style cget styleName option
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
@@ -6525,6 +6543,15 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (char *)stylePtr, objv[4], 0);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleConfigureOp --
+ *
+ *        pathName style configure styleName ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
@@ -6538,12 +6565,12 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     iconOption.clientData = comboPtr;
     flags = BLT_CONFIG_OBJV_ONLY;
-    if (objc == 1) {
+    if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, 
                 styleConfigSpecs, (char *)stylePtr, (Tcl_Obj *)NULL, flags);
-    } else if (objc == 2) {
+    } else if (objc == 5) {
         return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, 
-                styleConfigSpecs, (char *)stylePtr, objv[2], flags);
+                styleConfigSpecs, (char *)stylePtr, objv[4], flags);
     }
     Tcl_Preserve(stylePtr);
     result = ConfigureStyle(interp, stylePtr, objc - 4, objv + 4, flags);
@@ -6556,25 +6583,47 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleDeleteOp --
+ *
+ *        pathName style delete ?styleName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
-    Style *stylePtr;
+    int i;
 
-    if (GetStyleFromObj(interp, comboPtr, objv[3], &stylePtr) != TCL_OK) {
-        return TCL_ERROR;
+    for (i = 3; i < objc; i++) {
+        Style *stylePtr;
+
+        if (GetStyleFromObj(interp, comboPtr, objv[i], &stylePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (stylePtr->refCount > 0) {
+            Tcl_AppendResult(interp, "can't destroy combomenu style \"", 
+                             stylePtr->name, "\": style in use.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        DestroyStyle(stylePtr);
     }
-    if (stylePtr->refCount > 0) {
-        Tcl_AppendResult(interp, "can't destroy combomenu style \"", 
-                         stylePtr->name, "\": style in use.", (char *)NULL);
-        return TCL_ERROR;
-    }
-    DestroyStyle(stylePtr);
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleExistsOp --
+ *
+ *        pathName style exists styleName
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6591,6 +6640,15 @@ StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleNamesOp --
+ *
+ *        pathName style names ?pattern ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
