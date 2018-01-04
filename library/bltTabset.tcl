@@ -454,9 +454,15 @@ proc blt::Tabset::Init { w } {
 	%W xbutton deactivate
     }
     $w bind all xbutton <ButtonRelease-1> { 
-	if { [catch {%W xbutton invoke current}] == 0 } {
-	    %W delete current
-	}
+        if { ![%W slide isactive] } {
+            if { [%W identify current %x %y] == "xbutton" } {
+                if { [%W cget -xbuttoncommand] == "" } {
+                    %W delete current
+                } else { 
+                    %W xbutton invoke current
+                }
+            }
+        }
     }
     set _private(cursor) [$w cget -cursor]
 }

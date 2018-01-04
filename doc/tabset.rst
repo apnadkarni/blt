@@ -121,9 +121,11 @@ name, tag or text label.
   this is harmless and ignored.
 
 *label*
-  The label of the tab.  Each tab a label.  Labels should not be numbers
-  (to distinguish them from indices). Tab labels are distinct.  There can
-  be duplicate tab labels.
+  The text of the tab.  There can be duplicate tab labels.
+
+*name*
+  The name of the tab.  Each tab a name.  Names should not be numbers
+  (to distinguish them from indices). Tab names are unique.
 
 *tag*
   A tag is a string associated with a tab.  They are a useful for referring
@@ -608,16 +610,19 @@ available for *tabset* widgets:
 *pathName* **highlight** *tabName*
   Same as the **activate** operation.
 
-*pathName* **identify** *tabName* *x* *y*
+*pathName* **identify** *tabName* *x* *y* ?\ *switches* ... ?
   Identifies the part of *tabName* under the given screen coordinates.
   Returns "icon", "text", "xbutton", or "". *TabName* may be an index, tag,
-  name, or label but may not reference more than one tab.
+  name, or label but may not reference more than one tab.  *Switches* may
+  be any of the following.
 
-*pathName* **index** ?\ *flag* ? *string* 
-  Returns the node id of the tab specified by *string*.  If *flag* is
-  **-name**, then *string* is the name of a tab.  If *flag* is **-index**,
-  *string* is an index such as "active" or "focus".  If *flag* isn't
-  specified, it defaults to **-index**.
+  **-root**
+    Indicates that *x* and *y* are root coordinates.  By default *x* and
+    *y* are considered relative to the upper-left corner of *pathName*.
+
+*pathName* **index** *tabName* 
+  Returns the index of the tab specified by *tabName*.  *TabName* may be an
+  index, tag, name, or label but may not reference more than one tab.
 
 *pathName* **insert** *position* ?\ *tabName* ? ?\ *option* *value* ... ?
   Inserts a new tab into *pathName*.  The new tab is inserted before the
@@ -640,8 +645,8 @@ available for *tabset* widgets:
   before or after *destTabName*.
 
 *pathName* **nameof** *tabName*
-  Returns the label of the *tabName*.  The value of *index* may be in any
-  form described in the section `REFERENCING TABS`_.
+  Returns the name of the *tabName*. *TabName* may be an index, tag,
+  name, or label but may not refer to more than one tab. 
 
 *pathName* **names** ?\ *pattern* ... ?
   Returns the names of the tabs in *pathName*.  If one or more
@@ -650,8 +655,13 @@ available for *tabset* widgets:
   Matching is done in a fashion similar to that used by the TCL **glob**
   command.
 
-*pathName* **nearest** *x* *y*
+*pathName* **nearest** *x* *y*  ?\ *switches* ... ?
   Returns the index of the tab nearest to given X-Y screen coordinate.
+  *Switches* may be any of the following.
+
+  **-root**
+    Indicates that *x* and *y* are root coordinates.  By default *x* and
+    *y* are considered relative to the upper-left corner of *pathName*.
 
 *pathName* **perforation activate** *tabName* *boolean*
   Indicates if the perforation should be drawn as active using the
@@ -699,7 +709,7 @@ available for *tabset* widgets:
   the **style create** operaton.  *Option* may be any option described
   below for the **style configure** operation.
    
-*pathName* **style configure** *styleName* ?\ *option* *value* ... ?
+*pathName* **style configure** ?\ *styleName* ? ?\ *option* *value* ... ?
   Queries or modifies the configuration options for the style *styleName*.
   *StyleName* is the name of a style created by the **style create**
   operaton.  If no *option* argument is specified, this command returns a
@@ -782,10 +792,10 @@ available for *tabset* widgets:
   *option*-*value* pairs are specified, they specify options valid for the
   **style configure** operation.  The name of the style is returned.
    
-*pathName* **style delete** ? *styleName* ... ?
-  Deletes one or more styles.  *StyleName* is the name of a style created
-  by the **style create** operaton.  Styles are reference counted.  The
-  resources used by *styleName* are not freed until no item is using it.
+*pathName* **style delete** *styleName*
+  Deletes *styleName*.  *StyleName* is the name of a style created by the
+  **style create** operaton.  Styles are reference counted.  The resources
+  used by *styleName* are not freed until no item is using it.
    
 *pathName* **style exists** *styleName*
   Indicates if the style *styleName* exists in the widget. Returns "1" if

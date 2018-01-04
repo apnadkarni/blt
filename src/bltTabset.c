@@ -1026,6 +1026,20 @@ static Blt_ConfigSpec styleConfigSpecs[] = {
     {BLT_CONFIG_END}
 };
 
+typedef struct {
+    unsigned int flags;
+} IdentifySwitches;
+
+#define IDENTIFY_ROOT     (1<<0)
+
+static Blt_SwitchSpec identifySwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
+        Blt_Offset(IdentifySwitches, flags), 0, IDENTIFY_ROOT},
+    {BLT_SWITCH_END}
+};
+
+
 /* Forward Declarations */
 static Tk_GeomRequestProc EmbeddedWidgetGeometryProc;
 static Tk_GeomLostSlaveProc EmbeddedWidgetCustodyProc;
@@ -5726,7 +5740,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  Interp->result will contain the name of
  *      part the given screen coordinates are over.
  *
- *      pathName identify tabName x y
+ *      pathName identify tabName x y ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5740,6 +5754,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *objPtr;
     LabelPart id;
     int sx, sy;
+    IdentifySwitches switches;
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5754,6 +5769,18 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], &sy) != TCL_OK)) {
         return TCL_ERROR;
     }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, identifySwitches, objc - 5, objv + 5, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (switches.flags & IDENTIFY_ROOT) {
+        int rootX, rootY;
+        
+        Tk_GetRootCoords(setPtr->tkwin, &rootX, &rootY);
+        sx -= rootX;
+        sy -= rootY;
+    }        
     if (!PointInTab(setPtr, tabPtr, sx, sy)) {
         return TCL_OK;
     }
@@ -6088,11 +6115,30 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NearestOp --
+ *
+ *      Returns the name of the tab at the given coordinates.  By default,
+ *      the coordinates are relative to the widget window, not the root
+ *      window.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.  Otherwise the name
+ *      of the nearest tab is returned.
+ *
+ *        pathName nearest x y ?switches ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 NearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
           Tcl_Obj *const *objv)
 {
+    IdentifySwitches switches;
     Tab *tabPtr;
     Tabset *setPtr = clientData; 
     int x, y;                   /* Screen coordinates of the test point. */
@@ -6101,6 +6147,18 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[3], &y) != TCL_OK)) {
         return TCL_ERROR;
     }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, identifySwitches, objc - 4, objv + 4, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (switches.flags & IDENTIFY_ROOT) {
+        int rootX, rootY;
+        
+        Tk_GetRootCoords(setPtr->tkwin, &rootX, &rootY);
+        x -= rootX;
+        y -= rootY;
+    }        
     if (setPtr->numVisible > 0) {
         tabPtr = GetTabByCoordinates(setPtr, x, y);
         if ((tabPtr != NULL) && ((tabPtr->flags & DISABLED) == 0)) {
@@ -6115,18 +6173,15 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectOp --
  *
- *      This procedure is called to select a tab.
- *
- *        pathName select tabName
+ *      This procedure is called to select a tab.  This raises the tab
+ *      and displays its folder.  The tab will be drawn in its selected
+ *      foreground and background colors.
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
  *
- * Side Effects:
- *      Configuration information, such as text string, colors, font,
- *      etc. get set;  old resources get freed, if there were any.
- *      The widget is redisplayed if needed.
+ *        pathName select tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -6154,6 +6209,15 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCreateOp --
+ *
+ *        pathName style create ?styleName? ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6196,6 +6260,15 @@ StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCgetOp --
+ *
+ *        pathName style cget styleName option
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
@@ -6211,6 +6284,15 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (char *)stylePtr, objv[4], 0);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleConfigureOp --
+ *
+ *        pathName style configure styleName ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
@@ -6225,12 +6307,12 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     iconOption.clientData = setPtr;
     styleOption.clientData = setPtr;
     flags = BLT_CONFIG_OBJV_ONLY;
-    if (objc == 1) {
+    if (objc == 4 {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
                 styleConfigSpecs, (char *)stylePtr, (Tcl_Obj *)NULL, flags);
-    } else if (objc == 2) {
+    } else if (objc == 5) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
-                styleConfigSpecs, (char *)stylePtr, objv[2], flags);
+                styleConfigSpecs, (char *)stylePtr, objv[4], flags);
     }
     Tcl_Preserve(stylePtr);
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, styleConfigSpecs, 
@@ -6244,6 +6326,15 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleDeleteOp --
+ *
+ *        pathName style delete styleName
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6263,6 +6354,15 @@ StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleExistsOp --
+ *
+ *        pathName style exists styleName
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6279,6 +6379,15 @@ StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleNamesOp --
+ *
+ *        pathName style names ?pattern ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
@@ -6320,7 +6429,7 @@ static Blt_OpSpec styleOps[] =
     {"cget",      2, StyleCgetOp,        5, 5, "styleName option",},
     {"configure", 2, StyleConfigureOp,   4, 0, "styleName ?option value ...?",},
     {"create",    2, StyleCreateOp,      4, 0, "styleName ?option value ...?",},
-    {"delete",    1, StyleDeleteOp,      3, 0, "?styleName ...?",},
+    {"delete",    1, StyleDeleteOp,      3, 3, "styleName",},
     {"exists",    1, StyleExistsOp,      4, 4, "styleName"},
     {"names",     1, StyleNamesOp,       3, 0, "?pattern ...?",},
 };
@@ -9208,14 +9317,14 @@ static Blt_OpSpec tabsetOps[] =
     {"exists",      1, ExistsOp,      3, 3, "tabName",},
     {"focus",       1, FocusOp,       2, 3, "?tabName?",},
     {"highlight",   1, ActivateOp,    3, 3, "tabName",},
-    {"identify",    2, IdentifyOp,    5, 5, "tabName x y",},
+    {"identify",    2, IdentifyOp,    5, 0, "tabName x y ?switches...?",},
     {"index",       3, IndexOp,       3, 3, "tabName",},
     {"insert",      3, InsertOp,      3, 0, "position ?option value?",},
     {"invoke",      3, InvokeOp,      3, 3, "tabName",},
     {"move",        1, MoveOp,        5, 5, "destTab firstTab lastTab ?switches?",},
     {"nameof",      5, NameOfOp,      3, 3, "tabName",},
     {"names",       5, NamesOp,       2, 0, "?pattern...?",},
-    {"nearest",     2, NearestOp,     4, 4, "x y",},
+    {"nearest",     2, NearestOp,     4, 0, "x y ?switches ...?",},
     {"perforation", 1, PerforationOp, 2, 0, "args",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
     {"see",         3, SeeOp,         3, 3, "tabName",},
