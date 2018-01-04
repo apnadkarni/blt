@@ -35,6 +35,15 @@
  *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ * Convex hull routines.
+ *
+ * Copyright 2001, softSurfer (www.softsurfer.com) 
+ *
+ *   This code may be freely used and modified for any purpose providing
+ *   that this copyright notice is included with it.  SoftSurfer makes no
+ *   warranty for this code, and cannot be held liable for any real or
+ *   imagined damage resulting from its use.  Users of this code must
+ *   verify correctness for their application.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -836,9 +845,6 @@ Blt_ConvexHull(int numPoints, Point2d *points, int *numHullPtsPtr)
             Blt_Free(vertices);
             return NULL;
         }
-    }
-    if (meshPtr->hull != NULL) {
-        Blt_Free(meshPtr->hull);
     }
     /* Remap the indices back to the unsorted point array. */
     for (i = 0; i < numVertices; i++) {

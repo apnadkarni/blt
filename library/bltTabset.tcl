@@ -104,6 +104,10 @@ bind BltTabset <ButtonRelease-3> {
 
 # B1 Enter
 #   Stop auto-scrolling
+bind BltTabset <ButtonRelease-1> {
+    after cancel $blt::Tabset::_private(afterId)
+    set  blt::Tabset::_private(afterId) -1
+}
 bind BltTabset <B1-Enter> {
     after cancel $blt::Tabset::_private(afterId)
     set blt::Tabset::_private(afterId) -1
@@ -114,6 +118,7 @@ bind BltTabset <B1-Motion> {
     set blt::Tabset::_private(y) %y
     set blt::Tabset::_private(scroll) 1
 }
+
 
 # B1 Leave
 #   Start auto-scrolling
@@ -484,10 +489,10 @@ proc blt::Tabset::AutoScroll { w } {
     }
     }
     if {$x >= [winfo width $w]} {
-        $w view scroll 20 units
+        $w view scroll 2 units
         set neighbor left
     } elseif {$x < 0} {
-        $w view scroll -20 units
+        $w view scroll -2 units
         set neighbor right
     }
     set _private(afterId) [after 50 blt::Tabset::AutoScroll $w]

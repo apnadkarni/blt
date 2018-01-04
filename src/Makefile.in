@@ -351,6 +351,7 @@ BLT_TCL_SO_OBJS =	$(DATATABLE_OBJS) \
 			bltCsv.o \
 			bltDBuffer.o \
 			bltDebug.o \
+			bltGeomUtil.o \
 			bltHash.o \
 			bltInitCmd.o \
 			bltList.o \
@@ -407,7 +408,6 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltDragdrop.o \
 			bltDrawerset.o \
 			bltFilmstrip.o \
-			bltGeomUtil.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \
@@ -674,6 +674,7 @@ BLT_TCL_INT_HEADERS =	\
 		$(srcdir)/bltArrayObj.h \
 		$(srcdir)/bltAssert.h  \
 		$(srcdir)/bltDBuffer.h  \
+		$(srcdir)/bltGeomUtil.h \
 		$(srcdir)/bltInitCmd.h \
 		$(srcdir)/bltInt.h \
 		$(srcdir)/bltMath.h \
@@ -699,7 +700,6 @@ BLT_TCL_HEADERS = \
 BLT_TK_INT_HEADERS = \
 		$(srcdir)/bltTkInt.h \
 		$(srcdir)/bltFont.h \
-		$(srcdir)/bltGeomUtil.h \
 		$(srcdir)/bltPaintBrush.h \
 		$(srcdir)/bltBg.h \
 		$(srcdir)/bltBind.h \

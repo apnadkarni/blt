@@ -56,4 +56,6 @@ BLT_EXTERN Point2d Blt_GetProjection(double x, double y, Point2d *p, Point2d *q)
 BLT_EXTERN Point2d Blt_GetProjection2(double x, double y, double x1, double y1,
                                       double x2, double y2);
 
+BLT_EXTERN int *Blt_ConvexHull(int numPoints, Point2d *points,
+                               int *numHullPtsPtr) ;
 #endif /* _BLT_GEOMUTIL_H */
