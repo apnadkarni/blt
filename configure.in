@@ -464,7 +464,7 @@ if test "${blt_with_ft2_include_dir}" != "no" ; then
   if test "${blt_freetype_config}" = "yes" ; then 
     ft2_inc_spec=`freetype-config --cflags`
   else
-    ft2_inc_spec="-I/usr/include/freetype2"
+    ft2_inc_spec="-I${blt_with_ft2_include_dir}/freetype2 -I${blt_with_ft2_include_dir}"
   fi 
   save_CPPFLAGS=$CPPFLAGS
   CPPFLAGS="${ft2_inc_spec}"
