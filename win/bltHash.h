@@ -58,11 +58,7 @@
 #    define SIZEOF_INT 4
 #  endif
 #  ifndef SIZEOF_VOID_P
-#    ifdef _WIN64
-#      define SIZEOF_VOID_P 8
-#    else
-#      define SIZEOF_VOID_P 4
-#    endif
+#    define SIZEOF_VOID_P 8
 #  endif
 #endif /* !BLT_INT_H */
 
@@ -114,9 +110,15 @@ struct Blt_HashTable;
 
 typedef union {			/* Key has one of these forms: */
     void *oneWordValue;		/* One-word value for key. */
-    unsigned long words[1];	/* Multiple integer words for key.  The actual
-				 * size will be as large as necessary for this
-				 * table's keys. */
+#  if (SIZEOF_VOID_P == 8)
+    uint64_t words[1];          /* Multiple integer words for key.  The
+				 * actual size will be as large as
+				 * necessary for this table's keys. */
+#else
+    uint32_t words[1];          /* Multiple integer words for key.  The
+				 * actual size will be as large as
+				 * necessary for this table's keys. */
+#endif    
     char string[4];		/* String for key.  The actual size will be as
 				 * large as needed to hold the key. */
 } Blt_HashKey;
@@ -178,8 +180,13 @@ typedef struct Blt_HashTable {
 
 typedef struct {
     Blt_HashTable *tablePtr;	/* Table being searched. */
-    unsigned long nextIndex;	/* Index of next bucket to be enumerated after
-				 * present one. */
+#  if (SIZEOF_VOID_P == 8)
+    uint64_t nextIndex;         /* Index of next bucket to be enumerated
+				 * after present one. */
+#else
+    uint32_t nextIndex;         /* Index of next bucket to be enumerated
+				 * after present one. */
+#endif    
     Blt_HashEntry *nextEntryPtr; /* Next entry to be enumerated in the current
 				  * bucket. */
 } Blt_HashSearch;
@@ -199,9 +206,9 @@ typedef struct {
  * hash tables:
  */
 #define Blt_FindHashEntry(tablePtr, key) \
-	(*((tablePtr)->findProc))(tablePtr, key)
+    (*((tablePtr)->findProc))(tablePtr, (const char *)key)
 #define Blt_CreateHashEntry(tablePtr, key, newPtr) \
-	(*((tablePtr)->createProc))(tablePtr, key, newPtr)
+    (*((tablePtr)->createProc))(tablePtr, (const char *)key, newPtr)
 
 BLT_EXTERN void Blt_InitHashTable(Blt_HashTable *tablePtr, size_t keyType);
 

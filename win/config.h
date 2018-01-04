@@ -19,8 +19,15 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 /* #undef HAVE_ARPA_INET_H */
 
+/* Define to 1 if you have the `ceil' function. */
+#define HAVE_CEIL 1
+
 /* Define to 1 if you have the <ctype.h> header file. */
 #define HAVE_CTYPE_H 1
+
+/* Define to 1 if you have the declaration of `ceil', and to 0 if you don't.
+   */
+#define HAVE_DECL_CEIL 0
 
 /* Define to 1 if you have the declaration of `drand48', and to 0 if you
    don't. */
@@ -29,6 +36,10 @@
 /* Define to 1 if you have the declaration of `finite', and to 0 if you don't.
    */
 #define HAVE_DECL_FINITE 1
+
+/* Define to 1 if you have the declaration of `floor', and to 0 if you don't.
+   */
+#define HAVE_DECL_FLOOR 0
 
 /* Define to 1 if you have the declaration of `free', and to 0 if you don't.
    */
@@ -48,6 +59,10 @@
 
 /* Define to 1 if you have the declaration of `j1', and to 0 if you don't. */
 #define HAVE_DECL_J1 1
+
+/* Define to 1 if you have the declaration of `round', and to 0 if you don't.
+   */
+#define HAVE_DECL_ROUND 0
 
 /* Define to 1 if you have the declaration of `snprintf', and to 0 if you
    don't. */
@@ -83,6 +98,9 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #define HAVE_ERRNO_H 1
 
+/* Define to 1 if you have the `execvpe' function. */
+#define HAVE_EXECVPE 1
+
 /* Define to 1 if you have the <expat.h> header file. */
 #define HAVE_EXPAT_H 1
 
@@ -95,6 +113,9 @@
 /* Define to 1 if you have the <float.h> header file. */
 #define HAVE_FLOAT_H 1
 
+/* Define to 1 if you have the `floor' function. */
+#define HAVE_FLOOR 1
+
 /* Define to 1 if you have the <ft2build.h> header file. */
 #define HAVE_FT2BUILD_H 1
 
@@ -105,7 +126,7 @@
 /* #undef HAVE_GRANTPT */
 
 /* Define to 1 if you have the <ieeefp.h> header file. */
-/* #undef HAVE_IEEEFP_H 1 */
+#define HAVE_IEEEFP_H 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -123,7 +144,7 @@
 #define HAVE_ISNAN 1
 
 /* Define to 1 if you have the <jpeglib.h> header file. */
-#define HAVE_JPEGLIB_H 1
+/* #undef HAVE_JPEGLIB_H */
 
 /* Define to 1 if you have the `EXPAT' library (-lexpat). */
 #define HAVE_LIBEXPAT 1
@@ -172,6 +193,9 @@
 
 /* Define to 1 if you have the `XDMCP' library (-lXdmcp). */
 /* #undef HAVE_LIBXDMCP */
+
+/* Define to 1 if you have the `Xext' library (-lXext). */
+/* #undef HAVE_LIBXEXT */
 
 /* Define to 1 if you have the `XFT' library (-lXft). */
 /* #undef HAVE_LIBXFT */
@@ -227,11 +251,26 @@
 /* Define to 1 if you have the <pty.h> header file. */
 /* #undef HAVE_PTY_H */
 
+/* Define to 1 if you have the `round' function. */
+#define HAVE_ROUND 1
+
 /* Define to 1 if you have the <setjmp.h> header file. */
 #define HAVE_SETJMP_H 1
 
 /* Define to 1 if you have the `setsid' function. */
 /* #undef HAVE_SETSID */
+
+/* Define to 1 if you have the `shmat' function. */
+/* #undef HAVE_SHMAT */
+
+/* Define to 1 if you have the `shmctl' function. */
+/* #undef HAVE_SHMCTL */
+
+/* Define to 1 if you have the `shmdt' function. */
+/* #undef HAVE_SHMDT */
+
+/* Define to 1 if you have the `shmget' function. */
+/* #undef HAVE_SHMGET */
 
 /* Define to 1 if you have the <signal.h> header file. */
 #define HAVE_SIGNAL_H 1
@@ -272,6 +311,9 @@
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 /* #undef HAVE_SYS_IOCTL_H */
 
+/* Define to 1 if you have the <sys/ipc.h> header file. */
+/* #undef HAVE_SYS_IPC_H */
+
 /* Define to 1 if you have the <sys/param.h> header file. */
 #define HAVE_SYS_PARAM_H 1
 
@@ -281,8 +323,11 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
 
+/* Define to 1 if you have the <sys/sym.h> header file. */
+/* #undef HAVE_SYS_SYM_H */
+
 /* Define to 1 if you have the <sys/time.h> header file. */
-/* #undef HAVE_SYS_TIME_H */
+#define HAVE_SYS_TIME_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
@@ -306,7 +351,7 @@
 /* #undef HAVE_UNION_WAIT */
 
 /* Define to 1 if you have the <unistd.h> header file. */
-/* #undef HAVE_UNISTD_H */
+#define HAVE_UNISTD_H 1
 
 /* Define to 1 if you have the `unlockpt' function. */
 /* #undef HAVE_UNLOCKPT */
@@ -320,11 +365,26 @@
 /* Define to 1 if you have the <X11/extensions/randr.h> header file. */
 /* #undef HAVE_X11_EXTENSIONS_RANDR_H */
 
+/* Define to 1 if you have the <X11/extensions/shmproto.h> header file. */
+/* #undef HAVE_X11_EXTENSIONS_SHMPROTO_H */
+
+/* Define to 1 if you have the <X11/extensions/Xcomposite.h> header file. */
+/* #undef HAVE_X11_EXTENSIONS_XCOMPOSITE_H */
+
 /* Define to 1 if you have the <X11/extensions/Xrandr.h> header file. */
 /* #undef HAVE_X11_EXTENSIONS_XRANDR_H */
 
+/* Define to 1 if you have the <X11/extensions/Xrender.h> header file. */
+/* #undef HAVE_X11_EXTENSIONS_XRENDER_H */
+
+/* Define to 1 if you have the <X11/extensions/XShm.h> header file. */
+/* #undef HAVE_X11_EXTENSIONS_XSHM_H */
+
 /* Define to 1 if you have the <X11/Xft/Xft.h> header file. */
 /* #undef HAVE_X11_XFT_XFT_H */
+
+/* Define to 1 if you have the <X11/Xlib.h> header file. */
+#define HAVE_X11_XLIB_H 1
 
 /* Define to 1 if you have the <X11/xpm.h> header file. */
 /* #undef HAVE_X11_XPM_H */
@@ -332,8 +392,41 @@
 /* Define if we're compiling for an X86. */
 #define HAVE_X86 1
 
+/* Define to 1 if you have the `XRenderComposite' function. */
+/* #undef HAVE_XRENDERCOMPOSITE */
+
+/* Define to 1 if you have the `XRenderCreatePicture' function. */
+/* #undef HAVE_XRENDERCREATEPICTURE */
+
+/* Define to 1 if you have the `XRenderQueryExtension' function. */
+/* #undef HAVE_XRENDERQUERYEXTENSION */
+
 /* Define to 1 if you have the `XRRGetScreenResources' function. */
 /* #undef HAVE_XRRGETSCREENRESOURCES */
+
+/* Define to 1 if you have the `XRRQueryExtension' function. */
+/* #undef HAVE_XRRQUERYEXTENSION */
+
+/* Define to 1 if you have the `XShmAttach' function. */
+/* #undef HAVE_XSHMATTACH */
+
+/* Define to 1 if you have the `XShmCreateImage' function. */
+/* #undef HAVE_XSHMCREATEIMAGE */
+
+/* Define to 1 if you have the `XShmCreatePixmap' function. */
+/* #undef HAVE_XSHMCREATEPIXMAP */
+
+/* Define to 1 if you have the `XShmDetach' function. */
+/* #undef HAVE_XSHMDETACH */
+
+/* Define to 1 if you have the `XShmGetImage' function. */
+/* #undef HAVE_XSHMGETIMAGE */
+
+/* Define to 1 if you have the `XShmPutImage' function. */
+/* #undef HAVE_XSHMPUTIMAGE */
+
+/* Define to 1 if you have the `XShmQueryExtension' function. */
+/* #undef HAVE_XSHMQUERYEXTENSION */
 
 /* Define if building for MacOSX. */
 /* #undef MACOSX */
@@ -342,7 +435,7 @@
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-/* #define PACKAGE_NAME "" */
+#define PACKAGE_NAME ""
 
 /* Define to the full name and version of this package. */
 #define PACKAGE_STRING ""
@@ -351,10 +444,10 @@
 #define PACKAGE_TARNAME ""
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL ""
+/* #undef PACKAGE_URL */
 
 /* Define to the version of this package. */
-/* #define PACKAGE_VERSION "" */
+#define PACKAGE_VERSION ""
 
 /* First PTY in range. */
 /* #undef PTYRANGE0 */
@@ -375,17 +468,13 @@
 #define SIZEOF_LONG_LONG 8
 
 /* The size of `void *', as computed by sizeof. */
-#ifdef _WIN64
-#  define SIZEOF_VOID_P 8
-#else
-#  define SIZEOF_VOID_P 4
-#endif
+#define SIZEOF_VOID_P 8
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
-/* #undef TIME_WITH_SYS_TIME */
+#define TIME_WITH_SYS_TIME 1
 
 /* Define if BLT stubs are used. */
 /* #undef USE_BLT_STUBS */
@@ -395,6 +484,9 @@
 
 /* Define if Tk stubs are used. */
 /* #undef USE_TK_STUBS */
+
+/* Define to enable XSHM extension. */
+#define USE_XSHM 1
 
 /* Define if building for Win32. */
 #define WIN32 1
