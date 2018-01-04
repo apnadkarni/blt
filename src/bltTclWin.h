@@ -81,11 +81,13 @@ BLT_EXTERN double hypot(double x, double y);
 #endif /* __BORLANDC__ || _MSC_VER */
 
 #ifdef _MSC_VER
-
+typedef SSIZE_T ssize_t;
 #define S_IS(mode_, s_flags_) (((mode_) & S_IFMT) == (s_flags_))
-#define S_ISDIR(mode_) S_IS(mode_, S_IFDIR)
-#define S_ISREG(mode_) S_IS(mode_, S_IFREF)
-#define S_ISCHR(mode_) S_IS(mode_, S_IFCHR)
+#define S_ISDIR(mode_) S_IS(mode_, _S_IFDIR)
+#define S_ISREG(mode_) S_IS(mode_, _S_IFREG)
+#define S_ISCHR(mode_) S_IS(mode_, _S_IFCHR)
+#define S_ISBLK(mode_) (0) /* APN TBD - Win32 equivalent */
+#define S_ISFIFO(mode_) S_IS(mode_, _S_IFIFO)
 
 #define R_OK 04
 #define F_OK 00

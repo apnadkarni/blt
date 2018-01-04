@@ -27,7 +27,7 @@
 
 /* Define to 1 if you have the declaration of `ceil', and to 0 if you don't.
    */
-#define HAVE_DECL_CEIL 0
+#define HAVE_DECL_CEIL 1
 
 /* Define to 1 if you have the declaration of `drand48', and to 0 if you
    don't. */
@@ -39,7 +39,7 @@
 
 /* Define to 1 if you have the declaration of `floor', and to 0 if you don't.
    */
-#define HAVE_DECL_FLOOR 0
+#define HAVE_DECL_FLOOR 1
 
 /* Define to 1 if you have the declaration of `free', and to 0 if you don't.
    */
@@ -62,7 +62,7 @@
 
 /* Define to 1 if you have the declaration of `round', and to 0 if you don't.
    */
-#define HAVE_DECL_ROUND 0
+#define HAVE_DECL_ROUND 1
 
 /* Define to 1 if you have the declaration of `snprintf', and to 0 if you
    don't. */
@@ -126,7 +126,7 @@
 /* #undef HAVE_GRANTPT */
 
 /* Define to 1 if you have the <ieeefp.h> header file. */
-#define HAVE_IEEEFP_H 1
+/* #undef HAVE_IEEEFP_H 1 */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -327,7 +327,7 @@
 /* #undef HAVE_SYS_SYM_H */
 
 /* Define to 1 if you have the <sys/time.h> header file. */
-#define HAVE_SYS_TIME_H 1
+/* #undef HAVE_SYS_TIME_H */
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
@@ -351,7 +351,7 @@
 /* #undef HAVE_UNION_WAIT */
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
+/* #undef HAVE_UNISTD_H */
 
 /* Define to 1 if you have the `unlockpt' function. */
 /* #undef HAVE_UNLOCKPT */
@@ -434,20 +434,14 @@
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT ""
 
-/* Define to the full name of this package. */
-#define PACKAGE_NAME ""
-
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING ""
+#define PACKAGE_STRING PACKAGE_NAME " " PACKAGE_VERSION
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME ""
 
 /* Define to the home page for this package. */
 /* #undef PACKAGE_URL */
-
-/* Define to the version of this package. */
-#define PACKAGE_VERSION ""
 
 /* First PTY in range. */
 /* #undef PTYRANGE0 */
@@ -474,7 +468,7 @@
 #define STDC_HEADERS 1
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
-#define TIME_WITH_SYS_TIME 1
+/* #undef TIME_WITH_SYS_TIME */
 
 /* Define if BLT stubs are used. */
 /* #undef USE_BLT_STUBS */
