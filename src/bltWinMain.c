@@ -122,8 +122,10 @@
 
 #ifdef HAVE_TCL_STUBS
 #undef Tcl_InitStubs
+#ifdef notdef
 extern const char *Tcl_InitStubs(Tcl_Interp *interp, const char *version, 
         int exact);
+#endif
 #endif
 
 static BOOL consoleRequired = TRUE;
