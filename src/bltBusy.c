@@ -56,6 +56,10 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
+#ifdef WIN32
+  #include <tkPlatDecls.h>
+#endif
+
 #define BUSYDEBUG 0
 
 #ifndef TK_REPARENTED

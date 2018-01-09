@@ -46,6 +46,10 @@
   #include <string.h>
 #endif /* HAVE_STRING_H */
 
+#ifdef WIN32
+  #include <tkPlatDecls.h>
+#endif
+
 #if !defined(WIN32) && !defined(MACOSX)
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
