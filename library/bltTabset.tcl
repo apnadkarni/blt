@@ -102,32 +102,6 @@ bind BltTabset <ButtonRelease-3> {
     %W activate @%x,%y
 }
 
-# B1 Enter
-#   Stop auto-scrolling
-bind BltTabset <ButtonRelease-1> {
-    after cancel $blt::Tabset::_private(afterId)
-    set  blt::Tabset::_private(afterId) -1
-}
-bind BltTabset <B1-Enter> {
-    after cancel $blt::Tabset::_private(afterId)
-    set blt::Tabset::_private(afterId) -1
-}
-
-bind BltTabset <B1-Motion> {
-    set blt::Tabset::_private(x) %x
-    set blt::Tabset::_private(y) %y
-    set blt::Tabset::_private(scroll) 1
-}
-
-
-# B1 Leave
-#   Start auto-scrolling
-bind BltTabset <B1-Leave> {
-    if { $blt::Tabset::_private(scroll) } {
-        blt::Tabset::AutoScroll %W 
-    }
-}
-
 # ----------------------------------------------------------------------
 # 
 # KeyPress assignments
@@ -421,16 +395,28 @@ proc blt::Tabset::Init { w } {
         %W activate "" 
     }
     $w bind all label <ButtonPress-1> { 
-        %W slide anchor current %X %Y
+        %W slide anchor current %x %y
     }
     $w bind all label <B1-Motion> { 
-        %W slide mark %X %Y
+        if {[%W slide isauto %x %y]} {
+            if { $blt::Tabset::_private(afterId) == -1 } {
+                set blt::Tabset::_private(afterId) \
+                    [after 500 blt::Tabset::AutoScroll %W %x %y]
+            }
+        } else {
+            after cancel $blt::Tabset::_private(afterId)
+            set blt::Tabset::_private(afterId) -1
+            %W slide mark %x %y
+        }
     }
     $w bind all label <ButtonRelease-1> { 
+            after cancel $blt::Tabset::_private(afterId)
+            set blt::Tabset::_private(afterId) -1
         if { [%W slide isactive] } {
-            %W slide mark %X %Y
+            %W slide mark %x %y
+            %W see slide.anchor
             %W slide stop
-        } elseif { [blt::Tabset::PointerOverTab %W "current" %X %Y] } {
+        } elseif { [%W identify "current" %x %y] != "" } {
             blt::Tabset::Select %W "current"
         }
     }
@@ -464,7 +450,7 @@ proc blt::Tabset::Init { w } {
             }
         }
     }
-    set _private(cursor) [$w cget -cursor]
+    set blt::Tabset::_private(cursor) [$w cget -cursor]
 }
 
 #
@@ -474,33 +460,14 @@ proc blt::Tabset::Init { w } {
 #   the mouse pointer outside of the widget.  Scrolls the view in the
 #   direction of the pointer.
 #
-proc blt::Tabset::AutoScroll { w } {
+proc blt::Tabset::AutoScroll { w x y } {
     variable _private
 
     if { ![winfo exists $w] } {
         return
     }
-    if { !$_private(scroll) } {
-        return 
-    }
-    set x $_private(x)
-    set y $_private(y)
-    if 0 {
-    if {$y >= [winfo height $w]} {
-        $w yview scroll 1 units
-        set neighbor down
-    } elseif {$y < 0} {
-        $w yview scroll -1 units
-        set neighbor up
-    }
-    }
-    if {$x >= [winfo width $w]} {
-        $w view scroll 2 units
-        set neighbor left
-    } elseif {$x < 0} {
-        $w view scroll -2 units
-        set neighbor right
-    }
-    set _private(afterId) [after 50 blt::Tabset::AutoScroll $w]
+    puts stderr "AutoScroll $x $y"
+    $w slide mark $x $y
+    set _private(afterId) [after 500 blt::Tabset::AutoScroll $w $x $y]
 }
 

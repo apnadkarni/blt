@@ -1388,6 +1388,8 @@ GetTabByIndex(Tcl_Interp *interp, Tabset *setPtr, const char *string,
             tabPtr = TabUp(setPtr->focusPtr);
             break;
         }
+    } else if ((c == 's') && (strcmp(string, "slide.anchor") == 0)) {
+        tabPtr = setPtr->slidePtr;
     } else if (c == '@') {
         int x, y;
 
@@ -5423,6 +5425,93 @@ SlideAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * SlideIsActiveOp --
+ *
+ *      Returns whether a tab is currently being slid.
+ *
+ *        pathName isactive
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideIsActiveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    int state;
+    
+    state = ((setPtr->flags & SLIDE_ACTIVE) != 0);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideIsAutoOp --
+ *
+ *      Returns whether the given coordinate is not over the slide tab.
+ *
+ *        pathName isauto x y
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideIsAutoOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    int x, y, dx, dy;
+    int state;
+    
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[3], PIXELS_ANY, 
+                &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], PIXELS_ANY, 
+                &y) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (setPtr->slidePtr == NULL) {
+        Tcl_AppendResult(interp, "No tab designated for sliding.  "
+                         "Must call \"slide anchor\" first.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    dx = x - setPtr->slideX;
+    dy = y - setPtr->slideY;
+    if ((setPtr->flags & SLIDE_ACTIVE) == 0) {
+        if ((SIDE_VERTICAL(setPtr)) && (ABS(dy) > 10)) {
+            setPtr->flags |= SLIDE_ACTIVE;
+        } else if ((SIDE_HORIZONTAL(setPtr)) && (ABS(dx) > 10)) {
+            setPtr->flags |= SLIDE_ACTIVE;
+        }
+    }        
+    if ((setPtr->flags & SLIDE_ACTIVE) == 0)  {
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), 0);
+        return TCL_OK;
+    }
+    if (SIDE_VERTICAL(setPtr)) {
+        state = (y < 0) || (y >= Tk_Height(setPtr->tkwin));
+    } else {
+        state = (x < 0) || (x >= Tk_Width(setPtr->tkwin));
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SlideMarkOp --
  *
  *      This procedure is called to start a drag operation.
@@ -5473,10 +5562,54 @@ SlideMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((setPtr->flags & SLIDE_ACTIVE) == 0)  {
         return TCL_OK;
     }
+    tabPtr = setPtr->slidePtr;
+#ifndef notdef
+    if (SIDE_VERTICAL(setPtr)) {
+        if ((y < 0) || (y >= Tk_Height(setPtr->tkwin))) {
+            
+        }
+    } else {
+        fprintf(stderr, "X=%d\n", x);
+        if (x < 0) {
+            Tab *prevPtr;
+        
+            prevPtr = PrevTab(tabPtr, HIDDEN | DISABLED);
+            if (prevPtr == NULL) {
+                return TCL_OK;          /* Don't move tab, there's no tab
+                                         * before this one. */
+            }
+            setPtr->scrollOffset -= 10 /*prevPtr->worldWidth*/;
+            setPtr->slideX += 10 /*prevPtr->worldWidth*/;
+            setPtr->flags |= (SCROLL_PENDING);
+#ifdef notdef
+            Blt_Chain_UnlinkLink(setPtr->chain, tabPtr->link);
+            Blt_Chain_LinkBefore(setPtr->chain, tabPtr->link, prevPtr->link);
+#endif
+    EventuallyRedraw(setPtr);
+            return TCL_OK;
+        } else if (x >= Tk_Width(setPtr->tkwin)) {
+            Tab *nextPtr;
+
+            nextPtr = NextTab(tabPtr, HIDDEN | DISABLED);
+            if (nextPtr == NULL) {
+                return TCL_OK;          /* Don't move tab, there's no tab
+                                         * after this one. */
+            }
+            setPtr->scrollOffset += 10 /* nextPtr->worldWidth */; 
+            setPtr->slideX -= 10 /* nextPtr->worldWidth */;
+            setPtr->flags |= (SCROLL_PENDING);
+#ifdef notdef
+            Blt_Chain_UnlinkLink(setPtr->chain, tabPtr->link);
+            Blt_Chain_LinkAfter(setPtr->chain, tabPtr->link, nextPtr->link);
+#endif
+    EventuallyRedraw(setPtr);
+            return TCL_OK;
+        }
+    }        
+#endif
     setPtr->slideX = x;
     setPtr->slideY = y;
     offset = setPtr->slideOffset + ((SIDE_VERTICAL(setPtr)) ? dy : dx);
-    tabPtr = setPtr->slidePtr;
     if (offset < 0) {
         Tab *prevPtr;
         int d;
@@ -5514,34 +5647,6 @@ SlideMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     setPtr->slideOffset = offset;
     EventuallyRedraw(setPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * SlideIsActiveOp --
- *
- *      This procedure is called to end the drag operation.
- *
- *        pathName isactive
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then
- *      interp->result contains an error message.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-SlideIsActiveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Tabset *setPtr = clientData; 
-    int state;
-    
-    state = ((setPtr->flags & SLIDE_ACTIVE) != 0);
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
 
@@ -5607,6 +5712,7 @@ static Blt_OpSpec slideOps[] =
 {
     {"anchor",   1, SlideAnchorOp,    6, 6, "tabName x y" }, 
     {"isactive", 1, SlideIsActiveOp,  3, 3, "" }, 
+    {"isauto",   1, SlideIsAutoOp,    5, 5, "x y" }, 
     {"mark",     1, SlideMarkOp,      5, 5, "x y" }, 
     {"stop",     1, SlideStopOp,      3, 3, "" }, 
 };
