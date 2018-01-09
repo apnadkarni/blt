@@ -1862,28 +1862,15 @@ StitchSegments(Isoline *isoPtr)
             continue;
         }
         MakePointKey(&key, s->x1, s->y1);
-        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
+        hPtr = Blt_CreateHashEntry(&pointTable, &key, &foundPt1);
 #ifdef notdef
         fprintf(stderr, "segment %ld px=%.15g py=%.15g qx=%.15g qy=%.15g\n",
                 i, s->x1, s->y1, s->x2, s->y2);
 #endif
-        if (isNew) {
-            count = 1;
-        } else {
-            count = Blt_GetHashValue(hPtr);
-            count++;
-        }
-        Blt_SetHashValue(hPtr, count);
         key.x = s->x2;
         key.y = s->y2;
-        hPtr = Blt_CreateHashEntry(&pointTable, &key, &isNew);
-        if (isNew) {
-            count = 1;
-        } else {
-            count = Blt_GetHashValue(hPtr);
-            count++;
-        }
-        Blt_SetHashValue(hPtr, count);
+        hPtr = Blt_CreateHashEntry(&pointTable, &key, &foundPt2);
+        if ((foundPt1) && (foundPt2)) 
     }
     i = 0;
     for (hPtr = Blt_FirstHashEntry(&pointTable, &iter); hPtr != NULL;

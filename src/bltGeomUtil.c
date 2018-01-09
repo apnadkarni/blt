@@ -46,7 +46,7 @@
  *   verify correctness for their application.
  */
 
-#define BUILD_BLT_TK_PROCS 1
+#define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 #define _XOPEN_SOURCE 500      /* See feature_test_macros(7) */
 #include <stdio.h>

@@ -340,8 +340,6 @@ BLT_EXTERN int Blt_ConfigureComponentFromObj(Tcl_Interp *interp,
 
 BLT_EXTERN int Blt_ConfigModified(Blt_ConfigSpec *specs, ...);
 
-BLT_EXTERN const char *Blt_NameOfState(int state);
-
 BLT_EXTERN void Blt_FreeOptions(Blt_ConfigSpec *specs, char *widgRec, 
         Display *display, int needFlags);
 
@@ -353,15 +351,6 @@ BLT_EXTERN int Blt_GetPixelsFromObj(Tcl_Interp *interp, Tk_Window tkwin,
 
 BLT_EXTERN int Blt_GetPadFromObj(Tcl_Interp *interp, Tk_Window tkwin, 
         Tcl_Obj *objPtr, Blt_Pad *padPtr);
-
-BLT_EXTERN int Blt_GetStateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int *statePtr);
-
-BLT_EXTERN int Blt_GetFillFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int *fillPtr);
-
-BLT_EXTERN int Blt_GetResizeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int *fillPtr);
 
 BLT_EXTERN int Blt_GetDashesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         Blt_Dashes *dashesPtr);

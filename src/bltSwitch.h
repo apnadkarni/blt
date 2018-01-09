@@ -137,6 +137,38 @@ typedef struct {
 #define BLT_SWITCH_SPECIFIED            (1<<4)
 #define BLT_SWITCH_USER_BIT             (1<<8)
 
+BLT_EXTERN int Blt_ExprDoubleFromObj (Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        double *valuePtr);
+
+BLT_EXTERN int Blt_ExprIntFromObj (Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        int *valuePtr);
+
+BLT_EXTERN int Blt_GetStateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        int *statePtr);
+
+BLT_EXTERN const char *Blt_NameOfState(int state);
+
+BLT_EXTERN int Blt_GetFillFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        int *fillPtr);
+
+BLT_EXTERN const char *Blt_NameOfFill(int fill);
+
+BLT_EXTERN int Blt_GetResizeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        int *fillPtr);
+
+BLT_EXTERN const char *Blt_NameOfResize(int resize);
+
+BLT_EXTERN int Blt_GetSideFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        int *sidePtr);
+
+BLT_EXTERN const char *Blt_NameOfSide(int side);
+
+BLT_EXTERN int Blt_GetCount(Tcl_Interp *interp, const char *string, 
+        int check, long *countPtr);
+
+BLT_EXTERN int Blt_GetCountFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+        int check, long *countPtr);
+
 BLT_EXTERN int Blt_ParseSwitches(Tcl_Interp *interp, Blt_SwitchSpec *specPtr, 
         int objc, Tcl_Obj *const *objv, void *rec, int flags);
 
