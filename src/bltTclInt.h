@@ -157,19 +157,8 @@ extern int TclpHasSockets(Tcl_Interp *interp);
 #define SIDE_RIGHT              (1<<2)
 #define SIDE_BOTTOM             (1<<3)
 
-BLT_EXTERN int Blt_GetSideFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int *sidePtr);
-
-BLT_EXTERN const char *Blt_NameOfSide(int side);
-
 BLT_EXTERN FILE *Blt_OpenFile(Tcl_Interp *interp, const char *fileName, 
         const char *mode);
-
-BLT_EXTERN int Blt_ExprDoubleFromObj (Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        double *valuePtr);
-
-BLT_EXTERN int Blt_ExprIntFromObj (Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int *valuePtr);
 
 BLT_EXTERN const char *Blt_Itoa(int value);
 
@@ -249,12 +238,6 @@ BLT_EXTERN void Blt_FormatDate(Blt_DateTime *datePtr, const char *format,
 
 BLT_EXTERN int Blt_GetPositionFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
         long *indexPtr);
-
-BLT_EXTERN int Blt_GetCount(Tcl_Interp *interp, const char *string, 
-        int check, long *countPtr);
-
-BLT_EXTERN int Blt_GetCountFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-        int check, long *countPtr);
 
 BLT_EXTERN int Blt_ObjIsInteger(Tcl_Obj *objPtr);
 

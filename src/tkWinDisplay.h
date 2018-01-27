@@ -137,12 +137,6 @@ extern HDC TkWinGetDrawableDC(Display *display, Drawable drawable,
 extern HDC TkWinReleaseDrawableDC(Drawable drawable, HDC dc, 
         TkWinDCState *state);
 
-extern HINSTANCE Tk_GetHINSTANCE(void);
-
-extern HWND Tk_GetHWND(Window window);
-
-extern Window Tk_AttachHWND(Tk_Window tkwin, HWND hWnd);
-
 #endif /* USE_TK_STUBS */
 #endif /* _TK_WIN_DISPLAY_H */
 

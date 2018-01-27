@@ -41,6 +41,10 @@
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 
+#ifdef WIN32
+  #include <tkPlatDecls.h>
+#endif
+
 #include <X11/Xlib.h>
 #include "tkDisplay.h"
 

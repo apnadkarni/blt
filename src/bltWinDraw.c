@@ -50,6 +50,10 @@
 #include "tkFont.h"
 #include "tkIntBorder.h"
 
+#ifdef WIN32
+  #include <tkPlatDecls.h>
+#endif
+
 #define EXT_GC  ('\xFF')
 
 /*

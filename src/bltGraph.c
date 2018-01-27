@@ -80,6 +80,10 @@
 #include "bltGrLegd.h"
 #include "bltInitCmd.h"
 
+#ifdef WIN32
+  #include <tkPlatDecls.h>
+#endif
+
 /* 
  * Objects in the graph have their own class names.  These class names are
  * used for the resource database and bindings.  Example.

@@ -860,7 +860,7 @@ command.  The following operations are available for *listview* widgets:
     **groove**. For example, "raised" means the item should appear to
     protrude.  The default is "flat".
     
-*pathName* **style create** *styleName* ?\ *option* *value* ... ?
+*pathName* **style create** ?\ *styleName* ? ?\ *option* *value* ... ?
   Creates a new style named *styleName*.  By default all list use the same
   set of global widget configuration options to specify the item's the
   color, font, borderwidth, etc.  Styles contain sets of configuration
@@ -871,7 +871,7 @@ command.  The following operations are available for *listview* widgets:
   **style configure** operation.  The name of the style is returned.
    
 *pathName* **style delete** ?\ *styleName* ... ?
-  Deletes one or more styles.  *StyleName* is the name of a style created
+  Deletes the given styles styles.  *StyleName* is the name of a style created
   by the **style create** operaton.  Styles are reference counted.  The
   resources used by *styleName* are not freed until no item is using it.
    

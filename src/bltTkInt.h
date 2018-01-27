@@ -198,13 +198,6 @@ BLT_EXTERN void Blt_FreeColorPair (ColorPair *pairPtr);
 #  define XNOSTDHDRS    1
 #endif
 
-BLT_EXTERN int Blt_LineRectClip(Region2d *regionPtr, Point2d *p, Point2d *q);
-
-#define CLIP_OUTSIDE    0
-#define CLIP_INSIDE     (1<<0)
-#define CLIP_LEFT       (1<<1)
-#define CLIP_RIGHT      (1<<2)
-
 BLT_EXTERN GC Blt_GetPrivateGC(Tk_Window tkwin, unsigned long gcMask,
         XGCValues *valuePtr);
 
@@ -236,10 +229,6 @@ BLT_EXTERN Tk_Window Blt_Toplevel(Tk_Window tkwin);
 BLT_EXTERN int Blt_GetPixels(Tcl_Interp *interp, Tk_Window tkwin, 
         const char *string, int check, int *valuePtr);
 
-BLT_EXTERN const char *Blt_NameOfFill(int fill);
-
-BLT_EXTERN const char *Blt_NameOfResize(int resize);
-
 BLT_EXTERN int Blt_GetXY (Tcl_Interp *interp, Tk_Window tkwin, 
         const char *string, int *xPtr, int *yPtr);
 
@@ -253,15 +242,15 @@ BLT_EXTERN void Blt_DrawArrow (Display *display, Drawable drawable,
 BLT_EXTERN void Blt_MakeTransparentWindowExist (Tk_Window tkwin, Window parent, 
         int isBusy);
 
-BLT_EXTERN void Blt_TranslateAnchor (int x, int y, int width, int height, 
+BLT_EXTERN void Blt_TranslateAnchor(int x, int y, int width, int height, 
         Tk_Anchor anchor, int *transXPtr, int *transYPtr);
 
-BLT_EXTERN Point2d Blt_AnchorPoint (double x, double y, double width, 
+BLT_EXTERN Point2d Blt_AnchorPoint(double x, double y, double width, 
         double height, Tk_Anchor anchor);
 
-BLT_EXTERN long Blt_MaxRequestSize (Display *display, size_t elemSize);
+BLT_EXTERN long Blt_MaxRequestSize(Display *display, size_t elemSize);
 
-BLT_EXTERN Window Blt_GetWindowId (Tk_Window tkwin);
+BLT_EXTERN Window Blt_GetWindowId(Tk_Window tkwin);
 
 BLT_EXTERN void Blt_InitXRandrConfig(Tcl_Interp *interp);
 BLT_EXTERN void Blt_SizeOfScreen(Tk_Window tkwin, int *widthPtr,int *heightPtr);

@@ -1026,6 +1026,20 @@ static Blt_ConfigSpec styleConfigSpecs[] = {
     {BLT_CONFIG_END}
 };
 
+typedef struct {
+    unsigned int flags;
+} IdentifySwitches;
+
+#define IDENTIFY_ROOT     (1<<0)
+
+static Blt_SwitchSpec identifySwitches[] = 
+{
+    {BLT_SWITCH_BITS_NOARG, "-root", "", (char *)NULL,
+        Blt_Offset(IdentifySwitches, flags), 0, IDENTIFY_ROOT},
+    {BLT_SWITCH_END}
+};
+
+
 /* Forward Declarations */
 static Tk_GeomRequestProc EmbeddedWidgetGeometryProc;
 static Tk_GeomLostSlaveProc EmbeddedWidgetCustodyProc;
@@ -1374,6 +1388,8 @@ GetTabByIndex(Tcl_Interp *interp, Tabset *setPtr, const char *string,
             tabPtr = TabUp(setPtr->focusPtr);
             break;
         }
+    } else if ((c == 's') && (strcmp(string, "slide.anchor") == 0)) {
+        tabPtr = setPtr->slidePtr;
     } else if (c == '@') {
         int x, y;
 
@@ -5409,6 +5425,93 @@ SlideAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * SlideIsActiveOp --
+ *
+ *      Returns whether a tab is currently being slid.
+ *
+ *        pathName isactive
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideIsActiveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    int state;
+    
+    state = ((setPtr->flags & SLIDE_ACTIVE) != 0);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SlideIsAutoOp --
+ *
+ *      Returns whether the given coordinate is not over the slide tab.
+ *
+ *        pathName isauto x y
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SlideIsAutoOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    Tabset *setPtr = clientData; 
+    int x, y, dx, dy;
+    int state;
+    
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[3], PIXELS_ANY, 
+                &x) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], PIXELS_ANY, 
+                &y) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (setPtr->slidePtr == NULL) {
+        Tcl_AppendResult(interp, "No tab designated for sliding.  "
+                         "Must call \"slide anchor\" first.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    dx = x - setPtr->slideX;
+    dy = y - setPtr->slideY;
+    if ((setPtr->flags & SLIDE_ACTIVE) == 0) {
+        if ((SIDE_VERTICAL(setPtr)) && (ABS(dy) > 10)) {
+            setPtr->flags |= SLIDE_ACTIVE;
+        } else if ((SIDE_HORIZONTAL(setPtr)) && (ABS(dx) > 10)) {
+            setPtr->flags |= SLIDE_ACTIVE;
+        }
+    }        
+    if ((setPtr->flags & SLIDE_ACTIVE) == 0)  {
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), 0);
+        return TCL_OK;
+    }
+    if (SIDE_VERTICAL(setPtr)) {
+        state = (y < 0) || (y >= Tk_Height(setPtr->tkwin));
+    } else {
+        state = (x < 0) || (x >= Tk_Width(setPtr->tkwin));
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * SlideMarkOp --
  *
  *      This procedure is called to start a drag operation.
@@ -5459,10 +5562,54 @@ SlideMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((setPtr->flags & SLIDE_ACTIVE) == 0)  {
         return TCL_OK;
     }
+    tabPtr = setPtr->slidePtr;
+#ifndef notdef
+    if (SIDE_VERTICAL(setPtr)) {
+        if ((y < 0) || (y >= Tk_Height(setPtr->tkwin))) {
+            
+        }
+    } else {
+        fprintf(stderr, "X=%d\n", x);
+        if (x < 0) {
+            Tab *prevPtr;
+        
+            prevPtr = PrevTab(tabPtr, HIDDEN | DISABLED);
+            if (prevPtr == NULL) {
+                return TCL_OK;          /* Don't move tab, there's no tab
+                                         * before this one. */
+            }
+            setPtr->scrollOffset -= 10 /*prevPtr->worldWidth*/;
+            setPtr->slideX += 10 /*prevPtr->worldWidth*/;
+            setPtr->flags |= (SCROLL_PENDING);
+#ifdef notdef
+            Blt_Chain_UnlinkLink(setPtr->chain, tabPtr->link);
+            Blt_Chain_LinkBefore(setPtr->chain, tabPtr->link, prevPtr->link);
+#endif
+    EventuallyRedraw(setPtr);
+            return TCL_OK;
+        } else if (x >= Tk_Width(setPtr->tkwin)) {
+            Tab *nextPtr;
+
+            nextPtr = NextTab(tabPtr, HIDDEN | DISABLED);
+            if (nextPtr == NULL) {
+                return TCL_OK;          /* Don't move tab, there's no tab
+                                         * after this one. */
+            }
+            setPtr->scrollOffset += 10 /* nextPtr->worldWidth */; 
+            setPtr->slideX -= 10 /* nextPtr->worldWidth */;
+            setPtr->flags |= (SCROLL_PENDING);
+#ifdef notdef
+            Blt_Chain_UnlinkLink(setPtr->chain, tabPtr->link);
+            Blt_Chain_LinkAfter(setPtr->chain, tabPtr->link, nextPtr->link);
+#endif
+    EventuallyRedraw(setPtr);
+            return TCL_OK;
+        }
+    }        
+#endif
     setPtr->slideX = x;
     setPtr->slideY = y;
     offset = setPtr->slideOffset + ((SIDE_VERTICAL(setPtr)) ? dy : dx);
-    tabPtr = setPtr->slidePtr;
     if (offset < 0) {
         Tab *prevPtr;
         int d;
@@ -5500,34 +5647,6 @@ SlideMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     setPtr->slideOffset = offset;
     EventuallyRedraw(setPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * SlideIsActiveOp --
- *
- *      This procedure is called to end the drag operation.
- *
- *        pathName isactive
- *
- * Results:
- *      A standard TCL result.  If TCL_ERROR is returned, then
- *      interp->result contains an error message.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-SlideIsActiveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
-{
-    Tabset *setPtr = clientData; 
-    int state;
-    
-    state = ((setPtr->flags & SLIDE_ACTIVE) != 0);
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
 
@@ -5593,6 +5712,7 @@ static Blt_OpSpec slideOps[] =
 {
     {"anchor",   1, SlideAnchorOp,    6, 6, "tabName x y" }, 
     {"isactive", 1, SlideIsActiveOp,  3, 3, "" }, 
+    {"isauto",   1, SlideIsAutoOp,    5, 5, "x y" }, 
     {"mark",     1, SlideMarkOp,      5, 5, "x y" }, 
     {"stop",     1, SlideStopOp,      3, 3, "" }, 
 };
@@ -5726,7 +5846,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  Interp->result will contain the name of
  *      part the given screen coordinates are over.
  *
- *      pathName identify tabName x y
+ *      pathName identify tabName x y ?switches...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5740,6 +5860,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *objPtr;
     LabelPart id;
     int sx, sy;
+    IdentifySwitches switches;
 
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
         return TCL_ERROR;
@@ -5754,6 +5875,18 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[4], &sy) != TCL_OK)) {
         return TCL_ERROR;
     }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, identifySwitches, objc - 5, objv + 5, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (switches.flags & IDENTIFY_ROOT) {
+        int rootX, rootY;
+        
+        Tk_GetRootCoords(setPtr->tkwin, &rootX, &rootY);
+        sx -= rootX;
+        sy -= rootY;
+    }        
     if (!PointInTab(setPtr, tabPtr, sx, sy)) {
         return TCL_OK;
     }
@@ -6088,11 +6221,30 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NearestOp --
+ *
+ *      Returns the name of the tab at the given coordinates.  By default,
+ *      the coordinates are relative to the widget window, not the root
+ *      window.
+ *
+ * Results:
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.  Otherwise the name
+ *      of the nearest tab is returned.
+ *
+ *        pathName nearest x y ?switches ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static int
 NearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
           Tcl_Obj *const *objv)
 {
+    IdentifySwitches switches;
     Tab *tabPtr;
     Tabset *setPtr = clientData; 
     int x, y;                   /* Screen coordinates of the test point. */
@@ -6101,6 +6253,18 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (Tk_GetPixelsFromObj(interp, setPtr->tkwin, objv[3], &y) != TCL_OK)) {
         return TCL_ERROR;
     }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, identifySwitches, objc - 4, objv + 4, 
+        &switches, BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (switches.flags & IDENTIFY_ROOT) {
+        int rootX, rootY;
+        
+        Tk_GetRootCoords(setPtr->tkwin, &rootX, &rootY);
+        x -= rootX;
+        y -= rootY;
+    }        
     if (setPtr->numVisible > 0) {
         tabPtr = GetTabByCoordinates(setPtr, x, y);
         if ((tabPtr != NULL) && ((tabPtr->flags & DISABLED) == 0)) {
@@ -6115,18 +6279,15 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectOp --
  *
- *      This procedure is called to select a tab.
- *
- *        pathName select tabName
+ *      This procedure is called to select a tab.  This raises the tab
+ *      and displays its folder.  The tab will be drawn in its selected
+ *      foreground and background colors.
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then
  *      interp->result contains an error message.
  *
- * Side Effects:
- *      Configuration information, such as text string, colors, font,
- *      etc. get set;  old resources get freed, if there were any.
- *      The widget is redisplayed if needed.
+ *        pathName select tabName
  *
  *---------------------------------------------------------------------------
  */
@@ -6154,6 +6315,15 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCreateOp --
+ *
+ *        pathName style create ?styleName? ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6196,6 +6366,15 @@ StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCgetOp --
+ *
+ *        pathName style cget styleName option
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
@@ -6211,6 +6390,15 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
         (char *)stylePtr, objv[4], 0);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleConfigureOp --
+ *
+ *        pathName style configure styleName ?option value ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
                  Tcl_Obj *const *objv)
@@ -6225,12 +6413,12 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     iconOption.clientData = setPtr;
     styleOption.clientData = setPtr;
     flags = BLT_CONFIG_OBJV_ONLY;
-    if (objc == 1) {
+    if (objc == 4) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
                 styleConfigSpecs, (char *)stylePtr, (Tcl_Obj *)NULL, flags);
-    } else if (objc == 2) {
+    } else if (objc == 5) {
         return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, 
-                styleConfigSpecs, (char *)stylePtr, objv[2], flags);
+                styleConfigSpecs, (char *)stylePtr, objv[4], flags);
     }
     Tcl_Preserve(stylePtr);
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, styleConfigSpecs, 
@@ -6244,25 +6432,47 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleDeleteOp --
+ *
+ *        pathName style delete ?styleName ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
 {
     Tabset *setPtr = clientData;
-    TabStyle *stylePtr;
+    int i;
 
-    if (GetStyleFromObj(interp, setPtr, objv[3], &stylePtr) != TCL_OK) {
-        return TCL_ERROR;
+    for (i = 3; i < objc; i++) {
+        TabStyle *stylePtr;
+
+        if (GetStyleFromObj(interp, setPtr, objv[i], &stylePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (stylePtr->refCount > 0) {
+            Tcl_AppendResult(interp, "can't destroy tabset style \"", 
+                             stylePtr->name, "\": style in use.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        DestroyStyle(stylePtr);
     }
-    if (stylePtr->refCount > 0) {
-        Tcl_AppendResult(interp, "can't destroy tabset style \"", 
-                         stylePtr->name, "\": style in use.", (char *)NULL);
-        return TCL_ERROR;
-    }
-    DestroyStyle(stylePtr);
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleExistsOp --
+ *
+ *        pathName style exists styleName
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
               Tcl_Obj *const *objv)
@@ -6279,6 +6489,15 @@ StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleNamesOp --
+ *
+ *        pathName style names ?pattern ...?
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
              Tcl_Obj *const *objv)
@@ -9208,14 +9427,14 @@ static Blt_OpSpec tabsetOps[] =
     {"exists",      1, ExistsOp,      3, 3, "tabName",},
     {"focus",       1, FocusOp,       2, 3, "?tabName?",},
     {"highlight",   1, ActivateOp,    3, 3, "tabName",},
-    {"identify",    2, IdentifyOp,    5, 5, "tabName x y",},
+    {"identify",    2, IdentifyOp,    5, 0, "tabName x y ?switches...?",},
     {"index",       3, IndexOp,       3, 3, "tabName",},
     {"insert",      3, InsertOp,      3, 0, "position ?option value?",},
     {"invoke",      3, InvokeOp,      3, 3, "tabName",},
     {"move",        1, MoveOp,        5, 5, "destTab firstTab lastTab ?switches?",},
     {"nameof",      5, NameOfOp,      3, 3, "tabName",},
     {"names",       5, NamesOp,       2, 0, "?pattern...?",},
-    {"nearest",     2, NearestOp,     4, 4, "x y",},
+    {"nearest",     2, NearestOp,     4, 0, "x y ?switches ...?",},
     {"perforation", 1, PerforationOp, 2, 0, "args",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
     {"see",         3, SeeOp,         3, 3, "tabName",},

@@ -37,8 +37,15 @@
 #ifndef _BLT_GEOMUTIL_H
 #define _BLT_GEOMUTIL_H
 
+#define CLIP_OUTSIDE    0
+#define CLIP_INSIDE     (1<<0)
+#define CLIP_LEFT       (1<<1)
+#define CLIP_RIGHT      (1<<2)
+
 BLT_EXTERN long Blt_SimplifyLine (Point2d *origPts, long low, long high, 
         double tolerance, long *indices);
+
+BLT_EXTERN int Blt_LineRectClip(Region2d *regionPtr, Point2d *p, Point2d *q);
 
 BLT_EXTERN int Blt_PointInPolygon(Point2d *samplePtr, Point2d *points, 
         int numPoints);

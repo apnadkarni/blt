@@ -11949,16 +11949,16 @@ StyleCreateOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleDeleteOp --
  *
- *      Eliminates one or more style names.  A style still may be in use after
- *      its name has been officially removed.  Only its hash table entry is
- *      removed.  The style itself remains until its reference count returns
- *      to zero (i.e. no one else is using it).
+ *      Eliminates one or more style names.  A style still may be in use
+ *      after its name has been officially removed.  Only its hash table
+ *      entry is removed.  The style itself remains until its reference
+ *      count returns to zero (i.e. no one else is using it).
  *
  * Results:
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
  *
- *      pathName style forget styleName ...
+ *      pathName style delete ?styleName ...?
  *
  *---------------------------------------------------------------------------
  */
@@ -12001,7 +12001,8 @@ StyleDeleteOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleExistsOp --
  *
- *      pathName style exists $name
+ *      pathName style exists styleName
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -12029,7 +12030,7 @@ StyleExistsOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
  *
- *      pathName style get cell
+ *      pathName style get cellName
  *
  *---------------------------------------------------------------------------
  */
@@ -12066,7 +12067,7 @@ StyleGetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  *      Lists the names of all the current styles in the tableview widget.
  *
- *        pathName style names
+ *        pathName style names ?pattern ...?
  *
  * Results:
  *      Always TCL_OK.
@@ -12079,22 +12080,31 @@ StyleNamesOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
+    Blt_HashSearch iter;
     Tcl_Obj *listObjPtr;
-
+    
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &cursor); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&cursor)) {
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &iter); 
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
         CellStyle *stylePtr;
-        Tcl_Obj *objPtr;
+        int found;
+        int i;
 
+        found = TRUE;
         stylePtr = Blt_GetHashValue(hPtr);
-        if (stylePtr->name == NULL) {
-            continue;                   /* Style has been deleted, but is
-                                         * still in use. */
+        for (i = 3; i < objc; i++) {
+            const char *pattern;
+
+            pattern = Tcl_GetString(objv[i]);
+            found = Tcl_StringMatch(stylePtr->name, pattern);
+            if (found) {
+                break;
+            }
         }
-        objPtr = Tcl_NewStringObj(stylePtr->name, -1);
-        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        if (found) {
+            Tcl_ListObjAppendElement(interp, listObjPtr,
+                Tcl_NewStringObj(stylePtr->name, -1));
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -12134,7 +12144,7 @@ StyleTypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *      pathName style create type styleName ?options?
  *      pathName style delete styleName
  *      pathName style get cellName
- *      pathName style names ?pattern?
+ *      pathName style names ?pattern ...?
  *      pathName style type styleName 
  *
  *---------------------------------------------------------------------------
@@ -12144,7 +12154,7 @@ static Blt_OpSpec styleOps[] = {
     {"cget",      2, StyleCgetOp,      5, 5, "styleName option",},
     {"configure", 2, StyleConfigureOp, 4, 0, "styleName options...",},
     {"create",    2, StyleCreateOp,    5, 0, "type styleName options...",},
-    {"delete",    1, StyleDeleteOp,    3, 0, "styleName...",},
+    {"delete",    1, StyleDeleteOp,    3, 0, "?styleName ...?",},
     {"exists",    1, StyleExistsOp,    4, 4, "styleName",},
     {"get",       1, StyleGetOp,       4, 4, "cellName",},
     {"names",     1, StyleNamesOp,     3, 3, "",}, 

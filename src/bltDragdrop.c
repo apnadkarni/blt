@@ -58,6 +58,10 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
+#ifdef WIN32
+  #include <tkPlatDecls.h>
+#endif
+
 #define DRAGDROP_THREAD_KEY "BLT Dragdrop Command Data"
 
 #ifdef WIN32
