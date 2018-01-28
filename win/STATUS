@@ -1,0 +1,5 @@
+Windows Visual C++ port status - 2018-01-28
+
+Compiles with a few warnings.
+Need to switch to Unicode API's
+pkgIndex.tcl generation and makefile for library directory needed
