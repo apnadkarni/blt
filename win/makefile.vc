@@ -223,9 +223,21 @@ PRJ_LIBS = winspool.lib comdlg32.lib shlwapi.lib "$(BLT_LIBDIR)\lib\freetype_a.l
 !include "$(_RULESDIR)\targets.vc"
 
 install: default-install-docs-html install-demos
-default-install-libraries: install-prologues
-install-prologues:
+default-install-libraries: install-library-extras
+install-library-extras:
 	@$(CPY) $(LIBDIR)\*.pro "$(SCRIPT_INSTALL_DIR)"
-pkgindex: default-pkgindex-tea
+	@$(CPYDIR) "$(LIBDIR)\dd_protocols" "$(SCRIPT_INSTALL_DIR)\dd_protocols"
+	@$(CPYDIR) "$(LIBDIR)\afm" "$(SCRIPT_INSTALL_DIR)\afm"
+	@$(CPYDIR) "$(LIBDIR)\palettes" "$(SCRIPT_INSTALL_DIR)\palettes"
+	@$(CPYDIR) "$(LIBDIR)\cursors" "$(SCRIPT_INSTALL_DIR)\cursors"
+
+pkgindex: $(OUT_DIR)\pkgIndex.tcl
 install-demos: default-install-demos
 
+$(OUT_DIR)\pkgIndex.tcl: "$(LIBDIR)\pkgIndex.tcl.in"
+	nmakehlp -s << $(LIBDIR)\pkgIndex.tcl.in > $(OUT_DIR)\pkgIndex.tcl
+%VERSION%            $(DOTVERSION)
+%LIB_SUFFIX%         $(SUFX)
+%SO_EXT%             .dll
+%LIB_DIR%            $(SCRIPT_INSTALL_DIR:\=/)
+<<

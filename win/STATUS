@@ -2,4 +2,6 @@ Windows Visual C++ port status - 2018-01-28
 
 Compiles with a few warnings.
 Need to switch to Unicode API's
-pkgIndex.tcl generation and makefile for library directory needed
+package require BLT does not work - tries to load a DLL called Tcl40.dll
+load blt40.dll blt_tcl - works
+load blt40.dll blt_tk - does not work - cannot find blt_tcl 3.0
